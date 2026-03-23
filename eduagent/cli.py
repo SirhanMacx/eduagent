@@ -539,6 +539,142 @@ def unit(
     console.print(table)
 
 
+# ── Year map & pacing guide ──────────────────────────────────────────────
+
+
+@app.command(name="year-map")
+def year_map(
+    subject: str = typer.Argument(..., help="Subject area (e.g., 'Math')"),
+    grade: str = typer.Option("8", "--grade", "-g", help="Grade level"),
+    standards: Optional[str] = typer.Option(None, "--standards", help="Comma-separated standards"),
+    weeks: int = typer.Option(36, "--weeks", "-w", help="Total instructional weeks"),
+    school_year: str = typer.Option("", "--school-year", help="School year label (e.g., '2025-26')"),
+    fmt: str = typer.Option("markdown", "--format", "-f", help="Export format: markdown, pdf, docx"),
+):
+    """Generate a full-year curriculum map with unit sequence, big ideas, and assessment calendar."""
+    from eduagent.curriculum_map import CurriculumMapper, save_year_map
+    from eduagent.exporter import export_year_map
+
+    persona = _load_persona_or_exit()
+    std_list = [s.strip() for s in standards.split(",")] if standards else None
+
+    console.print(Panel(
+        f"[bold]{subject}[/bold] | Grade {grade} | {weeks} instructional weeks",
+        title="Planning Year Map",
+    ))
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Generating full-year curriculum map...", total=None)
+        mapper = CurriculumMapper()
+        result = _run_async(mapper.generate_year_map(
+            subject=subject,
+            grade_level=grade,
+            standards=std_list,
+            persona=persona,
+            school_year=school_year,
+            total_weeks=weeks,
+        ))
+        progress.update(task, description="Year map complete!")
+
+    out_dir = _output_dir()
+    json_path = save_year_map(result, out_dir)
+    export_path = export_year_map(result, out_dir, fmt=fmt)
+
+    console.print(f"\n[green]Year map saved:[/green] {json_path}")
+    console.print(f"[green]Exported:[/green] {export_path}")
+
+    # Summary table
+    table = Table(title=f"Year Map — {result.subject}, Grade {result.grade_level}")
+    table.add_column("#", style="dim")
+    table.add_column("Unit", style="bold")
+    table.add_column("Weeks", justify="right")
+    table.add_column("Essential Questions")
+    for u in result.units:
+        eq_preview = u.essential_questions[0][:60] + "..." if u.essential_questions else "—"
+        table.add_row(str(u.unit_number), u.title, str(u.duration_weeks), eq_preview)
+    console.print(table)
+
+    if result.big_ideas:
+        console.print("\n[bold]Big Ideas:[/bold]")
+        for bi in result.big_ideas:
+            units_str = ", ".join(str(n) for n in bi.connected_units)
+            console.print(f"  • {bi.idea} [dim](Units {units_str})[/dim]")
+
+
+@app.command()
+def pacing(
+    year_map_file: str = typer.Option(..., "--year-map", "-y", help="Path to year map JSON"),
+    start_date: str = typer.Option(..., "--start-date", "-d", help="First instructional day (YYYY-MM-DD)"),
+    calendar_file: Optional[str] = typer.Option(None, "--calendar", "-c", help="School calendar JSON file"),
+    fmt: str = typer.Option("markdown", "--format", "-f", help="Export format: markdown, pdf, docx"),
+):
+    """Generate a week-by-week pacing guide from a year map."""
+    from eduagent.curriculum_map import CurriculumMapper, load_year_map, save_pacing_guide
+    from eduagent.exporter import export_pacing_guide
+    from eduagent.models import SchoolCalendarEvent
+
+    persona = _load_persona_or_exit()
+    ym = load_year_map(Path(year_map_file))
+
+    # Load school calendar if provided
+    school_cal: list[SchoolCalendarEvent] | None = None
+    if calendar_file:
+        cal_path = Path(calendar_file)
+        if cal_path.exists():
+            import json as _json
+            cal_data = _json.loads(cal_path.read_text())
+            school_cal = [SchoolCalendarEvent.model_validate(e) for e in cal_data]
+
+    console.print(Panel(
+        f"[bold]{ym.subject}[/bold] Grade {ym.grade_level} | Starting {start_date}",
+        title="Generating Pacing Guide",
+    ))
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Creating week-by-week pacing guide...", total=None)
+        mapper = CurriculumMapper()
+        guide = _run_async(mapper.generate_pacing_guide(
+            year_map=ym,
+            start_date=start_date,
+            school_calendar=school_cal,
+            persona=persona,
+        ))
+        progress.update(task, description="Pacing guide complete!")
+
+    out_dir = _output_dir()
+    json_path = save_pacing_guide(guide, out_dir)
+    export_path = export_pacing_guide(guide, out_dir, fmt=fmt)
+
+    console.print(f"\n[green]Pacing guide saved:[/green] {json_path}")
+    console.print(f"[green]Exported:[/green] {export_path}")
+
+    # Summary table
+    table = Table(title=f"Pacing Guide — {guide.subject}, Grade {guide.grade_level}")
+    table.add_column("Week", style="dim", justify="right")
+    table.add_column("Dates")
+    table.add_column("Unit", style="bold")
+    table.add_column("Topics")
+    for w in guide.weeks[:10]:  # Show first 10 weeks
+        topics = "; ".join(w.topics[:2]) if w.topics else "—"
+        table.add_row(
+            str(w.week_number),
+            f"{w.start_date} – {w.end_date}",
+            f"U{w.unit_number}: {w.unit_title}",
+            topics,
+        )
+    console.print(table)
+    if len(guide.weeks) > 10:
+        console.print(f"[dim]  ... and {len(guide.weeks) - 10} more weeks (see exported file)[/dim]")
+
+
 # ── Lesson generation ────────────────────────────────────────────────────
 
 
