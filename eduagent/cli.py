@@ -831,5 +831,71 @@ def share(
     console.print(f"[green]Shareable lesson saved:[/green] {html_path}")
 
 
+# ── Serve command ──────────────────────────────────────────────────────
+
+
+@app.command()
+def serve(
+    port: int = typer.Option(8000, "--port", "-p", help="Port to listen on"),
+    host: str = typer.Option("127.0.0.1", "--host", "-h", help="Host to bind to"),
+    reload: bool = typer.Option(False, "--reload", help="Enable auto-reload for development"),
+):
+    """Start the EDUagent web server."""
+    import uvicorn
+
+    console.print(Panel(
+        f"[bold]Starting EDUagent web server[/bold]\n"
+        f"[cyan]http://{host}:{port}[/cyan]\n"
+        f"Dashboard: [cyan]http://{host}:{port}/dashboard[/cyan]\n"
+        f"Generate: [cyan]http://{host}:{port}/generate[/cyan]",
+        title="EDUagent Server",
+        border_style="green",
+    ))
+    uvicorn.run("eduagent.api.server:app", host=host, port=port, reload=reload)
+
+
+# ── Improve command ───────────────────────────────────────────────────
+
+
+@app.command()
+def improve(
+    days: int = typer.Option(7, "--days", "-d", help="Feedback window in days"),
+):
+    """Run one cycle of prompt improvement based on teacher feedback."""
+    from eduagent.database import Database
+    from eduagent.improver import improve_prompts
+
+    db = Database()
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Analyzing feedback and improving prompts...", total=None)
+        result = _run_async(improve_prompts(db, feedback_window_days=days))
+        progress.update(task, description="Done!")
+
+    db.close()
+
+    status = result.get("status", "unknown")
+    message = result.get("message", "")
+
+    if status == "no_feedback":
+        console.print(f"[yellow]{message}[/yellow]")
+    elif status == "good":
+        console.print(f"[green]{message}[/green]")
+    elif status == "improved":
+        console.print(Panel(
+            f"[green]{message}[/green]\n"
+            f"[bold]Prompt type:[/bold] {result.get('prompt_type', '')}\n"
+            f"[bold]New version:[/bold] {result.get('new_version', '')}\n"
+            f"[bold]Avg rating:[/bold] {result.get('feedback_summary', {}).get('avg_rating', '')}/5",
+            title="Prompt Improvement",
+        ))
+    else:
+        console.print(f"[dim]{message}[/dim]")
+
+
 if __name__ == "__main__":
     app()

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}EDUagent — AI Co-Teacher{% endblock %}
+{% block content %}
+<div class="hero">
+    <h1>Your teaching files, your AI co-teacher.</h1>
+    <p class="hero-sub">Upload your curriculum materials. Get a digital co-teacher that generates lessons in your voice.</p>
+
+    {% if not has_persona %}
+    <div class="onboard-card">
+        <h2>Get Started</h2>
+        <p>Upload your teaching materials (PDFs, DOCX, PPTX, or TXT) and EDUagent will extract your teaching persona.</p>
+        <form id="ingest-form" enctype="multipart/form-data">
+            <div class="upload-zone" id="upload-zone">
+                <p class="upload-text">Drag &amp; drop files here, or click to browse</p>
+                <input type="file" id="file-input" name="files" multiple accept=".pdf,.docx,.pptx,.txt,.md,.zip" hidden>
+            </div>
+            <div id="file-list" class="file-list"></div>
+            <button type="submit" class="btn btn-primary" id="ingest-btn" disabled>Extract Teaching Persona</button>
+        </form>
+        <div id="ingest-status" class="status-box" hidden></div>
+    </div>
+    {% else %}
+    <div class="action-cards">
+        <a href="/dashboard" class="action-card">
+            <h3>Content Library</h3>
+            <p>{{ stats.units }} units &middot; {{ stats.lessons }} lessons &middot; {{ stats.chats }} chats</p>
+        </a>
+        <a href="/generate" class="action-card">
+            <h3>Generate New Content</h3>
+            <p>Create unit plans, lessons, and materials in your teaching voice.</p>
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    var zone = document.getElementById('upload-zone');
+    var input = document.getElementById('file-input');
+    var form = document.getElementById('ingest-form');
+    var btn = document.getElementById('ingest-btn');
+    var fileList = document.getElementById('file-list');
+    var status = document.getElementById('ingest-status');
+    if (!zone) return;
+
+    zone.addEventListener('click', function() { input.click(); });
+    zone.addEventListener('dragover', function(e) { e.preventDefault(); zone.classList.add('dragover'); });
+    zone.addEventListener('dragleave', function() { zone.classList.remove('dragover'); });
+    zone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        zone.classList.remove('dragover');
+        input.files = e.dataTransfer.files;
+        showFiles(e.dataTransfer.files);
+    });
+    input.addEventListener('change', function() { showFiles(input.files); });
+
+    function showFiles(files) {
+        fileList.innerHTML = '';
+        for (var i = 0; i < files.length; i++) {
+            var div = document.createElement('div');
+            div.className = 'file-item';
+            div.innerHTML = '<span class="file-name">' + files[i].name + '</span>';
+            fileList.appendChild(div);
+        }
+        btn.disabled = files.length === 0;
+    }
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        btn.disabled = true;
+        btn.textContent = 'Analyzing...';
+        status.hidden = false;
+        status.className = 'status-box loading';
+        status.textContent = 'Extracting your teaching persona...';
+
+        var fd = new FormData();
+        for (var i = 0; i < input.files.length; i++) fd.append('files', input.files[i]);
+
+        try {
+            var resp = await fetch('/api/ingest', { method: 'POST', body: fd });
+            var data = await resp.json();
+            if (resp.ok) {
+                status.className = 'status-box success';
+                status.innerHTML = '<strong>Persona extracted!</strong> ' +
+                    esc(data.persona.name) + ' &mdash; ' + esc(data.persona.teaching_style || '') +
+                    '<br><a href="/generate" class="btn btn-primary" style="margin-top:0.5rem">Start Generating</a>';
+            } else {
+                status.className = 'status-box error';
+                status.textContent = data.error || 'Upload failed';
+                btn.disabled = false;
+                btn.textContent = 'Extract Teaching Persona';
+            }
+        } catch (err) {
+            status.className = 'status-box error';
+            status.textContent = 'Upload failed: ' + err.message;
+            btn.disabled = false;
+            btn.textContent = 'Extract Teaching Persona';
+        }
+    });
+
+    function esc(s) {
+        if (!s) return '';
+        var d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+    }
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — EDUagent{% endblock %}
+{% block content %}
+<h1>Teacher Dashboard</h1>
+{% if persona_name %}
+<p class="persona-badge">Teaching as <strong>{{ persona_name }}</strong></p>
+{% endif %}
+
+<div class="stats-row">
+    <div class="stat-card">
+        <span class="stat-num">{{ stats.units }}</span>
+        <span class="stat-label">Units</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-num">{{ stats.lessons }}</span>
+        <span class="stat-label">Lessons</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-num">{{ stats.chats }}</span>
+        <span class="stat-label">Student Chats</span>
+    </div>
+</div>
+
+<div class="section-header">
+    <h2>Your Units</h2>
+    <a href="/generate" class="btn btn-primary">+ New Unit</a>
+</div>
+
+{% if units %}
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>Title</th>
+            <th>Subject</th>
+            <th>Grade</th>
+            <th>Lessons</th>
+            <th>Rating</th>
+            <th>Created</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for u in units %}
+        <tr>
+            <td><a href="/dashboard">{{ u.title }}</a></td>
+            <td>{{ u.subject }}</td>
+            <td>{{ u.grade_level }}</td>
+            <td>{{ u.lesson_count }}</td>
+            <td>{{ u.rating or '—' }}</td>
+            <td>{{ u.created_at[:10] if u.created_at else '' }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="empty-state">
+    <p>No units yet. <a href="/generate">Generate your first unit</a> to get started.</p>
+</div>
+{% endif %}
+{% endblock %}

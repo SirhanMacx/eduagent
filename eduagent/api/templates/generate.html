@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}Generate — EDUagent{% endblock %}
+{% block content %}
+<h1>Generate Content</h1>
+
+{% if not has_persona %}
+<div class="alert alert-warning">
+    <strong>No persona found.</strong> <a href="/">Upload teaching materials</a> first to extract your teaching style.
+</div>
+{% endif %}
+
+<div class="gen-grid">
+    <div class="gen-form-panel">
+        <form id="generate-form">
+            <div class="form-group">
+                <label for="topic">Topic</label>
+                <input type="text" id="topic" name="topic" placeholder="e.g. Photosynthesis" required>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="grade_level">Grade Level</label>
+                    <select id="grade_level" name="grade_level">
+                        <option value="K">Kindergarten</option>
+                        <option value="1">1st Grade</option>
+                        <option value="2">2nd Grade</option>
+                        <option value="3">3rd Grade</option>
+                        <option value="4">4th Grade</option>
+                        <option value="5">5th Grade</option>
+                        <option value="6">6th Grade</option>
+                        <option value="7">7th Grade</option>
+                        <option value="8" selected>8th Grade</option>
+                        <option value="9">9th Grade</option>
+                        <option value="10">10th Grade</option>
+                        <option value="11">11th Grade</option>
+                        <option value="12">12th Grade</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="subject">Subject</label>
+                    <select id="subject" name="subject">
+                        {% for s in subjects %}
+                        <option value="{{ s }}">{{ s|capitalize }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="duration_weeks">Duration: <span id="weeks-display">3</span> weeks</label>
+                <input type="range" id="duration_weeks" name="duration_weeks" min="1" max="8" value="3">
+            </div>
+
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="include_homework" name="include_homework" checked>
+                    Include homework assignments
+                </label>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg" id="gen-btn" {% if not has_persona %}disabled{% endif %}>
+                Generate Full Unit
+            </button>
+        </form>
+    </div>
+
+    <div class="gen-progress-panel" id="progress-panel" hidden>
+        <h3>Generation Progress</h3>
+        <div id="progress-log" class="progress-log"></div>
+        <div id="progress-done" class="progress-done" hidden>
+            <p class="done-text">Generation complete!</p>
+            <a href="/dashboard" class="btn btn-primary">View Dashboard</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+document.getElementById('duration_weeks').addEventListener('input', function() {
+    document.getElementById('weeks-display').textContent = this.value;
+});
+
+document.getElementById('generate-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    var panel = document.getElementById('progress-panel');
+    var log = document.getElementById('progress-log');
+    var doneBox = document.getElementById('progress-done');
+    var genBtn = document.getElementById('gen-btn');
+
+    panel.hidden = false;
+    genBtn.disabled = true;
+    log.innerHTML = '';
+    doneBox.hidden = true;
+
+    var body = {
+        topic: document.getElementById('topic').value,
+        subject: document.getElementById('subject').value,
+        grade_level: document.getElementById('grade_level').value,
+        duration_weeks: parseInt(document.getElementById('duration_weeks').value),
+        include_homework: document.getElementById('include_homework').checked
+    };
+
+    function addLog(text, cls) {
+        var div = document.createElement('div');
+        div.className = 'log-entry ' + (cls || '');
+        div.textContent = text;
+        log.appendChild(div);
+        log.scrollTop = log.scrollHeight;
+    }
+
+    addLog('Starting generation...', 'generating');
+
+    try {
+        var resp = await fetch('/api/full', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(body)
+        });
+
+        if (resp.headers.get('content-type') && resp.headers.get('content-type').includes('text/event-stream')) {
+            var reader = resp.body.getReader();
+            var decoder = new TextDecoder();
+            var buf = '';
+
+            while (true) {
+                var result = await reader.read();
+                if (result.done) break;
+                buf += decoder.decode(result.value, {stream: true});
+                var lines = buf.split('\n');
+                buf = lines.pop();
+
+                for (var i = 0; i < lines.length; i++) {
+                    var line = lines[i].trim();
+                    if (line.startsWith('data:')) {
+                        try {
+                            var d = JSON.parse(line.substring(5).trim());
+                            if (d.step === 'unit' && d.status === 'done') {
+                                addLog('Unit plan created: ' + d.title + ' (' + d.lesson_count + ' lessons)', 'done');
+                            } else if (d.step === 'lesson' && d.status === 'generating') {
+                                addLog('Generating lesson ' + d.lesson_number + ': ' + d.topic + '...', 'generating');
+                            } else if (d.step === 'lesson' && d.status === 'done') {
+                                addLog('Lesson ' + d.lesson_number + ' done: ' + d.title, 'done');
+                            } else if (d.step === 'lesson' && d.status === 'error') {
+                                addLog('Lesson ' + d.lesson_number + ' failed: ' + d.error, 'error');
+                            } else if (d.step === 'materials') {
+                                if (d.status === 'done') addLog('Materials generated for lesson', 'done');
+                            } else if (d.error) {
+                                addLog('Error: ' + d.error, 'error');
+                            }
+                        } catch(ex) {}
+                    } else if (line.startsWith('event:') && line.includes('done')) {
+                        doneBox.hidden = false;
+                    }
+                }
+            }
+            doneBox.hidden = false;
+        } else {
+            var data = await resp.json();
+            if (resp.ok) {
+                addLog('Generation complete!', 'done');
+                doneBox.hidden = false;
+            } else {
+                addLog('Error: ' + (data.error || 'Generation failed'), 'error');
+                genBtn.disabled = false;
+            }
+        }
+    } catch (err) {
+        addLog('Network error: ' + err.message, 'error');
+        genBtn.disabled = false;
+    }
+});
+</script>
+{% endblock %}

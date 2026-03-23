@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}{{ lesson_data.get('title', 'Lesson') }} — EDUagent{% endblock %}
+{% block content %}
+<div class="lesson-header">
+    <h1>Lesson {{ lesson_data.get('lesson_number', '') }}: {{ lesson_data.get('title', 'Untitled') }}</h1>
+    <div class="lesson-meta">
+        {% if lesson_data.get('standards') %}
+        <span class="meta-tag">{{ lesson_data['standards']|join(', ') }}</span>
+        {% endif %}
+        <span class="meta-tag">Share: <a href="{{ share_url }}">{{ share_url }}</a></span>
+    </div>
+</div>
+
+<div class="lesson-grid">
+    <div class="lesson-main">
+        <div class="lesson-section">
+            <h3>Objective</h3>
+            <p>{{ lesson_data.get('objective', '') }}</p>
+        </div>
+
+        {% if lesson_data.get('do_now') %}
+        <div class="lesson-section">
+            <h3>Do-Now / Warm-Up</h3>
+            <p>{{ lesson_data['do_now'] }}</p>
+        </div>
+        {% endif %}
+
+        {% if lesson_data.get('direct_instruction') %}
+        <div class="lesson-section">
+            <h3>Direct Instruction</h3>
+            <p>{{ lesson_data['direct_instruction'] }}</p>
+        </div>
+        {% endif %}
+
+        {% if lesson_data.get('guided_practice') %}
+        <div class="lesson-section">
+            <h3>Guided Practice</h3>
+            <p>{{ lesson_data['guided_practice'] }}</p>
+        </div>
+        {% endif %}
+
+        {% if lesson_data.get('independent_work') %}
+        <div class="lesson-section">
+            <h3>Independent Work</h3>
+            <p>{{ lesson_data['independent_work'] }}</p>
+        </div>
+        {% endif %}
+
+        {% if lesson_data.get('exit_ticket') %}
+        <div class="lesson-section">
+            <h3>Exit Ticket</h3>
+            <ol>
+                {% for et in lesson_data['exit_ticket'] %}
+                <li>{{ et.get('question', et) if et is mapping else et }}</li>
+                {% endfor %}
+            </ol>
+        </div>
+        {% endif %}
+
+        {% if lesson_data.get('homework') %}
+        <div class="lesson-section">
+            <h3>Homework</h3>
+            <p>{{ lesson_data['homework'] }}</p>
+        </div>
+        {% endif %}
+
+        {% if lesson_data.get('differentiation') %}
+        <div class="lesson-section">
+            <h3>Differentiation</h3>
+            {% set diff = lesson_data['differentiation'] %}
+            {% if diff.get('struggling') %}
+            <p><strong>Struggling:</strong> {{ diff['struggling']|join('; ') }}</p>
+            {% endif %}
+            {% if diff.get('advanced') %}
+            <p><strong>Advanced:</strong> {{ diff['advanced']|join('; ') }}</p>
+            {% endif %}
+            {% if diff.get('ell') %}
+            <p><strong>ELL:</strong> {{ diff['ell']|join('; ') }}</p>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if not is_shared|default(false) %}
+        <div class="lesson-actions">
+            <h3>Export</h3>
+            <div class="btn-group">
+                <a href="/api/export/{{ lesson.id }}?fmt=markdown" class="btn btn-sm">Markdown</a>
+                <a href="/api/export/{{ lesson.id }}?fmt=pdf" class="btn btn-sm">PDF</a>
+                <a href="/api/export/{{ lesson.id }}?fmt=docx" class="btn btn-sm">DOCX</a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <div class="lesson-sidebar">
+        {% if not is_shared|default(false) %}
+        <!-- Feedback -->
+        <div class="sidebar-card">
+            <h3>Rate This Lesson</h3>
+            <form id="feedback-form">
+                <input type="hidden" name="lesson_id" value="{{ lesson.id }}">
+                <div class="star-rating" id="star-rating">
+                    {% for i in range(1, 6) %}
+                    <span class="star" data-value="{{ i }}">&#9734;</span>
+                    {% endfor %}
+                </div>
+                <input type="hidden" name="rating" id="rating-value" value="0">
+                <textarea name="notes" placeholder="Optional feedback notes..." rows="3"></textarea>
+                <button type="submit" class="btn btn-sm btn-primary">Submit Feedback</button>
+            </form>
+            <div id="feedback-status" hidden></div>
+        </div>
+
+        <!-- Chat -->
+        <div class="sidebar-card">
+            <h3>Ask About This Lesson</h3>
+            <div id="chat-messages" class="chat-messages"></div>
+            <form id="chat-form">
+                <input type="hidden" name="lesson_id" value="{{ lesson.id }}">
+                <div class="chat-input-row">
+                    <input type="text" name="question" id="chat-input" placeholder="Ask a question..." autocomplete="off">
+                    <button type="submit" class="btn btn-sm btn-primary">Send</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Feedback History -->
+        {% if feedback_list %}
+        <div class="sidebar-card">
+            <h3>Feedback History</h3>
+            {% for fb in feedback_list %}
+            <div class="feedback-item">
+                <span class="fb-rating">{{ '★' * (fb.rating or 0) }}{{ '☆' * (5 - (fb.rating or 0)) }}</span>
+                {% if fb.notes %}<p class="fb-notes">{{ fb.notes }}</p>{% endif %}
+                <span class="fb-date">{{ fb.created_at[:10] if fb.created_at else '' }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
