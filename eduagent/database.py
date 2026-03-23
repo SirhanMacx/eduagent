@@ -90,6 +90,12 @@ class Database:
                 content TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+
+            CREATE TABLE IF NOT EXISTS onboarding_state (
+                teacher_id TEXT PRIMARY KEY,
+                step_completed INTEGER DEFAULT 0,
+                completed_at TIMESTAMP
+            );
         """)
         self.conn.commit()
         self._migrate()
@@ -298,6 +304,64 @@ class Database:
     def count_chat_sessions(self) -> int:
         row = self.conn.execute("SELECT COUNT(DISTINCT lesson_id) as c FROM chat_messages WHERE role='user'").fetchone()
         return row["c"] if row else 0
+
+    # ── onboarding ─────────────────────────────────────────────────
+
+    def get_onboarding(self, teacher_id: str) -> Optional[dict[str, Any]]:
+        return self._fetchone("SELECT * FROM onboarding_state WHERE teacher_id=?", (teacher_id,))
+
+    def upsert_onboarding(self, teacher_id: str, step_completed: int) -> None:
+        if step_completed >= 5:
+            self.conn.execute(
+                """INSERT INTO onboarding_state (teacher_id, step_completed, completed_at)
+                   VALUES (?, ?, CURRENT_TIMESTAMP)
+                   ON CONFLICT(teacher_id) DO UPDATE SET
+                       step_completed=excluded.step_completed,
+                       completed_at=CURRENT_TIMESTAMP""",
+                (teacher_id, step_completed),
+            )
+        else:
+            self.conn.execute(
+                """INSERT INTO onboarding_state (teacher_id, step_completed)
+                   VALUES (?, ?)
+                   ON CONFLICT(teacher_id) DO UPDATE SET step_completed=excluded.step_completed""",
+                (teacher_id, step_completed),
+            )
+        self.conn.commit()
+
+    def is_onboarding_complete(self) -> bool:
+        row = self._fetchone("SELECT * FROM onboarding_state WHERE step_completed >= 5 LIMIT 1")
+        return row is not None
+
+    def clear_all_generated(self) -> None:
+        """Clear all generated content (units, lessons, materials, feedback, chats)."""
+        self.conn.executescript("""
+            DELETE FROM lessons;
+            DELETE FROM units;
+            DELETE FROM feedback;
+            DELETE FROM chat_messages;
+        """)
+        self.conn.commit()
+
+    def reset_all(self) -> None:
+        """Full reset — clear everything including teachers and onboarding."""
+        self.conn.executescript("""
+            DELETE FROM lessons;
+            DELETE FROM units;
+            DELETE FROM feedback;
+            DELETE FROM chat_messages;
+            DELETE FROM prompt_versions;
+            DELETE FROM teachers;
+            DELETE FROM onboarding_state;
+        """)
+        self.conn.commit()
+
+    def db_size_mb(self) -> float:
+        """Get the database file size in MB."""
+        try:
+            return self.db_path.stat().st_size / (1024 * 1024)
+        except OSError:
+            return 0.0
 
     # ── stats ────────────────────────────────────────────────────────
 

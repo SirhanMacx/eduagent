@@ -527,3 +527,193 @@ class TestWidgetStatic:
         assert resp.status_code == 200
         assert "eduagent-widget" in resp.text
         assert "data-lesson-id" in resp.text
+
+
+# ── Onboarding + Settings tests (v0.2.0) ────────────────────
+
+
+class TestOnboardingDatabase:
+    """Test the onboarding_state table operations."""
+
+    def test_onboarding_not_complete_initially(self, db):
+        assert db.is_onboarding_complete() is False
+
+    def test_upsert_and_get_onboarding(self, db):
+        tid = db.upsert_teacher("T", '{}')
+        db.upsert_onboarding(tid, 2)
+        state = db.get_onboarding(tid)
+        assert state is not None
+        assert state["step_completed"] == 2
+        assert state["completed_at"] is None
+
+    def test_onboarding_complete_at_step_5(self, db):
+        tid = db.upsert_teacher("T", '{}')
+        db.upsert_onboarding(tid, 5)
+        assert db.is_onboarding_complete() is True
+        state = db.get_onboarding(tid)
+        assert state["completed_at"] is not None
+
+    def test_clear_all_generated(self, db):
+        tid = db.upsert_teacher("T", '{}')
+        uid = db.insert_unit(tid, "U", "S", "8", "T", '{}')
+        db.insert_lesson(uid, 1, "L1", '{}')
+        db.insert_feedback("fake", 4, "Nice")
+        db.clear_all_generated()
+        assert db.get_stats()["units"] == 0
+        assert db.get_stats()["lessons"] == 0
+
+    def test_reset_all(self, db):
+        tid = db.upsert_teacher("T", '{}')
+        db.insert_unit(tid, "U", "S", "8", "T", '{}')
+        db.upsert_onboarding(tid, 5)
+        db.reset_all()
+        assert db.get_default_teacher() is None
+        assert db.is_onboarding_complete() is False
+
+    def test_db_size_mb(self, db):
+        size = db.db_size_mb()
+        assert isinstance(size, float)
+        assert size >= 0
+
+
+class TestHealthCheck:
+    """Test the health check endpoint."""
+
+    def test_health_endpoint(self, client):
+        resp = client.get("/api/health")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["status"] == "ok"
+        assert "llm_provider" in data
+        assert "version" in data
+        assert "units_generated" in data
+        assert "lessons_generated" in data
+        assert "db_size_mb" in data
+
+
+class TestSettingsRoutes:
+    """Test settings API routes."""
+
+    def test_get_settings(self, client):
+        resp = client.get("/api/settings")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "provider" in data
+        assert "anthropic_model" in data
+        assert "include_homework" in data
+
+    def test_save_settings(self, client):
+        resp = client.post("/api/settings", json={
+            "provider": "ollama",
+            "ollama_model": "llama3.2",
+            "ollama_base_url": "http://localhost:11434",
+            "anthropic_model": "claude-sonnet-4-6",
+            "openai_model": "gpt-4o",
+            "include_homework": False,
+            "export_format": "pdf",
+        })
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "saved"
+
+    def test_clear_content(self, client, db):
+        tid = db.upsert_teacher("T", '{}')
+        db.insert_unit(tid, "U", "S", "8", "T", '{}')
+        resp = client.post("/api/settings/clear-content")
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "cleared"
+        assert db.get_stats()["units"] == 0
+
+    def test_reset_all(self, client, db):
+        tid = db.upsert_teacher("T", '{}')
+        resp = client.post("/api/settings/reset")
+        assert resp.status_code == 200
+        assert resp.json()["status"] == "reset"
+        assert db.get_default_teacher() is None
+
+
+class TestOnboardingRoutes:
+    """Test onboarding API routes."""
+
+    def test_onboarding_state_no_teacher(self, client):
+        resp = client.get("/api/onboarding/state")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["has_persona"] is False
+        assert data["step_completed"] == 0
+
+    def test_onboarding_state_with_teacher(self, client, db):
+        db.upsert_teacher("Ms. T", '{"name": "Ms. T"}')
+        resp = client.get("/api/onboarding/state")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["has_persona"] is True
+        assert data["teacher_id"] is not None
+
+    def test_create_persona_from_form(self, client):
+        resp = client.post("/api/onboarding/persona-form", json={
+            "name": "Mr. Test",
+            "subject_area": "Math",
+            "grade_levels": "8, 9",
+            "teaching_style": "socratic",
+        })
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["persona"]["name"] == "Mr. Test"
+        assert data["persona"]["teaching_style"] == "socratic"
+        assert data["teacher_id"] is not None
+
+    def test_update_onboarding_step(self, client, db):
+        tid = db.upsert_teacher("T", '{}')
+        resp = client.post("/api/onboarding/step", json={
+            "teacher_id": tid,
+            "step": 3,
+        })
+        assert resp.status_code == 200
+        state = db.get_onboarding(tid)
+        assert state["step_completed"] == 3
+
+
+class TestSettingsPage:
+    """Test the settings page route."""
+
+    def test_settings_page_renders(self, client):
+        resp = client.get("/settings")
+        assert resp.status_code == 200
+        assert "Settings" in resp.text
+        assert "LLM Provider" in resp.text
+        assert "Danger Zone" in resp.text
+
+    def test_index_shows_wizard_no_persona(self, client):
+        resp = client.get("/")
+        assert resp.status_code == 200
+        assert "wizard" in resp.text.lower() or "Turn your lesson plans" in resp.text
+
+    def test_index_shows_dashboard_with_persona(self, client, db):
+        tid = db.upsert_teacher("Ms. T", '{"name": "Ms. T"}')
+        db.upsert_onboarding(tid, 5)
+        resp = client.get("/")
+        assert resp.status_code == 200
+        assert "Welcome back" in resp.text
+
+
+class TestConfigModule:
+    """Test the config module functions."""
+
+    def test_mask_api_key_short(self):
+        from eduagent.config import mask_api_key
+        assert mask_api_key("abc") == "***"
+        assert mask_api_key("") == ""
+        assert mask_api_key(None) == ""
+
+    def test_mask_api_key_long(self):
+        from eduagent.config import mask_api_key
+        result = mask_api_key("sk-ant-api03-abcdefghij")
+        assert result.startswith("sk-")
+        assert result.endswith("ghij")  # last 6 chars
+        assert "..." in result
+
+    def test_has_config(self):
+        from eduagent.config import has_config
+        # Just test it doesn't crash — actual value depends on system state
+        result = has_config()
+        assert isinstance(result, bool)

@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}Settings — EDUagent{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <div class="container">
+        <a href="/">Home</a> &rsaquo; <span>Settings</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Settings</h1>
+
+{# ── LLM Provider ───────────────────────────────────────────── #}
+<section class="settings-section">
+    <h2>LLM Provider</h2>
+    <form id="settings-form">
+        <div class="form-group">
+            <div class="radio-group">
+                <label class="radio-card{% if config.provider.value == 'anthropic' %} active{% endif %}">
+                    <input type="radio" name="provider" value="anthropic" {% if config.provider.value == 'anthropic' %}checked{% endif %}>
+                    <strong>Anthropic</strong>
+                    <span class="radio-desc">Claude &mdash; best quality</span>
+                </label>
+                <label class="radio-card{% if config.provider.value == 'openai' %} active{% endif %}">
+                    <input type="radio" name="provider" value="openai" {% if config.provider.value == 'openai' %}checked{% endif %}>
+                    <strong>OpenAI</strong>
+                    <span class="radio-desc">GPT-4o</span>
+                </label>
+                <label class="radio-card{% if config.provider.value == 'ollama' %} active{% endif %}">
+                    <input type="radio" name="provider" value="ollama" {% if config.provider.value == 'ollama' %}checked{% endif %}>
+                    <strong>Ollama</strong>
+                    <span class="radio-desc">Local &mdash; Free</span>
+                </label>
+            </div>
+        </div>
+
+        {# Anthropic settings #}
+        <div class="provider-settings" id="anthropic-settings" {% if config.provider.value != 'anthropic' %}hidden{% endif %}>
+            <div class="form-group">
+                <label for="anthropic-key">API Key</label>
+                <div class="key-input-row">
+                    <input type="password" id="anthropic-key" name="anthropic_key" placeholder="{% if anthropic_key_masked %}{{ anthropic_key_masked }}{% else %}sk-ant-...{% endif %}">
+                    <button type="button" class="btn btn-sm" onclick="this.previousElementSibling.type = this.previousElementSibling.type === 'password' ? 'text' : 'password'">Show</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="anthropic-model">Model</label>
+                <select id="anthropic-model" name="anthropic_model">
+                    <option value="claude-opus-4-5" {% if config.anthropic_model == 'claude-opus-4-5' %}selected{% endif %}>claude-opus-4-5</option>
+                    <option value="claude-sonnet-4-6" {% if config.anthropic_model == 'claude-sonnet-4-6' %}selected{% endif %}>claude-sonnet-4-6</option>
+                    <option value="claude-haiku-4-5-20251001" {% if config.anthropic_model == 'claude-haiku-4-5-20251001' %}selected{% endif %}>claude-haiku-4-5</option>
+                </select>
+            </div>
+        </div>
+
+        {# OpenAI settings #}
+        <div class="provider-settings" id="openai-settings" {% if config.provider.value != 'openai' %}hidden{% endif %}>
+            <div class="form-group">
+                <label for="openai-key">API Key</label>
+                <div class="key-input-row">
+                    <input type="password" id="openai-key" name="openai_key" placeholder="{% if openai_key_masked %}{{ openai_key_masked }}{% else %}sk-...{% endif %}">
+                    <button type="button" class="btn btn-sm" onclick="this.previousElementSibling.type = this.previousElementSibling.type === 'password' ? 'text' : 'password'">Show</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="openai-model">Model</label>
+                <select id="openai-model" name="openai_model">
+                    <option value="gpt-4o" {% if config.openai_model == 'gpt-4o' %}selected{% endif %}>gpt-4o</option>
+                    <option value="gpt-4o-mini" {% if config.openai_model == 'gpt-4o-mini' %}selected{% endif %}>gpt-4o-mini</option>
+                </select>
+            </div>
+        </div>
+
+        {# Ollama settings #}
+        <div class="provider-settings" id="ollama-settings" {% if config.provider.value != 'ollama' %}hidden{% endif %}>
+            <div class="form-group">
+                <label for="ollama-url">Ollama URL</label>
+                <input type="text" id="ollama-url" name="ollama_base_url" value="{{ config.ollama_base_url }}">
+            </div>
+            <div class="form-group">
+                <label for="ollama-model">Model Name</label>
+                <input type="text" id="ollama-model" name="ollama_model" value="{{ config.ollama_model }}">
+            </div>
+        </div>
+
+        <div class="btn-group">
+            <button type="button" class="btn" id="test-connection-btn">Test Connection</button>
+            <div id="connection-status" class="status-box status-inline" hidden></div>
+        </div>
+
+        <hr class="settings-divider">
+
+        {# ── Generation Defaults ─────────────────────────────────── #}
+        <h2>Generation Defaults</h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="default-grade">Default Grade Level</label>
+                <select id="default-grade" name="default_grade">
+                    <option value="">Not set</option>
+                    {% for g in ['K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'] %}
+                    <option value="{{ g }}">{{ g }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="default-subject">Default Subject</label>
+                <select id="default-subject" name="default_subject">
+                    <option value="">Not set</option>
+                    <option value="Science">Science</option>
+                    <option value="Math">Math</option>
+                    <option value="ELA">ELA</option>
+                    <option value="History">History</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label class="toggle-label">
+                    <input type="checkbox" id="include-homework" name="include_homework" {% if config.include_homework %}checked{% endif %}>
+                    Include homework in lessons
+                </label>
+            </div>
+            <div class="form-group">
+                <label for="export-format">Export Format</label>
+                <select id="export-format" name="export_format">
+                    <option value="markdown" {% if config.export_format == 'markdown' %}selected{% endif %}>Markdown</option>
+                    <option value="pdf" {% if config.export_format == 'pdf' %}selected{% endif %}>PDF</option>
+                    <option value="docx" {% if config.export_format == 'docx' %}selected{% endif %}>DOCX</option>
+                </select>
+            </div>
+        </div>
+
+        <div id="settings-save-status" class="status-box" hidden></div>
+        <button type="submit" class="btn btn-primary btn-lg">Save Settings</button>
+    </form>
+</section>
+
+{# ── Your Persona ───────────────────────────────────────────── #}
+<section class="settings-section">
+    <h2>Your Persona</h2>
+    {% if persona %}
+    <div class="persona-summary">
+        <div class="persona-tags">
+            <span class="persona-badge">{{ persona.teaching_style | default('direct_instruction') | replace('_', ' ') | title }}</span>
+            <span class="persona-badge">{{ persona.vocabulary_level | default('grade_appropriate') | replace('_', ' ') | title }}</span>
+            {% for pref in persona.get('structural_preferences', []) %}
+            <span class="meta-tag">{{ pref }}</span>
+            {% endfor %}
+        </div>
+        <p><strong>Name:</strong> {{ persona.name }}</p>
+        <p><strong>Subject:</strong> {{ persona.subject_area or 'General' }}</p>
+        <p><strong>Grades:</strong> {{ persona.get('grade_levels', []) | join(', ') or 'Not set' }}</p>
+    </div>
+    <div class="btn-group" style="margin-top:1rem">
+        <a href="/" class="btn">Re-analyze Materials</a>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <p>No persona configured. <a href="/">Set up your persona</a></p>
+    </div>
+    {% endif %}
+</section>
+
+{# ── Danger Zone ────────────────────────────────────────────── #}
+<section class="settings-section danger-section">
+    <h2>Danger Zone</h2>
+    <div class="danger-actions">
+        <div class="danger-item">
+            <div>
+                <strong>Clear all generated content</strong>
+                <p>Delete all units, lessons, materials, and feedback. Your persona is kept.</p>
+            </div>
+            <button class="btn btn-danger" id="clear-content-btn">Clear Content</button>
+        </div>
+        <div class="danger-item">
+            <div>
+                <strong>Reset EDUagent</strong>
+                <p>Delete everything and restart from scratch. This cannot be undone.</p>
+            </div>
+            <button class="btn btn-danger" id="reset-btn">Reset Everything</button>
+        </div>
+    </div>
+</section>
+{% endblock %}

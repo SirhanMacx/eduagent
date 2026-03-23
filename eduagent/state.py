@@ -1,0 +1,277 @@
+"""Conversation state management for teacher sessions.
+
+Each teacher (identified by their Telegram user ID or web session)
+has a persistent session that remembers:
+- Their persona (teaching style, preferences)
+- What they're currently working on
+- Recent conversation context
+- Configuration
+
+This is what makes the bot feel like a real assistant — it knows
+what you were doing last time and picks up where you left off.
+"""
+
+from __future__ import annotations
+
+import json
+import sqlite3
+import uuid
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
+
+from eduagent.models import DailyLesson, TeacherPersona, UnitPlan
+
+
+# Default data directory
+DEFAULT_DATA_DIR = Path.home() / ".eduagent"
+
+
+def _db_path() -> Path:
+    data_dir = DEFAULT_DATA_DIR
+    data_dir.mkdir(parents=True, exist_ok=True)
+    return data_dir / "eduagent.db"
+
+
+def _get_conn() -> sqlite3.Connection:
+    conn = sqlite3.connect(str(_db_path()))
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def init_db() -> None:
+    """Initialize the database schema."""
+    with _get_conn() as conn:
+        conn.executescript("""
+            CREATE TABLE IF NOT EXISTS teacher_sessions (
+                teacher_id TEXT PRIMARY KEY,
+                name TEXT,
+                persona_json TEXT,
+                config_json TEXT,
+                current_unit_json TEXT,
+                current_lesson_json TEXT,
+                context_json TEXT DEFAULT '[]',
+                last_activity TEXT,
+                created_at TEXT DEFAULT (datetime('now'))
+            );
+
+            CREATE TABLE IF NOT EXISTS generated_units (
+                id TEXT PRIMARY KEY,
+                teacher_id TEXT NOT NULL,
+                title TEXT,
+                subject TEXT,
+                grade_level TEXT,
+                topic TEXT,
+                unit_json TEXT NOT NULL,
+                rating INTEGER,
+                created_at TEXT DEFAULT (datetime('now'))
+            );
+
+            CREATE TABLE IF NOT EXISTS generated_lessons (
+                id TEXT PRIMARY KEY,
+                unit_id TEXT,
+                teacher_id TEXT NOT NULL,
+                lesson_number INTEGER,
+                title TEXT,
+                lesson_json TEXT NOT NULL,
+                materials_json TEXT,
+                quality_score_json TEXT,
+                rating INTEGER,
+                edit_count INTEGER DEFAULT 0,
+                share_token TEXT UNIQUE,
+                created_at TEXT DEFAULT (datetime('now'))
+            );
+
+            CREATE TABLE IF NOT EXISTS feedback (
+                id TEXT PRIMARY KEY,
+                lesson_id TEXT,
+                teacher_id TEXT,
+                rating INTEGER,
+                notes TEXT,
+                sections_edited TEXT,
+                created_at TEXT DEFAULT (datetime('now'))
+            );
+
+            CREATE TABLE IF NOT EXISTS prompt_versions (
+                id TEXT PRIMARY KEY,
+                prompt_type TEXT NOT NULL,
+                version INTEGER NOT NULL,
+                prompt_text TEXT NOT NULL,
+                avg_rating REAL DEFAULT 0.0,
+                usage_count INTEGER DEFAULT 0,
+                is_active INTEGER DEFAULT 1,
+                created_at TEXT DEFAULT (datetime('now'))
+            );
+        """)
+
+
+class TeacherSession:
+    """A teacher's persistent conversation session."""
+
+    def __init__(
+        self,
+        teacher_id: str,
+        name: Optional[str] = None,
+        persona: Optional[TeacherPersona] = None,
+        config: Optional[dict] = None,
+        current_unit: Optional[UnitPlan] = None,
+        current_lesson: Optional[DailyLesson] = None,
+        context: Optional[list] = None,
+    ):
+        self.teacher_id = teacher_id
+        self.name = name
+        self.persona = persona
+        self.config = config or {}
+        self.current_unit = current_unit
+        self.current_lesson = current_lesson
+        self.context: list[dict] = context or []  # Recent conversation turns
+        self.last_activity = datetime.utcnow()
+
+    @classmethod
+    def load(cls, teacher_id: str) -> "TeacherSession":
+        """Load a session from DB, or create a new one."""
+        init_db()
+        with _get_conn() as conn:
+            row = conn.execute(
+                "SELECT * FROM teacher_sessions WHERE teacher_id = ?",
+                (teacher_id,),
+            ).fetchone()
+
+        if not row:
+            return cls(teacher_id=teacher_id)
+
+        persona = None
+        if row["persona_json"]:
+            try:
+                persona = TeacherPersona.model_validate_json(row["persona_json"])
+            except Exception:
+                pass
+
+        current_unit = None
+        if row["current_unit_json"]:
+            try:
+                current_unit = UnitPlan.model_validate_json(row["current_unit_json"])
+            except Exception:
+                pass
+
+        current_lesson = None
+        if row["current_lesson_json"]:
+            try:
+                current_lesson = DailyLesson.model_validate_json(row["current_lesson_json"])
+            except Exception:
+                pass
+
+        config = {}
+        if row["config_json"]:
+            try:
+                config = json.loads(row["config_json"])
+            except Exception:
+                pass
+
+        context = []
+        if row["context_json"]:
+            try:
+                context = json.loads(row["context_json"])
+            except Exception:
+                pass
+
+        return cls(
+            teacher_id=teacher_id,
+            name=row["name"],
+            persona=persona,
+            config=config,
+            current_unit=current_unit,
+            current_lesson=current_lesson,
+            context=context,
+        )
+
+    def save(self) -> None:
+        """Persist this session to DB."""
+        init_db()
+        with _get_conn() as conn:
+            conn.execute(
+                """
+                INSERT OR REPLACE INTO teacher_sessions
+                    (teacher_id, name, persona_json, config_json,
+                     current_unit_json, current_lesson_json, context_json, last_activity)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    self.teacher_id,
+                    self.name,
+                    self.persona.model_dump_json() if self.persona else None,
+                    json.dumps(self.config),
+                    self.current_unit.model_dump_json() if self.current_unit else None,
+                    self.current_lesson.model_dump_json() if self.current_lesson else None,
+                    json.dumps(self.context[-20:]),  # Keep last 20 turns
+                    datetime.utcnow().isoformat(),
+                ),
+            )
+
+    def add_context(self, role: str, content: str) -> None:
+        """Add a turn to the conversation context."""
+        self.context.append({
+            "role": role,
+            "content": content[:2000],  # Cap per-turn length
+            "timestamp": datetime.utcnow().isoformat(),
+        })
+
+    def save_unit(self, unit: UnitPlan) -> str:
+        """Save a generated unit, return its ID."""
+        unit_id = str(uuid.uuid4())
+        self.current_unit = unit
+        init_db()
+        with _get_conn() as conn:
+            conn.execute(
+                """
+                INSERT INTO generated_units (id, teacher_id, title, subject, grade_level, topic, unit_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (unit_id, self.teacher_id, unit.title, unit.subject, unit.grade_level, unit.topic, unit.model_dump_json()),
+            )
+        self.save()
+        return unit_id
+
+    def save_lesson(self, lesson: DailyLesson, unit_id: Optional[str] = None) -> str:
+        """Save a generated lesson, return its ID."""
+        lesson_id = str(uuid.uuid4())
+        share_token = str(uuid.uuid4())[:8]  # Short share token
+        self.current_lesson = lesson
+        init_db()
+        with _get_conn() as conn:
+            conn.execute(
+                """
+                INSERT INTO generated_lessons (id, unit_id, teacher_id, lesson_number, title, lesson_json, share_token)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (lesson_id, unit_id, self.teacher_id, lesson.lesson_number, lesson.title, lesson.model_dump_json(), share_token),
+            )
+        self.save()
+        return lesson_id
+
+    def get_recent_units(self, limit: int = 5) -> list[dict]:
+        """Get the teacher's most recent generated units."""
+        init_db()
+        with _get_conn() as conn:
+            rows = conn.execute(
+                "SELECT id, title, subject, grade_level, topic, created_at FROM generated_units WHERE teacher_id = ? ORDER BY created_at DESC LIMIT ?",
+                (self.teacher_id, limit),
+            ).fetchall()
+        return [dict(r) for r in rows]
+
+    @property
+    def is_new(self) -> bool:
+        """True if this teacher hasn't set up their persona yet."""
+        return self.persona is None
+
+    @property
+    def has_materials(self) -> bool:
+        """True if we have curriculum materials to learn from."""
+        return bool(self.config.get("materials_path") or self.config.get("drive_url"))
+
+    def get_context_for_llm(self, max_turns: int = 5) -> list[dict]:
+        """Get recent conversation context formatted for LLM input."""
+        return [
+            {"role": turn["role"], "content": turn["content"]}
+            for turn in self.context[-max_turns:]
+        ]

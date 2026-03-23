@@ -10,16 +10,26 @@
     <nav class="navbar">
         <div class="nav-inner">
             <a href="/" class="nav-brand">EDUagent</a>
-            <div class="nav-links">
+            <button class="nav-hamburger" id="nav-hamburger" aria-label="Toggle navigation">
+                <span></span><span></span><span></span>
+            </button>
+            <div class="nav-links" id="nav-links">
                 <a href="/dashboard">Dashboard</a>
                 <a href="/generate">Generate</a>
+                <a href="/dashboard">My Library</a>
+                <a href="/settings">Settings</a>
             </div>
         </div>
     </nav>
+    {% block breadcrumbs %}{% endblock %}
     <main class="container">
         {% block content %}{% endblock %}
     </main>
     <footer class="footer">
+        <div class="status-bar" id="status-bar">
+            <span class="status-dot" id="status-dot"></span>
+            <a href="/settings" class="status-text" id="status-text">Checking connection...</a>
+        </div>
         <p>EDUagent &mdash; Your teaching files, your AI co-teacher.</p>
     </footer>
     <script src="/static/app.js"></script>

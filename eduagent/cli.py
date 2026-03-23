@@ -836,20 +836,80 @@ def share(
 # ── Serve command ──────────────────────────────────────────────────────
 
 
+def _first_run_setup() -> None:
+    """Interactive first-run setup wizard. Only runs when no config exists."""
+    from rich.prompt import Prompt
+
+    from eduagent.config import has_config, set_api_key, test_llm_connection
+
+    if has_config():
+        return
+
+    console.print(Panel(
+        "[bold]Welcome to EDUagent![/bold]\n\nLet's get you set up in 2 minutes.",
+        title="Setup",
+        border_style="blue",
+    ))
+
+    # Provider selection
+    provider_choice = Prompt.ask(
+        "Which AI provider do you want to use?",
+        choices=["ollama", "anthropic", "openai"],
+        default="ollama",
+    )
+
+    cfg = AppConfig()
+    cfg.provider = LLMProvider(provider_choice)
+
+    # API key for cloud providers
+    if provider_choice in ("anthropic", "openai"):
+        api_key = Prompt.ask(f"Enter your {provider_choice.title()} API key", password=True)
+        if api_key.strip():
+            set_api_key(provider_choice, api_key.strip())
+            console.print("[green]API key saved securely.[/green]")
+
+    # Test connection
+    with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), console=console) as progress:
+        task = progress.add_task("Testing connection...", total=None)
+        result = _run_async(test_llm_connection(cfg))
+        progress.update(task, description="Done!")
+
+    model = result.get("model", "")
+    if result.get("connected"):
+        console.print(f"[green]Connected to {model}[/green]")
+    else:
+        console.print(f"[yellow]Could not connect: {result.get('error', 'unknown')}[/yellow]")
+        console.print("[dim]You can update settings later at http://localhost:8000/settings[/dim]")
+
+    # Subject and grades
+    subject = Prompt.ask("What subject do you teach?", default="Science")
+    grades = Prompt.ask("What grade(s)?", default="8")
+
+    cfg.save()
+
+    console.print("\n[green]Configuration saved![/green]")
+    console.print(f"[dim]Subject: {subject}, Grades: {grades}[/dim]\n")
+
+
 @app.command()
 def serve(
     port: int = typer.Option(8000, "--port", "-p", help="Port to listen on"),
     host: str = typer.Option("127.0.0.1", "--host", "-h", help="Host to bind to"),
     reload: bool = typer.Option(False, "--reload", help="Enable auto-reload for development"),
+    skip_setup: bool = typer.Option(False, "--skip-setup", help="Skip first-run setup wizard"),
 ):
     """Start the EDUagent web server."""
     import uvicorn
+
+    if not skip_setup:
+        _first_run_setup()
 
     console.print(Panel(
         f"[bold]Starting EDUagent web server[/bold]\n"
         f"[cyan]http://{host}:{port}[/cyan]\n"
         f"Dashboard: [cyan]http://{host}:{port}/dashboard[/cyan]\n"
-        f"Generate: [cyan]http://{host}:{port}/generate[/cyan]",
+        f"Generate: [cyan]http://{host}:{port}/generate[/cyan]\n"
+        f"Settings: [cyan]http://{host}:{port}/settings[/cyan]",
         title="EDUagent Server",
         border_style="green",
     ))

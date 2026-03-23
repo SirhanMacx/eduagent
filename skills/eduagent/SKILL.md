@@ -1,138 +1,91 @@
 ---
 name: eduagent
-description: AI teaching assistant — upload curriculum files and generate lesson plans, unit plans, worksheets, and assessments in your teaching voice. Use when: teacher needs to plan a unit, generate a lesson, create materials, or build assessments. Runs locally with Ollama or via API.
+description: AI teaching assistant for K-12 educators. Use when a teacher asks
+             for lesson plans, unit plans, worksheets, assessments, differentiation
+             strategies, standards alignment, current events for lessons, or any
+             education-related curriculum planning. Also handles student tutoring
+             mode when a student asks about course content. Connects to Google
+             Drive or local disk for curriculum ingestion.
 ---
 
-# EDUagent Skill
+# EDUagent — AI Teaching Assistant
 
-## When to Use
+## What It Does
 
-Use this skill when a teacher or educator needs to:
+EDUagent is an AI teaching partner that lives in your Telegram. It learns your teaching style from your existing lesson plans, then generates all your future curriculum materials in your exact voice.
 
-- **Plan a curriculum unit** from scratch on any topic
-- **Generate a daily lesson plan** with Do-Now, instruction, practice, exit tickets
-- **Create supporting materials** — worksheets, quizzes, rubrics, slide outlines, IEP notes
-- **Ingest existing teaching materials** to learn the teacher's voice and style
-- **Run the full pipeline** — unit plan + all lessons + all materials in one command
+It also powers a student-facing chatbot — students can ask questions about the current lesson and get answers the way their teacher would give them.
 
-## How to Use
+## Teacher Commands
 
-### 1. Ingest materials (one-time setup)
+Any natural language works. You don't need specific commands. But these are recognized:
 
-Point EDUagent at a folder of existing lesson plans, worksheets, or slides. It extracts a "teacher persona" — your style, tone, vocabulary, and preferences.
+**Setup**
+- "connect my Google Drive" or share a Drive URL → ingests your curriculum
+- "connect my folder /path/to/files" → ingests local materials
+- `/setup` → guided configuration
+- `/status` → shows current persona and config
 
-```bash
-eduagent ingest ~/Documents/my_lesson_plans/
-```
+**Generation**
+- "plan a unit on [topic] for [grade] [subject], [N] weeks"
+- "generate a lesson on [topic]"
+- "make a worksheet for [topic]"
+- "create an assessment for [unit]"
+- "write differentiation notes for struggling learners"
+- "suggest a bell ringer for tomorrow's lesson"
 
-Supports: PDF, DOCX, PPTX, TXT, MD, ZIP archives.
+**Search & Research**
+- "find a current news story about [topic] for my class"
+- "what does NGSS say about [topic] for grade [N]?"
+- "find a video resource on [topic]"
 
-### 2. Generate a unit plan
+**Export**
+- "export that as a PDF"
+- "give me the Google Classroom version"
+- "share that lesson with my students"
 
-```bash
-eduagent unit "Photosynthesis" --grade 8 --subject Science --weeks 3
-```
+## Student Commands (when configured)
 
-Produces a complete unit plan with:
-- Essential questions and enduring understandings
-- Daily lesson sequence (topic + description for each day)
-- Assessment plan (formative + summative)
-- Standards alignment
+Students talk to a separate bot (same backend, different persona mode):
+- Ask questions about the current lesson
+- Request explanations in different ways
+- Take a practice quiz
+- Get hints (not direct answers)
 
-### 3. Generate a single lesson
+## Setup Instructions
 
-```bash
-eduagent lesson "Intro to Photosynthesis" --unit-file ./eduagent_output/unit_*.json --lesson-num 1
-```
+### Option 1: Talk to it (recommended)
+Just message the bot: "Hi, I'm a 8th grade science teacher at Great Neck South. Here's my Google Drive folder: [link]"
 
-Produces a detailed daily plan:
-- SWBAT objective
-- Do-Now warm-up
-- Direct instruction (teacher-script style)
-- Guided practice activity
-- Independent work
-- Exit ticket questions with expected responses
-- Homework assignment
-- Differentiation notes (struggling, advanced, ELL)
-
-### 4. Generate all materials for a lesson
-
-```bash
-eduagent materials --lesson-file ./eduagent_output/lesson_01.json
-```
-
-Produces:
-- Student worksheet with answer key
-- Assessment questions (multiple choice, short answer)
-- Scoring rubric
-- Slide deck outline with speaker notes
-- IEP accommodation notes
-
-### 5. Full pipeline (everything at once)
-
-```bash
-eduagent full "Photosynthesis" --grade 8 --subject Science --weeks 3
-```
-
-Generates: unit plan → every daily lesson → all materials for every lesson.
-
-## What Gets Generated
-
-```
-eduagent_output/
-├── persona.json                    # Your extracted teaching persona
-├── unit_life_from_light.json       # Unit plan (JSON)
-├── life_from_light.md              # Unit plan (Markdown)
-├── lesson_01.json                  # Lesson plans (JSON)
-├── lesson_01.md                    # Lesson plans (Markdown)
-├── materials_intro_to_photo.json   # Materials (JSON)
-├── materials_intro_to_photo.md     # Materials (Markdown)
-└── ...
-```
-
-Export formats: `--format markdown` (default), `--format pdf`, `--format docx`
-
-## Setup
-
-### Option A: Ollama (free, local, no API key)
-
+### Option 2: Manual config
 ```bash
 pip install eduagent
-ollama pull llama3.2
-eduagent config set-model ollama
+eduagent setup    # guided wizard
+eduagent serve    # starts web UI at localhost:8000
 ```
 
-### Option B: Anthropic (best quality)
+### API Keys Required (choose one)
+- **Anthropic** (best quality): `ANTHROPIC_API_KEY` env var or via `/setup`  
+- **OpenAI** (GPT-4o): `OPENAI_API_KEY` env var or via `/setup`
+- **Ollama Cloud** (free): URL + model name, no key needed
 
-```bash
-pip install eduagent
-export ANTHROPIC_API_KEY="sk-ant-..."
-eduagent config set-model anthropic
-```
+### Optional
+- **Tavily API key** for web search: `TAVILY_API_KEY`
+- **Google Drive**: share link or service account JSON
 
-### Option C: OpenAI
+## How It Learns Your Style
 
-```bash
-pip install eduagent
-export OPENAI_API_KEY="sk-..."
-eduagent config set-model openai
-```
+EDUagent analyzes your existing materials and extracts:
+- Your teaching style (direct instruction, Socratic, inquiry-based, etc.)
+- Vocabulary level and tone
+- Structural preferences (do you always use exit tickets? graphic organizers?)
+- Assessment approach
 
-## Example Workflow
+Everything it generates afterward matches that profile. The output sounds like you wrote it — because it learned from you.
 
-```bash
-# 1. First time: ingest your materials
-eduagent ingest ~/Google\ Drive/8th\ Grade\ Science/
+## Privacy
 
-# 2. Plan a new unit
-eduagent unit "Chemical Reactions" --grade 8 --subject Science --weeks 2
-
-# 3. Generate everything
-eduagent full "Chemical Reactions" --grade 8 --subject Science --weeks 2 --format pdf
-
-# 4. Check your persona
-eduagent persona show
-
-# 5. Adjust the LLM backend
-eduagent config set-model ollama --model mistral
-```
+- Your materials are processed locally or via your chosen API
+- Nothing is shared with third parties beyond your selected LLM provider
+- API keys stored in OS keychain (not in config files)
+- Google Drive content cached locally, never uploaded elsewhere

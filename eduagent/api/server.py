@@ -62,12 +62,14 @@ def create_app() -> FastAPI:
     from eduagent.api.routes.feedback import router as feedback_router
     from eduagent.api.routes.generate import router as generate_router
     from eduagent.api.routes.ingest import router as ingest_router
+    from eduagent.api.routes.settings import router as settings_router
 
     app.include_router(ingest_router, prefix="/api")
     app.include_router(generate_router, prefix="/api")
     app.include_router(chat_router, prefix="/api")
     app.include_router(feedback_router, prefix="/api")
     app.include_router(export_router, prefix="/api")
+    app.include_router(settings_router, prefix="/api")
 
     # ── Page routes (server-side rendered) ───────────────────────────
 
@@ -76,10 +78,23 @@ def create_app() -> FastAPI:
         db = get_db()
         stats = db.get_stats()
         teacher = db.get_default_teacher()
-        has_persona = teacher is not None
+        has_persona = teacher is not None and teacher.get("persona_json") is not None
+        onboarding_complete = db.is_onboarding_complete()
+
+        # If persona exists and onboarding is done, show dashboard-style home
+        persona_data = None
+        if teacher and teacher.get("persona_json"):
+            try:
+                persona_data = json.loads(teacher["persona_json"])
+            except (json.JSONDecodeError, TypeError):
+                pass
+
         return templates.TemplateResponse(request, "index.html", {
             "stats": stats,
             "has_persona": has_persona,
+            "onboarding_complete": onboarding_complete,
+            "teacher_id": teacher["id"] if teacher else None,
+            "persona": persona_data,
         })
 
     @app.get("/dashboard", response_class=HTMLResponse)
@@ -113,6 +128,28 @@ def create_app() -> FastAPI:
         return templates.TemplateResponse(request, "generate.html", {
             "has_persona": has_persona,
             "subjects": subjects,
+        })
+
+    @app.get("/settings", response_class=HTMLResponse)
+    async def settings_page(request: Request):
+        from eduagent.config import get_api_key, mask_api_key
+        from eduagent.models import AppConfig
+
+        cfg = AppConfig.load()
+        db = get_db()
+        teacher = db.get_default_teacher()
+        persona_data = None
+        if teacher and teacher.get("persona_json"):
+            try:
+                persona_data = json.loads(teacher["persona_json"])
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+        return templates.TemplateResponse(request, "settings.html", {
+            "config": cfg,
+            "persona": persona_data,
+            "anthropic_key_masked": mask_api_key(get_api_key("anthropic")),
+            "openai_key_masked": mask_api_key(get_api_key("openai")),
         })
 
     @app.get("/lesson/{lesson_id}", response_class=HTMLResponse)

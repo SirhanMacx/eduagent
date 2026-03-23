@@ -1,25 +1,12 @@
 {% extends "base.html" %}
 {% block title %}EDUagent — AI Co-Teacher{% endblock %}
 {% block content %}
-<div class="hero">
-    <h1>Your teaching files, your AI co-teacher.</h1>
-    <p class="hero-sub">Upload your curriculum materials. Get a digital co-teacher that generates lessons in your voice.</p>
 
-    {% if not has_persona %}
-    <div class="onboard-card">
-        <h2>Get Started</h2>
-        <p>Upload your teaching materials (PDFs, DOCX, PPTX, or TXT) and EDUagent will extract your teaching persona.</p>
-        <form id="ingest-form" enctype="multipart/form-data">
-            <div class="upload-zone" id="upload-zone">
-                <p class="upload-text">Drag &amp; drop files here, or click to browse</p>
-                <input type="file" id="file-input" name="files" multiple accept=".pdf,.docx,.pptx,.txt,.md,.zip" hidden>
-            </div>
-            <div id="file-list" class="file-list"></div>
-            <button type="submit" class="btn btn-primary" id="ingest-btn" disabled>Extract Teaching Persona</button>
-        </form>
-        <div id="ingest-status" class="status-box" hidden></div>
-    </div>
-    {% else %}
+{% if onboarding_complete and has_persona %}
+{# ── Returning user: dashboard-style home ────────────────────── #}
+<div class="hero">
+    <h1>Welcome back{% if persona %}, {{ persona.name }}{% endif %}!</h1>
+    <p class="hero-sub">Your AI co-teacher is ready to help.</p>
     <div class="action-cards">
         <a href="/dashboard" class="action-card">
             <h3>Content Library</h3>
@@ -29,83 +16,231 @@
             <h3>Generate New Content</h3>
             <p>Create unit plans, lessons, and materials in your teaching voice.</p>
         </a>
+        <a href="/settings" class="action-card">
+            <h3>Settings</h3>
+            <p>Configure your LLM provider, persona, and preferences.</p>
+        </a>
     </div>
-    {% endif %}
 </div>
-{% endblock %}
 
-{% block scripts %}
-<script>
-(function() {
-    var zone = document.getElementById('upload-zone');
-    var input = document.getElementById('file-input');
-    var form = document.getElementById('ingest-form');
-    var btn = document.getElementById('ingest-btn');
-    var fileList = document.getElementById('file-list');
-    var status = document.getElementById('ingest-status');
-    if (!zone) return;
+{% else %}
+{# ── Onboarding Wizard ──────────────────────────────────────── #}
+<div class="wizard" id="wizard">
+    {# Step indicators #}
+    <div class="wizard-steps">
+        <div class="wizard-step active" data-step="1"><span class="step-num">1</span> Welcome</div>
+        <div class="wizard-step" data-step="2"><span class="step-num">2</span> Setup</div>
+        <div class="wizard-step" data-step="3"><span class="step-num">3</span> Persona</div>
+        <div class="wizard-step" data-step="4"><span class="step-num">4</span> Generate</div>
+        <div class="wizard-step" data-step="5"><span class="step-num">5</span> Done</div>
+    </div>
 
-    zone.addEventListener('click', function() { input.click(); });
-    zone.addEventListener('dragover', function(e) { e.preventDefault(); zone.classList.add('dragover'); });
-    zone.addEventListener('dragleave', function() { zone.classList.remove('dragover'); });
-    zone.addEventListener('drop', function(e) {
-        e.preventDefault();
-        zone.classList.remove('dragover');
-        input.files = e.dataTransfer.files;
-        showFiles(e.dataTransfer.files);
-    });
-    input.addEventListener('change', function() { showFiles(input.files); });
+    {# ── Step 1: Welcome ───────────────────────────────────────── #}
+    <div class="wizard-panel active" id="step-1">
+        <div class="wizard-welcome">
+            <h1>Turn your lesson plans into an AI co-teacher.</h1>
+            <p class="hero-sub">EDUagent learns from your existing materials and generates lessons, units, and worksheets in your exact teaching voice.</p>
+            <div class="wizard-paths">
+                <button class="wizard-path-btn" id="path-upload">
+                    <span class="path-icon">&#128193;</span>
+                    <strong>I have lesson plan files to upload</strong>
+                    <span class="path-desc">Upload PDFs, DOCX, PPTX, or other files</span>
+                </button>
+                <button class="wizard-path-btn" id="path-scratch">
+                    <span class="path-icon">&#9997;</span>
+                    <strong>I'll start from scratch</strong>
+                    <span class="path-desc">Tell us about your teaching style</span>
+                </button>
+            </div>
+            <div class="wizard-demo-preview">
+                <p class="demo-label">See what EDUagent can create:</p>
+                <div class="demo-placeholder">
+                    <div class="demo-card-mini"><strong>Unit Plan:</strong> Life From Light &mdash; 15 lessons</div>
+                    <div class="demo-card-mini"><strong>Lesson 1:</strong> Intro to Photosynthesis</div>
+                    <div class="demo-card-mini"><strong>Materials:</strong> Worksheet, Assessment, Rubric</div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    function showFiles(files) {
-        fileList.innerHTML = '';
-        for (var i = 0; i < files.length; i++) {
-            var div = document.createElement('div');
-            div.className = 'file-item';
-            div.innerHTML = '<span class="file-name">' + files[i].name + '</span>';
-            fileList.appendChild(div);
-        }
-        btn.disabled = files.length === 0;
-    }
+    {# ── Step 2A: File Upload ──────────────────────────────────── #}
+    <div class="wizard-panel" id="step-2a">
+        <h2>Upload Your Teaching Materials</h2>
+        <p class="wizard-desc">Drop your lesson plans, worksheets, slides, or notes here</p>
+        <form id="wizard-upload-form" enctype="multipart/form-data">
+            <div class="upload-zone upload-zone-lg" id="wizard-upload-zone">
+                <span class="upload-icon">&#128228;</span>
+                <p class="upload-text">Drag &amp; drop files here, or click to browse</p>
+                <p class="upload-formats">PDF, DOCX, PPTX, TXT, Markdown, ZIP</p>
+                <input type="file" id="wizard-file-input" name="files" multiple accept=".pdf,.docx,.pptx,.txt,.md,.zip" hidden>
+            </div>
+            <div id="wizard-file-list" class="file-list"></div>
+            <div class="progress-bar-container" id="wizard-upload-progress" hidden>
+                <div class="progress-bar" id="wizard-progress-bar" style="width:0%"></div>
+            </div>
+            <div id="wizard-upload-status" class="status-box" hidden></div>
+            <div class="wizard-actions">
+                <button type="button" class="btn" id="wizard-back-2a">Back</button>
+                <button type="submit" class="btn btn-primary btn-lg" id="wizard-analyze-btn" disabled>Analyze My Materials</button>
+            </div>
+        </form>
+    </div>
 
-    form.addEventListener('submit', async function(e) {
-        e.preventDefault();
-        btn.disabled = true;
-        btn.textContent = 'Analyzing...';
-        status.hidden = false;
-        status.className = 'status-box loading';
-        status.textContent = 'Extracting your teaching persona...';
+    {# ── Step 2B: Quick Persona Form ──────────────────────────── #}
+    <div class="wizard-panel" id="step-2b">
+        <h2>Tell Us About Your Teaching Style</h2>
+        <p class="wizard-desc">We'll create a teaching persona to match your voice.</p>
+        <form id="wizard-persona-form">
+            <div class="form-group">
+                <label for="pf-name">Your Name</label>
+                <input type="text" id="pf-name" name="name" required placeholder="Ms. Johnson">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="pf-subject">Subject Area</label>
+                    <input type="text" id="pf-subject" name="subject_area" placeholder="Science, Math, ELA...">
+                </div>
+                <div class="form-group">
+                    <label for="pf-grades">Grade Level(s)</label>
+                    <input type="text" id="pf-grades" name="grade_levels" placeholder="8, 9-10, K-2...">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="pf-style">Teaching Style</label>
+                <select id="pf-style" name="teaching_style">
+                    <option value="direct_instruction">Direct Instruction</option>
+                    <option value="socratic">Socratic</option>
+                    <option value="inquiry_based">Inquiry-Based</option>
+                    <option value="project_based">Project-Based</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="pf-format">What's your favorite lesson structure?</label>
+                <textarea id="pf-format" name="preferred_lesson_format" rows="3" placeholder="I Do / We Do / You Do, or describe your typical lesson flow..."></textarea>
+            </div>
+            <div id="wizard-persona-status" class="status-box" hidden></div>
+            <div class="wizard-actions">
+                <button type="button" class="btn" id="wizard-back-2b">Back</button>
+                <button type="submit" class="btn btn-primary btn-lg">Create My Persona</button>
+            </div>
+        </form>
+    </div>
 
-        var fd = new FormData();
-        for (var i = 0; i < input.files.length; i++) fd.append('files', input.files[i]);
+    {# ── Step 3: Meet Your AI Persona ─────────────────────────── #}
+    <div class="wizard-panel" id="step-3">
+        <h2>Here's What EDUagent Learned About You</h2>
+        <div class="persona-card" id="persona-card">
+            <div class="persona-card-header">
+                <span class="persona-avatar">&#127891;</span>
+                <h3 id="persona-name-display">Your Teaching Persona</h3>
+            </div>
+            <div class="persona-tags" id="persona-tags"></div>
+            <div class="persona-details" id="persona-details"></div>
+            <div id="persona-voice-sample" class="persona-voice-sample" hidden></div>
+        </div>
+        <div class="persona-confirm">
+            <p>Does this sound like you?</p>
+            <div class="btn-group">
+                <button class="btn btn-primary" id="persona-thumbsup">&#128077; Yes, that's me!</button>
+                <button class="btn" id="persona-thumbsdown">&#128078; Let me adjust</button>
+            </div>
+        </div>
+        <div id="persona-edit-panel" hidden>
+            <form id="persona-edit-form">
+                <div class="form-group">
+                    <label for="pe-name">Name</label>
+                    <input type="text" id="pe-name" name="name">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="pe-subject">Subject</label>
+                        <input type="text" id="pe-subject" name="subject_area">
+                    </div>
+                    <div class="form-group">
+                        <label for="pe-grades">Grades</label>
+                        <input type="text" id="pe-grades" name="grade_levels">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="pe-style">Teaching Style</label>
+                    <select id="pe-style" name="teaching_style">
+                        <option value="direct_instruction">Direct Instruction</option>
+                        <option value="socratic">Socratic</option>
+                        <option value="inquiry_based">Inquiry-Based</option>
+                        <option value="project_based">Project-Based</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </form>
+        </div>
+        <div class="wizard-actions" id="step3-actions">
+            <button class="btn btn-primary btn-lg" id="wizard-to-generate" hidden>Let's generate your first lesson &rarr;</button>
+        </div>
+    </div>
 
-        try {
-            var resp = await fetch('/api/ingest', { method: 'POST', body: fd });
-            var data = await resp.json();
-            if (resp.ok) {
-                status.className = 'status-box success';
-                status.innerHTML = '<strong>Persona extracted!</strong> ' +
-                    esc(data.persona.name) + ' &mdash; ' + esc(data.persona.teaching_style || '') +
-                    '<br><a href="/generate" class="btn btn-primary" style="margin-top:0.5rem">Start Generating</a>';
-            } else {
-                status.className = 'status-box error';
-                status.textContent = data.error || 'Upload failed';
-                btn.disabled = false;
-                btn.textContent = 'Extract Teaching Persona';
-            }
-        } catch (err) {
-            status.className = 'status-box error';
-            status.textContent = 'Upload failed: ' + err.message;
-            btn.disabled = false;
-            btn.textContent = 'Extract Teaching Persona';
-        }
-    });
+    {# ── Step 4: Generate First Lesson ────────────────────────── #}
+    <div class="wizard-panel" id="step-4">
+        <h2>Generate Your First Lesson</h2>
+        <form id="wizard-gen-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="wg-topic">Topic</label>
+                    <input type="text" id="wg-topic" name="topic" required placeholder="Photosynthesis, Fractions...">
+                </div>
+                <div class="form-group">
+                    <label for="wg-subject">Subject</label>
+                    <input type="text" id="wg-subject" name="subject" placeholder="Science">
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="wg-grade">Grade</label>
+                    <input type="text" id="wg-grade" name="grade_level" placeholder="8">
+                </div>
+                <div class="form-group">
+                    <label for="wg-duration">Duration</label>
+                    <select id="wg-duration" name="duration_weeks">
+                        <option value="1">1 lesson</option>
+                        <option value="1" selected>1 week</option>
+                        <option value="2">2 weeks</option>
+                    </select>
+                </div>
+            </div>
+            <div id="wizard-gen-status" class="status-box" hidden></div>
+            <button type="submit" class="btn btn-primary btn-lg" id="wizard-gen-btn">Generate!</button>
+        </form>
+        <div id="wizard-gen-progress" class="gen-progress-panel" hidden>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="wizard-gen-bar" style="width:0%"></div>
+            </div>
+            <div class="progress-status" id="wizard-gen-progress-text"></div>
+            <div class="progress-log" id="wizard-gen-log"></div>
+        </div>
+    </div>
 
-    function esc(s) {
-        if (!s) return '';
-        var d = document.createElement('div');
-        d.textContent = s;
-        return d.innerHTML;
-    }
-})();
-</script>
+    {# ── Step 5: Success ──────────────────────────────────────── #}
+    <div class="wizard-panel" id="step-5">
+        <div class="wizard-success">
+            <div class="success-emoji">&#127881;</div>
+            <h2>Your first lesson is ready!</h2>
+            <div class="action-cards">
+                <a href="#" class="action-card" id="success-export">
+                    <h3>Export to PDF</h3>
+                    <p>Download a print-ready lesson plan.</p>
+                </a>
+                <a href="#" class="action-card" id="success-share">
+                    <h3>Share with Students</h3>
+                    <p>Copy an embeddable chatbot link.</p>
+                </a>
+                <a href="/dashboard" class="action-card">
+                    <h3>Go to Dashboard</h3>
+                    <p>View all your generated content.</p>
+                </a>
+            </div>
+            <p class="wizard-next-hint">Want to generate a full unit? <a href="/generate">Go to Generate</a></p>
+        </div>
+    </div>
+</div>
+{% endif %}
+
 {% endblock %}
