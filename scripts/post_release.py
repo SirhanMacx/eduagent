@@ -65,7 +65,10 @@ def format_release_tweet(commit_msg: str, date: str) -> str:
 
     body = "\n".join(lines[:4])  # Max 4 bullet points
 
-    tweet = f"EDUagent {date} 🎓\n\n{body}\n\nFirst AI co-teacher trained on YOUR curriculum.\n\ngithub.com/SirhanMacx/eduagent"
+    tweet = (
+        f"EDUagent {date} 🎓\n\n{body}\n\n"
+        f"First AI co-teacher trained on YOUR curriculum.\n\ngithub.com/SirhanMacx/eduagent"
+    )
 
     # Ensure under 280 chars
     if len(tweet) > 276:

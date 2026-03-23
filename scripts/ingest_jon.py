@@ -44,7 +44,11 @@ def copy_files(remote_dir: str, local_dir: Path, max_files: int = 30) -> list[Pa
     local_dir.mkdir(parents=True, exist_ok=True)
 
     # Get file list via SSH
-    file_list_cmd = f'find "{remote_dir}" -maxdepth 3 -type f \\( -name "*.pdf" -o -name "*.docx" -o -name "*.pptx" -o -name "*.txt" \\) 2>/dev/null | head -n {max_files}'
+    file_list_cmd = (
+        f'find "{remote_dir}" -maxdepth 3 -type f'
+        f' \\( -name "*.pdf" -o -name "*.docx" -o -name "*.pptx" -o -name "*.txt" \\)'
+        f' 2>/dev/null | head -n {max_files}'
+    )
     output = run_ssh(file_list_cmd)
 
     if not output:

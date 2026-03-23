@@ -87,7 +87,7 @@ class TestGetTavilyKey:
     def test_returns_none_when_missing(self, monkeypatch, tmp_path):
         monkeypatch.delenv("TAVILY_API_KEY", raising=False)
         # Point config to a nonexistent file
-        fake_config = tmp_path / ".eduagent" / "config.json"
+        _ = tmp_path / ".eduagent" / "config.json"
         with patch("eduagent.search.Path.home", return_value=tmp_path):
             result = _get_tavily_key()
         assert result is None

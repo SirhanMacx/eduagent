@@ -624,7 +624,7 @@ class TestSettingsRoutes:
         assert db.get_stats()["units"] == 0
 
     def test_reset_all(self, client, db):
-        tid = db.upsert_teacher("T", '{}')
+        db.upsert_teacher("T", '{}')
         resp = client.post("/api/settings/reset")
         assert resp.status_code == 200
         assert resp.json()["status"] == "reset"

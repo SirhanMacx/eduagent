@@ -266,9 +266,9 @@ def parent_note(
         generate_progress_update,
         save_progress_update,
     )
-    from eduagent.state import TeacherSession as _TS
+    from eduagent.state import TeacherSession as _TeacherSession
 
-    session = _TS.load(teacher_id)
+    session = _TeacherSession.load(teacher_id)
     persona = session.persona
 
     strength_list = [s.strip() for s in strengths.split(",")] if strengths else []

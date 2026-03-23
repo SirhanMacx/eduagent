@@ -6,9 +6,11 @@ EDUagent is an open-source AI assistant for teachers. It learns from your existi
 
 No cloud service. No vendor lock-in. Your materials stay on your machine.
 
+[![CI](https://github.com/SirhanMacx/eduagent/actions/workflows/ci.yml/badge.svg)](https://github.com/SirhanMacx/eduagent/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/eduagent)](https://pypi.org/project/eduagent/)
 [![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue)](https://python.org)
 [![MIT License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/Tests-225%20passing-brightgreen)](tests/)
+[![GitHub stars](https://img.shields.io/github/stars/SirhanMacx/eduagent)](https://github.com/SirhanMacx/eduagent/stargazers)
 
 ---
 

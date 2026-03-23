@@ -413,7 +413,9 @@ class Database:
 
     # ── schools ────────────────────────────────────────────────────────
 
-    def create_school(self, name: str, district: str = "", state: str = "", grade_levels: list[str] | None = None) -> str:
+    def create_school(  # noqa: E501
+        self, name: str, district: str = "", state: str = "", grade_levels: list[str] | None = None,
+    ) -> str:
         sid = self._new_id()
         import json as _json
         self.conn.execute(
@@ -429,7 +431,9 @@ class Database:
     def list_schools(self) -> list[dict[str, Any]]:
         return self._fetchall("SELECT * FROM schools ORDER BY created_at DESC")
 
-    def add_teacher_to_school(self, school_id: str, teacher_id: str, role: str = "teacher", department: str = "") -> None:
+    def add_teacher_to_school(
+        self, school_id: str, teacher_id: str, role: str = "teacher", department: str = "",
+    ) -> None:
         self.conn.execute(
             """INSERT INTO school_teachers (school_id, teacher_id, role, department) VALUES (?,?,?,?)
                ON CONFLICT(school_id, teacher_id) DO UPDATE SET role=excluded.role, department=excluded.department""",
@@ -466,7 +470,8 @@ class Database:
     ) -> str:
         sid = self._new_id()
         self.conn.execute(
-            """INSERT INTO shared_content (id, school_id, teacher_id, content_type, content_id, title, subject, grade_level, department)
+            """INSERT INTO shared_content
+               (id, school_id, teacher_id, content_type, content_id, title, subject, grade_level, department)
                VALUES (?,?,?,?,?,?,?,?,?)""",
             (sid, school_id, teacher_id, content_type, content_id, title, subject, grade_level, department),
         )
