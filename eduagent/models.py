@@ -426,6 +426,88 @@ class Quiz(BaseModel):
     time_minutes: int = 15
 
 
+# ── Year-level curriculum planning models ─────────────────────────────────
+
+
+class YearMapUnit(BaseModel):
+    """A single unit within the full-year curriculum map."""
+
+    unit_number: int
+    title: str
+    duration_weeks: int
+    essential_questions: list[str] = Field(default_factory=list)
+    standards: list[str] = Field(default_factory=list)
+    description: str = ""
+
+
+class BigIdea(BaseModel):
+    """A big idea that connects across multiple units in the year."""
+
+    idea: str
+    connected_units: list[int] = Field(default_factory=list)
+
+
+class AssessmentCalendarEntry(BaseModel):
+    """A planned assessment on the year calendar."""
+
+    unit_number: int
+    assessment_type: str = "summative"  # formative, summative, benchmark, diagnostic
+    title: str
+    week: int
+
+
+class YearMap(BaseModel):
+    """A full-year curriculum map — the top-level planning document."""
+
+    subject: str
+    grade_level: str
+    school_year: str = ""
+    total_weeks: int = 36
+    units: list[YearMapUnit] = Field(default_factory=list)
+    big_ideas: list[BigIdea] = Field(default_factory=list)
+    assessment_calendar: list[AssessmentCalendarEntry] = Field(default_factory=list)
+
+
+class SchoolCalendarEvent(BaseModel):
+    """A school calendar event (holiday, break, PD day)."""
+
+    date: str  # ISO date
+    end_date: str = ""  # For multi-day events like breaks
+    event: str
+    type: str = "holiday"  # holiday, break, pd_day, half_day, testing
+
+
+class PacingWeek(BaseModel):
+    """A single week in the pacing guide."""
+
+    week_number: int
+    start_date: str  # ISO date
+    end_date: str  # ISO date
+    unit_title: str
+    unit_number: int
+    topics: list[str] = Field(default_factory=list)
+    notes: str = ""  # holidays, testing windows, etc.
+
+
+class PacingGuide(BaseModel):
+    """A week-by-week pacing guide with actual calendar dates."""
+
+    subject: str
+    grade_level: str
+    school_year: str = ""
+    start_date: str  # ISO date of first instructional day
+    weeks: list[PacingWeek] = Field(default_factory=list)
+
+
+class CurriculumGap(BaseModel):
+    """An identified gap in curriculum coverage vs. standards."""
+
+    standard: str
+    description: str
+    severity: str = "medium"  # low, medium, high
+    suggestion: str = ""
+
+
 class LLMProvider(str, Enum):
     """Supported LLM providers."""
 

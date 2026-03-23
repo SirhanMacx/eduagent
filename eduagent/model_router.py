@@ -21,6 +21,7 @@ TASK_MODELS: dict[str, str] = {
     "bellringer": "qwen3.5:cloud",
     "differentiation": "minimax-m2.7:cloud",
     "iep_modification": "minimax-m2.7:cloud",
+    "assessment": "minimax-m2.7:cloud",
 }
 
 

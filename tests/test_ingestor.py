@@ -19,8 +19,7 @@ from eduagent.ingestor import (
     ingest_path,
     scan_directory,
 )
-from eduagent.models import DocType, Document
-
+from eduagent.models import DocType
 
 # ── Extension map ────────────────────────────────────────────────────
 
