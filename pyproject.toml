@@ -50,8 +50,10 @@ telegram = ["python-telegram-bot>=20.8"]
 google = ["google-api-python-client>=2.0.0", "google-auth-oauthlib>=1.0.0"]
 # Voice transcription
 voice = ["faster-whisper>=0.10.0"]
+# TUI dashboard
+tui = ["textual>=0.56.0"]
 # All optional features
-all = ["python-telegram-bot>=20.0", "faster-whisper>=0.10.0"]
+all = ["python-telegram-bot>=20.0", "faster-whisper>=0.10.0", "textual>=0.56.0"]
 pdf = ["weasyprint>=60.0"]
 keyring = ["keyring>=24.0.0"]
 dev = ["pytest>=7.0.0", "pytest-asyncio>=0.21.0", "ruff>=0.1.0"]
@@ -84,6 +86,8 @@ select = ["E", "F", "I", "N", "W"]
 "eduagent/voice.py" = ["E501"]
 "eduagent/assessment.py" = ["E501"]
 "eduagent/curriculum_map.py" = ["E501"]
+"eduagent/tui.py" = ["E501"]
+"eduagent/gateway.py" = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

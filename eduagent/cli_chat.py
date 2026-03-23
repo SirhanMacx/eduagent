@@ -11,7 +11,7 @@ from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.spinner import Spinner
 
-from eduagent.openclaw_plugin import handle_message
+from eduagent.openclaw_plugin import get_last_lesson_id, handle_message
 from eduagent.state import TeacherSession
 
 console = Console()
@@ -95,6 +95,29 @@ async def run_chat(teacher_id: str = "local-teacher") -> None:
             )
         )
         console.print()
+
+        # Check if a lesson was just generated — offer rating
+        lesson_id = get_last_lesson_id(teacher_id)
+        if lesson_id:
+            try:
+                rating_input = Prompt.ask(
+                    "[dim]Rate this lesson (1-5, Enter to skip)[/dim]",
+                    default="",
+                )
+                if rating_input.strip() and rating_input.strip().isdigit():
+                    rating = int(rating_input.strip())
+                    if 1 <= rating <= 5:
+                        from eduagent.analytics import rate_lesson
+
+                        rate_lesson(teacher_id, lesson_id, rating)
+                        stars = "★" * rating + "☆" * (5 - rating)
+                        console.print(f"[green]Thanks! Rated {stars} ({rating}/5)[/green]\n")
+                    else:
+                        console.print("[dim]Rating must be 1-5. Skipped.[/dim]\n")
+                else:
+                    console.print("[dim]Skipped.[/dim]\n")
+            except (KeyboardInterrupt, EOFError):
+                console.print("[dim]Skipped.[/dim]\n")
 
 
 def main(teacher_id: str = "local-teacher") -> None:

@@ -106,6 +106,20 @@ async def feedback_analysis(days: int = 7):
     return {"analysis": analysis}
 
 
+@router.get("/stats")
+async def teacher_stats(teacher_id: str = "local-teacher"):
+    """Get comprehensive teacher analytics."""
+    from eduagent.analytics import get_teacher_stats
+    return get_teacher_stats(teacher_id)
+
+
+@router.get("/stats/{teacher_id}")
+async def teacher_stats_by_id(teacher_id: str):
+    """Get analytics for a specific teacher."""
+    from eduagent.analytics import get_teacher_stats
+    return get_teacher_stats(teacher_id)
+
+
 @router.post("/improve")
 async def trigger_improvement(req: ImproveRequest | None = None):
     """Trigger a prompt improvement cycle."""

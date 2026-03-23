@@ -15,6 +15,8 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
+RATING_CALLBACK_PREFIX = "rate:"
+
 
 class EduAgentBot:
     """Standalone Telegram bot for EDUagent.
@@ -31,8 +33,10 @@ class EduAgentBot:
     async def start(self) -> None:
         """Start the bot and begin polling for messages."""
         try:
+            from telegram import InlineKeyboardButton, InlineKeyboardMarkup
             from telegram.ext import (
                 Application,
+                CallbackQueryHandler,
                 CommandHandler,
                 MessageHandler,
                 filters,
@@ -47,6 +51,15 @@ class EduAgentBot:
         from eduagent.state import TeacherSession
 
         app = Application.builder().token(self.token).build()
+
+        def _rating_keyboard(lesson_id: str) -> InlineKeyboardMarkup:
+            """Build an inline keyboard with 1-5 star buttons + skip."""
+            buttons = [
+                InlineKeyboardButton(f"{'★' * i}", callback_data=f"{RATING_CALLBACK_PREFIX}{lesson_id}:{i}")
+                for i in range(1, 6)
+            ]
+            skip_btn = InlineKeyboardButton("Skip", callback_data=f"{RATING_CALLBACK_PREFIX}{lesson_id}:0")
+            return InlineKeyboardMarkup([buttons, [skip_btn]])
 
         async def handle_message(update, context):
             """Route every message through the EDUagent intent router."""
@@ -76,6 +89,56 @@ class EduAgentBot:
                 # Send in chunks
                 for chunk in [response[i:i+4000] for i in range(0, len(response), 4000)]:
                     await update.message.reply_text(chunk, parse_mode="Markdown")
+
+            # Check if a lesson was just generated — offer rating
+            try:
+                from eduagent.openclaw_plugin import get_last_lesson_id
+                lesson_id = get_last_lesson_id(teacher_id)
+                if lesson_id:
+                    await update.message.reply_text(
+                        "How was this lesson? Rate it to help me improve:",
+                        reply_markup=_rating_keyboard(lesson_id),
+                    )
+            except Exception:
+                pass  # Rating prompt is best-effort
+
+        async def handle_rating_callback(update, context):
+            """Handle inline keyboard rating button presses."""
+            query = update.callback_query
+            if not query or not query.data or not query.data.startswith(RATING_CALLBACK_PREFIX):
+                return
+
+            await query.answer()
+
+            data = query.data[len(RATING_CALLBACK_PREFIX):]
+            parts = data.split(":")
+            if len(parts) != 2:
+                return
+
+            lesson_id, rating_str = parts
+            try:
+                rating = int(rating_str)
+            except ValueError:
+                return
+
+            teacher_id = str(query.from_user.id)
+
+            if rating == 0:
+                # Skip
+                await query.edit_message_text("Skipped rating. You can always rate later!")
+                return
+
+            try:
+                from eduagent.analytics import rate_lesson
+                success = rate_lesson(teacher_id, lesson_id, rating)
+                if success:
+                    stars = "★" * rating + "☆" * (5 - rating)
+                    await query.edit_message_text(f"Thanks! Rated {stars} ({rating}/5)")
+                else:
+                    await query.edit_message_text("Couldn't find that lesson to rate.")
+            except Exception as e:
+                logger.error(f"Error saving rating: {e}")
+                await query.edit_message_text("Had trouble saving the rating. Try again later.")
 
         async def cmd_start(update, context):
             await update.message.reply_text(
@@ -119,6 +182,7 @@ class EduAgentBot:
         app.add_handler(CommandHandler("start", cmd_start))
         app.add_handler(CommandHandler("help", cmd_help))
         app.add_handler(CommandHandler("status", cmd_status))
+        app.add_handler(CallbackQueryHandler(handle_rating_callback, pattern=f"^{RATING_CALLBACK_PREFIX}"))
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
         logger.info("EDUagent bot starting...")

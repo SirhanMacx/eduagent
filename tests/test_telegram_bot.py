@@ -78,10 +78,11 @@ class TestHandlerRegistration:
         }):
             asyncio.run(bot.start())
 
-            # Should register 4 handlers: start, help, status, message
-            assert mock_app_instance.add_handler.call_count == 4
+            # Should register 5 handlers:
+            #   start, help, status, rating callback, message
+            assert mock_app_instance.add_handler.call_count == 5
 
-            # 3 CommandHandler calls + 1 MessageHandler call
+            # 3 CommandHandler + 1 CallbackQueryHandler + 1 MessageHandler
             assert mock_telegram_ext.CommandHandler.call_count == 3
             assert mock_telegram_ext.MessageHandler.call_count == 1
 

@@ -181,6 +181,20 @@ def create_app() -> FastAPI:
             "state_frameworks": state_frameworks,
         })
 
+    @app.get("/stats", response_class=HTMLResponse)
+    async def stats_page(request: Request):
+        db = get_db()
+        teacher = db.get_default_teacher()
+        teacher_id = teacher["id"] if teacher else "local-teacher"
+
+        from eduagent.analytics import get_teacher_stats
+        stats_data = get_teacher_stats(teacher_id)
+
+        return templates.TemplateResponse(request, "stats.html", {
+            "stats": stats_data,
+            "teacher_id": teacher_id,
+        })
+
     @app.get("/lesson/{lesson_id}", response_class=HTMLResponse)
     async def lesson_page(request: Request, lesson_id: str):
         db = get_db()

@@ -844,6 +844,48 @@ body {
     font-size: 0.9rem;
 }
 
+/* Rating distribution */
+.rating-distribution {
+    max-width: 500px;
+}
+.dist-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+}
+.dist-label {
+    width: 80px;
+    text-align: right;
+    color: #f59e0b;
+    font-size: 0.9rem;
+}
+.dist-bar-bg {
+    flex: 1;
+    height: 20px;
+    background: var(--gray-100);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.dist-bar-fill {
+    height: 100%;
+    background: var(--blue);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+.dist-count {
+    width: 30px;
+    text-align: right;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--gray-700);
+}
+
+/* Stats page 5-column override */
+.stats-row.five-col {
+    grid-template-columns: repeat(5, 1fr);
+}
+
 /* ── Mobile Responsive ──────────────────────────────────────── */
 @media (max-width: 768px) {
     .nav-hamburger { display: flex; }

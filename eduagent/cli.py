@@ -1696,25 +1696,108 @@ def _first_run_setup() -> None:
 def serve(
     port: int = typer.Option(8000, "--port", "-p", help="Port to listen on"),
     host: str = typer.Option("127.0.0.1", "--host", "-h", help="Host to bind to"),
-    reload: bool = typer.Option(False, "--reload", help="Enable auto-reload for development"),
+    bot: bool = typer.Option(False, "--bot", help="Also start Telegram bot"),
+    token: Optional[str] = typer.Option(None, "--token", help="Telegram bot token (or uses saved token)"),
+    tui: bool = typer.Option(True, "--tui/--no-tui", help="Show live TUI dashboard"),
+    tui_only: bool = typer.Option(False, "--tui-only", help="TUI without web server (dev mode)"),
     skip_setup: bool = typer.Option(False, "--skip-setup", help="Skip first-run setup wizard"),
 ):
-    """Start the EDUagent web server."""
-    import uvicorn
-
+    """Start EDUagent gateway — web server + optional Telegram bot + TUI dashboard."""
     if not skip_setup:
         _first_run_setup()
 
-    console.print(Panel(
-        f"[bold]Starting EDUagent web server[/bold]\n"
-        f"[cyan]http://{host}:{port}[/cyan]\n"
-        f"Dashboard: [cyan]http://{host}:{port}/dashboard[/cyan]\n"
-        f"Generate: [cyan]http://{host}:{port}/generate[/cyan]\n"
-        f"Settings: [cyan]http://{host}:{port}/settings[/cyan]",
-        title="EDUagent Server",
-        border_style="green",
-    ))
-    uvicorn.run("eduagent.api.server:app", host=host, port=port, reload=reload)
+    cfg = AppConfig.load()
+
+    # Resolve Telegram token
+    tg_token = token or cfg.telegram_bot_token or ""
+
+    # Determine what to run
+    with_web = not tui_only
+    with_telegram = bot and bool(tg_token)
+    with_tui = tui and not tui_only  # --tui-only uses TUI separately below
+
+    if bot and not tg_token:
+        console.print("[red]Telegram bot requested but no token provided.[/red]")
+        console.print("Use --token TOKEN or save one with: eduagent config set-telegram-token TOKEN")
+        raise typer.Exit(1)
+
+    # Build status display
+    services = []
+    if with_web:
+        services.append(f"Web: [cyan]http://{host}:{port}[/cyan]")
+    if with_telegram:
+        services.append("Telegram: [green]enabled[/green]")
+    if with_tui or tui_only:
+        services.append("TUI: [green]enabled[/green]")
+
+    if not (with_tui or tui_only):
+        # Headless mode — show banner
+        console.print(Panel(
+            "[bold]Starting EDUagent gateway[/bold]\n" + "\n".join(services),
+            title="EDUagent",
+            border_style="green",
+        ))
+
+    from eduagent.gateway import EduAgentGateway
+
+    async def _serve():
+        # Gateway handles Telegram if token is provided
+        gw_token = tg_token if with_telegram else None
+        gateway = EduAgentGateway(token=gw_token, config=cfg)
+
+        tasks = []
+
+        # Start gateway (Telegram polling or demo mode)
+        tasks.append(asyncio.create_task(gateway.start()))
+
+        # Start web server
+        if with_web:
+            import uvicorn
+
+            from eduagent.api.server import create_app
+            web_app = create_app()
+            uv_config = uvicorn.Config(web_app, host=host, port=port, log_level="warning")
+            server = uvicorn.Server(uv_config)
+            tasks.append(asyncio.create_task(server.serve()))
+
+        # Start TUI
+        if with_tui or tui_only:
+            from eduagent.tui import EduAgentDashboard
+            dashboard = EduAgentDashboard(gateway=gateway)
+            tasks.append(asyncio.create_task(dashboard.run_async()))
+
+        if tasks:
+            done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+            for t in pending:
+                t.cancel()
+            await asyncio.gather(*pending, return_exceptions=True)
+
+    _run_async(_serve())
+
+
+@app.command()
+def status():
+    """Quick one-line status check (no TUI, for scripts)."""
+    cfg = AppConfig.load()
+    profile = cfg.teacher_profile
+    name = profile.name or "Teacher"
+    provider = cfg.provider.value
+    if provider == "ollama":
+        model = cfg.ollama_model
+    elif provider == "anthropic":
+        model = cfg.anthropic_model
+    else:
+        model = cfg.openai_model
+
+    has_token = bool(cfg.telegram_bot_token)
+    tg_status = "[green]configured[/green]" if has_token else "[dim]not set[/dim]"
+
+    console.print(
+        f"[bold]{name}[/bold] | "
+        f"Model: {model} ({provider}) | "
+        f"Telegram: {tg_status} | "
+        f"Output: {cfg.output_dir}"
+    )
 
 
 # ── Improve command ───────────────────────────────────────────────────
@@ -2155,6 +2238,98 @@ def school_library(
     console.print(table)
     if not items:
         console.print("[dim]No shared content yet. Use 'eduagent school share' to contribute![/dim]")
+
+
+@app.command()
+def stats(
+    teacher_id: str = typer.Option("local-teacher", "--teacher", "-t", help="Teacher ID"),
+):
+    """Show a beautiful stats dashboard with rating trends and analytics.
+
+    Displays lesson ratings, top topics, streaks, and areas for improvement.
+    """
+    from eduagent.analytics import get_teacher_stats
+
+    data = get_teacher_stats(teacher_id)
+
+    # Header
+    console.print()
+    console.print(Panel(
+        "[bold]EDUagent Teaching Analytics[/bold]",
+        border_style="blue",
+    ))
+
+    # Overview stats
+    overview = Table(show_header=False, box=None, padding=(0, 2))
+    overview.add_column("label", style="dim")
+    overview.add_column("value", style="bold")
+    overview.add_row("Total lessons", str(data["total_lessons"]))
+    overview.add_row("Rated lessons", str(data["rated_lessons"]))
+    overview.add_row("Total units", str(data["total_units"]))
+    avg = data["overall_avg_rating"]
+    stars = "★" * round(avg) + "☆" * (5 - round(avg)) if avg else "No ratings yet"
+    overview.add_row("Average rating", f"{stars} ({avg}/5)" if avg else stars)
+    overview.add_row("Usage streak", f"{data['streak']} day{'s' if data['streak'] != 1 else ''}")
+    console.print(Panel(overview, title="[blue]Overview[/blue]", border_style="blue"))
+
+    # Rating distribution
+    dist = data["rating_distribution"]
+    if any(dist.values()):
+        dist_table = Table(show_header=True, title="Rating Distribution")
+        dist_table.add_column("Stars", style="yellow")
+        dist_table.add_column("Count", justify="right")
+        dist_table.add_column("Bar")
+        max_count = max(dist.values()) or 1
+        for star in range(5, 0, -1):
+            count = dist.get(star, 0)
+            bar_len = int((count / max_count) * 20) if max_count else 0
+            bar = "█" * bar_len
+            dist_table.add_row(f"{'★' * star}", str(count), f"[green]{bar}[/green]")
+        console.print(dist_table)
+
+    # Ratings by subject
+    by_subject = data["by_subject"]
+    if by_subject:
+        subj_table = Table(show_header=True, title="Ratings by Subject")
+        subj_table.add_column("Subject")
+        subj_table.add_column("Avg Rating", justify="right")
+        for subj, avg_r in sorted(by_subject.items(), key=lambda x: x[1], reverse=True):
+            color = "green" if avg_r >= 4 else "yellow" if avg_r >= 3 else "red"
+            subj_table.add_row(subj, f"[{color}]{avg_r}/5[/{color}]")
+        console.print(subj_table)
+
+    # Top topics
+    top = data["top_topics"]
+    if top:
+        top_table = Table(show_header=True, title="Most Effective Topics")
+        top_table.add_column("Topic")
+        top_table.add_column("Avg Rating", justify="right")
+        top_table.add_column("Lessons", justify="right")
+        for t in top:
+            color = "green" if t["avg_rating"] >= 4 else "yellow" if t["avg_rating"] >= 3 else "red"
+            top_table.add_row(t["topic"], f"[{color}]{t['avg_rating']}/5[/{color}]", str(t["count"]))
+        console.print(top_table)
+
+    # Needs improvement
+    needs = data["needs_improvement"]
+    if needs:
+        needs_table = Table(show_header=True, title="[red]Needs Improvement[/red]")
+        needs_table.add_column("Lesson")
+        needs_table.add_column("Rating", justify="right")
+        needs_table.add_column("Date")
+        for n in needs[:10]:
+            needs_table.add_row(
+                n["title"] or "Untitled",
+                f"[red]{n['rating']}/5[/red]",
+                (n.get("created_at") or "")[:10],
+            )
+        console.print(needs_table)
+
+    if not data["rated_lessons"]:
+        console.print(
+            "\n[dim]No ratings yet. Generate a lesson with 'eduagent chat' and rate it to see analytics here.[/dim]"
+        )
+    console.print()
 
 
 @app.command()

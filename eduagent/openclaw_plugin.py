@@ -22,6 +22,21 @@ from eduagent.router import Intent, ParsedIntent, needs_clarification, parse_int
 from eduagent.state import TeacherSession
 from eduagent.student_bot import StudentBot
 
+# ── Rating helpers ────────────────────────────────────────────────────────────
+
+
+def get_last_lesson_id(teacher_id: str) -> Optional[str]:
+    """Return the ID of the most recently generated lesson, then clear it.
+
+    Used by Telegram bot and CLI chat to offer a rating prompt.
+    """
+    session = TeacherSession.load(teacher_id)
+    lesson_id = session.config.pop("last_lesson_id", None)
+    if lesson_id:
+        session.save()
+    return lesson_id
+
+
 # ── Response helpers ──────────────────────────────────────────────────────────
 
 def _fmt_unit_summary(unit) -> str:
@@ -387,7 +402,8 @@ async def _handle_generate_lesson(parsed: ParsedIntent, session: TeacherSession)
             persona=persona,
             config=config,
         )
-        session.save_lesson(lesson)
+        lesson_id = session.save_lesson(lesson)
+        session.config["last_lesson_id"] = lesson_id
         return _fmt_lesson_summary(lesson)
     except Exception as e:
         return f"Had trouble generating the lesson: {str(e)[:200]}"

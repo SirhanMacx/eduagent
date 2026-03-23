@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}My Stats — EDUagent{% endblock %}
+{% block content %}
+<h1>My Stats</h1>
+
+<div class="stats-row">
+    <div class="stat-card">
+        <span class="stat-num">{{ stats.total_lessons }}</span>
+        <span class="stat-label">Total Lessons</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-num">{{ stats.rated_lessons }}</span>
+        <span class="stat-label">Rated Lessons</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-num">{{ stats.total_units }}</span>
+        <span class="stat-label">Units</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-num">{{ "%.1f"|format(stats.overall_avg_rating) }}/5</span>
+        <span class="stat-label">Avg Rating</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-num">{{ stats.streak }}</span>
+        <span class="stat-label">Day Streak</span>
+    </div>
+</div>
+
+{% if stats.rated_lessons > 0 %}
+<!-- Rating Distribution -->
+<div class="settings-section">
+    <h2>Rating Distribution</h2>
+    <div class="rating-distribution">
+        {% for star in [5, 4, 3, 2, 1] %}
+        {% set count = stats.rating_distribution.get(star, 0) %}
+        {% set max_count = stats.rating_distribution.values()|max if stats.rating_distribution.values()|list else 1 %}
+        {% set pct = (count / max_count * 100) if max_count else 0 %}
+        <div class="dist-row">
+            <span class="dist-label">{{ "★" * star }}</span>
+            <div class="dist-bar-bg">
+                <div class="dist-bar-fill" style="width: {{ pct }}%"></div>
+            </div>
+            <span class="dist-count">{{ count }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+{% if stats.by_subject %}
+<!-- Ratings by Subject -->
+<div class="settings-section">
+    <h2>Ratings by Subject</h2>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Subject</th>
+                <th>Avg Rating</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for subject, avg in stats.by_subject.items() %}
+            <tr>
+                <td>{{ subject }}</td>
+                <td>
+                    <span class="score-badge {% if avg >= 4 %}score-green{% elif avg >= 3 %}score-yellow{% else %}score-red{% endif %}">
+                        {{ avg }}/5
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% if stats.top_topics %}
+<!-- Top Topics -->
+<div class="settings-section">
+    <h2>Most Effective Topics</h2>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Topic</th>
+                <th>Avg Rating</th>
+                <th>Lessons</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for topic in stats.top_topics %}
+            <tr>
+                <td>{{ topic.topic }}</td>
+                <td>
+                    <span class="score-badge {% if topic.avg_rating >= 4 %}score-green{% elif topic.avg_rating >= 3 %}score-yellow{% else %}score-red{% endif %}">
+                        {{ topic.avg_rating }}/5
+                    </span>
+                </td>
+                <td>{{ topic.count }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% if stats.needs_improvement %}
+<!-- Needs Improvement -->
+<div class="settings-section">
+    <h2>Needs Improvement</h2>
+    <p style="color: var(--gray-500); margin-bottom: 1rem;">
+        These lessons were rated below 3 stars. They'll be analyzed in the next improvement cycle.
+    </p>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Lesson</th>
+                <th>Rating</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for lesson in stats.needs_improvement[:10] %}
+            <tr>
+                <td>{{ lesson.title or "Untitled" }}</td>
+                <td><span class="score-badge score-red">{{ lesson.rating }}/5</span></td>
+                <td>{{ (lesson.created_at or "")[:10] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% else %}
+<div class="empty-state">
+    <p>No ratings yet.</p>
+    <p>Generate lessons with <a href="/generate">Generate</a> or <code>eduagent chat</code>, then rate them to see analytics here.</p>
+</div>
+{% endif %}
+
+{% endblock %}

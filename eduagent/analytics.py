@@ -1,0 +1,241 @@
+"""Analytics dashboard — rating trends, effectiveness metrics, and usage streaks."""
+
+from __future__ import annotations
+
+import sqlite3
+from datetime import datetime, timedelta
+from typing import Any
+
+from eduagent.state import _get_conn, init_db
+
+
+def _ensure_db() -> sqlite3.Connection:
+    init_db()
+    conn = _get_conn()
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def average_rating_by_subject(teacher_id: str) -> dict[str, float]:
+    """Average lesson rating grouped by subject.
+
+    Returns:
+        {"Science": 4.2, "Math": 3.8, ...}
+    """
+    conn = _ensure_db()
+    rows = conn.execute(
+        """
+        SELECT json_extract(gl.lesson_json, '$.subject') as subject, AVG(gl.rating) as avg_rating
+        FROM generated_lessons gl
+        LEFT JOIN generated_units gu ON gl.unit_id = gu.id
+        WHERE gl.teacher_id = ? AND gl.rating IS NOT NULL
+        GROUP BY subject
+        """,
+        (teacher_id,),
+    ).fetchall()
+    conn.close()
+
+    result: dict[str, float] = {}
+    for row in rows:
+        subject = row["subject"] or "General"
+        result[subject] = round(row["avg_rating"], 2)
+
+    # Also try extracting subject from unit if lesson doesn't have it
+    if not result:
+        conn = _ensure_db()
+        rows = conn.execute(
+            """
+            SELECT gu.subject, AVG(gl.rating) as avg_rating
+            FROM generated_lessons gl
+            JOIN generated_units gu ON gl.unit_id = gu.id
+            WHERE gl.teacher_id = ? AND gl.rating IS NOT NULL AND gu.subject IS NOT NULL
+            GROUP BY gu.subject
+            """,
+            (teacher_id,),
+        ).fetchall()
+        conn.close()
+        for row in rows:
+            if row["subject"]:
+                result[row["subject"]] = round(row["avg_rating"], 2)
+
+    return result
+
+
+def most_effective_topics(teacher_id: str, limit: int = 10) -> list[dict[str, Any]]:
+    """Topics with highest average ratings.
+
+    Returns:
+        [{"topic": "Photosynthesis", "avg_rating": 4.8, "count": 3}, ...]
+    """
+    conn = _ensure_db()
+    rows = conn.execute(
+        """
+        SELECT gl.title as topic, AVG(gl.rating) as avg_rating, COUNT(*) as count
+        FROM generated_lessons gl
+        WHERE gl.teacher_id = ? AND gl.rating IS NOT NULL
+        GROUP BY gl.title
+        HAVING count >= 1
+        ORDER BY avg_rating DESC, count DESC
+        LIMIT ?
+        """,
+        (teacher_id, limit),
+    ).fetchall()
+    conn.close()
+
+    return [{"topic": row["topic"], "avg_rating": round(row["avg_rating"], 2), "count": row["count"]} for row in rows]
+
+
+def lessons_needing_improvement(teacher_id: str, threshold: int = 3) -> list[dict[str, Any]]:
+    """Lessons rated below the threshold that need rework.
+
+    Returns:
+        [{"lesson_id": "...", "title": "...", "rating": 2, "created_at": "..."}, ...]
+    """
+    conn = _ensure_db()
+    rows = conn.execute(
+        """
+        SELECT id as lesson_id, title, rating, created_at
+        FROM generated_lessons
+        WHERE teacher_id = ? AND rating IS NOT NULL AND rating < ?
+        ORDER BY rating ASC, created_at DESC
+        """,
+        (teacher_id, threshold),
+    ).fetchall()
+    conn.close()
+
+    return [dict(row) for row in rows]
+
+
+def usage_streak(teacher_id: str) -> int:
+    """Count consecutive days (ending today) the teacher used EDUagent.
+
+    Returns:
+        Number of consecutive days (0 if not used today).
+    """
+    conn = _ensure_db()
+    rows = conn.execute(
+        """
+        SELECT DISTINCT date(created_at) as day
+        FROM generated_lessons
+        WHERE teacher_id = ?
+        UNION
+        SELECT DISTINCT date(created_at) as day
+        FROM feedback
+        WHERE teacher_id = ?
+        ORDER BY day DESC
+        """,
+        (teacher_id, teacher_id),
+    ).fetchall()
+    conn.close()
+
+    if not rows:
+        return 0
+
+    today = datetime.utcnow().date()
+    days = sorted({datetime.strptime(row["day"], "%Y-%m-%d").date() for row in rows if row["day"]}, reverse=True)
+
+    if not days or days[0] < today - timedelta(days=1):
+        return 0
+
+    streak = 0
+    expected = today
+    for day in days:
+        if day == expected:
+            streak += 1
+            expected -= timedelta(days=1)
+        elif day == expected + timedelta(days=1):
+            # today hasn't been counted yet but yesterday was
+            continue
+        else:
+            break
+
+    return streak
+
+
+def get_teacher_stats(teacher_id: str) -> dict[str, Any]:
+    """Comprehensive stats summary for a teacher.
+
+    Returns a dict with all analytics rolled up.
+    """
+    conn = _ensure_db()
+
+    total_lessons = conn.execute(
+        "SELECT COUNT(*) as c FROM generated_lessons WHERE teacher_id = ?", (teacher_id,)
+    ).fetchone()["c"]
+
+    rated_lessons = conn.execute(
+        "SELECT COUNT(*) as c FROM generated_lessons WHERE teacher_id = ? AND rating IS NOT NULL", (teacher_id,)
+    ).fetchone()["c"]
+
+    avg_rating_row = conn.execute(
+        "SELECT AVG(rating) as avg FROM generated_lessons WHERE teacher_id = ? AND rating IS NOT NULL", (teacher_id,)
+    ).fetchone()
+    overall_avg = round(avg_rating_row["avg"], 2) if avg_rating_row["avg"] else 0.0
+
+    total_units = conn.execute(
+        "SELECT COUNT(*) as c FROM generated_units WHERE teacher_id = ?", (teacher_id,)
+    ).fetchone()["c"]
+
+    total_feedback = conn.execute(
+        "SELECT COUNT(*) as c FROM feedback WHERE teacher_id = ?", (teacher_id,)
+    ).fetchone()["c"]
+
+    # Rating distribution
+    distribution: dict[int, int] = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
+    dist_rows = conn.execute(
+        "SELECT rating, COUNT(*) as c FROM generated_lessons WHERE teacher_id = ? AND rating IS NOT NULL GROUP BY rating",
+        (teacher_id,),
+    ).fetchall()
+    for row in dist_rows:
+        if 1 <= row["rating"] <= 5:
+            distribution[row["rating"]] = row["c"]
+
+    conn.close()
+
+    return {
+        "total_lessons": total_lessons,
+        "rated_lessons": rated_lessons,
+        "overall_avg_rating": overall_avg,
+        "total_units": total_units,
+        "total_feedback": total_feedback,
+        "rating_distribution": distribution,
+        "by_subject": average_rating_by_subject(teacher_id),
+        "top_topics": most_effective_topics(teacher_id, limit=5),
+        "needs_improvement": lessons_needing_improvement(teacher_id),
+        "streak": usage_streak(teacher_id),
+    }
+
+
+def rate_lesson(teacher_id: str, lesson_id: str, rating: int, notes: str = "") -> bool:
+    """Rate a generated lesson and optionally save feedback.
+
+    Returns True if the lesson was found and rated.
+    """
+    rating = max(1, min(5, rating))
+    conn = _ensure_db()
+
+    # Update the lesson rating
+    cursor = conn.execute(
+        "UPDATE generated_lessons SET rating = ? WHERE id = ? AND teacher_id = ?",
+        (rating, lesson_id, teacher_id),
+    )
+    if cursor.rowcount == 0:
+        conn.close()
+        return False
+
+    # Also insert a feedback record
+    import uuid
+
+    conn.execute(
+        "INSERT INTO feedback (id, lesson_id, teacher_id, rating, notes) VALUES (?, ?, ?, ?, ?)",
+        (str(uuid.uuid4()), lesson_id, teacher_id, rating, notes),
+    )
+    conn.commit()
+    conn.close()
+
+    # Auto-queue low-rated lessons for improvement analysis
+    from eduagent.improver import queue_low_rated_for_improvement
+
+    queue_low_rated_for_improvement(rating, lesson_id, teacher_id)
+
+    return True
