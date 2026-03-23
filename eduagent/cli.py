@@ -12,7 +12,7 @@ from typing import Optional
 import typer
 from rich.console import Console
 from rich.panel import Panel
-from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.progress import BarColumn, MofNCompleteColumn, Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
 from eduagent import __version__
@@ -332,22 +332,72 @@ def mcp_server(
 @app.command()
 def ingest(
     path: str = typer.Argument(..., help="Path to directory, ZIP file, or single file to ingest"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be processed without actually processing"),
 ):
     """Ingest teaching materials and extract a teacher persona."""
-    from eduagent.ingestor import ingest_path
-    from eduagent.persona import extract_persona, save_persona
+    from eduagent.ingestor import ingest_path, scan_directory
 
     source = Path(path).expanduser().resolve()
+
+    if dry_run:
+        console.print(Panel(f"[yellow]DRY RUN[/yellow] — scanning [bold]{source}[/bold]", title="EDUagent"))
+
+        # Show format summary
+        if source.is_dir():
+            files, summary = scan_directory(source)
+            console.print(f"\n[cyan]{summary}[/cyan]\n")
+        documents = ingest_path(source, dry_run=True)
+
+        if not documents:
+            console.print("[red]No supported documents found.[/red]")
+            raise typer.Exit(1)
+
+        table = Table(title="Would Process")
+        table.add_column("#", style="dim")
+        table.add_column("Title", style="bold")
+        table.add_column("Type")
+        table.add_column("Path", style="dim")
+        for i, doc in enumerate(documents, 1):
+            table.add_row(str(i), doc.title, doc.doc_type.value.upper(), doc.source_path or "")
+        console.print(table)
+        console.print(f"\n[green]{len(documents)} files would be processed.[/green]")
+        return
+
     console.print(Panel(f"Ingesting materials from [bold]{source}[/bold]", title="EDUagent"))
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
-        task = progress.add_task("Scanning files...", total=None)
-        documents = ingest_path(source)
-        progress.update(task, description=f"Found {len(documents)} documents")
+    # Show format summary for directories
+    if source.is_dir():
+        files, summary = scan_directory(source)
+        console.print(f"\n[cyan]{summary}[/cyan]\n")
+        file_count = len(files)
+    else:
+        file_count = 1
+
+    # Use progress bar for large directories (>20 files), spinner otherwise
+    if file_count > 20:
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            MofNCompleteColumn(),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Ingesting files...", total=file_count)
+
+            def _update_progress(current: int, total: int) -> None:
+                progress.update(task, completed=current)
+
+            documents = ingest_path(source, progress_callback=_update_progress)
+            progress.update(task, description=f"Done — {len(documents)} documents extracted")
+    else:
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Scanning files...", total=None)
+            documents = ingest_path(source)
+            progress.update(task, description=f"Found {len(documents)} documents")
 
     if not documents:
         console.print("[red]No supported documents found.[/red]")
@@ -365,6 +415,8 @@ def ingest(
     console.print(table)
 
     # Extract persona
+    from eduagent.persona import extract_persona, save_persona
+
     with Progress(
         SpinnerColumn(),
         TextColumn("[progress.description]{task.description}"),
@@ -831,10 +883,39 @@ def config_set_model(
     ))
 
 
+@config_app.command("set-token")
+def config_set_token(
+    token: str = typer.Argument(..., help="Telegram bot token from @BotFather"),
+):
+    """Save your Telegram bot token so you don't need to pass it every time.
+
+    After saving, just run:
+
+        eduagent bot
+
+    No --token flag needed.
+    """
+    cfg = AppConfig.load()
+    cfg.telegram_bot_token = token
+    cfg.save()
+    masked = token[:5] + "..." + token[-4:] if len(token) > 12 else "***"
+    console.print(Panel(
+        f"[bold green]Token saved![/bold green]\n\n"
+        f"Token: {masked}\n\n"
+        f"You can now start the bot with just:\n"
+        f"  [cyan]eduagent bot[/cyan]",
+        title="Telegram Bot Token",
+    ))
+
+
 @config_app.command("show")
 def config_show():
     """Show current configuration."""
     cfg = AppConfig.load()
+    token_display = "Not set"
+    if cfg.telegram_bot_token:
+        t = cfg.telegram_bot_token
+        token_display = t[:5] + "..." + t[-4:] if len(t) > 12 else "***"
     console.print(Panel(
         f"[bold]Provider:[/bold] {cfg.provider.value}\n"
         f"[bold]Anthropic Model:[/bold] {cfg.anthropic_model}\n"
@@ -843,7 +924,8 @@ def config_show():
         f"[bold]Ollama URL:[/bold] {cfg.ollama_base_url}\n"
         f"[bold]Output Dir:[/bold] {cfg.output_dir}\n"
         f"[bold]Export Format:[/bold] {cfg.export_format}\n"
-        f"[bold]Include Homework:[/bold] {cfg.include_homework}",
+        f"[bold]Include Homework:[/bold] {cfg.include_homework}\n"
+        f"[bold]Telegram Token:[/bold] {token_display}",
         title="EDUagent Configuration",
     ))
 

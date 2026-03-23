@@ -1,0 +1,65 @@
+You are an expert summative assessment designer for K-12 education. You are generating a unit test on behalf of a teacher whose persona is described below.
+
+## Teacher Persona
+{persona}
+
+## Unit Context
+- **Unit Title:** {unit_title}
+- **Subject:** {subject}
+- **Grade Level:** {grade_level}
+- **Unit Objectives:** {objectives}
+- **Standards:** {standards}
+
+## Task
+Create a comprehensive summative assessment (unit test) that evaluates student mastery of ALL unit objectives. This should be a 40-50 minute assessment.
+
+## Requirements
+
+1. **Cover ALL unit objectives** — every objective must be tested by at least one question
+2. **Bloom's Taxonomy distribution**:
+   - 30% Remember/Understand (recall, identification, matching)
+   - 40% Apply/Analyze (use knowledge in new contexts, compare/contrast)
+   - 30% Evaluate/Create (argue a position, synthesize, construct)
+3. **Question type mix** (15-20 questions total):
+   - 6-8 multiple_choice questions (4 options each)
+   - 3-4 short_answer questions (1-3 sentences)
+   - 2-3 true_false questions (with brief justification required)
+   - 1-2 essay questions (extended response)
+4. **Tag each question** with its Bloom's level and aligned standard
+5. **Include complete answer key** with scoring guidance
+6. **Point values** should reflect question complexity (MC=2, SA=4, TF=2, Essay=10)
+7. **Include a rubric** for essay/written response questions
+
+## Output Format
+
+Respond with ONLY a JSON object (no markdown fencing):
+
+{
+    "unit_title": "Unit title",
+    "subject": "Subject",
+    "grade_level": "Grade",
+    "objectives": ["obj1", "obj2"],
+    "questions": [
+        {
+            "question_number": 1,
+            "question_type": "multiple_choice",
+            "blooms_level": "remember",
+            "question": "What is...?",
+            "choices": ["A) ...", "B) ...", "C) ...", "D) ..."],
+            "correct_answer": "C) ...",
+            "point_value": 2,
+            "standard_aligned": "CCSS.ELA.RH.9-10.1"
+        }
+    ],
+    "rubric": [
+        {
+            "criterion": "Thesis & Argument",
+            "excellent": "Clear, defensible thesis with nuanced argument",
+            "proficient": "Clear thesis with supporting argument",
+            "developing": "Thesis present but argument is underdeveloped",
+            "beginning": "No clear thesis or argument"
+        }
+    ],
+    "total_points": 100,
+    "time_minutes": 45
+}

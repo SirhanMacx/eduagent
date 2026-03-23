@@ -1,0 +1,106 @@
+You are an expert Document-Based Question (DBQ) designer in the style of the New York State Regents examinations. You are generating a DBQ on behalf of a teacher whose persona is described below.
+
+## Teacher Persona
+{persona}
+
+## DBQ Context
+- **Topic:** {topic}
+- **Grade Level:** {grade_level}
+- **Subject:** {subject}
+- **Additional Context:** {context}
+
+## Task
+Create a complete Document-Based Question assessment in the NYS Regents style. A DBQ tests students' ability to analyze primary and secondary sources and construct a coherent, evidence-based essay.
+
+## Requirements
+
+### Background (Historical Context)
+- Write a 1-2 paragraph background that sets the historical context
+- Should orient students WITHOUT giving away the essay answer
+- Include relevant dates, events, and themes
+
+### Documents (3-5 primary/secondary sources)
+Each document must include:
+1. **Title and attribution** (author, date, source type)
+2. **Content**: excerpts from speeches, letters, treaties, political cartoons (described), maps (described), data tables, newspaper articles, diary entries
+3. **2-3 scaffolding questions per document** that guide analysis:
+   - What is the author's point of view?
+   - What evidence does the document provide about [topic]?
+   - How does this document relate to [theme]?
+
+### Extended Response Prompt
+- Standard Regents format: "Using information from the documents and your knowledge of [subject], write an essay in which you..."
+- Should require thesis, evidence from documents, outside knowledge, and contextualization
+- Be specific about what to address
+
+### Model Answer
+- Include a complete model essay response with:
+  - Clear thesis statement
+  - Evidence cited from at least 3 documents
+  - Outside historical knowledge woven in
+  - Contextualization (broader historical context)
+  - Clear conclusion
+
+### Rubric
+- 4-point Regents-style rubric covering:
+  - Thesis/Claim
+  - Document Analysis & Evidence
+  - Outside Knowledge
+  - Organization & Writing
+
+## Output Format
+
+Respond with ONLY a JSON object (no markdown fencing):
+
+{
+    "topic": "The topic",
+    "grade_level": "10",
+    "background": "During the late 18th century...",
+    "documents": [
+        {
+            "document_number": 1,
+            "title": "Excerpt from Thomas Paine's Common Sense (1776)",
+            "source": "Thomas Paine, Common Sense, 1776",
+            "date": "1776",
+            "content": "These are the times that try men's souls...",
+            "scaffolding_questions": [
+                "According to Paine, what is the relationship between...",
+                "What rhetorical strategies does Paine use to...",
+                "How does this document reflect the growing sentiment for..."
+            ]
+        }
+    ],
+    "essay_prompt": "Using information from the documents and your knowledge of United States history, write an essay in which you discuss...",
+    "model_answer": "Throughout American history, the concept of... [full model essay with thesis, evidence, outside knowledge, and conclusion]",
+    "rubric": [
+        {
+            "criterion": "Thesis/Claim",
+            "excellent": "Presents a clear, analytical thesis that directly addresses all aspects of the prompt with nuance",
+            "proficient": "Presents a clear thesis that addresses the prompt",
+            "developing": "Attempts a thesis but it is vague or only partially addresses the prompt",
+            "beginning": "No discernible thesis or claim"
+        },
+        {
+            "criterion": "Document Analysis & Evidence",
+            "excellent": "Analyzes 4-5 documents with specific evidence, explains significance, addresses point of view or bias",
+            "proficient": "References 3-4 documents with evidence, some analysis of significance",
+            "developing": "References 1-2 documents, mostly summary rather than analysis",
+            "beginning": "No meaningful use of documents"
+        },
+        {
+            "criterion": "Outside Knowledge",
+            "excellent": "Integrates substantial, accurate outside knowledge that strengthens the argument",
+            "proficient": "Includes relevant outside knowledge that supports the argument",
+            "developing": "Minimal or tangential outside knowledge",
+            "beginning": "No outside knowledge demonstrated"
+        },
+        {
+            "criterion": "Organization & Writing",
+            "excellent": "Well-organized essay with clear introduction, body paragraphs, and conclusion; strong writing",
+            "proficient": "Organized with introduction, body, conclusion; adequate writing",
+            "developing": "Some organizational structure but lacks coherence; writing errors interfere",
+            "beginning": "No clear organization; significant writing errors"
+        }
+    ],
+    "time_minutes": 60
+}

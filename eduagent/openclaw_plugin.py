@@ -178,12 +178,19 @@ async def _dispatch(parsed: ParsedIntent, session: TeacherSession) -> str:
         Intent.SETUP, Intent.CONNECT_DRIVE, Intent.CONNECT_LOCAL, Intent.HELP
     ):
         return (
-            "👋 Hi! I'm EDUagent — your AI teaching assistant.\n\n"
-            "To get started, share some of your existing lesson plans with me:\n"
-            "• Google Drive link: share your lesson plans folder\n"
-            "• Local folder: tell me the path (e.g. ~/Documents/Lessons/)\n\n"
-            "Or just tell me about yourself: 'I teach 8th grade science' and we'll start from scratch.\n\n"
-            "What subject and grade do you teach?"
+            "Hey there! Welcome — I'm so glad you're here. 🎓\n\n"
+            "I'm EDUagent, and I'm basically going to become your lesson-planning "
+            "partner. Think of me like that colleague down the hall who always has "
+            "a great activity idea — except I'm available at midnight when you're "
+            "prepping for tomorrow.\n\n"
+            "Here's how we get started (pick whichever feels easiest):\n\n"
+            "1️⃣ *Share some of your existing lessons* and I'll learn your style:\n"
+            "   Just tell me the folder — like `my materials are in ~/Documents/Lessons/`\n\n"
+            "2️⃣ *Or just tell me about yourself* and we'll build from scratch:\n"
+            '   Something like "I teach 8th grade science" works great.\n\n'
+            "Either way, once I know your vibe, everything I create will sound like *you* "
+            "wrote it — your vocabulary, your structure, your approach.\n\n"
+            "So — what do you teach? I'd love to hear about your classroom."
         )
 
     # ── Intent dispatch ───────────────────────────────────────────────────────

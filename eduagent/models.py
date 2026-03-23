@@ -17,6 +17,9 @@ class DocType(str, Enum):
     PPTX = "pptx"
     TXT = "txt"
     MD = "md"
+    NOTEBOOK = "notebook"
+    XBK = "xbk"
+    FLIPCHART = "flipchart"
     UNKNOWN = "unknown"
 
 
@@ -318,6 +321,111 @@ class ProgressUpdate(BaseModel):
     closing: str = ""
 
 
+# ── Assessment intelligence models ─────────────────────────────────────
+
+
+class QuestionType(str, Enum):
+    """Types of assessment questions."""
+
+    MULTIPLE_CHOICE = "multiple_choice"
+    SHORT_ANSWER = "short_answer"
+    TRUE_FALSE = "true_false"
+    ESSAY = "essay"
+    DBQ = "dbq"
+    FILL_IN_BLANK = "fill_in_the_blank"
+
+
+class RubricLevel(BaseModel):
+    """A single level within a rubric row (e.g. '4 — Exceeds')."""
+
+    score: int
+    label: str
+    descriptors: list[str] = Field(default_factory=list)
+
+
+class Rubric(BaseModel):
+    """A complete rubric for any written task. 4-point scale."""
+
+    task_description: str
+    criteria: list[RubricCriterion] = Field(default_factory=list)
+    total_points: int = 0
+
+
+class FormativeAssessment(BaseModel):
+    """Exit-ticket style formative assessment — checks ONE lesson's objective."""
+
+    lesson_title: str
+    objective: str
+    questions: list[AssessmentQuestion] = Field(default_factory=list)
+    answer_key: dict[int, str] = Field(default_factory=dict)
+    time_minutes: int = 5
+
+
+class SummativeQuestion(BaseModel):
+    """A question in a summative assessment with Bloom's level tag."""
+
+    question_number: int
+    question_type: str = "multiple_choice"
+    blooms_level: str = "remember"
+    question: str
+    choices: list[str] = Field(default_factory=list)
+    correct_answer: str = ""
+    point_value: int = 1
+    standard_aligned: str = ""
+
+
+class SummativeAssessment(BaseModel):
+    """Unit test — mix of MC, short answer, DBQ/essay aligned to all unit objectives."""
+
+    unit_title: str
+    subject: str
+    grade_level: str
+    objectives: list[str] = Field(default_factory=list)
+    questions: list[SummativeQuestion] = Field(default_factory=list)
+    rubric: list[RubricCriterion] = Field(default_factory=list)
+    total_points: int = 0
+    time_minutes: int = 45
+
+
+class DBQDocument(BaseModel):
+    """A primary source document within a DBQ assessment."""
+
+    document_number: int
+    title: str
+    source: str = ""
+    date: str = ""
+    content: str = ""
+    scaffolding_questions: list[str] = Field(default_factory=list)
+
+
+class DBQAssessment(BaseModel):
+    """Document-Based Question — NYS Regents style.
+
+    Includes background paragraph, primary source documents with scaffolding
+    questions, extended response prompt, and a model answer.
+    """
+
+    topic: str
+    grade_level: str
+    background: str = ""
+    documents: list[DBQDocument] = Field(default_factory=list)
+    essay_prompt: str = ""
+    model_answer: str = ""
+    rubric: list[RubricCriterion] = Field(default_factory=list)
+    time_minutes: int = 60
+
+
+class Quiz(BaseModel):
+    """Short quiz — teacher-specified format mix."""
+
+    topic: str
+    grade_level: str
+    questions: list[AssessmentQuestion] = Field(default_factory=list)
+    answer_key: dict[int, str] = Field(default_factory=dict)
+    total_points: int = 0
+    time_minutes: int = 15
+
+
 class LLMProvider(str, Enum):
     """Supported LLM providers."""
 
@@ -420,6 +528,9 @@ class AppConfig(BaseModel):
 
     # Ollama API key (for cloud Ollama)
     ollama_api_key: Optional[str] = None
+
+    # Telegram bot token (persisted so teachers don't re-enter it every time)
+    telegram_bot_token: Optional[str] = None
 
     # Per-task model overrides (e.g. {"bellringer": "qwen3.5:cloud"})
     task_models: Optional[dict[str, str]] = None

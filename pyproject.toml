@@ -45,7 +45,7 @@ dependencies = [
 
 [project.optional-dependencies]
 # Telegram bot support — run EDUagent as a standalone Telegram bot
-telegram = ["python-telegram-bot>=20.0"]
+telegram = ["python-telegram-bot>=20.8"]
 # Google Drive support — personal accounts ONLY, never school-issued accounts
 google = ["google-api-python-client>=2.0.0", "google-auth-oauthlib>=1.0.0"]
 # Voice transcription
