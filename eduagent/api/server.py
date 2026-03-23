@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -64,8 +64,10 @@ def create_app() -> FastAPI:
     from eduagent.api.routes.feedback import router as feedback_router
     from eduagent.api.routes.generate import router as generate_router
     from eduagent.api.routes.ingest import router as ingest_router
+    from eduagent.api.routes.lessons import router as lessons_router
     from eduagent.api.routes.school import router as school_router
     from eduagent.api.routes.settings import router as settings_router
+    from eduagent.api.routes.waitlist import router as waitlist_router
 
     app.include_router(ingest_router, prefix="/api")
     app.include_router(generate_router, prefix="/api")
@@ -74,18 +76,32 @@ def create_app() -> FastAPI:
     app.include_router(export_router, prefix="/api")
     app.include_router(settings_router, prefix="/api")
     app.include_router(school_router, prefix="/api")
+    app.include_router(lessons_router, prefix="/api")
+    app.include_router(waitlist_router, prefix="/api")
 
     # ── Page routes (server-side rendered) ───────────────────────────
+
+    # Landing page path
+    _LANDING_DIR = Path(__file__).parent.parent / "landing"
 
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request):
         db = get_db()
-        stats = db.get_stats()
         teacher = db.get_default_teacher()
         has_persona = teacher is not None and teacher.get("persona_json") is not None
         onboarding_complete = db.is_onboarding_complete()
 
-        # If persona exists and onboarding is done, show dashboard-style home
+        # If logged in (persona exists and onboarding done), redirect to dashboard
+        if has_persona and onboarding_complete:
+            return RedirectResponse(url="/dashboard", status_code=302)
+
+        # Otherwise serve the landing page
+        landing_file = _LANDING_DIR / "index.html"
+        if landing_file.exists():
+            return HTMLResponse(landing_file.read_text())
+
+        # Fallback to template-based index
+        stats = db.get_stats()
         persona_data = None
         if teacher and teacher.get("persona_json"):
             try:
@@ -101,6 +117,14 @@ def create_app() -> FastAPI:
             "persona": persona_data,
             "active_nav": "home",
         })
+
+    @app.get("/landing", response_class=HTMLResponse)
+    async def landing_page():
+        """Always serve the landing page (bypasses redirect)."""
+        landing_file = _LANDING_DIR / "index.html"
+        if landing_file.exists():
+            return HTMLResponse(landing_file.read_text())
+        return HTMLResponse("<h1>Landing page not found</h1>", status_code=404)
 
     @app.get("/dashboard", response_class=HTMLResponse)
     async def dashboard(request: Request):
@@ -264,10 +288,11 @@ def create_app() -> FastAPI:
             "materials": materials_data,
             "scores": scores_data,
             "feedback_list": feedback_list,
-            "share_url": f"/share/{lesson_row['share_token']}",
+            "share_url": f"/shared/{lesson_row['share_token']}",
         })
 
     @app.get("/share/{token}", response_class=HTMLResponse)
+    @app.get("/shared/{token}", response_class=HTMLResponse)
     async def share_page(request: Request, token: str):
         db = get_db()
         lesson_row = db.get_lesson_by_token(token)
@@ -279,7 +304,7 @@ def create_app() -> FastAPI:
             "lesson_data": lesson_data,
             "materials": None,
             "feedback_list": [],
-            "share_url": f"/share/{token}",
+            "share_url": f"/shared/{token}",
             "is_shared": True,
         })
 

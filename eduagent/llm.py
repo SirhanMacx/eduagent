@@ -24,7 +24,16 @@ class LLMClient:
         temperature: float = 0.7,
         max_tokens: int = 4096,
     ) -> str:
-        """Generate text from the configured LLM backend."""
+        """Generate text from the configured LLM backend.
+
+        In demo mode (no API key configured), returns a canned sample lesson
+        so teachers can try EDUagent without any LLM credentials.
+        """
+        from eduagent.demo import is_demo_mode
+
+        if is_demo_mode():
+            return self._demo_response(prompt)
+
         if self.config.provider == LLMProvider.ANTHROPIC:
             return await self._anthropic(prompt, system, temperature, max_tokens)
         elif self.config.provider == LLMProvider.OPENAI:
@@ -32,6 +41,22 @@ class LLMClient:
         elif self.config.provider == LLMProvider.OLLAMA:
             return await self._ollama(prompt, system, temperature, max_tokens)
         raise ValueError(f"Unknown provider: {self.config.provider}")
+
+    @staticmethod
+    def _demo_response(prompt: str) -> str:
+        """Return a canned demo response based on prompt keywords."""
+        from eduagent.demo import load_demo
+
+        prompt_lower = prompt.lower()
+        if "assessment" in prompt_lower or "dbq" in prompt_lower:
+            data = load_demo("assessment")
+        elif "unit" in prompt_lower:
+            data = load_demo("unit_plan")
+        elif "science" in prompt_lower:
+            data = load_demo("lesson_science_g6")
+        else:
+            data = load_demo("lesson_social_studies_g8")
+        return json.dumps(data, indent=2)
 
     async def generate_json(
         self,

@@ -98,7 +98,7 @@ class TestLandingPage:
         from pathlib import Path
         landing = Path(__file__).parent.parent / "eduagent" / "landing" / "index.html"
         html = landing.read_text()
-        assert "Your teaching files" in html
+        assert "Your AI co-teacher" in html
         assert "Learns Your Voice" in html
         assert "50-State Standards" in html
         assert "Student Bot" in html

@@ -3,153 +3,284 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>EDUagent — Your teaching files, your AI co-teacher</title>
+<title>EDUagent — Your AI co-teacher that sounds like you</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  line-height: 1.7; color: #1a1a2e; background: #fff;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.7; color: #e0e0e0; background: #0d1117;
 }
-a { color: #0f3460; text-decoration: none; }
+a { color: #58a6ff; text-decoration: none; }
 a:hover { text-decoration: underline; }
 
 /* ── Hero ─────────────────────────────────────── */
 .hero {
   text-align: center;
-  padding: 5rem 1.5rem 4rem;
-  background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
-  color: #fff;
+  padding: 6rem 1.5rem 5rem;
+  background: linear-gradient(135deg, #0d1117 0%, #161b22 40%, #1a1e2e 100%);
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(ellipse at 60% 40%, rgba(88, 166, 255, 0.06) 0%, transparent 60%);
+  pointer-events: none;
 }
 .hero h1 {
-  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-size: clamp(2.2rem, 5vw, 3.5rem);
   font-weight: 800;
-  margin-bottom: 0.5rem;
-  letter-spacing: -0.02em;
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.03em;
+  color: #f0f6fc;
+  position: relative;
 }
 .hero .subtitle {
-  font-size: clamp(1.1rem, 2.5vw, 1.4rem);
-  opacity: 0.9;
-  max-width: 600px;
-  margin: 0 auto 2rem;
+  font-size: clamp(1.05rem, 2.2vw, 1.3rem);
+  opacity: 0.85;
+  max-width: 640px;
+  margin: 0 auto 2.5rem;
+  color: #8b949e;
+  position: relative;
 }
-.hero .cta {
+
+/* ── Terminal Demo ────────────────────────────── */
+.terminal {
+  max-width: 580px;
+  margin: 0 auto 2.5rem;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 10px;
+  overflow: hidden;
+  text-align: left;
+  position: relative;
+}
+.terminal-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: #21262d;
+  border-bottom: 1px solid #30363d;
+}
+.terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
+.terminal-dot.red { background: #f85149; }
+.terminal-dot.yellow { background: #d29922; }
+.terminal-dot.green { background: #3fb950; }
+.terminal-body {
+  padding: 1.2rem 1.4rem;
+  font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.9rem;
+  line-height: 1.9;
+  color: #c9d1d9;
+  min-height: 80px;
+}
+.terminal-body .prompt { color: #3fb950; }
+.terminal-body .cmd { color: #f0f6fc; }
+.terminal-body .comment { color: #484f58; }
+.typewriter { display: inline; }
+.cursor {
   display: inline-block;
-  background: #e94560;
+  width: 8px;
+  height: 1.1em;
+  background: #58a6ff;
+  vertical-align: text-bottom;
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }
+
+/* ── CTA ─────────────────────────────────────── */
+.cta-row {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 1.2rem;
+  position: relative;
+}
+.cta-primary {
+  display: inline-block;
+  background: #238636;
   color: #fff;
   padding: 0.85rem 2.2rem;
   border-radius: 8px;
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 600;
   transition: background 0.2s;
+  border: none;
+  cursor: pointer;
 }
-.hero .cta:hover { background: #d63851; text-decoration: none; }
+.cta-primary:hover { background: #2ea043; text-decoration: none; }
+.cta-secondary {
+  display: inline-block;
+  background: transparent;
+  color: #c9d1d9;
+  padding: 0.85rem 2.2rem;
+  border-radius: 8px;
+  font-size: 1.05rem;
+  font-weight: 600;
+  border: 1px solid #30363d;
+  transition: border-color 0.2s;
+}
+.cta-secondary:hover { border-color: #58a6ff; text-decoration: none; }
 .badge {
   display: inline-block;
-  margin-top: 1.2rem;
   padding: 0.4rem 1rem;
-  border: 1px solid rgba(255,255,255,0.3);
+  border: 1px solid #30363d;
   border-radius: 20px;
   font-size: 0.85rem;
-  opacity: 0.85;
+  color: #8b949e;
+  position: relative;
 }
 
 /* ── Section ──────────────────────────────────── */
 .section {
   max-width: 960px;
   margin: 0 auto;
-  padding: 4rem 1.5rem;
+  padding: 5rem 1.5rem;
 }
 .section h2 {
   font-size: 1.8rem;
   margin-bottom: 1.5rem;
-  color: #16213e;
+  color: #f0f6fc;
+  font-weight: 700;
 }
 .section h2::after {
   content: "";
   display: block;
   width: 50px;
   height: 3px;
-  background: #e94560;
+  background: #238636;
   margin-top: 0.5rem;
 }
 
-/* ── Feature cards ────────────────────────────── */
+/* ── Value Props ──────────────────────────────── */
 .features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+.card {
+  background: #161b22;
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid #21262d;
+  transition: border-color 0.2s;
+}
+.card:hover { border-color: #30363d; }
+.card .icon { font-size: 2rem; margin-bottom: 0.75rem; }
+.card h3 { font-size: 1.15rem; margin-bottom: 0.5rem; color: #f0f6fc; font-weight: 600; }
+.card p { color: #8b949e; font-size: 0.95rem; }
+
+/* ── How it Works ─────────────────────────────── */
+.steps-section { background: #161b22; border-top: 1px solid #21262d; border-bottom: 1px solid #21262d; }
+.steps {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 2rem;
+  counter-reset: step;
 }
-.card {
-  background: #f8f9fa;
-  border-radius: 12px;
-  padding: 2rem;
-  border: 1px solid #e9ecef;
-  transition: transform 0.15s, box-shadow 0.15s;
-}
-.card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-}
-.card .icon { font-size: 2rem; margin-bottom: 0.75rem; }
-.card h3 { font-size: 1.2rem; margin-bottom: 0.5rem; color: #16213e; }
-.card p { color: #555; font-size: 0.95rem; }
-
-/* ── Demo ─────────────────────────────────────── */
-.demo-section { background: #f8f9fa; }
-.demo-section .section { padding-bottom: 3rem; }
-.demo-box {
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 12px;
-  overflow: hidden;
-}
-.demo-header {
-  background: #16213e;
+.step { position: relative; padding-left: 3.5rem; }
+.step::before {
+  counter-increment: step;
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background: #238636;
   color: #fff;
-  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+.step h3 { color: #f0f6fc; margin-bottom: 0.4rem; font-weight: 600; }
+.step p { color: #8b949e; font-size: 0.93rem; }
+
+/* ── Email Capture ────────────────────────────── */
+.signup-section {
+  background: linear-gradient(135deg, #161b22 0%, #1a1e2e 100%);
+  border-top: 1px solid #21262d;
+}
+.signup-box {
+  max-width: 500px;
+  margin: 0 auto;
+  text-align: center;
+}
+.signup-box h2::after { margin-left: auto; margin-right: auto; }
+.signup-count {
+  color: #8b949e;
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+}
+.signup-form {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.signup-form input[type="email"] {
+  flex: 1;
+  min-width: 240px;
+  padding: 0.8rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #30363d;
+  background: #0d1117;
+  color: #f0f6fc;
+  font-size: 1rem;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.signup-form input[type="email"]:focus { border-color: #58a6ff; }
+.signup-form input[type="email"]::placeholder { color: #484f58; }
+.signup-form button {
+  padding: 0.8rem 1.8rem;
+  border-radius: 8px;
+  background: #238636;
+  color: #fff;
+  font-size: 1rem;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
 }
-.demo-body {
-  padding: 1.5rem;
-  font-size: 0.92rem;
-  max-height: 500px;
-  overflow-y: auto;
+.signup-form button:hover { background: #2ea043; }
+.signup-msg {
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+  min-height: 1.5em;
 }
-.demo-body h3 { font-size: 1.05rem; color: #16213e; margin: 1.2rem 0 0.5rem; }
-.demo-body h3:first-child { margin-top: 0; }
-.demo-body p { margin-bottom: 0.75rem; color: #333; }
-.demo-body .meta { color: #666; font-style: italic; margin-bottom: 1rem; }
-.demo-body ol, .demo-body ul { margin: 0.5rem 0 0.75rem 1.5rem; color: #333; }
+.signup-msg.success { color: #3fb950; }
+.signup-msg.error { color: #f85149; }
 
-/* ── Install ──────────────────────────────────── */
-.install-block {
-  background: #1a1a2e;
-  color: #a8d8ea;
-  border-radius: 10px;
-  padding: 1.5rem 2rem;
-  font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
-  font-size: 0.95rem;
-  line-height: 2;
-  overflow-x: auto;
-}
-.install-block .prompt { color: #e94560; }
-.install-block .comment { color: #555; }
-
-/* ── Footer / GitHub ──────────────────────────── */
+/* ── Footer ──────────────────────────────────── */
 .footer {
   text-align: center;
   padding: 3rem 1.5rem;
-  background: #16213e;
-  color: #aaa;
+  background: #0d1117;
+  border-top: 1px solid #21262d;
+  color: #484f58;
 }
-.footer a { color: #a8d8ea; }
+.footer a { color: #58a6ff; }
 .gh-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: #24292f;
-  color: #fff;
+  background: #21262d;
+  color: #c9d1d9;
   padding: 0.65rem 1.4rem;
   border-radius: 8px;
   font-size: 1rem;
@@ -157,137 +288,212 @@ a:hover { text-decoration: underline; }
   margin-bottom: 1rem;
   transition: background 0.2s;
 }
-.gh-btn:hover { background: #333; text-decoration: none; }
-.gh-btn svg { width: 20px; height: 20px; fill: #fff; }
+.gh-btn:hover { background: #30363d; text-decoration: none; }
+.gh-btn svg { width: 20px; height: 20px; fill: #c9d1d9; }
+.opensource-badge {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 0.3rem 0.8rem;
+  border: 1px solid #30363d;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  color: #8b949e;
+}
+
+/* ── Mobile ──────────────────────────────────── */
+@media (max-width: 600px) {
+  .hero { padding: 4rem 1rem 3rem; }
+  .terminal-body { font-size: 0.8rem; padding: 1rem; }
+  .section { padding: 3rem 1rem; }
+  .signup-form { flex-direction: column; }
+  .signup-form input[type="email"] { min-width: 100%; }
+}
 </style>
 </head>
 <body>
 
 <!-- ── Hero ──────────────────────────────────────────── -->
 <div class="hero">
-  <h1>Your teaching files &rarr; your AI co-teacher</h1>
+  <h1>Your AI co-teacher that sounds like you</h1>
   <p class="subtitle">
-    Upload your lesson plans. EDUagent learns your voice, aligns to your state standards,
-    and generates complete units, lessons, worksheets, and assessments &mdash; in minutes.
+    EDUagent learns from your curriculum files and generates lessons, worksheets,
+    and assessments in your exact teaching voice.
   </p>
-  <a class="cta" href="#install">Get Started Free</a>
+
+  <div class="terminal">
+    <div class="terminal-bar">
+      <span class="terminal-dot red"></span>
+      <span class="terminal-dot yellow"></span>
+      <span class="terminal-dot green"></span>
+    </div>
+    <div class="terminal-body">
+      <span class="prompt">$</span> <span class="cmd typewriter" id="line1"></span><br>
+      <span class="prompt">$</span> <span class="cmd typewriter" id="line2"></span>
+      <span class="cursor" id="cursor"></span>
+    </div>
+  </div>
+
+  <div class="cta-row">
+    <a class="cta-primary" href="#signup">Get Early Access</a>
+    <a class="cta-secondary" href="https://github.com/SirhanMacx/eduagent">View on GitHub</a>
+  </div>
   <div class="badge">Open Source &middot; MIT License &middot; Works Offline</div>
 </div>
 
-<!-- ── Features ──────────────────────────────────────── -->
+<!-- ── Value Props ──────────────────────────────────── -->
 <div class="section">
-  <h2>What makes EDUagent different</h2>
+  <h2>Why teachers choose EDUagent</h2>
   <div class="features">
     <div class="card">
-      <div class="icon">&#x1F3A4;</div>
-      <h3>Learns Your Voice</h3>
+      <div class="icon">&#x1F4DA;</div>
+      <h3>Trained on YOUR materials</h3>
       <p>
-        Feed it your existing lesson plans and it extracts your teaching persona &mdash;
-        your tone, style, vocabulary, and favorite strategies. Every output sounds like
-        <em>you</em>, not a generic AI.
+        Not generic AI. EDUagent ingests your 9 years of lesson plans, worksheets,
+        and assessments — then generates content that reflects how <em>you</em> actually teach.
       </p>
     </div>
     <div class="card">
-      <div class="icon">&#x1F5FA;</div>
-      <h3>50-State Standards</h3>
+      <div class="icon">&#x270D;&#xFE0F;</div>
+      <h3>Generates in your voice</h3>
       <p>
-        CCSS, NGSS, C3, TEKS, NY Regents &mdash; set your state once and every lesson
-        auto-aligns to the right standards. No more hunting through frameworks.
+        Do-nows, exit tickets, DBQs — written the way you write them. Your tone,
+        your vocabulary, your structural preferences. Students won't know the difference.
       </p>
     </div>
     <div class="card">
-      <div class="icon">&#x1F393;</div>
-      <h3>Student Bot</h3>
+      <div class="icon">&#x1F319;</div>
+      <h3>Students get you at 11pm</h3>
       <p>
-        Activate a student-facing chatbot for any lesson. Students ask questions and
-        get answers in your teaching voice. Hint mode for homework &mdash; no free answers.
+        Activate a student chatbot for any lesson. It answers questions the way
+        their teacher would — with hints, not free answers. Even the night before the test.
       </p>
     </div>
   </div>
 </div>
 
-<!-- ── Demo ──────────────────────────────────────────── -->
-<div class="demo-section">
+<!-- ── How it Works ─────────────────────────────────── -->
+<div class="steps-section">
   <div class="section">
-    <h2>Real output: American Revolution unit</h2>
-    <p style="margin-bottom:1.5rem;color:#555;">
-      This was generated from a real teacher's uploaded materials. One command, 30 seconds.
-    </p>
-    <div class="demo-box">
-      <div class="demo-header">
-        eduagent full "The American Revolution" --grade 8 --subject "Social Studies" --weeks 2
+    <h2>How it works</h2>
+    <div class="steps">
+      <div class="step">
+        <h3>Install</h3>
+        <p><code>pip install eduagent</code> — one command, works on Mac, Linux, and Windows. No account needed.</p>
       </div>
-      <div class="demo-body">
-        <h3>Lesson 1: Liberty and Loyalty &mdash; Unit Introduction</h3>
-        <p class="meta">Grade 8 Social Studies &middot; 50 min &middot; C3 Framework D2.His.1.6-8, CCSS.ELA-LITERACY.RH.6-8.4</p>
-
-        <h3>Do-Now (5 min)</h3>
-        <p>
-          &ldquo;Alright, friends, as you settle in, answer this: <em>What does freedom mean to you?
-          Is there ever a time when following the rules is more important than being free?</em>
-          Take 5 minutes to jot down your honest thoughts. No wrong answers &mdash; I just want to hear your voice.&rdquo;
-        </p>
-
-        <h3>Direct Instruction (15&ndash;20 min)</h3>
-        <p>
-          &ldquo;We&rsquo;re starting one of my favorite units in all of history. How did ordinary people
-          decide to risk everything for freedom?&rdquo;
-        </p>
-        <ol>
-          <li>Unit Overview &mdash; stepping into the shoes of colonists</li>
-          <li>Key vocabulary: <strong>Liberty</strong>, <strong>Loyalty</strong>, <strong>Tyranny</strong></li>
-          <li>Model: filling out the Unit Vocabulary Graphic Organizer</li>
-        </ol>
-
-        <h3>Guided Practice (15&ndash;20 min)</h3>
-        <p>
-          Students work with partners on &ldquo;Tyranny&rdquo; &mdash; define it, find a school-setting example,
-          share back. Teacher circulates and checks comprehension.
-        </p>
-
-        <h3>Independent Work (10 min)</h3>
-        <p>
-          Essential Question Reflection: &ldquo;Was war inevitable?&rdquo; or &ldquo;When is rebellion justified?&rdquo;
-          &mdash; 3-sentence paragraph using at least one vocabulary word.
-        </p>
-
-        <h3>Differentiation</h3>
-        <ul>
-          <li><strong>Struggling:</strong> Word bank + sentence starters provided</li>
-          <li><strong>Advanced:</strong> Compare colonial tyranny to a modern example</li>
-          <li><strong>ELL:</strong> Bilingual vocabulary cards + partner support</li>
-        </ul>
+      <div class="step">
+        <h3>Ingest</h3>
+        <p>Point it at your lesson folder. EDUagent reads PDFs, DOCX, PPTX, even SMART Board files — and extracts your teaching persona.</p>
+      </div>
+      <div class="step">
+        <h3>Generate</h3>
+        <p>Ask for a lesson, a unit, a worksheet, or a full course. Everything comes out in your voice, aligned to your state standards.</p>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ── Install ───────────────────────────────────────── -->
-<div class="section" id="install">
-  <h2>Get started in 60 seconds</h2>
-  <div class="install-block">
-    <span class="comment"># Install</span><br>
-    <span class="prompt">$</span> pip install eduagent<br><br>
-    <span class="comment"># Start chatting</span><br>
-    <span class="prompt">$</span> eduagent chat<br><br>
-    <span class="comment"># Or generate a full unit from the command line</span><br>
-    <span class="prompt">$</span> eduagent full "Photosynthesis" --grade 8 --subject Science --weeks 3<br><br>
-    <span class="comment"># Works with Anthropic, OpenAI, or free Ollama</span><br>
-    <span class="prompt">$</span> eduagent config set-model ollama --model llama3.2
+<!-- ── Email Capture ─────────────────────────────────── -->
+<div class="signup-section" id="signup">
+  <div class="section">
+    <div class="signup-box">
+      <h2>Get early access</h2>
+      <p class="signup-count" id="signup-count"></p>
+      <form class="signup-form" id="waitlist-form" action="/api/waitlist" method="POST">
+        <input type="email" name="email" placeholder="you@school.edu" required autocomplete="email">
+        <button type="submit">Join Waitlist</button>
+      </form>
+      <p class="signup-msg" id="signup-msg"></p>
+    </div>
   </div>
 </div>
 
-<!-- ── Footer ────────────────────────────────────────── -->
+<!-- ── Footer ──────────────────────────────────────── -->
 <div class="footer">
   <a class="gh-btn" href="https://github.com/SirhanMacx/eduagent">
     <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
     Star on GitHub
   </a>
-  <p>Built by teachers, for teachers. MIT License.</p>
-  <p style="margin-top:0.5rem;font-size:0.85rem;">
-    EDUagent &copy; 2025. Made with care in New York.
-  </p>
+  <div class="opensource-badge">Open Source &middot; MIT License</div>
+  <p style="margin-top:1rem;">Built by a teacher, for teachers. Made with care in New York.</p>
+  <p style="margin-top:0.5rem;font-size:0.82rem;">EDUagent &copy; 2025</p>
 </div>
+
+<script>
+// ── Typewriter animation ─────────────────────────────
+const lines = [
+  { el: 'line1', text: 'pip install eduagent' },
+  { el: 'line2', text: 'eduagent setup' },
+];
+let lineIdx = 0, charIdx = 0;
+
+function type() {
+  if (lineIdx >= lines.length) {
+    document.getElementById('cursor').style.display = 'inline-block';
+    return;
+  }
+  const { el, text } = lines[lineIdx];
+  const span = document.getElementById(el);
+  if (charIdx < text.length) {
+    span.textContent += text[charIdx];
+    charIdx++;
+    setTimeout(type, 50 + Math.random() * 40);
+  } else {
+    lineIdx++;
+    charIdx = 0;
+    setTimeout(type, 400);
+  }
+}
+setTimeout(type, 600);
+
+// ── Waitlist form ────────────────────────────────────
+const form = document.getElementById('waitlist-form');
+const msg = document.getElementById('signup-msg');
+
+// Load signup count
+fetch('/api/waitlist/count')
+  .then(r => r.json())
+  .then(data => {
+    if (data.count > 0) {
+      document.getElementById('signup-count').textContent =
+        'Join ' + data.count + ' teacher' + (data.count !== 1 ? 's' : '') + ' on the early access list';
+    }
+  })
+  .catch(() => {});
+
+form.addEventListener('submit', function(e) {
+  e.preventDefault();
+  const email = form.querySelector('input[name="email"]').value;
+  msg.textContent = '';
+  msg.className = 'signup-msg';
+
+  fetch('/api/waitlist', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email: email, role: 'teacher' }),
+  })
+    .then(r => r.json())
+    .then(data => {
+      if (data.ok) {
+        msg.textContent = "You're on the list! We'll be in touch.";
+        msg.className = 'signup-msg success';
+        form.querySelector('input[name="email"]').value = '';
+        // Update count
+        if (data.count) {
+          document.getElementById('signup-count').textContent =
+            'Join ' + data.count + ' teacher' + (data.count !== 1 ? 's' : '') + ' on the early access list';
+        }
+      } else {
+        msg.textContent = data.error || 'Something went wrong. Try again.';
+        msg.className = 'signup-msg error';
+      }
+    })
+    .catch(() => {
+      // Fallback: submit to Formspree if API unavailable
+      form.action = 'https://formspree.io/f/placeholder';
+      form.submit();
+    });
+});
+</script>
 
 </body>
 </html>

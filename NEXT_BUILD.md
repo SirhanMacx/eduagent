@@ -1,120 +1,129 @@
-# EDUagent Next Build Wave
+# EDUagent Next Build Wave — Launch Prep
 
 Build the following features on top of the existing codebase at ~/Projects/eduagent/. All code must be clean, typed, tested, committed, and pushed when done.
 
-## Feature 1: Real-time Streaming Generation (SSE)
+## Feature 1: Real Landing Page (eduagent/landing/)
 
-The current web UI submits a form and waits. Make it stream.
+The project already has a `landing/` directory stub. Build it out.
 
-In `eduagent/api/server.py` and `eduagent/api/routes/generate.py`:
-- Add a `GET /api/stream/unit` and `GET /api/stream/lesson` endpoint using FastAPI's `StreamingResponse` with `text/event-stream` content type
-- Stream progress events as the LLM generates: `data: {"status": "generating_lesson_1", "progress": 20}\n\n`
-- In `eduagent/api/static/app.js`, use EventSource to consume the stream and update a progress bar + live-preview div in the UI
-- Show a spinning indicator with status text: "Planning unit structure...", "Generating Lesson 1...", "Writing materials...", etc.
+Create `eduagent/landing/index.html` — a production-quality static landing page:
+- Headline: "Your AI co-teacher that sounds like you"
+- Subhead: "EDUagent learns from your curriculum files and generates lessons, worksheets, and assessments in your exact teaching voice."
+- Hero section with terminal/CLI demo (animated typewriter showing `pip install eduagent && eduagent setup`)
+- Three value props:
+  1. "Trained on YOUR materials" — not generic AI, learns your 9 years of lessons
+  2. "Generates in your voice" — do-nows, exit tickets, DBQs — the way you write them
+  3. "Students get you at 11pm" — chatbot answers questions the way their teacher would
+- How it works: 3 steps (install → ingest → generate)
+- Early access CTA: email capture form (use a Netlify form or Formspree endpoint `https://formspree.io/f/placeholder`)
+- Footer: GitHub link, "Open Source" badge
+- Fully self-contained HTML (inline CSS, no external deps except Google Fonts CDN)
+- Mobile responsive, clean design (dark theme preferred — teachers grade at night)
 
-## Feature 2: Google Classroom Export
+Save to `eduagent/landing/index.html`
 
-Add `eduagent/api/routes/export.py` endpoint:
-- `POST /api/export/{lesson_id}/classroom` — generates a Google Classroom-compatible JSON payload
-- The format should be a `CourseWork` resource compatible with the Google Classroom API (v1)
-- Include: title, description (the lesson objective), materials (worksheet as attachment description), due date (optional), max points
-- Return the JSON so a teacher can paste it into a script or future OAuth flow
-- Add `eduagent export classroom --lesson-file lesson.json` CLI command
+Add CLI command: `eduagent landing --serve` — serves the landing page on port 8080
+Add route to existing API server: `GET /` → serve the landing page (redirect / to /dashboard if logged in)
 
-## Feature 3: Embeddable Student Chatbot Widget
+## Feature 2: ProductHunt Launch Kit
 
-Create `eduagent/api/static/widget.js`:
-- A self-contained JS widget (no dependencies) that teachers paste into any webpage, Google Site, or LMS
-- The snippet: `<script src="http://localhost:8000/static/widget.js" data-lesson-id="abc123"></script>`
-- Creates a floating chat button (bottom-right corner) that expands into a chat panel
-- Sends messages to `/api/chat` with the lesson_id
-- Styled cleanly (inline CSS, no conflicts with host page)
-- Shows teacher name and subject in the chat header ("Ask Ms. Johnson about Cell Biology")
+Create `output/producthunt/` directory with:
 
-## Feature 4: Lesson Quality Score Engine
+**`launch-checklist.md`:**
+- Pre-launch: submit to "coming soon", get 20+ supporters, schedule for Tuesday 12:01 AM PST
+- Gallery: 5 screenshots needed (dashboard, lesson output, student bot, persona setup, quality score)
+- Tagline options (5 variations, 60 chars max)
+- Description (260 chars for PH)
+- Topics: Education, Artificial Intelligence, Productivity, Developer Tools
 
-Add `eduagent/quality.py`:
+**`gallery-screenshots.md`:**
+- Instructions for Jon to capture each screenshot
+- Exact URLs/commands to run to generate demo content first
+- Dimensions: 1270x952px
 
+**`maker-comment.md`:**
+- Jon's first comment as maker (authentic, not salesy)
+- References his 9 years at Great Neck South
+- Explains the personal frustration that led to building this
+- 200-300 words
+
+**`hunter-outreach.md`:**
+- 5 potential hunters with brief rationale (look for EdTech/AI educators who hunt frequently)
+- Template DM to send to potential hunters
+
+**`communities.md`:**
+- 15 communities to post in on launch day
+- Include: r/Teachers, r/edtech, r/LocalLLaMA, HN, specific Discord servers
+- Timing: stagger posts across 6 hours
+
+## Feature 3: Demo Mode — No API Key Required
+
+Teachers shouldn't need an API key just to try it. Add a demo mode.
+
+In `eduagent/llm.py`:
+- Detect when no API key is configured
+- In demo mode, return canned example outputs (pre-written lesson plans stored in `eduagent/demo/`)
+- The demo lessons should look real and high quality — use Jon's actual teaching style
+
+Create `eduagent/demo/` with:
+- `demo_lesson_social_studies_g8.json` — a full lesson plan (aim, do-now, instruction, exit ticket, worksheet)
+- `demo_lesson_science_g6.json`
+- `demo_unit_plan.json` — a 3-lesson unit
+- `demo_assessment.json` — a 10-question DBQ-style assessment
+
+In CLI: `eduagent demo` — generates and displays a full sample lesson without any API key or files
+
+In web UI: If no API key, show demo mode banner: "Running in demo mode — configure your LLM key to generate real lessons"
+
+## Feature 4: Email Capture Backend
+
+Teachers who visit the landing page should be tracked.
+
+Create `eduagent/waitlist.py`:
 ```python
-class LessonQualityScore:
-    """Score a generated lesson plan on multiple dimensions."""
+class WaitlistManager:
+    """Manages early access signups."""
     
-    dimensions = [
-        "objective_clarity",      # Is the SWBAT measurable and specific?
-        "do_now_relevance",       # Does the warm-up connect to the objective?
-        "instruction_depth",      # Is the direct instruction substantive?
-        "differentiation_quality", # Are accommodations specific, not generic?
-        "exit_ticket_alignment",  # Do exit ticket questions test the objective?
-        "materials_completeness", # Does the worksheet cover key concepts?
-    ]
+    def add_signup(self, email: str, role: str = "teacher", notes: str = "") -> None:
+        """Add email to waitlist SQLite table."""
     
-    async def score(self, lesson: DailyLesson, materials: LessonMaterials) -> dict:
-        """Score each dimension 1-5 with brief explanation."""
-        # Use LLM to score each dimension
-        # Return: {dimension: {score: int, explanation: str}, overall: float}
+    def export_csv(self, output_path: Path) -> None:
+        """Export waitlist to CSV."""
+    
+    def count(self) -> int:
+        """Return total signup count."""
 ```
 
-- Add `eduagent score --lesson-file lesson.json` CLI command
-- Display as a rich table with scores and explanations
-- Store scores in the lessons table in the DB
-- Show score on the lesson view page in the web UI (color-coded: green 4-5, yellow 3, red 1-2)
+- Store in SQLite (same `~/.eduagent/eduagent.db`)
+- Add API route: `POST /api/waitlist` — accepts `{email, role}`
+- Add CLI: `eduagent waitlist --count` / `eduagent waitlist --export waitlist.csv`
+- Wire the landing page form to POST to `/api/waitlist`
+- Return count in landing page: "Join 47 teachers on the early access list" (pull from DB)
 
-## Feature 5: Lesson Plan Diff / Improvement Suggestions
+## Feature 5: Shareable Lesson URLs
 
-Add to `eduagent/improver.py`:
+A teacher generates a lesson and wants to share it with a colleague. Add sharing.
 
-```python
-async def suggest_improvements(lesson: DailyLesson, feedback_notes: str = "") -> list[str]:
-    """
-    Given a lesson plan (and optional teacher feedback),
-    generate 3-5 specific, actionable improvement suggestions.
-    Each suggestion targets a specific section and explains the change.
-    """
-```
+In `eduagent/database.py`:
+- Add `share_token` column to `lessons` table (UUID, nullable)
+- Add method: `create_share_link(lesson_id: int) -> str` — generates UUID token, stores it
+- Add method: `get_by_share_token(token: str) -> Optional[DailyLesson]`
 
-- Add UI: on the lesson view page, a "Suggest Improvements" button
-- Shows a panel with 3-5 specific suggestions like:
-  - "Your Do-Now doesn't connect to today's objective. Consider: 'What do you think happens when a plant is kept in the dark for a week?'"
-  - "The exit ticket question 3 is too easy — it only checks recall. Add a synthesis question."
+In `eduagent/api/routes/lessons.py`:
+- `POST /api/lessons/{lesson_id}/share` → returns `{share_url: "http://localhost:8000/shared/abc123"}`
+- `GET /shared/{token}` → public view of lesson (no auth required, read-only)
 
-## Feature 6: Bulk Generation — Full Course
+In web UI:
+- "Share" button on lesson view page
+- Copies share URL to clipboard
+- Public view shows lesson in clean print-friendly layout (no sidebar)
 
-Add `eduagent/api/routes/generate.py`:
-- `POST /api/course` — given a subject + grade + full-year topic list, generate an entire course structure
-- Input: `{subject, grade_level, topics: ["Topic 1", "Topic 2", ...], weeks_per_topic: 2}`
-- Output: A course map with units for each topic, daily lesson titles for each unit
-- This is the "full year plan" feature — a teacher uploads their pacing guide and gets back a year of lesson titles organized by unit
-- Add CLI: `eduagent course --subject science --grade 8 --topics-file pacing_guide.txt`
-
-## Feature 7: Lesson Template System
-
-Add `eduagent/templates_lib.py` (not to be confused with Jinja2 templates):
-- A library of lesson structure templates beyond "I Do / We Do / You Do"
-- Include: Socratic Seminar, Jigsaw, Think-Pair-Share, Project-Based, Flipped Classroom, Station Rotation
-- Each template defines: timing structure, section names, expected student activities
-- Add `eduagent templates list` CLI command showing all templates
-- In the web UI generation form, add a "Lesson Structure" dropdown that populates from this library
-- When a template is selected, use it as a constraint in the lesson generation prompt
-
-## Feature 8: Export to PDF (production quality)
-
-Currently using basic export. Replace with weasyprint for professional PDF output:
-- Proper header with school logo placeholder, teacher name, date
-- Section dividers
-- Print-optimized CSS (no dark backgrounds, high contrast)
-- Page breaks at appropriate points (each major section starts on a new page if space is tight)
-- Worksheet on a separate page automatically
-
-Add to `eduagent/exporter.py`:
-```python
-async def export_lesson_pdf(lesson: DailyLesson, materials: LessonMaterials, output_path: Path) -> Path:
-    """Export using weasyprint for professional print-quality PDF."""
-```
+Add CLI: `eduagent share --lesson-id 5` → prints shareable URL
 
 ## After all features:
 
-1. `python -m pytest tests/ -v` — all must pass (add tests for new features)
+1. `python -m pytest tests/ -v --tb=short` — all must pass (add tests for new features)
 2. `python -m ruff check eduagent/ --fix` — clean
-3. `git add -A && git commit -m "feat: streaming gen, Classroom export, chatbot widget, quality scoring, improvement suggestions, course planner, lesson templates, PDF export"`
+3. `git add -A && git commit -m "feat: landing page, ProductHunt kit, demo mode, email capture, shareable lesson URLs"`
 4. `git push origin main`
-5. `openclaw system event --text "Done: EDUagent v0.1.2 — 8 new features, streaming, quality scoring, full course planning" --mode now`
+5. Report: what's done, test count, any issues found

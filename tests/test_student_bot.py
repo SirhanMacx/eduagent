@@ -263,6 +263,311 @@ class TestStudentReport:
         assert len(report["recent_questions"]) == 2
 
 
+# ── Student registration ───────────────────────────────────────────
+
+
+class TestStudentRegistration:
+    def test_register_student_bad_class(self):
+        from eduagent.student_bot import StudentBot
+
+        bot = StudentBot()
+        result = bot.register_student("stu-001", "BAD-CODE", "Alice")
+        assert "don't recognize" in result.lower()
+
+    def test_register_student_success(self):
+        from eduagent.student_bot import StudentBot
+
+        bot = StudentBot()
+        code = bot.create_class("teacher-mac")
+        result = bot.register_student("stu-001", code, "Alice")
+        assert "welcome" in result.lower()
+        assert bot.is_registered("stu-001", code)
+
+    def test_register_student_already_registered(self):
+        from eduagent.student_bot import StudentBot
+
+        bot = StudentBot()
+        code = bot.create_class("teacher-mac")
+        bot.register_student("stu-001", code, "Alice")
+        result = bot.register_student("stu-001", code, "Alice")
+        assert "already registered" in result.lower()
+
+    def test_is_registered_false_before_registration(self):
+        from eduagent.student_bot import StudentBot
+
+        bot = StudentBot()
+        code = bot.create_class("teacher-mac")
+        assert not bot.is_registered("stu-new", code)
+
+    def test_get_registered_students(self):
+        from eduagent.student_bot import StudentBot
+
+        bot = StudentBot()
+        code = bot.create_class("teacher-mac")
+        bot.register_student("stu-001", code, "Alice")
+        bot.register_student("stu-002", code, "Bob")
+
+        students = bot.get_registered_students(code)
+        assert len(students) == 2
+        names = {s["display_name"] for s in students}
+        assert "Alice" in names
+        assert "Bob" in names
+
+    def test_register_student_no_name_uses_id(self):
+        from eduagent.student_bot import StudentBot
+
+        bot = StudentBot()
+        code = bot.create_class("teacher-mac")
+        bot.register_student("stu-anon", code)
+
+        students = bot.get_registered_students(code)
+        assert len(students) == 1
+        assert students[0]["display_name"] == "stu-anon"
+
+
+# ── Confusion detection ────────────────────────────────────────────
+
+
+class TestConfusionDetection:
+    def test_detect_confused_about(self):
+        from eduagent.student_bot import StudentBot
+
+        topic = StudentBot.detect_confusion_topic("I'm confused about the powder keg analogy")
+        assert topic == "the powder keg analogy"
+
+    def test_detect_dont_understand(self):
+        from eduagent.student_bot import StudentBot
+
+        topic = StudentBot.detect_confusion_topic("I don't understand alliances")
+        assert topic == "alliances"
+
+    def test_detect_explain(self):
+        from eduagent.student_bot import StudentBot
+
+        topic = StudentBot.detect_confusion_topic("can you explain the MANIA acronym?")
+        assert topic is not None
+        assert "mania" in topic.lower()
+
+    def test_detect_help_me_understand(self):
+        from eduagent.student_bot import StudentBot
+
+        topic = StudentBot.detect_confusion_topic("help me understand nationalism")
+        assert topic == "nationalism"
+
+    def test_no_confusion_in_normal_question(self):
+        from eduagent.student_bot import StudentBot
+
+        topic = StudentBot.detect_confusion_topic("What year did WWI start?")
+        assert topic is None
+
+    def test_find_lesson_section_match(self):
+        from eduagent.student_bot import StudentBot
+
+        lesson = {
+            "direct_instruction": "The powder keg analogy refers to the Balkans in 1914.",
+            "guided_practice": "Students label a map.",
+        }
+        section = StudentBot._find_lesson_section_for_topic("powder keg", lesson)
+        assert "powder keg" in section.lower()
+
+    def test_find_lesson_section_no_match(self):
+        from eduagent.student_bot import StudentBot
+
+        lesson = {
+            "direct_instruction": "Plants use sunlight.",
+            "guided_practice": "Label diagram.",
+        }
+        section = StudentBot._find_lesson_section_for_topic("quantum physics", lesson)
+        assert section == ""
+
+    @patch("eduagent.chat.student_chat", new_callable=AsyncMock)
+    def test_confusion_injects_lesson_context(self, mock_chat):
+        from eduagent.state import TeacherSession
+        from eduagent.student_bot import StudentBot
+
+        session = TeacherSession(
+            teacher_id="teacher-conf",
+            persona=TeacherPersona(name="Mr. Mac"),
+        )
+        session.save()
+
+        bot = StudentBot()
+        code = bot.create_class("teacher-conf")
+        lesson = json.dumps({
+            "title": "WWI Causes",
+            "objective": "Understand causes of WWI",
+            "direct_instruction": (
+                "The powder keg analogy refers to the Balkans region before 1914. "
+                "Nationalism, militarism, and imperial rivalry had packed the region with tension."
+            ),
+            "guided_practice": "Map activity",
+        })
+        _run(bot.set_active_lesson(code, "lesson-3", "teacher-conf", lesson))
+
+        mock_chat.return_value = "Great question about the powder keg!"
+
+        _run(bot.handle_message(
+            "I'm confused about the powder keg analogy", "stu-001", code
+        ))
+
+        call_args = mock_chat.call_args
+        question_arg = call_args.kwargs.get("question", "")
+        assert "powder keg" in question_arg.lower()
+        assert "confused about" in question_arg.lower()
+
+
+# ── Mode toggle ────────────────────────────────────────────────────
+
+
+class TestModeToggle:
+    def test_get_mode_default_is_answer(self):
+        from eduagent.student_bot import StudentBot
+
+        bot = StudentBot()
+        code = bot.create_class("teacher-mode")
+        assert bot.get_mode(code) == "answer"
+
+    def test_get_mode_hint_when_enabled(self):
+        from eduagent.student_bot import StudentBot
+
+        bot = StudentBot()
+        code = bot.create_class("teacher-mode")
+        bot.set_hint_mode(code, True)
+        assert bot.get_mode(code) == "hint"
+
+    def test_get_mode_answer_when_disabled(self):
+        from eduagent.student_bot import StudentBot
+
+        bot = StudentBot()
+        code = bot.create_class("teacher-mode")
+        bot.set_hint_mode(code, True)
+        bot.set_hint_mode(code, False)
+        assert bot.get_mode(code) == "answer"
+
+    @patch("eduagent.chat.student_chat", new_callable=AsyncMock)
+    def test_answer_mode_no_hint_instruction(self, mock_chat):
+        from eduagent.state import TeacherSession
+        from eduagent.student_bot import StudentBot
+
+        session = TeacherSession(
+            teacher_id="teacher-ans",
+            persona=TeacherPersona(name="Mr. Answer"),
+        )
+        session.save()
+
+        bot = StudentBot()
+        code = bot.create_class("teacher-ans")
+        lesson = json.dumps({"title": "Test", "objective": "Test"})
+        _run(bot.set_active_lesson(code, "lesson-1", "teacher-ans", lesson))
+
+        # hint mode is OFF (answer mode)
+        mock_chat.return_value = "The answer is 42."
+
+        _run(bot.handle_message("What's the answer to #3?", "stu-001", code))
+
+        call_args = mock_chat.call_args
+        question_arg = call_args.kwargs.get("question", "")
+        assert "HINT MODE" not in question_arg
+
+    @patch("eduagent.chat.student_chat", new_callable=AsyncMock)
+    def test_hint_mode_includes_socratic_instruction(self, mock_chat):
+        from eduagent.state import TeacherSession
+        from eduagent.student_bot import StudentBot
+
+        session = TeacherSession(
+            teacher_id="teacher-soc",
+            persona=TeacherPersona(name="Mr. Socrates"),
+        )
+        session.save()
+
+        bot = StudentBot()
+        code = bot.create_class("teacher-soc")
+        lesson = json.dumps({"title": "Test", "objective": "Test"})
+        _run(bot.set_active_lesson(code, "lesson-1", "teacher-soc", lesson))
+
+        bot.set_hint_mode(code, True)
+        mock_chat.return_value = "What do you think?"
+
+        _run(bot.handle_message("Give me the answer", "stu-001", code))
+
+        call_args = mock_chat.call_args
+        question_arg = call_args.kwargs.get("question", "")
+        assert "Socratic" in question_arg
+        assert "NEVER give direct answers" in question_arg
+
+
+# ── Conversation memory ────────────────────────────────────────────
+
+
+class TestConversationMemory:
+    @patch("eduagent.chat.student_chat", new_callable=AsyncMock)
+    def test_history_passed_to_chat(self, mock_chat):
+        from eduagent.state import TeacherSession
+        from eduagent.student_bot import StudentBot
+
+        session = TeacherSession(
+            teacher_id="teacher-mem",
+            persona=TeacherPersona(name="Mr. Memory"),
+        )
+        session.save()
+
+        bot = StudentBot()
+        code = bot.create_class("teacher-mem")
+        lesson = json.dumps({"title": "Memory Test", "objective": "Remember things"})
+        _run(bot.set_active_lesson(code, "lesson-1", "teacher-mem", lesson))
+
+        mock_chat.return_value = "First answer."
+        _run(bot.handle_message("First question", "stu-001", code))
+
+        mock_chat.return_value = "Second answer referencing first."
+        _run(bot.handle_message("Follow-up question", "stu-001", code))
+
+        # On the second call, chat_history should contain the first exchange
+        second_call = mock_chat.call_args_list[1]
+        history = second_call.kwargs.get("chat_history", [])
+        assert len(history) >= 2
+        assert history[0]["content"] == "First question"
+        assert history[1]["content"] == "First answer."
+
+    @patch("eduagent.chat.student_chat", new_callable=AsyncMock)
+    def test_different_students_have_separate_memory(self, mock_chat):
+        from eduagent.state import TeacherSession
+        from eduagent.student_bot import StudentBot
+
+        session = TeacherSession(
+            teacher_id="teacher-sep",
+            persona=TeacherPersona(name="Mr. Sep"),
+        )
+        session.save()
+
+        bot = StudentBot()
+        code = bot.create_class("teacher-sep")
+        lesson = json.dumps({"title": "Test", "objective": "Test"})
+        _run(bot.set_active_lesson(code, "lesson-1", "teacher-sep", lesson))
+
+        mock_chat.return_value = "Answer for Alice."
+        _run(bot.handle_message("Alice's question", "stu-alice", code))
+
+        mock_chat.return_value = "Answer for Bob."
+        _run(bot.handle_message("Bob's question", "stu-bob", code))
+
+        # Bob's call should NOT contain Alice's history
+        bob_call = mock_chat.call_args_list[1]
+        history = bob_call.kwargs.get("chat_history", [])
+        for msg in history:
+            assert "Alice" not in msg["content"]
+
+
+# ── Student CLI module ─────────────────────────────────────────────
+
+
+class TestStudentCLI:
+    def test_student_cli_importable(self):
+        from eduagent.student_cli import cli_entry, main
+        assert callable(main)
+        assert callable(cli_entry)
+
+
 # ── Router patterns ─────────────────────────────────────────────────
 
 
