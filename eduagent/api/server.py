@@ -82,7 +82,7 @@ def create_app() -> FastAPI:
     # ── Page routes (server-side rendered) ───────────────────────────
 
     # Landing page path
-    _LANDING_DIR = Path(__file__).parent.parent / "landing"
+    landing_dir = Path(__file__).parent.parent / "landing"
 
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request):
@@ -96,7 +96,7 @@ def create_app() -> FastAPI:
             return RedirectResponse(url="/dashboard", status_code=302)
 
         # Otherwise serve the landing page
-        landing_file = _LANDING_DIR / "index.html"
+        landing_file = landing_dir / "index.html"
         if landing_file.exists():
             return HTMLResponse(landing_file.read_text())
 
@@ -121,7 +121,7 @@ def create_app() -> FastAPI:
     @app.get("/landing", response_class=HTMLResponse)
     async def landing_page():
         """Always serve the landing page (bypasses redirect)."""
-        landing_file = _LANDING_DIR / "index.html"
+        landing_file = landing_dir / "index.html"
         if landing_file.exists():
             return HTMLResponse(landing_file.read_text())
         return HTMLResponse("<h1>Landing page not found</h1>", status_code=404)
