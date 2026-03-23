@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "eduagent"
-version = "0.1.0"
+version = "0.1.2"
 description = "Your teaching files, your AI co-teacher. Upload curriculum materials, get a digital co-teacher that generates lessons in your voice."
 readme = "README.md"
 license = "MIT"
@@ -43,6 +43,7 @@ dependencies = [
 
 [project.optional-dependencies]
 google = ["google-api-python-client>=2.0.0", "google-auth-oauthlib>=1.0.0"]
+pdf = ["weasyprint>=60.0"]
 dev = ["pytest>=7.0.0", "pytest-asyncio>=0.21.0", "ruff>=0.1.0"]
 
 [project.scripts]
@@ -64,6 +65,8 @@ select = ["E", "F", "I", "N", "W"]
 "eduagent/standards.py" = ["E501"]
 "eduagent/cli.py" = ["E501"]
 "eduagent/api/**" = ["E501"]
+"eduagent/templates_lib.py" = ["E501"]
+"eduagent/exporter.py" = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

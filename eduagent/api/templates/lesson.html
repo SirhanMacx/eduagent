@@ -81,13 +81,48 @@
         {% endif %}
 
         {% if not is_shared|default(false) %}
+        <!-- Quality Scores -->
+        <div class="lesson-section" id="quality-section">
+            <h3>Quality Score</h3>
+            <div id="quality-scores">
+                {% if scores %}
+                <div class="score-grid">
+                    {% for dim, info in scores.items() if dim != 'overall' %}
+                    <div class="score-item">
+                        <span class="score-label">{{ dim.replace('_', ' ').title() }}</span>
+                        <span class="score-badge {% if info.score >= 4 %}score-green{% elif info.score == 3 %}score-yellow{% else %}score-red{% endif %}">{{ info.score }}/5</span>
+                        <span class="score-explain">{{ info.explanation }}</span>
+                    </div>
+                    {% endfor %}
+                    <div class="score-overall">
+                        <strong>Overall:</strong>
+                        <span class="score-badge {% if scores.overall >= 4 %}score-green{% elif scores.overall >= 3 %}score-yellow{% else %}score-red{% endif %}">{{ scores.overall }}/5</span>
+                    </div>
+                </div>
+                {% else %}
+                <button class="btn btn-sm btn-primary" id="score-btn" onclick="scoreLesson()">Score This Lesson</button>
+                <div id="score-loading" hidden class="status-box loading">Scoring lesson...</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Improvement Suggestions -->
+        <div class="lesson-section" id="suggestions-section">
+            <h3>Improvement Suggestions</h3>
+            <button class="btn btn-sm" id="suggest-btn" onclick="suggestImprovements()">Suggest Improvements</button>
+            <div id="suggest-loading" hidden class="status-box loading">Generating suggestions...</div>
+            <div id="suggestions-list"></div>
+        </div>
+
         <div class="lesson-actions">
             <h3>Export</h3>
             <div class="btn-group">
                 <a href="/api/export/{{ lesson.id }}?fmt=markdown" class="btn btn-sm">Markdown</a>
                 <a href="/api/export/{{ lesson.id }}?fmt=pdf" class="btn btn-sm">PDF</a>
                 <a href="/api/export/{{ lesson.id }}?fmt=docx" class="btn btn-sm">DOCX</a>
+                <button class="btn btn-sm" onclick="exportClassroom()">Google Classroom</button>
             </div>
+            <div id="classroom-output" hidden class="classroom-json"></div>
         </div>
         {% endif %}
     </div>
@@ -140,4 +175,75 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+{% block scripts %}
+<script>
+var lessonId = '{{ lesson.id }}';
+
+function scoreLesson() {
+    var btn = document.getElementById('score-btn');
+    var loading = document.getElementById('score-loading');
+    btn.hidden = true;
+    loading.hidden = false;
+    fetch('/api/score/' + lessonId).then(function(r){return r.json();}).then(function(data) {
+        loading.hidden = true;
+        if (data.scores) {
+            var html = '<div class="score-grid">';
+            var dims = ['objective_clarity','do_now_relevance','instruction_depth','differentiation_quality','exit_ticket_alignment','materials_completeness'];
+            dims.forEach(function(dim) {
+                var info = data.scores[dim];
+                if (!info) return;
+                var cls = info.score >= 4 ? 'score-green' : (info.score === 3 ? 'score-yellow' : 'score-red');
+                var label = dim.replace(/_/g,' ').replace(/\b\w/g, function(c){return c.toUpperCase();});
+                html += '<div class="score-item"><span class="score-label">' + label + '</span>';
+                html += '<span class="score-badge ' + cls + '">' + info.score + '/5</span>';
+                html += '<span class="score-explain">' + (info.explanation||'') + '</span></div>';
+            });
+            var overall = data.scores.overall || 0;
+            var oCls = overall >= 4 ? 'score-green' : (overall >= 3 ? 'score-yellow' : 'score-red');
+            html += '<div class="score-overall"><strong>Overall:</strong> <span class="score-badge ' + oCls + '">' + overall + '/5</span></div>';
+            html += '</div>';
+            document.getElementById('quality-scores').innerHTML = html;
+        }
+    }).catch(function(e) {
+        loading.hidden = true;
+        btn.hidden = false;
+    });
+}
+
+function suggestImprovements() {
+    var btn = document.getElementById('suggest-btn');
+    var loading = document.getElementById('suggest-loading');
+    btn.hidden = true;
+    loading.hidden = false;
+    fetch('/api/suggest/' + lessonId, {method:'POST'}).then(function(r){return r.json();}).then(function(data) {
+        loading.hidden = true;
+        if (data.suggestions) {
+            var html = '<ul class="suggestions-list">';
+            data.suggestions.forEach(function(s) { html += '<li>' + s + '</li>'; });
+            html += '</ul>';
+            document.getElementById('suggestions-list').innerHTML = html;
+        }
+    }).catch(function(e) {
+        loading.hidden = true;
+        btn.hidden = false;
+    });
+}
+
+function exportClassroom() {
+    fetch('/api/export/' + lessonId + '/classroom', {method:'POST'}).then(function(r){return r.json();}).then(function(data) {
+        if (data.coursework) {
+            var el = document.getElementById('classroom-output');
+            el.hidden = false;
+            var jsonStr = JSON.stringify(data.coursework, null, 2);
+            el.innerHTML = '<h4>Google Classroom CourseWork JSON</h4><pre>' + jsonStr + '</pre>';
+            var copyBtn = document.createElement('button');
+            copyBtn.className = 'btn btn-sm';
+            copyBtn.textContent = 'Copy to Clipboard';
+            copyBtn.onclick = function() { navigator.clipboard.writeText(jsonStr); copyBtn.textContent = 'Copied!'; };
+            el.appendChild(copyBtn);
+        }
+    }).catch(function() {});
+}
+</script>
 {% endblock %}

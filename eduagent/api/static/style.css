@@ -456,6 +456,109 @@ body {
 .fb-notes { color: var(--gray-500); margin: 0.2rem 0; }
 .fb-date { color: var(--gray-300); font-size: 0.75rem; }
 
+/* Progress bar */
+.progress-bar-container {
+    width: 100%;
+    height: 8px;
+    background: var(--gray-200);
+    border-radius: 4px;
+    margin-bottom: 0.75rem;
+    overflow: hidden;
+}
+.progress-bar {
+    height: 100%;
+    background: var(--blue);
+    border-radius: 4px;
+    transition: width 0.4s ease;
+}
+.progress-status {
+    font-size: 0.85rem;
+    color: var(--blue);
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    min-height: 1.2em;
+}
+
+/* Quality scores */
+.score-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+.score-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.4rem;
+    align-items: start;
+}
+.score-label {
+    font-weight: 500;
+    font-size: 0.85rem;
+    color: var(--gray-700);
+}
+.score-badge {
+    display: inline-block;
+    padding: 0.1rem 0.5rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    color: #fff;
+    white-space: nowrap;
+}
+.score-green { background: var(--green); }
+.score-yellow { background: var(--orange); }
+.score-red { background: var(--red); }
+.score-explain {
+    grid-column: 1 / -1;
+    font-size: 0.8rem;
+    color: var(--gray-500);
+}
+.score-overall {
+    margin-top: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--gray-200);
+    font-size: 0.9rem;
+}
+
+/* Suggestions */
+.suggestions-list {
+    list-style: none;
+    padding: 0;
+    margin: 0.75rem 0 0;
+}
+.suggestions-list li {
+    padding: 0.6rem 0.8rem;
+    margin-bottom: 0.5rem;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    border-radius: var(--radius);
+    font-size: 0.85rem;
+    color: var(--gray-700);
+    line-height: 1.5;
+}
+
+/* Classroom JSON output */
+.classroom-json {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+}
+.classroom-json pre {
+    background: var(--gray-900);
+    color: #e5e7eb;
+    padding: 1rem;
+    border-radius: var(--radius);
+    overflow-x: auto;
+    font-size: 0.8rem;
+    margin: 0.5rem 0;
+}
+.classroom-json h4 {
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .gen-grid, .lesson-grid { grid-template-columns: 1fr; }

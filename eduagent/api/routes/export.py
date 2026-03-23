@@ -45,6 +45,50 @@ async def export_lesson_endpoint(lesson_id: str, fmt: str = "markdown"):
         return JSONResponse({"error": f"Unsupported format: {fmt}"}, status_code=400)
 
 
+@router.post("/export/{lesson_id}/classroom")
+async def export_classroom(lesson_id: str):
+    """Generate a Google Classroom-compatible CourseWork JSON payload."""
+    db = get_db()
+    lesson_row = db.get_lesson(lesson_id)
+    if not lesson_row:
+        return JSONResponse({"error": "Lesson not found."}, status_code=404)
+
+    lesson_data = json.loads(lesson_row["lesson_json"]) if lesson_row["lesson_json"] else {}
+    materials_data = json.loads(lesson_row["materials_json"]) if lesson_row.get("materials_json") else None
+
+    # Build Google Classroom CourseWork resource (v1 API format)
+    description_parts = [lesson_data.get("objective", "")]
+    if lesson_data.get("standards"):
+        description_parts.append(f"Standards: {', '.join(lesson_data['standards'])}")
+    if lesson_data.get("homework"):
+        description_parts.append(f"Homework: {lesson_data['homework']}")
+
+    coursework_materials = []
+    if materials_data and materials_data.get("worksheet_items"):
+        worksheet_desc = "Student Worksheet:\n"
+        for item in materials_data["worksheet_items"]:
+            worksheet_desc += f"{item.get('item_number', '')}. {item.get('prompt', '')}\n"
+        coursework_materials.append({
+            "description": {"text": worksheet_desc}
+        })
+
+    max_points = 0
+    if materials_data and materials_data.get("worksheet_items"):
+        max_points = sum(item.get("point_value", 1) for item in materials_data["worksheet_items"])
+
+    coursework = {
+        "title": lesson_data.get("title", lesson_row.get("title", "Lesson")),
+        "description": "\n\n".join(description_parts),
+        "materials": coursework_materials,
+        "maxPoints": max_points or 100,
+        "workType": "ASSIGNMENT",
+        "state": "DRAFT",
+        "submissionModificationMode": "MODIFIABLE_UNTIL_TURNED_IN",
+    }
+
+    return {"lesson_id": lesson_id, "coursework": coursework}
+
+
 @router.get("/share/{token}")
 async def share_lesson_api(token: str):
     """Get a lesson by its share token (JSON API)."""

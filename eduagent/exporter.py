@@ -236,7 +236,160 @@ def materials_to_markdown(materials: LessonMaterials) -> str:
     return "\n".join(lines)
 
 
-# ── PDF export ───────────────────────────────────────────────────────────
+# ── Production PDF export (weasyprint) ───────────────────────────────────
+
+_PDF_CSS = """\
+@page {
+    size: letter;
+    margin: 0.75in 1in;
+    @top-center { content: "EDUagent Lesson Plan"; font-size: 9pt; color: #888; }
+    @bottom-center { content: "Page " counter(page) " of " counter(pages); font-size: 9pt; color: #888; }
+}
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 11pt; line-height: 1.6; color: #1a1a2e;
+}
+h1 { font-size: 20pt; color: #0f3460; margin-bottom: 4pt; page-break-after: avoid; }
+h2 { font-size: 14pt; color: #16213e; border-bottom: 2px solid #0f3460; padding-bottom: 3pt; margin-top: 18pt; page-break-after: avoid; }
+h3 { font-size: 12pt; color: #16213e; margin-top: 12pt; page-break-after: avoid; }
+p { margin-bottom: 6pt; }
+ul, ol { padding-left: 1.2em; margin-bottom: 8pt; }
+li { margin-bottom: 3pt; }
+table { width: 100%; border-collapse: collapse; margin-bottom: 12pt; }
+th, td { text-align: left; padding: 6pt 8pt; border: 1px solid #ddd; font-size: 10pt; }
+th { background: #0f3460; color: #fff; font-weight: 600; }
+tr:nth-child(even) { background: #f8f9fa; }
+.header-block { background: #f0f4ff; border: 1px solid #c7d7f5; border-radius: 6px; padding: 12pt 16pt; margin-bottom: 16pt; }
+.header-block p { margin: 2pt 0; font-size: 10pt; }
+.section-divider { border: none; border-top: 1px solid #e5e7eb; margin: 12pt 0; }
+.worksheet-page { page-break-before: always; }
+.score-badge { display: inline-block; padding: 2pt 8pt; border-radius: 10pt; font-weight: 600; font-size: 10pt; color: #fff; }
+.score-green { background: #059669; }
+.score-yellow { background: #d97706; }
+.score-red { background: #dc2626; }
+"""
+
+
+def _lesson_to_html_for_pdf(
+    lesson: DailyLesson,
+    materials: "LessonMaterials | None" = None,
+    teacher_name: str = "",
+    date_str: str = "",
+) -> str:
+    """Convert lesson + materials to print-ready HTML for weasyprint."""
+    from html import escape as esc
+
+    sections = []
+
+    # Header block
+    header_parts = [f"<strong>Objective:</strong> {esc(lesson.objective)}"]
+    if lesson.standards:
+        header_parts.append(f"<strong>Standards:</strong> {esc(', '.join(lesson.standards))}")
+    if teacher_name:
+        header_parts.append(f"<strong>Teacher:</strong> {esc(teacher_name)}")
+    if date_str:
+        header_parts.append(f"<strong>Date:</strong> {esc(date_str)}")
+    total_time = sum(lesson.time_estimates.values())
+    header_parts.append(f"<strong>Total Time:</strong> {total_time} minutes")
+    header_html = "".join(f"<p>{p}</p>" for p in header_parts)
+
+    sections.append(f"<h1>Lesson {lesson.lesson_number}: {esc(lesson.title)}</h1>")
+    sections.append(f'<div class="header-block">{header_html}</div>')
+
+    # Lesson sections
+    section_map = [
+        ("Do-Now / Warm-Up", lesson.do_now),
+        ("Direct Instruction", lesson.direct_instruction),
+        ("Guided Practice", lesson.guided_practice),
+        ("Independent Work", lesson.independent_work),
+    ]
+    for heading, content in section_map:
+        if content:
+            sections.append(f"<h2>{heading}</h2><p>{esc(content)}</p>")
+
+    # Exit ticket
+    if lesson.exit_ticket:
+        sections.append("<h2>Exit Ticket</h2><ol>")
+        for et in lesson.exit_ticket:
+            sections.append(f"<li>{esc(et.question)}</li>")
+        sections.append("</ol>")
+
+    # Homework
+    if lesson.homework:
+        sections.append(f"<h2>Homework</h2><p>{esc(lesson.homework)}</p>")
+
+    # Differentiation
+    diff = lesson.differentiation
+    if diff.struggling or diff.advanced or diff.ell:
+        sections.append("<h2>Differentiation</h2>")
+        if diff.struggling:
+            sections.append("<h3>Struggling Learners</h3><ul>")
+            for item in diff.struggling:
+                sections.append(f"<li>{esc(item)}</li>")
+            sections.append("</ul>")
+        if diff.advanced:
+            sections.append("<h3>Advanced Learners</h3><ul>")
+            for item in diff.advanced:
+                sections.append(f"<li>{esc(item)}</li>")
+            sections.append("</ul>")
+        if diff.ell:
+            sections.append("<h3>ELL Students</h3><ul>")
+            for item in diff.ell:
+                sections.append(f"<li>{esc(item)}</li>")
+            sections.append("</ul>")
+
+    # Materials on separate page
+    if materials and materials.worksheet_items:
+        sections.append('<div class="worksheet-page">')
+        sections.append(f"<h1>Student Worksheet: {esc(materials.lesson_title)}</h1>")
+        sections.append("<p><strong>Name:</strong> ________________________ <strong>Date:</strong> ____________</p>")
+        total_pts = sum(item.point_value for item in materials.worksheet_items)
+        sections.append(f"<p><strong>Total Points:</strong> {total_pts}</p>")
+        for item in materials.worksheet_items:
+            pts = "pts" if item.point_value != 1 else "pt"
+            sections.append(f"<p><strong>{item.item_number}.</strong> ({item.point_value} {pts}) {esc(item.prompt)}</p>")
+        sections.append("</div>")
+
+    body = "\n".join(sections)
+    return f"<!DOCTYPE html><html><head><meta charset='utf-8'></head><body>{body}</body></html>"
+
+
+async def export_lesson_pdf(
+    lesson: DailyLesson,
+    materials: "LessonMaterials | None" = None,
+    output_path: Path | None = None,
+    teacher_name: str = "",
+    date_str: str = "",
+) -> Path:
+    """Export using weasyprint for professional print-quality PDF."""
+    try:
+        import weasyprint
+    except ImportError:
+        # Fall back to reportlab if weasyprint not installed
+        md_text = lesson_to_markdown(lesson)
+        if output_path is None:
+            output_path = Path(f"lesson_{lesson.lesson_number:02d}.pdf")
+        return _markdown_to_pdf(md_text, output_path)
+
+    html_content = _lesson_to_html_for_pdf(lesson, materials, teacher_name, date_str)
+    if output_path is None:
+        output_path = Path(f"lesson_{lesson.lesson_number:02d}.pdf")
+
+    doc = weasyprint.HTML(string=html_content)
+    doc.write_pdf(str(output_path), stylesheets=[_pdf_css_stylesheet()])
+    return output_path
+
+
+def _pdf_css_stylesheet():
+    """Create a weasyprint CSS stylesheet from our PDF styles."""
+    try:
+        import weasyprint
+        return weasyprint.CSS(string=_PDF_CSS)
+    except ImportError:
+        return None
+
+
+# ── PDF export (reportlab fallback) ──────────────────────────────────────
 
 
 def _markdown_to_pdf(markdown_text: str, output_path: Path) -> Path:

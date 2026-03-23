@@ -29,9 +29,11 @@ console = Console()
 config_app = typer.Typer(help="Configure EDUagent settings.")
 persona_app = typer.Typer(help="Manage teacher personas.")
 standards_app = typer.Typer(help="Browse education standards (CCSS, NGSS, C3).")
+templates_app = typer.Typer(help="Browse lesson structure templates.")
 app.add_typer(config_app, name="config")
 app.add_typer(persona_app, name="persona")
 app.add_typer(standards_app, name="standards")
+app.add_typer(templates_app, name="templates")
 
 
 def _version_callback(value: bool) -> None:
@@ -895,6 +897,190 @@ def improve(
         ))
     else:
         console.print(f"[dim]{message}[/dim]")
+
+
+# ── Score command ────────────────────────────────────────────────────
+
+
+@app.command()
+def score(
+    lesson_file: str = typer.Option(..., "--lesson-file", "-l", help="Path to a saved lesson JSON file"),
+):
+    """Score a lesson plan on quality dimensions (1-5 per dimension)."""
+    from eduagent.models import DailyLesson
+    from eduagent.quality import LessonQualityScore
+
+    path = Path(lesson_file).expanduser().resolve()
+    if not path.exists():
+        console.print(f"[red]File not found:[/red] {path}")
+        raise typer.Exit(1)
+
+    data = json.loads(path.read_text())
+    lesson = DailyLesson.model_validate(data)
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Scoring lesson quality...", total=None)
+        scorer = LessonQualityScore()
+        scores = _run_async(scorer.score(lesson))
+        progress.update(task, description="Scoring complete!")
+
+    table = Table(title="Lesson Quality Score")
+    table.add_column("Dimension", style="bold")
+    table.add_column("Score", justify="center")
+    table.add_column("Explanation")
+
+    for dim in LessonQualityScore.dimensions:
+        info = scores.get(dim, {})
+        s = info.get("score", 0)
+        color = "green" if s >= 4 else ("yellow" if s == 3 else "red")
+        table.add_row(
+            dim.replace("_", " ").title(),
+            f"[{color}]{s}/5[/{color}]",
+            info.get("explanation", ""),
+        )
+
+    console.print(table)
+    overall = scores.get("overall", 0)
+    color = "green" if overall >= 4 else ("yellow" if overall >= 3 else "red")
+    console.print(f"\n[bold]Overall Score:[/bold] [{color}]{overall}/5[/{color}]")
+
+
+# ── Export Classroom command ─────────────────────────────────────────
+
+
+@app.command("export")
+def export_cmd(
+    lesson_file: str = typer.Option(..., "--lesson-file", "-l", help="Path to lesson JSON"),
+    fmt: str = typer.Option("classroom", "--format", "-f", help="Export format: classroom"),
+):
+    """Export a lesson plan (e.g., to Google Classroom JSON)."""
+    path = Path(lesson_file).expanduser().resolve()
+    if not path.exists():
+        console.print(f"[red]File not found:[/red] {path}")
+        raise typer.Exit(1)
+
+    data = json.loads(path.read_text())
+
+    if fmt == "classroom":
+        description_parts = [data.get("objective", "")]
+        if data.get("standards"):
+            description_parts.append(f"Standards: {', '.join(data['standards'])}")
+        if data.get("homework"):
+            description_parts.append(f"Homework: {data['homework']}")
+
+        coursework = {
+            "title": data.get("title", "Lesson"),
+            "description": "\n\n".join(description_parts),
+            "materials": [],
+            "maxPoints": 100,
+            "workType": "ASSIGNMENT",
+            "state": "DRAFT",
+            "submissionModificationMode": "MODIFIABLE_UNTIL_TURNED_IN",
+        }
+
+        output = json.dumps(coursework, indent=2)
+        console.print(Panel(output, title="Google Classroom CourseWork JSON"))
+
+        out_path = path.with_suffix(".classroom.json")
+        out_path.write_text(output)
+        console.print(f"[green]Saved:[/green] {out_path}")
+    else:
+        console.print(f"[red]Unsupported format: {fmt}[/red]")
+        raise typer.Exit(1)
+
+
+# ── Course command ───────────────────────────────────────────────────
+
+
+@app.command()
+def course(
+    subject: str = typer.Option(..., "--subject", "-s", help="Subject area"),
+    grade: str = typer.Option(..., "--grade", "-g", help="Grade level"),
+    topics_file: str = typer.Option(..., "--topics-file", "-t", help="Path to a text file with one topic per line"),
+    weeks_per_topic: int = typer.Option(2, "--weeks", "-w", help="Weeks per topic"),
+    fmt: str = typer.Option("markdown", "--format", "-f", help="Export format"),
+):
+    """Generate a full course — one unit per topic from a pacing guide."""
+    from eduagent.exporter import export_unit
+    from eduagent.planner import plan_unit, save_unit
+
+    persona = _load_persona_or_exit()
+
+    path = Path(topics_file).expanduser().resolve()
+    if not path.exists():
+        console.print(f"[red]File not found:[/red] {path}")
+        raise typer.Exit(1)
+
+    topics = [line.strip() for line in path.read_text().splitlines() if line.strip()]
+    if not topics:
+        console.print("[red]No topics found in file.[/red]")
+        raise typer.Exit(1)
+
+    console.print(Panel(
+        f"[bold]{subject} — Grade {grade}[/bold]\n"
+        f"{len(topics)} topics, {weeks_per_topic} weeks each",
+        title="Course Generation",
+    ))
+
+    out_dir = _output_dir() / "course"
+    units = []
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Generating course...", total=len(topics))
+        for i, topic in enumerate(topics, 1):
+            progress.update(task, description=f"Unit {i}/{len(topics)}: {topic}")
+            try:
+                unit_plan = _run_async(plan_unit(
+                    subject=subject,
+                    grade_level=grade,
+                    topic=topic,
+                    duration_weeks=weeks_per_topic,
+                    persona=persona,
+                ))
+                save_unit(unit_plan, out_dir)
+                export_unit(unit_plan, out_dir, fmt=fmt)
+                units.append(unit_plan)
+            except Exception as e:
+                console.print(f"[red]Failed: {topic} — {e}[/red]")
+            progress.advance(task)
+
+    # Summary table
+    table = Table(title="Course Map")
+    table.add_column("#", style="dim")
+    table.add_column("Unit", style="bold")
+    table.add_column("Lessons", justify="center")
+    for i, u in enumerate(units, 1):
+        table.add_row(str(i), u.title, str(len(u.daily_lessons)))
+    console.print(table)
+    console.print(f"\n[green]Course saved:[/green] {out_dir}")
+
+
+# ── Templates commands ───────────────────────────────────────────────
+
+
+@templates_app.command("list")
+def templates_list():
+    """List all available lesson structure templates."""
+    from eduagent.templates_lib import list_templates
+
+    all_templates = list_templates()
+
+    table = Table(title="Lesson Structure Templates")
+    table.add_column("Name", style="bold")
+    table.add_column("Slug", style="cyan")
+    table.add_column("Description")
+    table.add_column("Best For", style="dim")
+    for t in all_templates:
+        table.add_row(t.name, t.slug, t.description[:80] + "..." if len(t.description) > 80 else t.description, t.best_for[:60] if t.best_for else "")
+    console.print(table)
 
 
 if __name__ == "__main__":

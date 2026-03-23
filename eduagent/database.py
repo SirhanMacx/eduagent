@@ -56,6 +56,7 @@ class Database:
                 title TEXT,
                 lesson_json TEXT,
                 materials_json TEXT,
+                scores_json TEXT,
                 rating INTEGER,
                 edit_count INTEGER DEFAULT 0,
                 share_token TEXT UNIQUE,
@@ -91,6 +92,16 @@ class Database:
             );
         """)
         self.conn.commit()
+        self._migrate()
+
+    def _migrate(self) -> None:
+        """Apply any schema migrations for existing databases."""
+        # Add scores_json column if it doesn't exist
+        try:
+            self.conn.execute("SELECT scores_json FROM lessons LIMIT 1")
+        except Exception:
+            self.conn.execute("ALTER TABLE lessons ADD COLUMN scores_json TEXT")
+            self.conn.commit()
 
     def close(self) -> None:
         self.conn.close()
@@ -189,6 +200,10 @@ class Database:
 
     def update_lesson_materials(self, lesson_id: str, materials_json: str) -> None:
         self.conn.execute("UPDATE lessons SET materials_json=? WHERE id=?", (materials_json, lesson_id))
+        self.conn.commit()
+
+    def update_lesson_scores(self, lesson_id: str, scores_json: str) -> None:
+        self.conn.execute("UPDATE lessons SET scores_json=? WHERE id=?", (scores_json, lesson_id))
         self.conn.commit()
 
     def rate_lesson(self, lesson_id: str, rating: int) -> None:

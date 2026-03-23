@@ -1,0 +1,196 @@
+/**
+ * EDUagent Student Chatbot Widget
+ *
+ * Self-contained, no-dependency JS widget that teachers paste into any webpage.
+ * Usage: <script src="http://localhost:8000/static/widget.js" data-lesson-id="abc123"></script>
+ *
+ * Optional attributes:
+ *   data-lesson-id   — lesson ID to chat about
+ *   data-teacher     — teacher name for header
+ *   data-subject     — subject for header
+ *   data-api-url     — base URL (default: script src origin)
+ */
+(function () {
+    'use strict';
+
+    // Find our script tag to read data attributes
+    var scripts = document.getElementsByTagName('script');
+    var thisScript = scripts[scripts.length - 1];
+    var lessonId = thisScript.getAttribute('data-lesson-id') || '';
+    var teacherName = thisScript.getAttribute('data-teacher') || 'Your Teacher';
+    var subject = thisScript.getAttribute('data-subject') || '';
+    var apiUrl = thisScript.getAttribute('data-api-url') || '';
+
+    // Derive API base URL from script src if not explicitly set
+    if (!apiUrl) {
+        var src = thisScript.src || '';
+        var idx = src.indexOf('/static/widget.js');
+        apiUrl = idx !== -1 ? src.substring(0, idx) : '';
+    }
+
+    var headerText = 'Ask ' + teacherName + (subject ? ' about ' + subject : '');
+
+    // Inject styles (scoped to our widget)
+    var style = document.createElement('style');
+    style.textContent = [
+        '#eduagent-widget-btn{',
+        '  position:fixed;bottom:20px;right:20px;z-index:99999;',
+        '  width:56px;height:56px;border-radius:50%;border:none;',
+        '  background:#1a56db;color:#fff;font-size:24px;cursor:pointer;',
+        '  box-shadow:0 4px 12px rgba(0,0,0,0.25);transition:transform 0.2s;',
+        '  display:flex;align-items:center;justify-content:center;',
+        '  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;',
+        '}',
+        '#eduagent-widget-btn:hover{transform:scale(1.08);}',
+        '#eduagent-widget-panel{',
+        '  position:fixed;bottom:86px;right:20px;z-index:99999;',
+        '  width:360px;max-height:500px;border-radius:12px;',
+        '  background:#fff;box-shadow:0 8px 30px rgba(0,0,0,0.18);',
+        '  display:none;flex-direction:column;overflow:hidden;',
+        '  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;',
+        '  font-size:14px;color:#1a1a2e;line-height:1.5;',
+        '}',
+        '#eduagent-widget-panel.open{display:flex;}',
+        '#eduagent-header{',
+        '  background:#0f3460;color:#fff;padding:14px 16px;',
+        '  font-weight:600;font-size:14px;display:flex;',
+        '  align-items:center;justify-content:space-between;',
+        '}',
+        '#eduagent-header button{',
+        '  background:none;border:none;color:rgba(255,255,255,0.7);',
+        '  font-size:18px;cursor:pointer;padding:0 4px;',
+        '}',
+        '#eduagent-header button:hover{color:#fff;}',
+        '#eduagent-messages{',
+        '  flex:1;overflow-y:auto;padding:12px;min-height:200px;max-height:340px;',
+        '  background:#f9fafb;',
+        '}',
+        '.eduagent-msg{',
+        '  padding:8px 12px;margin-bottom:8px;border-radius:8px;',
+        '  max-width:85%;word-wrap:break-word;font-size:13px;',
+        '}',
+        '.eduagent-msg.user{',
+        '  background:#e8f0fe;margin-left:auto;text-align:right;',
+        '}',
+        '.eduagent-msg.assistant{',
+        '  background:#fff;border:1px solid #e5e7eb;margin-right:auto;',
+        '}',
+        '.eduagent-msg.typing{',
+        '  background:#fff;border:1px solid #e5e7eb;margin-right:auto;',
+        '  color:#6b7280;font-style:italic;',
+        '}',
+        '#eduagent-input-row{',
+        '  display:flex;padding:10px;border-top:1px solid #e5e7eb;background:#fff;',
+        '}',
+        '#eduagent-input{',
+        '  flex:1;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;',
+        '  font-size:13px;font-family:inherit;outline:none;',
+        '}',
+        '#eduagent-input:focus{border-color:#1a56db;box-shadow:0 0 0 2px rgba(26,86,219,0.1);}',
+        '#eduagent-send{',
+        '  margin-left:8px;padding:8px 14px;border:none;border-radius:8px;',
+        '  background:#1a56db;color:#fff;font-size:13px;cursor:pointer;',
+        '  font-weight:500;',
+        '}',
+        '#eduagent-send:hover{background:#1e40af;}',
+        '#eduagent-send:disabled{opacity:0.5;cursor:not-allowed;}',
+    ].join('\n');
+    document.head.appendChild(style);
+
+    // Create widget button
+    var btn = document.createElement('button');
+    btn.id = 'eduagent-widget-btn';
+    btn.innerHTML = '&#128172;';
+    btn.title = 'Chat with your teacher';
+    document.body.appendChild(btn);
+
+    // Create chat panel
+    var panel = document.createElement('div');
+    panel.id = 'eduagent-widget-panel';
+    panel.innerHTML = [
+        '<div id="eduagent-header">',
+        '  <span>' + escHtml(headerText) + '</span>',
+        '  <button id="eduagent-close" title="Close">&times;</button>',
+        '</div>',
+        '<div id="eduagent-messages"></div>',
+        '<div id="eduagent-input-row">',
+        '  <input type="text" id="eduagent-input" placeholder="Ask a question..." autocomplete="off">',
+        '  <button id="eduagent-send">Send</button>',
+        '</div>',
+    ].join('\n');
+    document.body.appendChild(panel);
+
+    // Toggle panel
+    btn.addEventListener('click', function () {
+        panel.classList.toggle('open');
+        if (panel.classList.contains('open')) {
+            document.getElementById('eduagent-input').focus();
+        }
+    });
+
+    document.getElementById('eduagent-close').addEventListener('click', function () {
+        panel.classList.remove('open');
+    });
+
+    // Send message
+    var input = document.getElementById('eduagent-input');
+    var sendBtn = document.getElementById('eduagent-send');
+    var messages = document.getElementById('eduagent-messages');
+
+    function sendMessage() {
+        var question = input.value.trim();
+        if (!question || !lessonId) return;
+
+        appendMsg('user', question);
+        input.value = '';
+        sendBtn.disabled = true;
+
+        // Show typing indicator
+        var typing = appendMsg('typing', 'Thinking...');
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', apiUrl + '/api/chat', true);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState !== 4) return;
+            // Remove typing indicator
+            if (typing && typing.parentNode) typing.parentNode.removeChild(typing);
+            sendBtn.disabled = false;
+
+            if (xhr.status === 200) {
+                try {
+                    var data = JSON.parse(xhr.responseText);
+                    appendMsg('assistant', data.response || data.error || 'No response');
+                } catch (e) {
+                    appendMsg('assistant', 'Error parsing response.');
+                }
+            } else {
+                appendMsg('assistant', 'Error: could not reach the server.');
+            }
+        };
+        xhr.send(JSON.stringify({ lesson_id: lessonId, question: question }));
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    function appendMsg(role, text) {
+        var div = document.createElement('div');
+        div.className = 'eduagent-msg ' + role;
+        div.textContent = text;
+        messages.appendChild(div);
+        messages.scrollTop = messages.scrollHeight;
+        return div;
+    }
+
+    function escHtml(s) {
+        var d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+    }
+})();

@@ -338,3 +338,192 @@ class TestLessonPage:
         resp = client.get(f"/share/{row['share_token']}")
         assert resp.status_code == 200
         assert "Shared Lesson" in resp.text
+
+
+# ── New feature tests (v0.1.2) ──────────────────────────────────────
+
+
+class TestDatabaseScores:
+    """Test the scores_json column in lessons table."""
+
+    def test_update_and_get_scores(self, db):
+        tid = db.upsert_teacher("T", '{}')
+        uid = db.insert_unit(tid, "U", "S", "8", "T", '{}')
+        lid = db.insert_lesson(uid, 1, "L1", '{}')
+        scores = {"overall": 4.2, "objective_clarity": {"score": 5, "explanation": "Clear"}}
+        db.update_lesson_scores(lid, json.dumps(scores))
+        lesson = db.get_lesson(lid)
+        assert lesson["scores_json"] is not None
+        loaded = json.loads(lesson["scores_json"])
+        assert loaded["overall"] == 4.2
+
+    def test_lesson_initially_no_scores(self, db):
+        tid = db.upsert_teacher("T", '{}')
+        uid = db.insert_unit(tid, "U", "S", "8", "T", '{}')
+        lid = db.insert_lesson(uid, 1, "L1", '{}')
+        lesson = db.get_lesson(lid)
+        assert lesson["scores_json"] is None
+
+
+class TestTemplatesLib:
+    """Test the lesson template system."""
+
+    def test_list_templates(self):
+        from eduagent.templates_lib import list_templates
+        templates = list_templates()
+        assert len(templates) >= 7
+        names = [t.name for t in templates]
+        assert "Socratic Seminar" in names
+        assert "Jigsaw" in names
+        assert "Think-Pair-Share" in names
+        assert "Station Rotation" in names
+
+    def test_get_template(self):
+        from eduagent.templates_lib import get_template
+        t = get_template("socratic-seminar")
+        assert t is not None
+        assert t.name == "Socratic Seminar"
+        assert len(t.sections) > 0
+
+    def test_get_template_not_found(self):
+        from eduagent.templates_lib import get_template
+        assert get_template("nonexistent") is None
+
+    def test_template_sections(self):
+        from eduagent.templates_lib import get_template
+        t = get_template("jigsaw")
+        assert t is not None
+        total_time = sum(s.duration_minutes for s in t.sections)
+        assert total_time > 0
+
+    def test_template_to_prompt_constraint(self):
+        from eduagent.templates_lib import get_template, template_to_prompt_constraint
+        t = get_template("station-rotation")
+        assert t is not None
+        constraint = template_to_prompt_constraint(t)
+        assert "Station Rotation" in constraint
+        assert "Teacher-Led" in constraint
+
+
+class TestQualityScoreModel:
+    """Test the LessonQualityScore class (without LLM calls)."""
+
+    def test_dimensions_defined(self):
+        from eduagent.quality import LessonQualityScore
+        assert len(LessonQualityScore.dimensions) == 6
+        assert "objective_clarity" in LessonQualityScore.dimensions
+
+    def test_lesson_to_text(self):
+        from eduagent.models import DailyLesson
+        from eduagent.quality import LessonQualityScore
+        lesson = DailyLesson(title="Test", lesson_number=1, objective="Learn cells", do_now="Draw a cell")
+        text = LessonQualityScore._lesson_to_text(lesson)
+        assert "Learn cells" in text
+        assert "Draw a cell" in text
+
+
+class TestExporterPDF:
+    """Test the weasyprint PDF export function (HTML generation)."""
+
+    def test_lesson_to_html_for_pdf(self):
+        from eduagent.exporter import _lesson_to_html_for_pdf
+        from eduagent.models import DailyLesson
+        lesson = DailyLesson(
+            title="Cell Division", lesson_number=3, objective="Understand mitosis",
+            do_now="Label a cell", direct_instruction="The cell cycle consists of...",
+        )
+        html = _lesson_to_html_for_pdf(lesson, teacher_name="Ms. Johnson", date_str="2026-01-15")
+        assert "Cell Division" in html
+        assert "Understand mitosis" in html
+        assert "Ms. Johnson" in html
+        assert "2026-01-15" in html
+
+
+class TestNewAPIRoutes:
+    """Test new API endpoints added in v0.1.2."""
+
+    def test_templates_endpoint(self, client):
+        resp = client.get("/api/templates")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "templates" in data
+        assert len(data["templates"]) >= 7
+        slugs = [t["slug"] for t in data["templates"]]
+        assert "socratic-seminar" in slugs
+        assert "jigsaw" in slugs
+
+    def test_classroom_export_not_found(self, client):
+        resp = client.post("/api/export/fake/classroom")
+        assert resp.status_code == 404
+
+    def test_classroom_export_success(self, client, db):
+        from eduagent.models import DailyLesson
+        tid = db.upsert_teacher("T", '{}')
+        uid = db.insert_unit(tid, "U", "S", "8", "T", '{}')
+        lesson = DailyLesson(
+            title="Photosynthesis", lesson_number=1,
+            objective="Explain the equation for photosynthesis",
+            standards=["NGSS MS-LS1-6"],
+        )
+        lid = db.insert_lesson(uid, 1, "Photosynthesis", lesson.model_dump_json())
+        resp = client.post(f"/api/export/{lid}/classroom")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "coursework" in data
+        cw = data["coursework"]
+        assert cw["title"] == "Photosynthesis"
+        assert "photosynthesis" in cw["description"].lower()
+        assert cw["workType"] == "ASSIGNMENT"
+        assert "maxPoints" in cw
+
+    def test_suggest_lesson_not_found(self, client):
+        resp = client.post("/api/suggest/fake")
+        assert resp.status_code == 404
+
+    def test_score_lesson_not_found(self, client):
+        resp = client.get("/api/score/fake")
+        assert resp.status_code == 404
+
+    def test_stream_unit_no_persona(self, client):
+        resp = client.get("/api/stream/unit?topic=Cells")
+        assert resp.status_code == 400
+
+    def test_stream_lesson_no_persona(self, client):
+        resp = client.get("/api/stream/lesson?unit_id=fake&lesson_number=1")
+        # Either 400 (no persona) or 404 (unit not found) depending on check order
+        assert resp.status_code in (400, 404)
+
+    def test_course_no_persona(self, client):
+        resp = client.post("/api/course", json={
+            "subject": "Science", "grade_level": "8",
+            "topics": ["Cells", "DNA"], "weeks_per_topic": 2,
+        })
+        assert resp.status_code == 400
+
+    def test_lesson_page_with_scores(self, client, db):
+        from eduagent.models import DailyLesson
+        tid = db.upsert_teacher("T", '{"name": "T"}')
+        uid = db.insert_unit(tid, "U", "Science", "8", "Cells", '{}')
+        lesson = DailyLesson(title="Scored Lesson", lesson_number=1, objective="Test")
+        lid = db.insert_lesson(uid, 1, "Scored Lesson", lesson.model_dump_json())
+        scores = {"overall": 4.0, "objective_clarity": {"score": 5, "explanation": "Very clear."}}
+        db.update_lesson_scores(lid, json.dumps(scores))
+        resp = client.get(f"/lesson/{lid}")
+        assert resp.status_code == 200
+        assert "Quality Score" in resp.text
+
+    def test_generate_page_has_template_dropdown(self, client):
+        resp = client.get("/generate")
+        assert resp.status_code == 200
+        assert "template_slug" in resp.text
+        assert "Lesson Structure" in resp.text
+
+
+class TestWidgetStatic:
+    """Test that the widget.js static file is served."""
+
+    def test_widget_js_served(self, client):
+        resp = client.get("/static/widget.js")
+        assert resp.status_code == 200
+        assert "eduagent-widget" in resp.text
+        assert "data-lesson-id" in resp.text

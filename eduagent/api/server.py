@@ -123,11 +123,13 @@ def create_app() -> FastAPI:
             return HTMLResponse("<h1>Lesson not found</h1>", status_code=404)
         lesson_data = json.loads(lesson_row["lesson_json"]) if lesson_row["lesson_json"] else {}
         materials_data = json.loads(lesson_row["materials_json"]) if lesson_row.get("materials_json") else None
+        scores_data = json.loads(lesson_row["scores_json"]) if lesson_row.get("scores_json") else None
         feedback_list = db.get_feedback_for_lesson(lesson_id)
         return templates.TemplateResponse(request, "lesson.html", {
             "lesson": lesson_row,
             "lesson_data": lesson_data,
             "materials": materials_data,
+            "scores": scores_data,
             "feedback_list": feedback_list,
             "share_url": f"/share/{lesson_row['share_token']}",
         })

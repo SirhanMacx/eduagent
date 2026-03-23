@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from eduagent.database import Database
 from eduagent.feedback import analyze_feedback
 from eduagent.llm import LLMClient
 from eduagent.models import AppConfig
+
+if TYPE_CHECKING:
+    from eduagent.models import DailyLesson
 
 PROMPT_DIR = Path(__file__).parent / "prompts"
 
@@ -122,6 +125,69 @@ async def improve_prompts(
         "feedback_summary": analysis,
         "message": f"Generated improved {target_type} prompt (version {next_version}).",
     }
+
+
+async def suggest_improvements(
+    lesson: "DailyLesson",
+    feedback_notes: str = "",
+    config: AppConfig | None = None,
+) -> list[str]:
+    """Given a lesson plan (and optional teacher feedback), generate 3-5 specific, actionable improvement suggestions.
+
+    Each suggestion targets a specific section and explains the change.
+    """
+
+    parts = [
+        f"Title: {lesson.title}",
+        f"Objective: {lesson.objective}",
+        f"Do-Now: {lesson.do_now}",
+        f"Direct Instruction: {lesson.direct_instruction}",
+        f"Guided Practice: {lesson.guided_practice}",
+        f"Independent Work: {lesson.independent_work}",
+    ]
+    if lesson.exit_ticket:
+        parts.append("Exit Ticket:")
+        for et in lesson.exit_ticket:
+            parts.append(f"  - {et.question}")
+    if lesson.differentiation:
+        diff = lesson.differentiation
+        if diff.struggling:
+            parts.append(f"Struggling: {'; '.join(diff.struggling)}")
+        if diff.advanced:
+            parts.append(f"Advanced: {'; '.join(diff.advanced)}")
+
+    lesson_text = "\n".join(parts)
+    feedback_block = f"\n\nTeacher feedback: {feedback_notes}" if feedback_notes else ""
+
+    prompt = (
+        "You are an expert instructional coach reviewing a lesson plan.\n\n"
+        f"## Lesson Plan\n{lesson_text}\n"
+        f"{feedback_block}\n\n"
+        "## Task\n"
+        "Generate exactly 5 specific, actionable improvement suggestions.\n"
+        "Each suggestion should:\n"
+        "1. Target a specific section of the lesson\n"
+        "2. Explain what's wrong or could be better\n"
+        "3. Provide a concrete alternative or addition\n\n"
+        "Format: Return a JSON array of 5 strings. Each string is one complete suggestion.\n"
+        "Example: [\"Your Do-Now doesn't connect to today's objective. Consider: ...\", ...]\n\n"
+        "Return ONLY the JSON array, nothing else."
+    )
+
+    client = LLMClient(config)
+    raw = await client.generate_json(
+        prompt=prompt,
+        system="You are an instructional coach. Return only a JSON array of suggestion strings.",
+        temperature=0.5,
+        max_tokens=2000,
+    )
+
+    # Handle both list and dict responses
+    if isinstance(raw, list):
+        return [str(s) for s in raw[:5]]
+    elif isinstance(raw, dict) and "suggestions" in raw:
+        return [str(s) for s in raw["suggestions"][:5]]
+    return [str(raw)]
 
 
 def _check_and_promote(db: Database, prompt_type: str) -> None:

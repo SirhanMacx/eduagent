@@ -53,6 +53,13 @@
             </div>
 
             <div class="form-group">
+                <label for="template_slug">Lesson Structure</label>
+                <select id="template_slug" name="template_slug">
+                    <option value="">Default (I Do / We Do / You Do)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
                 <label>
                     <input type="checkbox" id="include_homework" name="include_homework" checked>
                     Include homework assignments
@@ -67,6 +74,10 @@
 
     <div class="gen-progress-panel" id="progress-panel" hidden>
         <h3>Generation Progress</h3>
+        <div class="progress-bar-container" id="progress-bar-container" hidden>
+            <div class="progress-bar" id="progress-bar" style="width:0%"></div>
+        </div>
+        <div class="progress-status" id="progress-status"></div>
         <div id="progress-log" class="progress-log"></div>
         <div id="progress-done" class="progress-done" hidden>
             <p class="done-text">Generation complete!</p>
@@ -77,6 +88,22 @@
 {% endblock %}
 {% block scripts %}
 <script>
+// Load lesson templates
+(function() {
+    fetch('/api/templates').then(function(r){return r.json();}).then(function(data) {
+        var sel = document.getElementById('template_slug');
+        if (data.templates) {
+            data.templates.forEach(function(t) {
+                var opt = document.createElement('option');
+                opt.value = t.slug;
+                opt.textContent = t.name;
+                if (t.best_for) opt.title = t.best_for;
+                sel.appendChild(opt);
+            });
+        }
+    }).catch(function(){});
+})();
+
 document.getElementById('duration_weeks').addEventListener('input', function() {
     document.getElementById('weeks-display').textContent = this.value;
 });
@@ -93,6 +120,7 @@ document.getElementById('generate-form').addEventListener('submit', async functi
     log.innerHTML = '';
     doneBox.hidden = true;
 
+    var templateSlug = document.getElementById('template_slug').value;
     var body = {
         topic: document.getElementById('topic').value,
         subject: document.getElementById('subject').value,
@@ -100,6 +128,7 @@ document.getElementById('generate-form').addEventListener('submit', async functi
         duration_weeks: parseInt(document.getElementById('duration_weeks').value),
         include_homework: document.getElementById('include_homework').checked
     };
+    if (templateSlug) body.template_slug = templateSlug;
 
     function addLog(text, cls) {
         var div = document.createElement('div');
