@@ -90,6 +90,25 @@ def _fmt_persona(persona: TeacherPersona) -> str:
     return "\n".join(lines)
 
 
+# ── Audio transcription ───────────────────────────────────────────────────────
+
+
+async def _transcribe_attachments(attachments: list[str]) -> str:
+    """Transcribe any audio files found in the attachment list."""
+    from eduagent.voice import is_audio_file, transcribe_audio
+
+    parts: list[str] = []
+    for att in attachments:
+        if is_audio_file(att):
+            try:
+                text = await transcribe_audio(Path(att))
+                if text:
+                    parts.append(text)
+            except Exception:
+                pass  # Skip files that fail to transcribe
+    return " ".join(parts)
+
+
 # ── Main handler ──────────────────────────────────────────────────────────────
 
 async def handle_message(
@@ -98,6 +117,7 @@ async def handle_message(
     *,
     subject: Optional[str] = None,
     grade: Optional[str] = None,
+    attachments: Optional[list[str]] = None,
 ) -> str:
     """
     Handle a teacher message and return a response string.
@@ -109,10 +129,21 @@ async def handle_message(
         teacher_id: Unique identifier for this teacher (Telegram user ID, session UUID, etc.)
         subject: Optional default subject (from session context)
         grade: Optional default grade (from session context)
+        attachments: Optional list of file paths attached to the message
 
     Returns:
         Response string formatted for the channel (Telegram-friendly by default)
     """
+    # Auto-transcribe audio attachments
+    if attachments:
+        transcribed = await _transcribe_attachments(attachments)
+        if transcribed:
+            # Use transcription as the message if the original is empty
+            if not message.strip():
+                message = transcribed
+            else:
+                message = message + "\n\n" + transcribed
+
     session = TeacherSession.load(teacher_id)
     session.add_context("user", message)
 

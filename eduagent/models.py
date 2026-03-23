@@ -135,6 +135,21 @@ class DifferentiationNotes(BaseModel):
     ell: list[str] = Field(default_factory=list)
 
 
+class IEPProfile(BaseModel):
+    """A student's IEP (Individualized Education Program) profile.
+
+    Contains disability information, required accommodations, modifications,
+    and annual goals — everything a teacher needs to differentiate a lesson
+    for this student.
+    """
+
+    student_name: str
+    disability_type: str = ""
+    accommodations: list[str] = Field(default_factory=list)
+    modifications: list[str] = Field(default_factory=list)
+    goals: list[str] = Field(default_factory=list)
+
+
 class DailyLesson(BaseModel):
     """A complete daily lesson plan."""
 
@@ -209,6 +224,98 @@ class LessonMaterials(BaseModel):
     rubric: list[RubricCriterion] = Field(default_factory=list)
     slide_outline: list[SlideOutline] = Field(default_factory=list)
     iep_notes: list[str] = Field(default_factory=list)
+
+
+class School(BaseModel):
+    """A school deployment — groups teachers for curriculum sharing."""
+
+    school_id: str = ""
+    name: str = ""
+    district: str = ""
+    state: str = ""
+    grade_levels: list[str] = Field(default_factory=list)
+
+
+class SharedContentEntry(BaseModel):
+    """A unit or lesson shared to a school's curriculum library."""
+
+    id: str = ""
+    school_id: str = ""
+    teacher_id: str = ""
+    teacher_name: str = ""
+    content_type: str = "unit"  # "unit" or "lesson"
+    content_id: str = ""
+    title: str = ""
+    subject: str = ""
+    grade_level: str = ""
+    department: str = ""
+    rating: Optional[int] = None
+    shared_at: str = ""
+
+
+class ScheduleBlock(BaseModel):
+    """A single time block in the daily schedule."""
+
+    time: str
+    period: str
+    class_name: str
+    notes: str = ""
+
+
+class BehavioralNote(BaseModel):
+    """Behavioral context for a class period."""
+
+    period: str
+    class_dynamics: str
+    seating_chart: str = "See printed seating chart on teacher desk."
+    accommodations: list[str] = Field(default_factory=list)
+    key_students: list[str] = Field(default_factory=list)
+
+
+class SubLessonInstructions(BaseModel):
+    """Step-by-step lesson instructions written for a substitute."""
+
+    period: str
+    lesson_title: str
+    objective: str
+    step_by_step: list[str] = Field(default_factory=list)
+    materials_needed: list[str] = Field(default_factory=list)
+    backup_activity: str = ""
+    answer_key_location: str = ""
+
+
+class SubPacket(BaseModel):
+    """A complete substitute teacher packet."""
+
+    teacher_name: str
+    date: str
+    school: str = ""
+    schedule: list[ScheduleBlock] = Field(default_factory=list)
+    behavioral_notes: list[BehavioralNote] = Field(default_factory=list)
+    lesson_instructions: list[SubLessonInstructions] = Field(default_factory=list)
+    emergency_contacts: list[str] = Field(default_factory=lambda: [
+        "Main Office: ext. 100",
+        "Nurse: ext. 150",
+        "Nearest Teacher (for emergencies): See posted list by door",
+    ])
+    emergency_procedures: str = (
+        "Fire drill: exit via nearest marked exit, proceed to designated area. "
+        "Lockdown: lock door, lights off, students against interior wall away from windows."
+    )
+    general_notes: str = ""
+    materials_checklist: list[str] = Field(default_factory=list)
+
+
+class ProgressUpdate(BaseModel):
+    """A parent communication progress update in the teacher's voice."""
+
+    student_name: str
+    greeting: str
+    strengths: list[str] = Field(default_factory=list)
+    areas_to_grow: list[str] = Field(default_factory=list)
+    specific_examples: list[str] = Field(default_factory=list)
+    action_items: list[str] = Field(default_factory=list)
+    closing: str = ""
 
 
 class LLMProvider(str, Enum):

@@ -50,6 +50,7 @@ def init_db() -> None:
                 current_unit_json TEXT,
                 current_lesson_json TEXT,
                 context_json TEXT DEFAULT '[]',
+                school_id TEXT,
                 last_activity TEXT,
                 created_at TEXT DEFAULT (datetime('now'))
             );
@@ -143,6 +144,7 @@ class TeacherSession:
         current_unit: Optional[UnitPlan] = None,
         current_lesson: Optional[DailyLesson] = None,
         context: Optional[list] = None,
+        school_id: Optional[str] = None,
     ):
         self.teacher_id = teacher_id
         self.name = name
@@ -152,6 +154,7 @@ class TeacherSession:
         self.current_lesson = current_lesson
         self.context: list[dict] = context or []  # Recent conversation turns
         self.last_activity = datetime.utcnow()
+        self.school_id = school_id
 
     @classmethod
     def load(cls, teacher_id: str) -> "TeacherSession":
@@ -201,6 +204,12 @@ class TeacherSession:
             except Exception:
                 pass
 
+        school_id = None
+        try:
+            school_id = row["school_id"]
+        except (IndexError, KeyError):
+            pass
+
         return cls(
             teacher_id=teacher_id,
             name=row["name"],
@@ -209,6 +218,7 @@ class TeacherSession:
             current_unit=current_unit,
             current_lesson=current_lesson,
             context=context,
+            school_id=school_id,
         )
 
     def save(self) -> None:
@@ -219,8 +229,9 @@ class TeacherSession:
                 """
                 INSERT OR REPLACE INTO teacher_sessions
                     (teacher_id, name, persona_json, config_json,
-                     current_unit_json, current_lesson_json, context_json, last_activity)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                     current_unit_json, current_lesson_json, context_json,
+                     school_id, last_activity)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     self.teacher_id,
@@ -230,6 +241,7 @@ class TeacherSession:
                     self.current_unit.model_dump_json() if self.current_unit else None,
                     self.current_lesson.model_dump_json() if self.current_lesson else None,
                     json.dumps(self.context[-20:]),  # Keep last 20 turns
+                    self.school_id,
                     datetime.utcnow().isoformat(),
                 ),
             )

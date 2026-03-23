@@ -1,0 +1,41 @@
+You are writing a progress update to a student's parent/guardian. Write this communication in the teacher's authentic voice — matching their tone, vocabulary, and communication style exactly.
+
+{persona}
+
+Student: {student_name}
+Topic/Context: {topic}
+Strengths to highlight: {strengths}
+Areas for growth: {areas_to_grow}
+
+Generate the progress update as JSON with these exact keys:
+
+{{
+  "student_name": "{student_name}",
+  "greeting": "A warm, personalized opening addressing the parent/guardian by 'families' or 'guardians' of the student",
+  "strengths": [
+    "Specific, positive observation about what the student does well — with a concrete example",
+    "Another strength — be genuine, not generic"
+  ],
+  "areas_to_grow": [
+    "Frame growth areas positively — what the student is WORKING TOWARD, not what they're failing at",
+    "Be specific about what improvement looks like"
+  ],
+  "specific_examples": [
+    "A concrete example from class that illustrates either a strength or growth area",
+    "Another specific moment or piece of work that shows the student's progress"
+  ],
+  "action_items": [
+    "A specific, actionable suggestion for how the family can support at home",
+    "Something the teacher will do in class to support the student"
+  ],
+  "closing": "A warm, encouraging closing that leaves the parent feeling like a partner in their child's education"
+}}
+
+IMPORTANT RULES:
+- Match the teacher's tone exactly. If they're warm and casual, write warmly. If they're formal and professional, write formally.
+- NEVER use education jargon that parents wouldn't understand. No "scaffolding," "differentiation," "formative assessment" — use plain language.
+- Strengths should be GENUINE and SPECIFIC — not "your child is doing great!" but "Marcus consistently volunteers to help classmates during group work, which shows real leadership."
+- Growth areas should be framed as next steps, not deficits. Not "Marcus can't write a thesis statement" but "Marcus is working on strengthening his thesis statements — we're practicing this together."
+- Include at least one concrete example from class.
+- Action items should be things a busy parent can actually do — not "review all homework nightly" but "asking Marcus to explain one thing he learned today at dinner can reinforce his learning."
+- The closing should feel like an invitation to partnership, not a report card.

@@ -30,10 +30,14 @@ config_app = typer.Typer(help="Configure EDUagent settings.")
 persona_app = typer.Typer(help="Manage teacher personas.")
 standards_app = typer.Typer(help="Browse education standards (CCSS, NGSS, C3).")
 templates_app = typer.Typer(help="Browse lesson structure templates.")
+skills_app = typer.Typer(help="Browse subject-specific pedagogy skills.")
 app.add_typer(config_app, name="config")
 app.add_typer(persona_app, name="persona")
 app.add_typer(standards_app, name="standards")
 app.add_typer(templates_app, name="templates")
+school_app = typer.Typer(help="Multi-teacher school deployment and shared curriculum.")
+app.add_typer(skills_app, name="skills")
+app.add_typer(school_app, name="school")
 
 
 def _version_callback(value: bool) -> None:
@@ -258,6 +262,41 @@ def ingest(
         f"[bold]Format:[/bold] {persona.preferred_lesson_format}",
         title="Teacher Persona",
     ))
+
+
+# ── Transcribe command ───────────────────────────────────────────────────
+
+
+@app.command()
+def transcribe(
+    audio_file: str = typer.Argument(..., help="Path to audio file (ogg/wav/mp3/m4a)"),
+) -> None:
+    """Transcribe a voice note to text using Whisper."""
+    from eduagent.voice import is_audio_file, transcribe_audio
+
+    source = Path(audio_file).expanduser().resolve()
+    if not source.exists():
+        console.print(f"[red]File not found:[/red] {source}")
+        raise typer.Exit(1)
+
+    if not is_audio_file(source):
+        console.print(f"[red]Unsupported format:[/red] {source.suffix}")
+        console.print("[dim]Supported: ogg, wav, mp3, m4a, flac, webm, opus[/dim]")
+        raise typer.Exit(1)
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        progress.add_task("Transcribing audio...", total=None)
+        try:
+            text = _run_async(transcribe_audio(source))
+        except RuntimeError as e:
+            console.print(f"[red]{e}[/red]")
+            raise typer.Exit(1) from e
+
+    console.print(Panel(text, title="[bold green]Transcription[/bold green]", border_style="green"))
 
 
 # ── Persona commands ─────────────────────────────────────────────────────
@@ -1277,6 +1316,56 @@ def templates_list():
     for t in all_templates:
         table.add_row(t.name, t.slug, t.description[:80] + "..." if len(t.description) > 80 else t.description, t.best_for[:60] if t.best_for else "")
     console.print(table)
+
+
+# ── Skills commands ─────────────────────────────────────────────────
+
+
+@skills_app.command("list")
+def skills_list():
+    """List all available subject pedagogy skills."""
+    from eduagent.skills import SkillLibrary
+
+    lib = SkillLibrary()
+    all_skills = lib.list_skills()
+
+    table = Table(title="Subject Pedagogy Skills")
+    table.add_column("Subject", style="bold")
+    table.add_column("Display Name", style="cyan")
+    table.add_column("Description")
+    table.add_column("Aliases", style="dim")
+    for s in all_skills:
+        aliases = ", ".join(s.aliases[:4])
+        if len(s.aliases) > 4:
+            aliases += f" (+{len(s.aliases) - 4})"
+        desc = s.description[:80] + "..." if len(s.description) > 80 else s.description
+        table.add_row(s.subject, s.display_name, desc, aliases)
+    console.print(table)
+
+
+@skills_app.command("show")
+def skills_show(
+    subject: str = typer.Argument(help="Subject name or alias (e.g., 'math', 'biology', 'ela')."),
+):
+    """Show detailed pedagogy skill for a subject."""
+    from eduagent.skills import SkillLibrary
+
+    lib = SkillLibrary()
+    skill = lib.get(subject)
+    if skill is None:
+        console.print(f"[red]No skill found for '{subject}'.[/red]")
+        console.print(f"Available: {', '.join(lib.subjects())}")
+        raise typer.Exit(1)
+
+    console.print(Panel(skill.to_system_context(), title=f"[bold]{skill.display_name}[/bold] Pedagogy Skill", border_style="cyan"))
+
+    if skill.example_strategies:
+        table = Table(title="Example Strategies")
+        table.add_column("Strategy", style="bold")
+        table.add_column("Description")
+        for name, desc in skill.example_strategies.items():
+            table.add_row(name, desc)
+        console.print(table)
 
 
 if __name__ == "__main__":

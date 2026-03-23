@@ -62,6 +62,7 @@ def create_app() -> FastAPI:
     from eduagent.api.routes.feedback import router as feedback_router
     from eduagent.api.routes.generate import router as generate_router
     from eduagent.api.routes.ingest import router as ingest_router
+    from eduagent.api.routes.school import router as school_router
     from eduagent.api.routes.settings import router as settings_router
 
     app.include_router(ingest_router, prefix="/api")
@@ -70,6 +71,7 @@ def create_app() -> FastAPI:
     app.include_router(feedback_router, prefix="/api")
     app.include_router(export_router, prefix="/api")
     app.include_router(settings_router, prefix="/api")
+    app.include_router(school_router, prefix="/api")
 
     # ── Page routes (server-side rendered) ───────────────────────────
 

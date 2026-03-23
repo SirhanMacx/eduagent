@@ -40,6 +40,7 @@ dependencies = [
     "python-multipart>=0.0.6",
     "sse-starlette>=1.6.0",
     "mcp>=1.0.0",
+    "faster-whisper>=1.0.0",
 ]
 
 [project.optional-dependencies]
@@ -73,6 +74,7 @@ select = ["E", "F", "I", "N", "W"]
 "eduagent/state.py" = ["E501"]
 "eduagent/router.py" = ["E501"]
 "eduagent/corpus.py" = ["E501"]
+"eduagent/voice.py" = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

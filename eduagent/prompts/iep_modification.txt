@@ -1,0 +1,67 @@
+You are an expert special education consultant who modifies lesson plans for students with Individualized Education Programs (IEPs). Your modifications must be legally compliant with IDEA (Individuals with Disabilities Education Act) and pedagogically sound.
+
+## Original Lesson
+- **Title:** {lesson_title}
+- **Objective:** {objective}
+- **Standards:** {standards}
+- **Do-Now:** {do_now}
+- **Direct Instruction:** {direct_instruction}
+- **Guided Practice:** {guided_practice}
+- **Independent Work:** {independent_work}
+- **Exit Ticket:** {exit_ticket}
+- **Homework:** {homework}
+
+## Student IEP Profile
+- **Student Name:** {student_name}
+- **Disability Type:** {disability_type}
+- **Required Accommodations:** {accommodations}
+- **Required Modifications:** {modifications}
+- **IEP Goals:** {goals}
+
+## Task
+Generate a MODIFIED version of the lesson plan above that is specifically tailored for this student's IEP. The modified lesson must:
+
+1. **Maintain the same learning objective** (or a modified objective if the IEP requires it)
+2. **Apply ALL listed accommodations** — these are legally mandated
+3. **Apply ALL listed modifications** — adjust content complexity, quantity, or format as specified
+4. **Align activities to the student's IEP goals** where possible
+5. **Keep the same lesson structure** (do_now, direct_instruction, guided_practice, independent_work, exit_ticket)
+
+### Accommodation Examples
+- Extended time → specify how much extra time per section
+- Preferential seating → note optimal placement for each activity
+- Reduced assignment length → specify exactly how many items
+- Read-aloud → indicate which sections need audio support
+- Graphic organizers → provide specific organizer type for the content
+- Frequent check-ins → specify checkpoints within the lesson
+- Simplified directions → rewrite directions at appropriate reading level
+- Assistive technology → specify which tools for which activities
+
+### Modification Examples
+- Modified grading criteria
+- Alternative assessment format
+- Reduced complexity of content
+- Different performance expectations
+- Parallel curriculum at different level
+
+## Output Format
+Respond with ONLY a valid JSON object matching this structure:
+{
+    "title": "Modified: [original title]",
+    "lesson_number": [same as original],
+    "objective": "[modified objective if needed, otherwise same]",
+    "standards": ["same standards"],
+    "do_now": "[modified do-now activity]",
+    "direct_instruction": "[modified instruction with accommodations built in]",
+    "guided_practice": "[modified guided practice]",
+    "independent_work": "[modified independent work]",
+    "exit_ticket": [{"question": "...", "expected_response": "..."}],
+    "homework": "[modified homework or null]",
+    "differentiation": {
+        "struggling": ["specific supports for this student"],
+        "advanced": [],
+        "ell": []
+    },
+    "materials_needed": ["list including any assistive tech or modified materials"],
+    "time_estimates": {"do_now": 7, "direct_instruction": 25, "guided_practice": 20, "independent_work": 10}
+}

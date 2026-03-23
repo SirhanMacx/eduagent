@@ -96,6 +96,38 @@ class Database:
                 step_completed INTEGER DEFAULT 0,
                 completed_at TIMESTAMP
             );
+
+            CREATE TABLE IF NOT EXISTS schools (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                district TEXT DEFAULT '',
+                state TEXT DEFAULT '',
+                grade_levels_json TEXT DEFAULT '[]',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS school_teachers (
+                school_id TEXT NOT NULL,
+                teacher_id TEXT NOT NULL,
+                role TEXT DEFAULT 'teacher',
+                department TEXT DEFAULT '',
+                joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (school_id, teacher_id)
+            );
+
+            CREATE TABLE IF NOT EXISTS shared_content (
+                id TEXT PRIMARY KEY,
+                school_id TEXT NOT NULL,
+                teacher_id TEXT NOT NULL,
+                content_type TEXT NOT NULL,
+                content_id TEXT NOT NULL,
+                title TEXT NOT NULL,
+                subject TEXT DEFAULT '',
+                grade_level TEXT DEFAULT '',
+                department TEXT DEFAULT '',
+                rating INTEGER,
+                shared_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
         """)
         self.conn.commit()
         self._migrate()
@@ -353,6 +385,9 @@ class Database:
             DELETE FROM prompt_versions;
             DELETE FROM teachers;
             DELETE FROM onboarding_state;
+            DELETE FROM shared_content;
+            DELETE FROM school_teachers;
+            DELETE FROM schools;
         """)
         self.conn.commit()
 
@@ -362,6 +397,89 @@ class Database:
             return self.db_path.stat().st_size / (1024 * 1024)
         except OSError:
             return 0.0
+
+    # ── schools ────────────────────────────────────────────────────────
+
+    def create_school(self, name: str, district: str = "", state: str = "", grade_levels: list[str] | None = None) -> str:
+        sid = self._new_id()
+        import json as _json
+        self.conn.execute(
+            "INSERT INTO schools (id, name, district, state, grade_levels_json) VALUES (?,?,?,?,?)",
+            (sid, name, district, state, _json.dumps(grade_levels or [])),
+        )
+        self.conn.commit()
+        return sid
+
+    def get_school(self, school_id: str) -> Optional[dict[str, Any]]:
+        return self._fetchone("SELECT * FROM schools WHERE id=?", (school_id,))
+
+    def list_schools(self) -> list[dict[str, Any]]:
+        return self._fetchall("SELECT * FROM schools ORDER BY created_at DESC")
+
+    def add_teacher_to_school(self, school_id: str, teacher_id: str, role: str = "teacher", department: str = "") -> None:
+        self.conn.execute(
+            """INSERT INTO school_teachers (school_id, teacher_id, role, department) VALUES (?,?,?,?)
+               ON CONFLICT(school_id, teacher_id) DO UPDATE SET role=excluded.role, department=excluded.department""",
+            (school_id, teacher_id, role, department),
+        )
+        self.conn.commit()
+
+    def remove_teacher_from_school(self, school_id: str, teacher_id: str) -> None:
+        self.conn.execute("DELETE FROM school_teachers WHERE school_id=? AND teacher_id=?", (school_id, teacher_id))
+        self.conn.commit()
+
+    def list_school_teachers(self, school_id: str) -> list[dict[str, Any]]:
+        return self._fetchall(
+            """SELECT st.*, t.name as teacher_name FROM school_teachers st
+               LEFT JOIN teachers t ON st.teacher_id = t.id
+               WHERE st.school_id=? ORDER BY st.joined_at""",
+            (school_id,),
+        )
+
+    def get_teacher_school(self, teacher_id: str) -> Optional[dict[str, Any]]:
+        row = self._fetchone(
+            """SELECT s.*, st.role, st.department FROM schools s
+               JOIN school_teachers st ON s.id = st.school_id
+               WHERE st.teacher_id=? LIMIT 1""",
+            (teacher_id,),
+        )
+        return row
+
+    # ── shared content ────────────────────────────────────────────────
+
+    def share_content(
+        self, school_id: str, teacher_id: str, content_type: str, content_id: str,
+        title: str, subject: str = "", grade_level: str = "", department: str = "",
+    ) -> str:
+        sid = self._new_id()
+        self.conn.execute(
+            """INSERT INTO shared_content (id, school_id, teacher_id, content_type, content_id, title, subject, grade_level, department)
+               VALUES (?,?,?,?,?,?,?,?,?)""",
+            (sid, school_id, teacher_id, content_type, content_id, title, subject, grade_level, department),
+        )
+        self.conn.commit()
+        return sid
+
+    def get_shared_library(self, school_id: str, department: str = "", limit: int = 50) -> list[dict[str, Any]]:
+        if department:
+            return self._fetchall(
+                """SELECT sc.*, t.name as teacher_name FROM shared_content sc
+                   LEFT JOIN teachers t ON sc.teacher_id = t.id
+                   WHERE sc.school_id=? AND sc.department=?
+                   ORDER BY sc.rating DESC NULLS LAST, sc.shared_at DESC LIMIT ?""",
+                (school_id, department, limit),
+            )
+        return self._fetchall(
+            """SELECT sc.*, t.name as teacher_name FROM shared_content sc
+               LEFT JOIN teachers t ON sc.teacher_id = t.id
+               WHERE sc.school_id=?
+               ORDER BY sc.rating DESC NULLS LAST, sc.shared_at DESC LIMIT ?""",
+            (school_id, limit),
+        )
+
+    def rate_shared_content(self, shared_id: str, rating: int) -> None:
+        self.conn.execute("UPDATE shared_content SET rating=? WHERE id=?", (rating, shared_id))
+        self.conn.commit()
 
     # ── stats ────────────────────────────────────────────────────────
 

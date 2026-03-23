@@ -1,0 +1,75 @@
+You are helping a teacher prepare a substitute teacher packet. The substitute has NEVER been to this school and knows NOTHING about the subject, the students, or the routines. Write everything as if explaining to a competent adult who is walking in cold.
+
+{persona}
+
+Teacher Profile:
+- School: {school}
+- Date: {date}
+
+{lesson_context}
+
+Generate a complete substitute teacher packet as JSON with these exact keys:
+
+{{
+  "teacher_name": "the teacher's name",
+  "date": "{date}",
+  "school": "{school}",
+  "schedule": [
+    {{
+      "time": "e.g. 8:00 AM - 8:45 AM",
+      "period": "e.g. Period 1",
+      "class_name": "e.g. 8th Grade Science - Room 204",
+      "notes": "any notes about this period (prep period, lunch duty, etc.)"
+    }}
+  ],
+  "behavioral_notes": [
+    {{
+      "period": "Period 1",
+      "class_dynamics": "Describe how this class behaves — energy level, talkers, focus issues, what works",
+      "seating_chart": "See printed seating chart on teacher desk.",
+      "accommodations": ["Student A — extra time on written work (IEP)", "Student B — preferential seating, front row (504)"],
+      "key_students": ["Alex — needs movement breaks every 20 min", "Maria — ELL, pair with Sophia for support"]
+    }}
+  ],
+  "lesson_instructions": [
+    {{
+      "period": "Period 1",
+      "lesson_title": "title of today's lesson",
+      "objective": "what students should learn/do today",
+      "step_by_step": [
+        "1. BELL RINGER (5 min): As students enter, direct them to the question on the board. The question is written on a sticky note on the whiteboard. Give them 5 minutes to write their answer in their notebook.",
+        "2. DIRECT INSTRUCTION (15 min): Read from the script below. Show slides 1-5 (laptop is on the desk, slideshow is already open). Key points to emphasize: ...",
+        "3. GUIDED PRACTICE (15 min): Hand out the worksheet from the folder labeled 'Period 1' on the desk. Walk through #1 together. Students work in pairs on #2-5.",
+        "4. INDEPENDENT WORK (10 min): Students complete the back of the worksheet independently. Circulate and check for understanding.",
+        "5. EXIT TICKET (5 min): Students write their answer to the exit question (on the last slide) on a sticky note and place it on the door as they leave."
+      ],
+      "materials_needed": ["Worksheet (in 'Period 1' folder on desk)", "Laptop with slideshow", "Sticky notes"],
+      "backup_activity": "If the lesson finishes early or technology fails: Students read Chapter 5 silently and answer the review questions at the end of the chapter (textbooks are in the cabinet by the window).",
+      "answer_key_location": "Answer key is in the red folder in the top desk drawer."
+    }}
+  ],
+  "emergency_contacts": [
+    "Main Office: ext. 100",
+    "Nurse: ext. 150",
+    "Department Chair (Mr./Ms. ___): Room ___, ext. ___",
+    "Nearest Teacher (for emergencies): See posted list by door"
+  ],
+  "emergency_procedures": "Fire drill: exit via the door, turn RIGHT, go to the back parking lot. Students know the route. Lockdown: lock the door (key is on the lanyard on the desk), turn off lights, students sit against the wall below the windows. Shelter-in-place: close windows and door, continue class normally.",
+  "general_notes": "Any other important information the sub should know — bathroom pass policy, cell phone rules, how to take attendance, etc.",
+  "materials_checklist": [
+    "Worksheets for each period (in labeled folders on desk)",
+    "Laptop (password on sticky note under keyboard)",
+    "Dry erase markers in top desk drawer",
+    "Attendance is taken electronically — instructions posted next to computer"
+  ]
+}}
+
+IMPORTANT RULES:
+- Write step_by_step instructions as if the sub has never taught this subject. Be EXTREMELY specific.
+- Tell them WHERE things are physically located (which drawer, which folder, which shelf).
+- Include timing for each step.
+- Include what to do if students finish early or if technology fails.
+- Behavioral notes should be honest and helpful, not judgmental.
+- Accommodations must be specific and actionable.
+- Generate a realistic schedule based on the teacher's profile.
+- If lesson context is provided, base the lesson instructions on it. If not, create a reasonable review/practice day.
