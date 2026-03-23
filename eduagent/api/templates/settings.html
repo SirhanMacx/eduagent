@@ -92,6 +92,53 @@
 
         <hr class="settings-divider">
 
+        {# ── State & Standards ────────────────────────────────────── #}
+        <h2>State &amp; Standards</h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="teacher-state">Your State</label>
+                <select id="teacher-state" name="teacher_state">
+                    <option value="">Select state...</option>
+                    {% for st in states %}
+                    <option value="{{ st.abbreviation }}" {% if teacher_state == st.abbreviation %}selected{% endif %}>{{ st.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div id="state-frameworks" class="framework-info" {% if not teacher_state %}hidden{% endif %}>
+            {% if state_frameworks %}
+            {% for fw in state_frameworks %}
+            <div class="framework-tag">{{ fw.label }}: {{ fw.description }} ({{ fw.code }})</div>
+            {% endfor %}
+            {% endif %}
+        </div>
+
+        <div class="form-group" style="margin-top:1rem">
+            <label>Subjects</label>
+            <div class="checkbox-grid">
+                {% for subj in ['Math', 'ELA', 'Science', 'Social Studies', 'History', 'Economics', 'AP US History', 'AP World History', 'AP Government', 'AP Economics'] %}
+                <label class="toggle-label">
+                    <input type="checkbox" name="teacher_subjects" value="{{ subj }}" {% if subj in (teacher_subjects or []) %}checked{% endif %}>
+                    {{ subj }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-top:1rem">
+            <label>Grade Levels</label>
+            <div class="checkbox-grid">
+                {% for g in ['K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'] %}
+                <label class="toggle-label">
+                    <input type="checkbox" name="teacher_grades" value="{{ g }}" {% if g in (teacher_grades or []) %}checked{% endif %}>
+                    {{ g }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <hr class="settings-divider">
+
         {# ── Generation Defaults ─────────────────────────────────── #}
         <h2>Generation Defaults</h2>
         <div class="form-row">

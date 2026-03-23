@@ -134,6 +134,10 @@ def create_app() -> FastAPI:
     async def settings_page(request: Request):
         from eduagent.config import get_api_key, mask_api_key
         from eduagent.models import AppConfig
+        from eduagent.state_standards import (
+            get_framework_description,
+            list_states,
+        )
 
         cfg = AppConfig.load()
         db = get_db()
@@ -145,11 +149,34 @@ def create_app() -> FastAPI:
             except (json.JSONDecodeError, TypeError):
                 pass
 
+        teacher_state = cfg.teacher_profile.state if hasattr(cfg, "teacher_profile") else ""
+        teacher_subjects = cfg.teacher_profile.subjects if hasattr(cfg, "teacher_profile") else []
+        teacher_grades = cfg.teacher_profile.grade_levels if hasattr(cfg, "teacher_profile") else []
+
+        # Build framework info for selected state
+        state_frameworks = []
+        if teacher_state:
+            from eduagent.state_standards import STATE_STANDARDS_CONFIG
+            state_cfg = STATE_STANDARDS_CONFIG.get(teacher_state, {})
+            for subj_key in ("math", "ela", "science", "social_studies"):
+                code = state_cfg.get(subj_key, "")
+                if code:
+                    state_frameworks.append({
+                        "label": subj_key.replace("_", " ").title(),
+                        "code": code,
+                        "description": get_framework_description(code),
+                    })
+
         return templates.TemplateResponse(request, "settings.html", {
             "config": cfg,
             "persona": persona_data,
             "anthropic_key_masked": mask_api_key(get_api_key("anthropic")),
             "openai_key_masked": mask_api_key(get_api_key("openai")),
+            "states": list_states(),
+            "teacher_state": teacher_state,
+            "teacher_subjects": teacher_subjects,
+            "teacher_grades": teacher_grades,
+            "state_frameworks": state_frameworks,
         })
 
     @app.get("/lesson/{lesson_id}", response_class=HTMLResponse)

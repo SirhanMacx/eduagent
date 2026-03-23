@@ -284,6 +284,20 @@ class TeacherProfile(BaseModel):
             parts.append("Has ELL students: Yes")
         return "\n".join(parts) if parts else "Profile not configured"
 
+    def get_standards_context(self) -> str:
+        """Generate standards context string for LLM prompt injection.
+
+        Uses the teacher's state, subjects, and grade levels to produce
+        a block of text describing applicable standards frameworks.
+        """
+        if not self.state:
+            return ""
+        from eduagent.state_standards import get_standards_context_for_prompt
+
+        return get_standards_context_for_prompt(
+            self.state, self.subjects, self.grade_levels
+        )
+
 
 class AppConfig(BaseModel):
     """Application configuration."""
