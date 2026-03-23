@@ -1,17 +1,15 @@
 """Basic tests for EDUagent models and core functionality."""
 
-import pytest
 from pathlib import Path
+
+import pytest
 
 from eduagent.models import (
     AppConfig,
     AssessmentPlan,
     AssessmentQuestion,
-    DailyLesson,
-    DifferentiationNotes,
     DocType,
     Document,
-    ExitTicketQuestion,
     LessonBrief,
     LessonMaterials,
     LLMProvider,
@@ -23,7 +21,6 @@ from eduagent.models import (
     VocabularyLevel,
     WorksheetItem,
 )
-
 
 # ── Document model ──────────────────────────────────────────────────
 
@@ -326,3 +323,140 @@ class TestLessonMaterialsModel:
         assert materials.rubric == []
         assert materials.slide_outline == []
         assert materials.iep_notes == []
+
+
+# ── Version ────────────────────────────────────────────────────────
+
+
+class TestVersion:
+    def test_version_string(self):
+        from eduagent import __version__
+
+        assert __version__ == "0.1.0"
+
+
+# ── Standards module ───────────────────────────────────────────────
+
+
+class TestStandards:
+    def test_resolve_subject_canonical(self):
+        from eduagent.standards import resolve_subject
+
+        assert resolve_subject("math") == "math"
+        assert resolve_subject("science") == "science"
+        assert resolve_subject("ela") == "ela"
+        assert resolve_subject("history") == "history"
+
+    def test_resolve_subject_aliases(self):
+        from eduagent.standards import resolve_subject
+
+        assert resolve_subject("Mathematics") == "math"
+        assert resolve_subject("English") == "ela"
+        assert resolve_subject("Biology") == "science"
+        assert resolve_subject("Social Studies") == "history"
+
+    def test_resolve_subject_unknown(self):
+        from eduagent.standards import resolve_subject
+
+        assert resolve_subject("underwater basket weaving") is None
+
+    def test_get_standards_returns_results(self):
+        from eduagent.standards import get_standards
+
+        results = get_standards("math", "8")
+        assert len(results) > 0
+        # Each result is a (code, description, grade_band) tuple
+        code, desc, band = results[0]
+        assert "MATH" in code
+        assert len(desc) > 0
+
+    def test_get_standards_grade_filter(self):
+        from eduagent.standards import get_standards
+
+        results = get_standards("science", "8")
+        for _code, _desc, band in results:
+            assert band in ("6-8", "8")
+
+    def test_get_standards_no_match(self):
+        from eduagent.standards import get_standards
+
+        results = get_standards("art")
+        assert results == []
+
+    def test_get_standards_all_grades(self):
+        from eduagent.standards import get_standards
+
+        all_math = get_standards("math")
+        grade_8 = get_standards("math", "8")
+        assert len(all_math) > len(grade_8)
+
+    def test_grade_k_match(self):
+        from eduagent.standards import get_standards
+
+        results = get_standards("math", "K")
+        assert len(results) > 0
+        for _code, _desc, band in results:
+            assert band == "K"
+
+
+# ── CLI demo --web HTML ────────────────────────────────────────────
+
+
+class TestDemoHtml:
+    def test_demo_html_contains_key_content(self):
+        from eduagent.cli import _DEMO_HTML
+
+        assert "Life From Light" in _DEMO_HTML
+        assert "EDUagent Demo" in _DEMO_HTML
+        assert "Get Started" in _DEMO_HTML
+        assert "github.com/SirhanMacx/eduagent" in _DEMO_HTML
+
+    def test_demo_html_is_self_contained(self):
+        from eduagent.cli import _DEMO_HTML
+
+        # No external CSS/JS links
+        assert 'href="http' not in _DEMO_HTML.replace(
+            'href="https://github.com/SirhanMacx/eduagent"', ""
+        )
+        assert "<script src=" not in _DEMO_HTML
+        assert '<link rel="stylesheet"' not in _DEMO_HTML
+
+
+# ── Share HTML generation ──────────────────────────────────────────
+
+
+class TestShareHtml:
+    def test_lesson_to_html_basic(self):
+        from eduagent.cli import _lesson_to_html
+
+        data = {
+            "title": "Intro to Photosynthesis",
+            "lesson_number": 1,
+            "objective": "Students will explain photosynthesis.",
+            "do_now": "What do plants need to grow?",
+            "direct_instruction": "Walk through the equation.",
+            "guided_practice": "Leaf observation lab.",
+            "independent_work": "",
+            "exit_ticket": [{"question": "Write the equation."}],
+            "standards": ["MS-LS1-6"],
+            "materials_needed": ["hand lens", "leaves"],
+        }
+        html = _lesson_to_html(data)
+        assert "Intro to Photosynthesis" in html
+        assert "Students will explain photosynthesis." in html
+        assert "MS-LS1-6" in html
+        assert "Write the equation." in html
+        assert "<!DOCTYPE html>" in html
+
+    def test_lesson_to_html_escapes_special_chars(self):
+        from eduagent.cli import _lesson_to_html
+
+        data = {
+            "title": "Test <script>alert('xss')</script>",
+            "objective": 'Use "quotes" & <angles>',
+        }
+        html = _lesson_to_html(data)
+        assert "<script>" not in html
+        assert "&lt;script&gt;" in html
+        assert "&amp;" in html
+        assert "&lt;angles&gt;" in html

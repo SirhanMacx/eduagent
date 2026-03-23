@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import re
+import webbrowser
 from pathlib import Path
 from typing import Optional
 
@@ -12,6 +15,7 @@ from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.table import Table
 
+from eduagent import __version__
 from eduagent.models import AppConfig, LLMProvider, TeacherPersona
 
 app = typer.Typer(
@@ -24,8 +28,30 @@ console = Console()
 # Sub-apps
 config_app = typer.Typer(help="Configure EDUagent settings.")
 persona_app = typer.Typer(help="Manage teacher personas.")
+standards_app = typer.Typer(help="Browse education standards (CCSS, NGSS, C3).")
 app.add_typer(config_app, name="config")
 app.add_typer(persona_app, name="persona")
+app.add_typer(standards_app, name="standards")
+
+
+def _version_callback(value: bool) -> None:
+    if value:
+        console.print(f"EDUagent v{__version__}")
+        raise typer.Exit()
+
+
+@app.callback()
+def main(
+    version: Optional[bool] = typer.Option(
+        None,
+        "--version",
+        "-V",
+        help="Show version and exit.",
+        callback=_version_callback,
+        is_eager=True,
+    ),
+) -> None:
+    """Your teaching files, your AI co-teacher."""
 
 
 def _output_dir() -> Path:
@@ -432,17 +458,121 @@ def config_show():
     ))
 
 
+# ── Demo command ─────────────────────────────────────────────────────────
+
+
+_DEMO_HTML = """\
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EDUagent Demo</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6; color: #1a1a2e; background: #fff; max-width: 860px;
+    margin: 0 auto; padding: 2rem 1.5rem;
+  }
+  h1 { font-size: 2rem; margin-bottom: .25rem; }
+  .subtitle { color: #555; margin-bottom: 2rem; font-size: 1.1rem; }
+  h2 { font-size: 1.35rem; margin: 2rem 0 .75rem; color: #16213e; border-bottom: 2px solid #0f3460; padding-bottom: .3rem; }
+  table { width: 100%%; border-collapse: collapse; margin-bottom: 1.5rem; }
+  th, td { text-align: left; padding: .65rem .85rem; border: 1px solid #ddd; }
+  th { background: #0f3460; color: #fff; font-weight: 600; }
+  tr:nth-child(even) { background: #f8f9fa; }
+  td:first-child { font-weight: 600; white-space: nowrap; width: 200px; }
+  .get-started {
+    background: #f0f4ff; border: 1px solid #0f3460; border-radius: 8px;
+    padding: 1.5rem; margin-top: 2.5rem;
+  }
+  .get-started h2 { border: none; margin-top: 0; padding-bottom: 0; }
+  .get-started ol { padding-left: 1.3rem; }
+  .get-started li { margin-bottom: .4rem; }
+  code {
+    background: #eef; padding: .15rem .4rem; border-radius: 3px;
+    font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace; font-size: .92em;
+  }
+  a { color: #0f3460; }
+  .badge-row { display: flex; gap: .5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .badge {
+    display: inline-block; padding: .2rem .65rem; border-radius: 4px;
+    font-size: .8rem; font-weight: 600; color: #fff;
+  }
+  .badge-blue { background: #0f3460; }
+  .badge-green { background: #2e7d32; }
+  .badge-orange { background: #e65100; }
+</style>
+</head>
+<body>
+<h1>EDUagent Demo</h1>
+<p class="subtitle">No API key needed &mdash; example output for 8th Grade Science / Photosynthesis / 2 weeks</p>
+<div class="badge-row">
+  <span class="badge badge-blue">Python 3.10+</span>
+  <span class="badge badge-green">MIT License</span>
+  <span class="badge badge-orange">Works with Ollama</span>
+</div>
+
+<h2>Sample Unit Plan</h2>
+<table>
+  <tr><th>Field</th><th>Value</th></tr>
+  <tr><td>Title</td><td>Life From Light: Understanding Photosynthesis</td></tr>
+  <tr><td>Grade</td><td>8th Grade Science</td></tr>
+  <tr><td>Duration</td><td>2 weeks / 10 lessons</td></tr>
+  <tr><td>Essential Questions</td><td>How do plants convert light into food?<br>Why does photosynthesis matter for all life on Earth?<br>How do plants and animals depend on each other?</td></tr>
+  <tr><td>Enduring Understandings</td><td>Energy flows through ecosystems starting with photosynthesis.<br>Matter and energy transformations obey conservation laws.</td></tr>
+  <tr><td>Lesson Sequence</td><td>L1: What is Photosynthesis? The Big Picture<br>L2: Light Energy and Chlorophyll<br>L3: The Light-Dependent Reactions<br>L4: The Calvin Cycle<br>L5: Lab &mdash; Leaf Disk Assay<br>L6&ndash;10: Factors, Applications &amp; Assessment</td></tr>
+</table>
+
+<h2>Sample Lesson Plan &mdash; Lesson 1</h2>
+<table>
+  <tr><th>Component</th><th>Content</th></tr>
+  <tr><td>Objective (SWBAT)</td><td>Students will be able to write the overall equation for photosynthesis and explain what enters and exits the leaf.</td></tr>
+  <tr><td>Do-Now (5 min)</td><td>Look at the photo on the board. Where does a plant get its food? Write your hypothesis in 2 sentences.</td></tr>
+  <tr><td>Direct Instruction (20 min)</td><td>Walk through the big-picture equation: sunlight = power, CO&#8322; + H&#8322;O = raw materials, glucose = product. Use the chloroplast diagram on p.&nbsp;34.</td></tr>
+  <tr><td>Guided Practice (15 min)</td><td>Leaf observation: each pair gets a leaf, hand lens, and recording sheet. Students sketch the leaf structure and label where photosynthesis occurs.</td></tr>
+  <tr><td>Exit Ticket (5 min)</td><td>1. Write the word equation for photosynthesis.<br>2. Name ONE thing a plant needs from the environment.<br>3. Name ONE thing a plant releases.</td></tr>
+  <tr><td>Differentiation</td><td>Struggling: sentence frames for exit ticket.<br>Advanced: research C4 vs C3 photosynthesis.</td></tr>
+</table>
+
+<div class="get-started">
+  <h2>Get Started</h2>
+  <ol>
+    <li><code>pip install eduagent</code></li>
+    <li><code>eduagent config set-model ollama</code> &nbsp;(free, local)</li>
+    <li><code>eduagent ingest ~/your-lesson-plans/</code></li>
+    <li><code>eduagent full "Photosynthesis" --grade 8 --subject science --weeks 2</code></li>
+  </ol>
+  <p style="margin-top:1rem;">GitHub: <a href="https://github.com/SirhanMacx/eduagent">github.com/SirhanMacx/eduagent</a></p>
+</div>
+</body>
+</html>
+"""
+
+
 @app.command()
-def demo():
+def demo(
+    web: bool = typer.Option(False, "--web", help="Generate an HTML demo page and open it in your browser"),
+):
     """Show a sample output without needing an API key or any files.
 
     Prints a realistic example unit plan and lesson plan to demonstrate
     what EDUagent generates. No setup required.
     """
+    if web:
+        out_dir = Path("~/eduagent_output").expanduser().resolve()
+        out_dir.mkdir(parents=True, exist_ok=True)
+        html_path = out_dir / "demo.html"
+        html_path.write_text(_DEMO_HTML)
+        console.print(f"[green]Demo HTML saved:[/green] {html_path}")
+        webbrowser.open(html_path.as_uri())
+        return
+
     console.print(Panel(
         "[bold green]EDUagent Demo[/bold green] — no API key needed\n"
         "This is example output for: 8th Grade Science / Photosynthesis / 2 weeks",
-        title="📚 EDUagent",
+        title="EDUagent",
         border_style="green",
     ))
 
@@ -526,6 +656,179 @@ def demo():
         title="Get Started",
         border_style="cyan",
     ))
+
+
+# ── Standards commands ───────────────────────────────────────────────────
+
+
+@standards_app.command("list")
+def standards_list(
+    grade: str = typer.Option(..., "--grade", "-g", help="Grade level (e.g., K, 5, 8, 9-12)"),
+    subject: str = typer.Option(..., "--subject", "-s", help="Subject (math, ela, science, history)"),
+):
+    """List education standards for a grade and subject."""
+    from eduagent.standards import get_standards, resolve_subject
+
+    canonical = resolve_subject(subject)
+    if canonical is None:
+        console.print(
+            f"[red]Unknown subject: {subject}[/red]. "
+            "Supported: math, ela/english, science, history/social studies"
+        )
+        raise typer.Exit(1)
+
+    results = get_standards(subject, grade)
+    if not results:
+        console.print(f"[yellow]No standards found for grade {grade} {subject}.[/yellow]")
+        raise typer.Exit(0)
+
+    framework = {
+        "math": "CCSS Mathematics",
+        "ela": "CCSS ELA/Literacy",
+        "science": "NGSS",
+        "history": "C3 Framework",
+    }[canonical]
+
+    table = Table(title=f"{framework} — Grade {grade}")
+    table.add_column("Standard Code", style="bold cyan", no_wrap=True)
+    table.add_column("Description")
+    table.add_column("Grade Band", style="dim", justify="center")
+
+    for code, desc, band in results:
+        table.add_row(code, desc, band)
+
+    console.print(table)
+    console.print(f"\n[dim]{len(results)} standard(s) found.[/dim]")
+
+
+# ── Share command ────────────────────────────────────────────────────────
+
+
+def _lesson_to_html(data: dict) -> str:
+    """Convert a lesson JSON dict to a self-contained HTML page."""
+    title = data.get("title", "Lesson Plan")
+    objective = data.get("objective", "")
+    do_now = data.get("do_now", "")
+    direct_instruction = data.get("direct_instruction", "")
+    guided_practice = data.get("guided_practice", "")
+    independent_work = data.get("independent_work", "")
+    homework = data.get("homework", "")
+    standards = data.get("standards", [])
+    materials_needed = data.get("materials_needed", [])
+    lesson_number = data.get("lesson_number", "")
+
+    exit_tickets = data.get("exit_ticket", [])
+    exit_html = ""
+    if exit_tickets:
+        for et in exit_tickets:
+            q = et.get("question", "") if isinstance(et, dict) else str(et)
+            exit_html += f"<li>{_esc(q)}</li>"
+        exit_html = f"<ol>{exit_html}</ol>"
+
+    diff = data.get("differentiation", {})
+    diff_html = ""
+    if isinstance(diff, dict):
+        for key, val in diff.items():
+            if val:
+                label = key.replace("_", " ").title()
+                diff_html += f"<p><strong>{_esc(label)}:</strong> {_esc(str(val))}</p>"
+
+    standards_html = ""
+    if standards:
+        standards_html = ", ".join(_esc(s) for s in standards)
+
+    materials_html = ""
+    if materials_needed:
+        materials_html = ", ".join(_esc(m) for m in materials_needed)
+
+    def _section(heading: str, body: str) -> str:
+        if not body:
+            return ""
+        return f'<div class="section"><h3>{heading}</h3><p>{_esc(body)}</p></div>'
+
+    sections = [
+        _section("Objective (SWBAT)", objective),
+        _section("Do-Now", do_now),
+        _section("Direct Instruction", direct_instruction),
+        _section("Guided Practice", guided_practice),
+        _section("Independent Work", independent_work),
+    ]
+    if exit_html:
+        sections.append(f'<div class="section"><h3>Exit Ticket</h3>{exit_html}</div>')
+    if homework:
+        sections.append(_section("Homework", homework))
+    if diff_html:
+        sections.append(f'<div class="section"><h3>Differentiation</h3>{diff_html}</div>')
+
+    num_label = f"Lesson {lesson_number}: " if lesson_number else ""
+
+    return f"""\
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{_esc(title)}</title>
+<style>
+  *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
+  body {{
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6; color: #1a1a2e; background: #fff; max-width: 800px;
+    margin: 0 auto; padding: 2rem 1.5rem;
+  }}
+  h1 {{ font-size: 1.8rem; margin-bottom: .25rem; color: #0f3460; }}
+  .meta {{ color: #555; margin-bottom: 1.5rem; font-size: .95rem; }}
+  .section {{ margin-bottom: 1.25rem; }}
+  h3 {{ font-size: 1.1rem; color: #16213e; margin-bottom: .3rem; border-left: 3px solid #0f3460; padding-left: .6rem; }}
+  p {{ margin-bottom: .5rem; }}
+  ol {{ padding-left: 1.3rem; margin-bottom: .5rem; }}
+  li {{ margin-bottom: .25rem; }}
+  .footer {{ margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #ddd; color: #888; font-size: .85rem; }}
+</style>
+</head>
+<body>
+<h1>{_esc(num_label + title)}</h1>
+<p class="meta">
+  {f"<strong>Standards:</strong> {standards_html}<br>" if standards_html else ""}
+  {f"<strong>Materials:</strong> {materials_html}" if materials_html else ""}
+</p>
+{"".join(sections)}
+<div class="footer">Generated by EDUagent &mdash; <a href="https://github.com/SirhanMacx/eduagent">github.com/SirhanMacx/eduagent</a></div>
+</body>
+</html>
+"""
+
+
+def _esc(text: str) -> str:
+    """Escape HTML special characters."""
+    return (
+        text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
+
+
+@app.command()
+def share(
+    lesson_file: str = typer.Option(..., "--lesson-file", "-l", help="Path to a saved lesson JSON file"),
+):
+    """Generate a shareable HTML file from a saved lesson plan JSON."""
+    path = Path(lesson_file).expanduser().resolve()
+    if not path.exists():
+        console.print(f"[red]File not found:[/red] {path}")
+        raise typer.Exit(1)
+
+    data = json.loads(path.read_text())
+    title = data.get("title", "lesson")
+    safe_title = re.sub(r"[^a-zA-Z0-9_-]", "_", title).strip("_")[:80]
+
+    out_dir = Path("eduagent_output/shared").resolve()
+    out_dir.mkdir(parents=True, exist_ok=True)
+    html_path = out_dir / f"lesson_{safe_title}.html"
+
+    html_path.write_text(_lesson_to_html(data))
+    console.print(f"[green]Shareable lesson saved:[/green] {html_path}")
 
 
 if __name__ == "__main__":
