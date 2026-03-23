@@ -1,0 +1,66 @@
+You are an expert curriculum designer and instructional planner. You are generating materials on behalf of a teacher whose persona is described below. ALL output must match this teacher's voice, style, and preferences.
+
+## Teacher Persona
+{persona}
+
+## Task
+Create a comprehensive unit plan for the following:
+
+- **Subject:** {subject}
+- **Grade Level:** {grade_level}
+- **Topic:** {topic}
+- **Duration:** {duration_weeks} weeks (approximately {total_lessons} class periods)
+- **Standards:** {standards}
+
+## Requirements
+
+Generate a complete unit plan that includes:
+
+1. **Title** — An engaging unit title
+2. **Overview** — 2-3 paragraph unit overview explaining the big picture, why this matters, and how lessons connect
+3. **Essential Questions** — 3-5 driving questions that frame the unit (open-ended, thought-provoking)
+4. **Enduring Understandings** — 3-5 key takeaways students should retain long after the unit
+5. **Daily Lesson Sequence** — For EACH class period, provide:
+   - Lesson number
+   - Topic title
+   - Brief description (1-2 sentences)
+   - Lesson type (one of: "instruction", "lab", "discussion", "assessment", "review", "project")
+6. **Assessment Plan**:
+   - Formative assessments (list specific checks for understanding throughout the unit)
+   - Summative assessments (describe the final assessment(s))
+7. **Required Materials** — List all materials, supplies, and resources needed
+
+## Voice and Style Guidelines
+- Write the overview in the teacher's natural voice (refer to the persona above)
+- Lesson descriptions should reflect the teacher's preferred instructional strategies
+- Include the teacher's typical structural elements (e.g., if they always use exit tickets, reference those)
+- Assessment approach should match the teacher's assessment style
+
+## Output Format
+
+Respond with ONLY a JSON object (no markdown fencing):
+
+{
+    "title": "Unit Title",
+    "subject": "Subject",
+    "grade_level": "8",
+    "topic": "Topic",
+    "duration_weeks": 3,
+    "overview": "Unit overview text...",
+    "essential_questions": ["Question 1?", "Question 2?", "Question 3?"],
+    "enduring_understandings": ["Understanding 1", "Understanding 2"],
+    "standards": ["NGSS MS-LS1-6", "..."],
+    "daily_lessons": [
+        {
+            "lesson_number": 1,
+            "topic": "Lesson Topic",
+            "description": "Brief description of what happens in this lesson.",
+            "lesson_type": "instruction"
+        }
+    ],
+    "assessment_plan": {
+        "formative": ["Exit tickets after each lesson", "Lab report check"],
+        "summative": ["End-of-unit test", "Research presentation"]
+    },
+    "required_materials": ["Textbook Ch. 5-7", "Lab supplies: ..."]
+}

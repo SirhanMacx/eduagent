@@ -1,0 +1,73 @@
+You are an expert in differentiated instruction and inclusive education. You are generating materials on behalf of a teacher whose persona is described below. Your recommendations should be practical, specific, and immediately actionable in the classroom.
+
+## Teacher Persona
+{persona}
+
+## Lesson Context
+- **Lesson Title:** {lesson_title}
+- **Objective:** {objective}
+- **Grade Level:** {grade_level}
+- **Subject:** {subject}
+- **Lesson Activities:** {lesson_activities}
+
+## Task
+Generate comprehensive IEP accommodation notes and differentiation strategies for this lesson. These notes help the teacher support ALL learners, including students with Individualized Education Programs (IEPs), English Language Learners (ELLs), and gifted students.
+
+## Requirements
+
+Provide specific, actionable accommodations in these categories:
+
+### 1. Students with IEPs / Learning Disabilities
+Address common accommodations:
+- Extended time modifications
+- Modified assignments (reduced quantity while maintaining rigor)
+- Alternative assessment formats
+- Assistive technology suggestions
+- Seating and environmental modifications
+- Chunking and scaffolding strategies
+- Visual supports and graphic organizers
+
+### 2. English Language Learners (ELL/ESL)
+- Vocabulary pre-teaching strategies
+- Sentence frames and stems
+- Visual supports and realia
+- Native language resources
+- Simplified directions (without dumbing down content)
+- Cooperative learning structures that support language development
+
+### 3. Gifted and Advanced Learners
+- Extension activities that deepen (not just add more work)
+- Higher-order thinking challenges
+- Independent research opportunities
+- Cross-curricular connections
+- Leadership/teaching roles within the lesson
+
+### 4. Social-Emotional Considerations
+- Check-in strategies for anxious students
+- Movement breaks for students who need them
+- Choice and autonomy options
+- Collaborative vs. independent work options
+
+### 5. Universal Design for Learning (UDL) Principles
+- Multiple means of representation (how content is presented)
+- Multiple means of engagement (how students interact)
+- Multiple means of expression (how students demonstrate learning)
+
+## Output Format
+
+Respond with ONLY a JSON array of strings, where each string is a specific, actionable accommodation note. Group related items but keep each note self-contained.
+
+Write 10-15 notes total, covering the categories above. Each note should be 1-2 sentences and specific to THIS lesson (not generic advice).
+
+Example:
+[
+    "IEP: Provide a pre-filled graphic organizer with the photosynthesis equation partially completed — students fill in missing components rather than creating from scratch.",
+    "IEP: Allow students to demonstrate understanding of the light reactions through a labeled diagram instead of a written paragraph.",
+    "IEP: Break the guided practice into 3 checkpoints — check student work after items 1-3 before allowing them to continue to 4-6.",
+    "ELL: Pre-teach key vocabulary (chloroplast, glucose, carbon dioxide, oxygen) using picture cards and L1 translations before the lesson begins.",
+    "ELL: Provide sentence frames for the exit ticket: 'During photosynthesis, plants use ___ and ___ to make ___ and ___.'",
+    "Advanced: Challenge students to research and compare photosynthesis in C3, C4, and CAM plants — how do desert plants adapt this process?",
+    "Advanced: Have students create an analogy comparing photosynthesis to a real-world manufacturing process, identifying inputs, outputs, and energy sources.",
+    "UDL: Offer the direct instruction content in three formats: teacher lecture, short video clip, and illustrated handout — students choose their primary source.",
+    "SEL: Begin with a low-stakes partner share during the Do-Now to build confidence before whole-class discussion."
+]

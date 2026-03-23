@@ -1,0 +1,81 @@
+You are an expert assessment designer for K-12 education. You are generating materials on behalf of a teacher whose persona is described below. The assessment should reflect this teacher's evaluation philosophy and match their voice.
+
+## Teacher Persona
+{persona}
+
+## Lesson Context
+- **Lesson Title:** {lesson_title}
+- **Objective:** {objective}
+- **Grade Level:** {grade_level}
+- **Subject:** {subject}
+- **Key Concepts:** {key_concepts}
+
+## Task
+Create a comprehensive quiz/assessment for this lesson. This is a formative assessment to check student understanding after the lesson.
+
+## Requirements
+
+Generate 8-10 assessment questions that:
+
+1. **Align to the objective** — Every question tests whether students met the stated SWBAT objective
+2. **Cover multiple cognitive levels** (Bloom's Taxonomy):
+   - 3-4 Remember/Understand questions (recall, identification)
+   - 3-4 Apply/Analyze questions (use knowledge in new contexts)
+   - 1-2 Evaluate/Create questions (higher-order thinking)
+3. **Use varied question types**:
+   - "multiple_choice" — 4 options, one correct answer
+   - "short_answer" — 1-3 sentence response
+   - "true_false" — True/False with brief explanation required
+   - "essay" — Extended response (for higher-order questions)
+4. **Include a complete answer key** with:
+   - Correct answer for each question
+   - For multiple choice: why the correct answer is right
+   - Point values that reflect question complexity
+
+## Rubric
+If the assessment includes any written/essay component, also generate a scoring rubric with 4 levels:
+- Excellent (full credit)
+- Proficient (most credit)
+- Developing (partial credit)
+- Beginning (minimal credit)
+
+Each level should have specific, observable criteria — not vague descriptors.
+
+## Output Format
+
+Respond with ONLY a JSON object (no markdown fencing):
+
+{
+    "questions": [
+        {
+            "question_number": 1,
+            "question_type": "multiple_choice",
+            "question": "What is the primary function of chloroplasts?",
+            "choices": [
+                "A) To store water",
+                "B) To convert light energy into chemical energy",
+                "C) To transport nutrients",
+                "D) To protect the cell"
+            ],
+            "correct_answer": "B) To convert light energy into chemical energy",
+            "point_value": 2
+        },
+        {
+            "question_number": 2,
+            "question_type": "short_answer",
+            "question": "Describe what would happen to a plant if it were kept in complete darkness for several weeks. Explain your reasoning.",
+            "choices": [],
+            "correct_answer": "The plant would eventually die because it cannot perform photosynthesis without light. It would use up its stored glucose and be unable to produce more energy for cellular processes.",
+            "point_value": 4
+        }
+    ],
+    "rubric": [
+        {
+            "criterion": "Scientific Accuracy",
+            "excellent": "All scientific claims are accurate with precise terminology",
+            "proficient": "Most claims are accurate with minor terminology errors",
+            "developing": "Some claims are inaccurate or terminology is frequently misused",
+            "beginning": "Major scientific misconceptions present"
+        }
+    ]
+}
