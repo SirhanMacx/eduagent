@@ -7,7 +7,6 @@ from pathlib import Path
 from eduagent.llm import LLMClient
 from eduagent.models import AppConfig, DailyLesson, TeacherPersona, UnitPlan
 
-
 PROMPT_PATH = Path(__file__).parent / "prompts" / "lesson_plan.txt"
 
 

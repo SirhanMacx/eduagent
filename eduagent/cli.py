@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 from pathlib import Path
 from typing import Optional
 
@@ -430,6 +429,102 @@ def config_show():
         f"[bold]Export Format:[/bold] {cfg.export_format}\n"
         f"[bold]Include Homework:[/bold] {cfg.include_homework}",
         title="EDUagent Configuration",
+    ))
+
+
+@app.command()
+def demo():
+    """Show a sample output without needing an API key or any files.
+
+    Prints a realistic example unit plan and lesson plan to demonstrate
+    what EDUagent generates. No setup required.
+    """
+    console.print(Panel(
+        "[bold green]EDUagent Demo[/bold green] — no API key needed\n"
+        "This is example output for: 8th Grade Science / Photosynthesis / 2 weeks",
+        title="📚 EDUagent",
+        border_style="green",
+    ))
+
+    # ── Sample unit plan ──────────────────────────────────────────────────────
+    unit_table = Table(title="Sample Unit Plan", show_header=True, header_style="bold cyan")
+    unit_table.add_column("Field", style="bold")
+    unit_table.add_column("Value")
+    unit_table.add_row("Title", "Life From Light: Understanding Photosynthesis")
+    unit_table.add_row("Grade", "8th Grade Science")
+    unit_table.add_row("Duration", "2 weeks / 10 lessons")
+    unit_table.add_row(
+        "Essential Questions",
+        "How do plants convert light into food?\n"
+        "Why does photosynthesis matter for all life on Earth?\n"
+        "How do plants and animals depend on each other?",
+    )
+    unit_table.add_row(
+        "Enduring Understandings",
+        "Energy flows through ecosystems starting with photosynthesis.\n"
+        "Matter and energy transformations obey conservation laws.",
+    )
+    unit_table.add_row(
+        "Lesson Sequence (sample)",
+        "L1: What is Photosynthesis? The Big Picture\n"
+        "L2: Light Energy and Chlorophyll\n"
+        "L3: The Light-Dependent Reactions\n"
+        "L4: The Calvin Cycle\n"
+        "L5: Lab — Leaf Disk Assay\n"
+        "L6-10: Factors, Applications & Assessment",
+    )
+    console.print(unit_table)
+
+    console.print()
+
+    # ── Sample lesson plan ────────────────────────────────────────────────────
+    lesson_table = Table(title="Sample Lesson Plan — Lesson 1", show_header=True, header_style="bold magenta")
+    lesson_table.add_column("Component", style="bold")
+    lesson_table.add_column("Content", max_width=70)
+    lesson_table.add_row(
+        "Objective (SWBAT)",
+        "Students will be able to write the overall equation for photosynthesis\n"
+        "and explain what enters and exits the leaf.",
+    )
+    lesson_table.add_row(
+        "Do-Now (5 min)",
+        "Look at the photo on the board. Where does a plant get its food?\n"
+        "Write your hypothesis in 2 sentences.",
+    )
+    lesson_table.add_row(
+        "Direct Instruction (20 min)",
+        "Walk through the big-picture equation: sunlight = power,\n"
+        "CO₂ + H₂O = raw materials, glucose = product.\n"
+        "Use the chloroplast diagram on p. 34.",
+    )
+    lesson_table.add_row(
+        "Guided Practice (15 min)",
+        "Leaf observation: each pair gets a leaf, hand lens, and recording sheet.\n"
+        "Students sketch the leaf structure and label where photosynthesis occurs.",
+    )
+    lesson_table.add_row(
+        "Exit Ticket (5 min)",
+        "1. Write the word equation for photosynthesis.\n"
+        "2. Name ONE thing a plant needs from the environment.\n"
+        "3. Name ONE thing a plant releases.",
+    )
+    lesson_table.add_row(
+        "Differentiation",
+        "Struggling: sentence frames for exit ticket.\n"
+        "Advanced: research C4 vs C3 photosynthesis.",
+    )
+    console.print(lesson_table)
+
+    console.print()
+    console.print(Panel(
+        "[bold]To generate real content from your own materials:[/bold]\n\n"
+        "  1. [cyan]pip install eduagent[/cyan]\n"
+        "  2. [cyan]eduagent config set-model ollama[/cyan]  (free, local)\n"
+        "  3. [cyan]eduagent ingest ~/your-lesson-plans/[/cyan]\n"
+        "  4. [cyan]eduagent full \"Photosynthesis\" --grade 8 --subject science --weeks 2[/cyan]\n\n"
+        "GitHub: [link]https://github.com/SirhanMacx/eduagent[/link]",
+        title="Get Started",
+        border_style="cyan",
     ))
 
 

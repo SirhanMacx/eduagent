@@ -16,7 +16,6 @@ from eduagent.models import (
     WorksheetItem,
 )
 
-
 PROMPT_DIR = Path(__file__).parent / "prompts"
 
 

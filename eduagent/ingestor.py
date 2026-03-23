@@ -9,7 +9,6 @@ from typing import Optional
 
 from eduagent.models import DocType, Document
 
-
 # ── File-type detection ──────────────────────────────────────────────────
 
 EXTENSION_MAP: dict[str, DocType] = {

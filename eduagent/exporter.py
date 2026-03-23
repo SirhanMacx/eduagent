@@ -11,7 +11,6 @@ from eduagent.models import (
     UnitPlan,
 )
 
-
 # ── Markdown export ──────────────────────────────────────────────────────
 
 
@@ -170,12 +169,13 @@ def materials_to_markdown(materials: LessonMaterials) -> str:
 
     # Worksheet
     if materials.worksheet_items:
-        lines.extend(["## Student Worksheet", "", f"**Name:** ________________________  **Date:** ____________", ""])
+        lines.extend(["## Student Worksheet", "", "**Name:** ________________________  **Date:** ____________", ""])
         total_pts = sum(item.point_value for item in materials.worksheet_items)
         lines.append(f"**Total Points:** {total_pts}")
         lines.append("")
         for item in materials.worksheet_items:
-            lines.append(f"**{item.item_number}.** ({item.point_value} pt{'s' if item.point_value != 1 else ''}) {item.prompt}")
+            pts = "pts" if item.point_value != 1 else "pt"
+            lines.append(f"**{item.item_number}.** ({item.point_value} {pts}) {item.prompt}")
             lines.append("")
         lines.append("---")
         lines.append("")
