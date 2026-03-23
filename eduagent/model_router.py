@@ -22,6 +22,9 @@ TASK_MODELS: dict[str, str] = {
     "differentiation": "minimax-m2.7:cloud",
     "iep_modification": "minimax-m2.7:cloud",
     "assessment": "minimax-m2.7:cloud",
+    "year_map": "minimax-m2.7:cloud",
+    "pacing_guide": "minimax-m2.7:cloud",
+    "curriculum_gaps": "minimax-m2.7:cloud",
 }
 
 

@@ -8,7 +8,9 @@ from typing import Any
 from eduagent.models import (
     DailyLesson,
     LessonMaterials,
+    PacingGuide,
     UnitPlan,
+    YearMap,
 )
 
 # ── Markdown export ──────────────────────────────────────────────────────

@@ -82,6 +82,8 @@ select = ["E", "F", "I", "N", "W"]
 "eduagent/router.py" = ["E501"]
 "eduagent/corpus.py" = ["E501"]
 "eduagent/voice.py" = ["E501"]
+"eduagent/assessment.py" = ["E501"]
+"eduagent/curriculum_map.py" = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

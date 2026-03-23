@@ -30,6 +30,8 @@ class Intent(str, Enum):
     GENERATE_ASSESSMENT = "generate_assessment"
     GENERATE_BELLRINGER = "generate_bellringer"
     GENERATE_DIFFERENTIATION = "generate_differentiation"
+    GENERATE_YEAR_MAP = "generate_year_map"
+    GENERATE_PACING_GUIDE = "generate_pacing_guide"
 
     # Search & Research
     WEB_SEARCH = "web_search"
@@ -146,6 +148,24 @@ BELLRINGER_PATTERNS = [
     r"starter",
     r"opening activity",
     r"hook",
+]
+
+YEAR_MAP_PATTERNS = [
+    r"year.{0,10}(map|plan|curriculum)",
+    r"full.?year.{0,10}(plan|map|curriculum)",
+    r"curriculum.{0,10}map",
+    r"annual.{0,10}(plan|curriculum)",
+    r"yearly.{0,10}(plan|map)",
+    r"scope.{0,10}(and|&).{0,10}sequence",
+    r"plan.{0,10}(the|my|a).{0,10}year",
+    r"plan.{0,10}(the|my|a).{0,10}full year",
+]
+
+PACING_PATTERNS = [
+    r"pacing.{0,10}(guide|calendar|chart)",
+    r"week.{0,5}by.{0,5}week.{0,10}(plan|schedule|calendar|pacing)",
+    r"(create|generate|make|build).{0,20}pacing",
+    r"calendar.{0,10}(pacing|schedule)",
 ]
 
 EXPORT_PATTERNS = {
@@ -318,6 +338,21 @@ def parse_intent(message: str) -> ParsedIntent:
             intent_map = {"pdf": Intent.EXPORT_PDF, "classroom": Intent.EXPORT_CLASSROOM, "share": Intent.SHARE_STUDENTS}
             return ParsedIntent(intent=intent_map[fmt], format=fmt, raw=text)
 
+    # Year-level planning (check before unit — "year plan" could match unit patterns)
+    if _any_match(text, YEAR_MAP_PATTERNS):
+        return ParsedIntent(
+            intent=Intent.GENERATE_YEAR_MAP,
+            subject=_extract_topic(text),
+            grade=_extract_grade(text),
+            raw=text,
+        )
+
+    if _any_match(text, PACING_PATTERNS):
+        return ParsedIntent(
+            intent=Intent.GENERATE_PACING_GUIDE,
+            raw=text,
+        )
+
     # Generation (most common use case)
     if _any_match(text, UNIT_PATTERNS):
         return ParsedIntent(
@@ -380,6 +415,10 @@ def needs_clarification(parsed: ParsedIntent) -> Optional[str]:
             return "What topic should the unit cover?"
         if not parsed.weeks:
             return f"How many weeks for the {parsed.topic} unit? (1-4 weeks is typical)"
+
+    if parsed.intent == Intent.GENERATE_YEAR_MAP:
+        if not parsed.subject and not parsed.grade:
+            return "What subject and grade level? (e.g., '8th grade Math')"
 
     if parsed.intent in (Intent.GENERATE_LESSON, Intent.GENERATE_MATERIALS, Intent.GENERATE_ASSESSMENT):
         if not parsed.topic:
