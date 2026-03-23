@@ -626,6 +626,177 @@ def materials(
     ))
 
 
+# ── Assessment intelligence ──────────────────────────────────────────────
+
+
+@app.command()
+def assess(
+    type: str = typer.Option("quiz", "--type", "-t", help="Assessment type: formative, summative, dbq, quiz"),
+    topic: str = typer.Option("", "--topic", help="Topic for quiz or DBQ"),
+    grade: str = typer.Option("8", "--grade", "-g", help="Grade level"),
+    questions: int = typer.Option(10, "--questions", "-q", help="Number of questions (quiz only)"),
+    question_types: str = typer.Option("mixed", "--question-types", help="Question types: mixed, multiple_choice, short_answer"),
+    lesson_file: Optional[str] = typer.Option(None, "--lesson-file", "-l", help="Lesson JSON for formative assessment"),
+    unit_file: Optional[str] = typer.Option(None, "--unit-file", "-u", help="Unit JSON for summative assessment"),
+    context: str = typer.Option("", "--context", "-c", help="Additional context (DBQ)"),
+):
+    """Generate intelligent assessments — DBQ, summative, formative, or quiz."""
+    from eduagent.assessment import (
+        AssessmentGenerator,
+        save_assessment,
+    )
+
+    persona = _load_persona_or_exit()
+    gen = AssessmentGenerator(AppConfig.load())
+
+    out_dir = _output_dir()
+
+    if type == "formative":
+        if not lesson_file:
+            console.print("[red]--lesson-file required for formative assessment.[/red]")
+            raise typer.Exit(1)
+        from eduagent.lesson import load_lesson
+
+        daily = load_lesson(Path(lesson_file))
+        console.print(Panel(
+            f"[bold]{daily.title}[/bold] — exit ticket for today's objective",
+            title="Formative Assessment",
+        ))
+        with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), console=console) as progress:
+            task = progress.add_task("Generating exit ticket...", total=None)
+            result = _run_async(gen.generate_formative(daily, persona))
+            progress.update(task, description="Exit ticket ready!")
+
+        path = save_assessment(result, out_dir, "formative")
+        console.print(f"\n[green]Saved:[/green] {path}")
+        console.print(Panel(
+            f"[bold]Objective:[/bold] {result.objective}\n"
+            f"[bold]Questions:[/bold] {len(result.questions)}\n"
+            f"[bold]Time:[/bold] {result.time_minutes} minutes",
+            title="Exit Ticket Summary",
+        ))
+
+    elif type == "summative":
+        if not unit_file:
+            console.print("[red]--unit-file required for summative assessment.[/red]")
+            raise typer.Exit(1)
+        from eduagent.planner import load_unit
+
+        unit_plan = load_unit(Path(unit_file))
+        console.print(Panel(
+            f"[bold]{unit_plan.title}[/bold] — unit test",
+            title="Summative Assessment",
+        ))
+        with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), console=console) as progress:
+            task = progress.add_task("Generating unit test...", total=None)
+            result = _run_async(gen.generate_summative(unit_plan, persona))
+            progress.update(task, description="Unit test ready!")
+
+        path = save_assessment(result, out_dir, "summative")
+        console.print(f"\n[green]Saved:[/green] {path}")
+        console.print(Panel(
+            f"[bold]Questions:[/bold] {len(result.questions)}\n"
+            f"[bold]Total Points:[/bold] {result.total_points}\n"
+            f"[bold]Rubric Criteria:[/bold] {len(result.rubric)}\n"
+            f"[bold]Time:[/bold] {result.time_minutes} minutes",
+            title="Unit Test Summary",
+        ))
+
+    elif type == "dbq":
+        if not topic:
+            console.print("[red]--topic required for DBQ assessment.[/red]")
+            raise typer.Exit(1)
+        console.print(Panel(
+            f"[bold]{topic}[/bold] — NYS Regents-style DBQ | Grade {grade}",
+            title="Document-Based Question",
+        ))
+        with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), console=console) as progress:
+            task = progress.add_task("Generating DBQ with documents...", total=None)
+            result = _run_async(gen.generate_dbq(topic, persona, grade_level=grade, context=context))
+            progress.update(task, description="DBQ ready!")
+
+        path = save_assessment(result, out_dir, "dbq")
+        console.print(f"\n[green]Saved:[/green] {path}")
+        console.print(Panel(
+            f"[bold]Documents:[/bold] {len(result.documents)}\n"
+            f"[bold]Rubric Criteria:[/bold] {len(result.rubric)}\n"
+            f"[bold]Model Answer:[/bold] {'Yes' if result.model_answer else 'No'}\n"
+            f"[bold]Time:[/bold] {result.time_minutes} minutes",
+            title="DBQ Summary",
+        ))
+
+    elif type == "quiz":
+        if not topic:
+            console.print("[red]--topic required for quiz.[/red]")
+            raise typer.Exit(1)
+        console.print(Panel(
+            f"[bold]{topic}[/bold] | Grade {grade} | {questions} questions ({question_types})",
+            title="Quiz",
+        ))
+        with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), console=console) as progress:
+            task = progress.add_task("Generating quiz...", total=None)
+            result = _run_async(gen.generate_quiz(
+                topic=topic,
+                question_count=questions,
+                question_types=question_types,
+                grade=grade,
+                persona=persona,
+            ))
+            progress.update(task, description="Quiz ready!")
+
+        path = save_assessment(result, out_dir, "quiz")
+        console.print(f"\n[green]Saved:[/green] {path}")
+        console.print(Panel(
+            f"[bold]Questions:[/bold] {len(result.questions)}\n"
+            f"[bold]Total Points:[/bold] {result.total_points}\n"
+            f"[bold]Time:[/bold] {result.time_minutes} minutes",
+            title="Quiz Summary",
+        ))
+
+    else:
+        console.print(f"[red]Unknown assessment type '{type}'. Use: formative, summative, dbq, quiz[/red]")
+        raise typer.Exit(1)
+
+
+@app.command()
+def rubric(
+    task: str = typer.Option(..., "--task", help="Description of the task to build a rubric for"),
+    criteria: int = typer.Option(4, "--criteria", "-c", help="Number of rubric criteria"),
+    grade: str = typer.Option("", "--grade", "-g", help="Grade level"),
+):
+    """Generate a detailed scoring rubric for any written task."""
+    from eduagent.assessment import AssessmentGenerator, save_assessment
+
+    persona = _load_persona_or_exit()
+    gen = AssessmentGenerator(AppConfig.load())
+
+    console.print(Panel(
+        f"[bold]{task}[/bold] | {criteria} criteria",
+        title="Rubric Generator",
+    ))
+
+    with Progress(SpinnerColumn(), TextColumn("[progress.description]{task.description}"), console=console) as progress:
+        prog_task = progress.add_task("Generating rubric...", total=None)
+        result = _run_async(gen.generate_rubric(task, persona, criteria_count=criteria, grade_level=grade))
+        progress.update(prog_task, description="Rubric ready!")
+
+    out_dir = _output_dir()
+    path = save_assessment(result, out_dir, "rubric")
+    console.print(f"\n[green]Saved:[/green] {path}")
+
+    # Display rubric as a table
+    table = Table(title=f"Rubric: {task[:60]}")
+    table.add_column("Criterion", style="bold")
+    table.add_column("Excellent (4)", style="green")
+    table.add_column("Proficient (3)", style="cyan")
+    table.add_column("Developing (2)", style="yellow")
+    table.add_column("Beginning (1)", style="red")
+    for c in result.criteria:
+        table.add_row(c.criterion, c.excellent, c.proficient, c.developing, c.beginning)
+    console.print(table)
+    console.print(f"\n[bold]Total Points:[/bold] {result.total_points}")
+
+
 # ── Differentiation / IEP ────────────────────────────────────────────────
 
 

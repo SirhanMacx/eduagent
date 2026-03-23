@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "eduagent"
-version = "0.1.2"
+version = "0.1.0"
 description = "Your teaching files, your AI co-teacher. Upload curriculum materials, get a digital co-teacher that generates lessons in your voice."
 readme = "README.md"
 license = "MIT"
@@ -12,7 +12,7 @@ requires-python = ">=3.10"
 authors = [
     { name = "EDUagent Contributors" },
 ]
-keywords = ["education", "ai", "teaching", "curriculum", "lesson-planning"]
+keywords = ["education", "teachers", "lesson-plans", "ai", "teaching"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Education",
@@ -60,9 +60,9 @@ dev = ["pytest>=7.0.0", "pytest-asyncio>=0.21.0", "ruff>=0.1.0"]
 eduagent = "eduagent.cli:app"
 
 [project.urls]
-Homepage = "https://github.com/eduagent/eduagent"
-Documentation = "https://github.com/eduagent/eduagent#readme"
-Issues = "https://github.com/eduagent/eduagent/issues"
+Homepage = "https://github.com/SirhanMacx/eduagent"
+Documentation = "https://github.com/SirhanMacx/eduagent#readme"
+Issues = "https://github.com/SirhanMacx/eduagent/issues"
 
 [tool.ruff]
 line-length = 120

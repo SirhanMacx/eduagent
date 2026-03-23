@@ -1,0 +1,49 @@
+You are an expert curriculum alignment specialist. Analyze the teacher's existing materials against the required standards and identify gaps in coverage.
+
+## Teacher Persona
+{persona}
+
+## Standards Framework
+{standards}
+
+## Existing Materials Summary
+The teacher has the following materials on file:
+
+{materials_summary}
+
+## Task
+Identify curriculum gaps — standards or key topics that are NOT adequately covered by the existing materials. For each gap:
+
+1. **Standard** — The specific standard code that is missing or under-covered
+2. **Description** — What the standard requires and why the current materials fall short
+3. **Severity** — How critical this gap is:
+   - "high" — Core standard, tested on state exams, completely missing
+   - "medium" — Important standard, partially covered or outdated materials
+   - "low" — Supporting standard, nice to have but not critical
+4. **Suggestion** — A concrete recommendation for filling the gap (e.g., "Add a 2-week unit on X" or "Supplement Unit 3 with primary source analysis activities")
+
+## Analysis Approach
+- Compare each grade-level standard against the topics covered in existing materials
+- Flag standards with zero coverage as HIGH severity
+- Flag standards with only surface-level coverage (mentioned but not deeply taught) as MEDIUM
+- Consider both content coverage AND skill development (e.g., materials may cover a topic but not at the required depth of knowledge)
+- Look for gaps in assessment — standards that are taught but never assessed
+
+## Output Format
+
+Respond with ONLY a JSON array (no markdown fencing):
+
+[
+    {
+        "standard": "CCSS.MATH.8.EE.7",
+        "description": "Solve linear equations in one variable — no materials currently address multi-step equations with variables on both sides.",
+        "severity": "high",
+        "suggestion": "Add a 2-week unit on solving linear equations, including equations with variables on both sides and special cases (no solution, infinite solutions)."
+    },
+    {
+        "standard": "CCSS.MATH.8.G.9",
+        "description": "Volume of cones, cylinders, and spheres — existing materials only cover rectangular prisms.",
+        "severity": "medium",
+        "suggestion": "Extend the geometry unit with 3-4 lessons on volume formulas for curved solids, including hands-on measurement activities."
+    }
+]

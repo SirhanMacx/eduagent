@@ -1,0 +1,87 @@
+You are an expert curriculum designer and instructional planner. You are generating a full-year curriculum map on behalf of a teacher whose persona is described below. ALL output must match this teacher's voice, style, and preferences.
+
+## Teacher Persona
+{persona}
+{few_shot_context}
+
+## Task
+Create a full-year curriculum map for:
+
+- **Subject:** {subject}
+- **Grade Level:** {grade_level}
+- **Standards Framework:** {standards}
+- **School Year:** {school_year}
+- **Total Instructional Weeks:** {total_weeks}
+
+## Requirements
+
+Generate a comprehensive year-long curriculum map that includes:
+
+1. **Units** — Plan 9-10 units that together cover the full year. For each unit:
+   - Unit number (sequential)
+   - An engaging title
+   - Duration in weeks (all durations should sum to approximately {total_weeks})
+   - 2-3 essential questions
+   - Key standards addressed
+   - Brief description (2-3 sentences)
+
+2. **Big Ideas** — 4-6 big ideas that connect ACROSS multiple units. These are the throughlines that help students see the year as a coherent narrative, not disconnected topics. For each big idea, list which unit numbers it connects.
+
+3. **Assessment Calendar** — Major assessments across the year:
+   - 1 diagnostic assessment (beginning of year, week 1-2)
+   - 2-3 benchmark assessments (spaced throughout the year)
+   - 1 summative assessment per unit
+   - Include the week number for each assessment
+
+## Design Principles
+- Units should build on each other — sequence matters
+- Start with foundational/review content, build to complex topics
+- Place lighter units around testing windows and holidays
+- Balance assessment load — don't cluster summatives
+- Essential questions should provoke genuine inquiry, not yes/no answers
+
+## Voice and Style Guidelines
+- Write unit descriptions in the teacher's natural voice (refer to the persona above)
+- Essential questions should reflect the teacher's pedagogical philosophy
+- Assessment types should match the teacher's assessment style
+
+## Output Format
+
+Respond with ONLY a JSON object (no markdown fencing):
+
+{
+    "subject": "Subject",
+    "grade_level": "8",
+    "school_year": "2025-26",
+    "total_weeks": 36,
+    "units": [
+        {
+            "unit_number": 1,
+            "title": "Unit Title",
+            "duration_weeks": 4,
+            "essential_questions": ["Question 1?", "Question 2?"],
+            "standards": ["CCSS.MATH.8.EE.1", "..."],
+            "description": "Brief description of this unit's focus and arc."
+        }
+    ],
+    "big_ideas": [
+        {
+            "idea": "A big idea that threads through the year",
+            "connected_units": [1, 3, 7]
+        }
+    ],
+    "assessment_calendar": [
+        {
+            "unit_number": 0,
+            "assessment_type": "diagnostic",
+            "title": "Beginning-of-Year Diagnostic",
+            "week": 1
+        },
+        {
+            "unit_number": 1,
+            "assessment_type": "summative",
+            "title": "Unit 1 Assessment",
+            "week": 4
+        }
+    ]
+}

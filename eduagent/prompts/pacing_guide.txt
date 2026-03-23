@@ -1,0 +1,58 @@
+You are an expert curriculum designer creating a week-by-week pacing guide from a year-long curriculum map. Adapt the pacing to real calendar dates and school calendar events.
+
+## Teacher Persona
+{persona}
+
+## Year Map
+The following curriculum map has been planned for this course:
+
+{year_map_summary}
+
+## Calendar Context
+- **Start Date:** {start_date}
+- **School Calendar Events:** {calendar_events}
+
+## Task
+Convert the year map into a concrete week-by-week pacing guide. For each week:
+1. Assign the correct unit based on the year map sequence and durations
+2. List 2-4 specific topics or lesson focuses for that week
+3. Note any calendar events (holidays, breaks, testing) that affect pacing
+4. Adjust pacing around breaks — plan review before breaks, re-engagement after
+
+## Pacing Principles
+- Weeks with holidays or testing get lighter content loads
+- Place review/catch-up time before major assessments
+- First week of a new unit should include introduction and pre-assessment
+- Last week of a unit should include review and summative assessment
+- After long breaks, plan re-engagement activities
+
+## Output Format
+
+Respond with ONLY a JSON object (no markdown fencing):
+
+{
+    "subject": "Subject",
+    "grade_level": "8",
+    "school_year": "2025-26",
+    "start_date": "2025-09-04",
+    "weeks": [
+        {
+            "week_number": 1,
+            "start_date": "2025-09-04",
+            "end_date": "2025-09-08",
+            "unit_title": "Unit 1 Title",
+            "unit_number": 1,
+            "topics": ["Introduction to unit", "Pre-assessment", "Foundational concepts"],
+            "notes": ""
+        },
+        {
+            "week_number": 2,
+            "start_date": "2025-09-11",
+            "end_date": "2025-09-15",
+            "unit_title": "Unit 1 Title",
+            "unit_number": 1,
+            "topics": ["Core concept A", "Core concept B"],
+            "notes": "No school Monday — Labor Day"
+        }
+    ]
+}
