@@ -39,7 +39,7 @@ class LLMClient:
         prompt: str,
         system: str = "",
         temperature: float = 0.4,
-        max_tokens: int = 4096,
+        max_tokens: int = 8192,
     ) -> dict[str, Any]:
         """Generate and parse a JSON response from the LLM."""
         raw = await self.generate(prompt, system, temperature, max_tokens)
@@ -52,7 +52,43 @@ class LLMClient:
             if lines and lines[-1].strip() == "```":
                 lines = lines[:-1]
             cleaned = "\n".join(lines)
-        return json.loads(cleaned)
+        # Handle truncated JSON: try to repair by finding the last valid content
+        try:
+            return json.loads(cleaned)
+        except json.JSONDecodeError:
+            # Try to repair truncated JSON
+            stripped = cleaned.lstrip()
+            if stripped.startswith("["):
+                # JSON array: find last complete object, close the array
+                last_brace = cleaned.rfind("}")
+                if last_brace != -1:
+                    repaired = cleaned[:last_brace + 1].rstrip().rstrip(",") + "\n]"
+                    try:
+                        return json.loads(repaired)
+                    except json.JSONDecodeError:
+                        pass
+            elif stripped.startswith("{"):
+                # JSON object: find last complete key-value pair by scanning backwards
+                # Strategy: close all unclosed strings/brackets/braces
+                last_comma = cleaned.rfind(",\n")
+                if last_comma != -1:
+                    # Truncate at last full field and close the object
+                    repaired = cleaned[:last_comma] + "\n}"
+                    try:
+                        return json.loads(repaired)
+                    except json.JSONDecodeError:
+                        pass
+                # If that doesn't work, try just closing the object
+                last_value = cleaned.rfind('"')
+                if last_value != -1:
+                    # Slice to last string end and close
+                    repaired = cleaned[:last_value + 1] + "\n}"
+                    try:
+                        return json.loads(repaired)
+                    except json.JSONDecodeError:
+                        pass
+            # Re-raise original error if we can't repair
+            raise
 
     # ── Anthropic ────────────────────────────────────────────────────────
 

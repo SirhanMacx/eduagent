@@ -67,7 +67,7 @@ async def generate_lesson(
             "Respond only with valid JSON matching the specified format."
         ),
         temperature=0.6,
-        max_tokens=6000,
+        max_tokens=12000,
     )
 
     return DailyLesson.model_validate(data)
