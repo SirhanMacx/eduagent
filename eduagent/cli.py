@@ -101,6 +101,10 @@ def chat(
     teacher_id: str = typer.Option("local-teacher", "--id", help="Teacher session ID"),
 ) -> None:
     """Start an interactive chat session with EDUagent in the terminal."""
+    from eduagent.onboarding import check_first_run
+
+    check_first_run()
+
     from eduagent.cli_chat import main as chat_main
 
     chat_main(teacher_id)
@@ -2387,6 +2391,10 @@ def bot(
         eduagent bot
     """
     import asyncio
+
+    from eduagent.onboarding import check_first_run
+
+    check_first_run()
 
     from eduagent.telegram_bot import run_bot
 

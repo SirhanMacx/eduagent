@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Generate — EDUagent{% endblock %}
+{% block breadcrumbs %}
+<div class="breadcrumbs"><div class="container"><a href="/">Home</a><span class="sep">/</span>Generate</div></div>
+{% endblock %}
 {% block content %}
 <h1>Generate Content</h1>
 
@@ -9,85 +12,153 @@
 </div>
 {% endif %}
 
-<div class="gen-grid">
-    <div class="gen-form-panel">
-        <form id="generate-form">
-            <div class="form-group">
-                <label for="topic">Topic</label>
-                <input type="text" id="topic" name="topic" placeholder="e.g. Photosynthesis" required>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="grade_level">Grade Level</label>
-                    <select id="grade_level" name="grade_level">
-                        <option value="K">Kindergarten</option>
-                        <option value="1">1st Grade</option>
-                        <option value="2">2nd Grade</option>
-                        <option value="3">3rd Grade</option>
-                        <option value="4">4th Grade</option>
-                        <option value="5">5th Grade</option>
-                        <option value="6">6th Grade</option>
-                        <option value="7">7th Grade</option>
-                        <option value="8" selected>8th Grade</option>
-                        <option value="9">9th Grade</option>
-                        <option value="10">10th Grade</option>
-                        <option value="11">11th Grade</option>
-                        <option value="12">12th Grade</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label for="subject">Subject</label>
-                    <select id="subject" name="subject">
-                        {% for s in subjects %}
-                        <option value="{{ s }}">{{ s|capitalize }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="duration_weeks">Duration: <span id="weeks-display">3</span> weeks</label>
-                <input type="range" id="duration_weeks" name="duration_weeks" min="1" max="8" value="3">
-            </div>
-
-            <div class="form-group">
-                <label for="template_slug">Lesson Structure</label>
-                <select id="template_slug" name="template_slug">
-                    <option value="">Default (I Do / We Do / You Do)</option>
-                </select>
-            </div>
-
-            <div class="form-group">
-                <label>
-                    <input type="checkbox" id="include_homework" name="include_homework" checked>
-                    Include homework assignments
-                </label>
-            </div>
-
-            <button type="submit" class="btn btn-primary btn-lg" id="gen-btn" {% if not has_persona %}disabled{% endif %}>
-                Generate Full Unit
-            </button>
-        </form>
+<div class="gen-wizard" id="gen-wizard">
+    {# ── Step Indicators ─────────────────────── #}
+    <div class="gen-wizard-steps">
+        <div class="gen-step-item active" data-step="1">
+            <span class="gen-step-num">1</span> Pick Type
+        </div>
+        <div class="gen-step-connector" id="conn-1-2"></div>
+        <div class="gen-step-item" data-step="2">
+            <span class="gen-step-num">2</span> Details
+        </div>
+        <div class="gen-step-connector" id="conn-2-3"></div>
+        <div class="gen-step-item" data-step="3">
+            <span class="gen-step-num">3</span> Generate
+        </div>
     </div>
 
-    <div class="gen-progress-panel" id="progress-panel" hidden>
-        <h3>Generation Progress</h3>
-        <div class="progress-bar-container" id="progress-bar-container" hidden>
-            <div class="progress-bar" id="progress-bar" style="width:0%"></div>
+    {# ── Step 1: Pick Type ───────────────────── #}
+    <div class="gen-panel active" id="gen-step-1">
+        <p style="color: var(--text-secondary); margin-bottom: 1rem;">What would you like to create?</p>
+        <div class="type-picker">
+            <div class="type-card" data-type="full" onclick="pickGenType(this)">
+                <div class="type-card-icon">&#128218;</div>
+                <h3>Full Unit</h3>
+                <p>Unit plan + all lessons + materials</p>
+            </div>
+            <div class="type-card" data-type="lesson" onclick="pickGenType(this)">
+                <div class="type-card-icon">&#128196;</div>
+                <h3>Single Lesson</h3>
+                <p>One lesson plan with activities</p>
+            </div>
+            <div class="type-card" data-type="materials" onclick="pickGenType(this)">
+                <div class="type-card-icon">&#128221;</div>
+                <h3>Materials Only</h3>
+                <p>Worksheet, assessment, rubric</p>
+            </div>
+            <div class="type-card" data-type="sub-packet" onclick="pickGenType(this)">
+                <div class="type-card-icon">&#128188;</div>
+                <h3>Sub Packet</h3>
+                <p>Substitute teacher packet</p>
+            </div>
         </div>
-        <div class="progress-status" id="progress-status"></div>
-        <div id="progress-log" class="progress-log"></div>
-        <div id="progress-done" class="progress-done" hidden>
-            <p class="done-text">Generation complete!</p>
-            <a href="/dashboard" class="btn btn-primary">View Dashboard</a>
+    </div>
+
+    {# ── Step 2: Fill Details ────────────────── #}
+    <div class="gen-panel" id="gen-step-2">
+        <div class="gen-form-panel">
+            <form id="generate-form">
+                <input type="hidden" id="gen-type" name="gen_type" value="full">
+
+                <div class="form-group">
+                    <label for="topic">Topic</label>
+                    <input type="text" id="topic" name="topic"
+                           placeholder="e.g. Causes of World War I"
+                           value="{{ request.query_params.get('topic', '') }}" required>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="grade_level">Grade Level</label>
+                        <select id="grade_level" name="grade_level">
+                            {% for g in ['K','1','2','3','4','5','6','7','8','9','10','11','12'] %}
+                            <option value="{{ g }}" {% if request.query_params.get('grade_level','8') == g %}selected{% endif %}>
+                                {% if g == 'K' %}Kindergarten{% else %}{{ g }}{{ 'st' if g == '1' else ('nd' if g == '2' else ('rd' if g == '3' else 'th')) }} Grade{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="subject">Subject</label>
+                        <select id="subject" name="subject">
+                            {% for s in subjects %}
+                            <option value="{{ s }}">{{ s|capitalize }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group" id="duration-group">
+                    <label for="duration_weeks">Duration: <span id="weeks-display">3</span> weeks</label>
+                    <input type="range" id="duration_weeks" name="duration_weeks" min="1" max="8" value="3">
+                </div>
+
+                <div class="form-group">
+                    <label for="template_slug">Lesson Structure</label>
+                    <select id="template_slug" name="template_slug">
+                        <option value="">Default (I Do / We Do / You Do)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="include_homework" name="include_homework" checked>
+                        Include homework assignments
+                    </label>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+                    <button type="button" class="btn" onclick="goGenStep(1)">Back</button>
+                    <button type="submit" class="btn btn-primary btn-lg" id="gen-btn" {% if not has_persona %}disabled{% endif %}>
+                        Generate
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {# ── Step 3: Watch It Generate ───────────── #}
+    <div class="gen-panel" id="gen-step-3">
+        <div class="gen-form-panel">
+            <h3 style="margin-bottom: 1rem;">
+                <span class="spinner" id="gen-spinner"></span>
+                <span id="gen-step3-title"> Generating...</span>
+            </h3>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="gen-progress-bar" style="width: 0%"></div>
+            </div>
+            <div class="stream-output" id="stream-output"></div>
+
+            {# ── Results (shown after completion) ─── #}
+            <div id="gen-results" hidden>
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+                    <span style="color: var(--green); font-size: 1.3rem;">&#10003;</span>
+                    <strong style="color: var(--green);">Generation complete!</strong>
+                </div>
+
+                <div class="export-row">
+                    <button class="btn btn-sm btn-icon copy-btn" onclick="copyGenOutput()">&#128203; Copy All</button>
+                    <a class="btn btn-sm btn-icon" id="export-pdf" href="#" target="_blank">&#128196; PDF</a>
+                    <a class="btn btn-sm btn-icon" id="export-docx" href="#" target="_blank">&#128462; DOCX</a>
+                    <button class="btn btn-sm btn-icon" id="export-classroom" onclick="exportClassroom()">&#127891; Google Classroom</button>
+                    <button class="btn btn-sm btn-icon" id="export-share" onclick="copyShareLink()">&#128279; Share Link</button>
+                </div>
+
+                <div style="margin-top: 1rem;">
+                    <a href="/library" class="btn btn-primary">View in Library</a>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 {% endblock %}
+
 {% block scripts %}
 <script>
+var genState = { type: 'full', unitId: null, lessonIds: [] };
+
 // Load lesson templates
 (function() {
     fetch('/api/templates').then(function(r){return r.json();}).then(function(data) {
@@ -104,23 +175,52 @@
     }).catch(function(){});
 })();
 
+function pickGenType(el) {
+    document.querySelectorAll('.type-card').forEach(function(c) { c.classList.remove('selected'); });
+    el.classList.add('selected');
+    genState.type = el.dataset.type;
+    document.getElementById('gen-type').value = genState.type;
+    // Hide duration for single lesson / materials
+    document.getElementById('duration-group').style.display = (genState.type === 'full' || genState.type === 'sub-packet') ? '' : 'none';
+    goGenStep(2);
+}
+
+function goGenStep(n) {
+    document.querySelectorAll('.gen-panel').forEach(function(p) { p.classList.remove('active'); });
+    document.getElementById('gen-step-' + n).classList.add('active');
+    document.querySelectorAll('.gen-step-item').forEach(function(s) {
+        var sn = parseInt(s.dataset.step);
+        s.classList.remove('active', 'completed');
+        if (sn < n) s.classList.add('completed');
+        if (sn === n) s.classList.add('active');
+    });
+    // Connectors
+    var c12 = document.getElementById('conn-1-2');
+    var c23 = document.getElementById('conn-2-3');
+    if (c12) c12.className = 'gen-step-connector' + (n > 1 ? ' done' : '');
+    if (c23) c23.className = 'gen-step-connector' + (n > 2 ? ' done' : '');
+}
+
 document.getElementById('duration_weeks').addEventListener('input', function() {
     document.getElementById('weeks-display').textContent = this.value;
 });
 
 document.getElementById('generate-form').addEventListener('submit', async function(e) {
     e.preventDefault();
-    var panel = document.getElementById('progress-panel');
-    var log = document.getElementById('progress-log');
-    var doneBox = document.getElementById('progress-done');
-    var genBtn = document.getElementById('gen-btn');
+    goGenStep(3);
 
-    panel.hidden = false;
-    genBtn.disabled = true;
-    log.innerHTML = '';
-    doneBox.hidden = true;
+    var output = document.getElementById('stream-output');
+    var bar = document.getElementById('gen-progress-bar');
+    var results = document.getElementById('gen-results');
+    var spinner = document.getElementById('gen-spinner');
+    var title3 = document.getElementById('gen-step3-title');
 
-    var templateSlug = document.getElementById('template_slug').value;
+    output.innerHTML = '';
+    results.hidden = true;
+    bar.style.width = '5%';
+    spinner.style.display = '';
+    title3.textContent = ' Generating...';
+
     var body = {
         topic: document.getElementById('topic').value,
         subject: document.getElementById('subject').value,
@@ -128,17 +228,19 @@ document.getElementById('generate-form').addEventListener('submit', async functi
         duration_weeks: parseInt(document.getElementById('duration_weeks').value),
         include_homework: document.getElementById('include_homework').checked
     };
-    if (templateSlug) body.template_slug = templateSlug;
+    var ts = document.getElementById('template_slug').value;
+    if (ts) body.template_slug = ts;
 
-    function addLog(text, cls) {
+    function addLine(text, cls) {
         var div = document.createElement('div');
-        div.className = 'log-entry ' + (cls || '');
+        div.className = 'stream-line ' + (cls || '');
         div.textContent = text;
-        log.appendChild(div);
-        log.scrollTop = log.scrollHeight;
+        output.appendChild(div);
+        output.scrollTop = output.scrollHeight;
     }
 
-    addLog('Starting generation...', 'generating');
+    addLine('Starting generation...', 'generating');
+    var progress = 5;
 
     try {
         var resp = await fetch('/api/full', {
@@ -147,57 +249,114 @@ document.getElementById('generate-form').addEventListener('submit', async functi
             body: JSON.stringify(body)
         });
 
-        if (resp.headers.get('content-type') && resp.headers.get('content-type').includes('text/event-stream')) {
-            var reader = resp.body.getReader();
-            var decoder = new TextDecoder();
-            var buf = '';
+        var reader = resp.body.getReader();
+        var decoder = new TextDecoder();
+        var buf = '';
 
-            while (true) {
-                var result = await reader.read();
-                if (result.done) break;
-                buf += decoder.decode(result.value, {stream: true});
-                var lines = buf.split('\n');
-                buf = lines.pop();
+        while (true) {
+            var result = await reader.read();
+            if (result.done) break;
+            buf += decoder.decode(result.value, {stream: true});
+            var lines = buf.split('\n');
+            buf = lines.pop();
 
-                for (var i = 0; i < lines.length; i++) {
-                    var line = lines[i].trim();
-                    if (line.startsWith('data:')) {
-                        try {
-                            var d = JSON.parse(line.substring(5).trim());
-                            if (d.step === 'unit' && d.status === 'done') {
-                                addLog('Unit plan created: ' + d.title + ' (' + d.lesson_count + ' lessons)', 'done');
-                            } else if (d.step === 'lesson' && d.status === 'generating') {
-                                addLog('Generating lesson ' + d.lesson_number + ': ' + d.topic + '...', 'generating');
-                            } else if (d.step === 'lesson' && d.status === 'done') {
-                                addLog('Lesson ' + d.lesson_number + ' done: ' + d.title, 'done');
-                            } else if (d.step === 'lesson' && d.status === 'error') {
-                                addLog('Lesson ' + d.lesson_number + ' failed: ' + d.error, 'error');
-                            } else if (d.step === 'materials') {
-                                if (d.status === 'done') addLog('Materials generated for lesson', 'done');
-                            } else if (d.error) {
-                                addLog('Error: ' + d.error, 'error');
-                            }
-                        } catch(ex) {}
-                    } else if (line.startsWith('event:') && line.includes('done')) {
-                        doneBox.hidden = false;
+            for (var i = 0; i < lines.length; i++) {
+                var line = lines[i].trim();
+                if (!line.startsWith('data:')) continue;
+                try {
+                    var d = JSON.parse(line.substring(5).trim());
+                    if (d.step === 'unit' && d.status === 'done') {
+                        genState.unitId = d.unit_id;
+                        addLine('Unit plan: ' + d.title + ' (' + d.lesson_count + ' lessons)', 'done');
+                        progress = 20;
+                    } else if (d.step === 'lesson' && d.status === 'generating') {
+                        addLine('Generating lesson ' + d.lesson_number + ': ' + d.topic + '...', 'generating');
+                        progress = Math.min(progress + 8, 85);
+                    } else if (d.step === 'lesson' && d.status === 'done') {
+                        if (d.lesson_id) genState.lessonIds.push(d.lesson_id);
+                        addLine('Lesson ' + d.lesson_number + ' done: ' + d.title, 'done');
+                    } else if (d.step === 'lesson' && d.status === 'error') {
+                        addLine('Lesson ' + d.lesson_number + ' failed: ' + d.error, 'error');
+                    } else if (d.step === 'materials' && d.status === 'done') {
+                        addLine('Materials generated', 'done');
+                        progress = Math.min(progress + 5, 95);
+                    } else if (d.unit_id) {
+                        genState.unitId = d.unit_id;
+                    } else if (d.error) {
+                        addLine('Error: ' + d.error, 'error');
                     }
-                }
-            }
-            doneBox.hidden = false;
-        } else {
-            var data = await resp.json();
-            if (resp.ok) {
-                addLog('Generation complete!', 'done');
-                doneBox.hidden = false;
-            } else {
-                addLog('Error: ' + (data.error || 'Generation failed'), 'error');
-                genBtn.disabled = false;
+                    bar.style.width = progress + '%';
+                } catch(ex) {}
             }
         }
+
+        // Done
+        bar.style.width = '100%';
+        spinner.style.display = 'none';
+        title3.textContent = ' Complete!';
+        results.hidden = false;
+
+        // Set export links
+        var lid = genState.lessonIds[0];
+        if (lid) {
+            document.getElementById('export-pdf').href = '/api/export/' + lid + '?fmt=pdf';
+            document.getElementById('export-docx').href = '/api/export/' + lid + '?fmt=docx';
+        }
+
+        // Fire notification
+        if (window.eduToast) window.eduToast('Generation complete!', 'success');
+        if (window.eduNotify) window.eduNotify();
+
     } catch (err) {
-        addLog('Network error: ' + err.message, 'error');
-        genBtn.disabled = false;
+        addLine('Network error: ' + err.message, 'error');
+        spinner.style.display = 'none';
+        title3.textContent = ' Failed';
     }
 });
+
+function copyGenOutput() {
+    var output = document.getElementById('stream-output');
+    var text = output.innerText;
+    navigator.clipboard.writeText(text).then(function() {
+        var btn = document.querySelector('.copy-btn');
+        btn.classList.add('copied');
+        btn.innerHTML = '&#10003; Copied!';
+        setTimeout(function() { btn.classList.remove('copied'); btn.innerHTML = '&#128203; Copy All'; }, 2000);
+    });
+}
+
+function exportClassroom() {
+    var lid = genState.lessonIds[0];
+    if (!lid) return;
+    fetch('/api/export/' + lid + '/classroom', { method: 'POST' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            var json = JSON.stringify(data, null, 2);
+            navigator.clipboard.writeText(json);
+            if (window.eduToast) window.eduToast('Classroom JSON copied!', 'success');
+        });
+}
+
+function copyShareLink() {
+    var lid = genState.lessonIds[0];
+    if (!lid) return;
+    var url = window.location.origin + '/lesson/' + lid;
+    navigator.clipboard.writeText(url).then(function() {
+        if (window.eduToast) window.eduToast('Share link copied!', 'success');
+    });
+}
+
+// If topic came from quick-gen, auto-advance to step 2
+(function() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('topic')) {
+        document.getElementById('topic').value = params.get('topic');
+        if (params.get('grade_level')) document.getElementById('grade_level').value = params.get('grade_level');
+        // Auto-select full unit
+        var fullCard = document.querySelector('.type-card[data-type="full"]');
+        if (fullCard) { fullCard.classList.add('selected'); genState.type = 'full'; }
+        goGenStep(2);
+    }
+})();
 </script>
 {% endblock %}

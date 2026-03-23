@@ -1,10 +1,17 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="{{ theme or '' }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}EDUagent{% endblock %}</title>
     <link rel="stylesheet" href="/static/style.css">
+    <script>
+        // Apply saved theme before paint to avoid flash
+        (function() {
+            var t = localStorage.getItem('eduagent-theme');
+            if (t === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+        })();
+    </script>
 </head>
 <body>
     <nav class="navbar">
@@ -14,12 +21,16 @@
                 <span></span><span></span><span></span>
             </button>
             <div class="nav-links" id="nav-links">
-                <a href="/dashboard">Dashboard</a>
-                <a href="/generate">Generate</a>
-                <a href="/analytics">Analytics</a>
-                <a href="/stats">My Stats</a>
-                <a href="/profile">Profile</a>
-                <a href="/settings">Settings</a>
+                <a href="/" {% if active_nav == 'home' %}class="active"{% endif %}>Home</a>
+                <a href="/generate" {% if active_nav == 'generate' %}class="active"{% endif %}>Generate</a>
+                <a href="/library" {% if active_nav == 'library' %}class="active"{% endif %}>Library</a>
+                <a href="/students" {% if active_nav == 'students' %}class="active"{% endif %}>Students</a>
+                <span class="nav-notify">
+                    <a href="/analytics" {% if active_nav == 'analytics' %}class="active"{% endif %}>Analytics</a>
+                    <span class="notify-badge" id="notify-badge"></span>
+                </span>
+                <a href="/settings" {% if active_nav == 'settings' %}class="active"{% endif %}>Settings</a>
+                <button class="dark-toggle" id="dark-toggle" aria-label="Toggle dark mode" title="Toggle dark mode">&#9790;</button>
             </div>
         </div>
     </nav>
@@ -34,6 +45,7 @@
         </div>
         <p>EDUagent &mdash; Your teaching files, your AI co-teacher.</p>
     </footer>
+    <div class="toast" id="toast"></div>
     <script src="/static/app.js"></script>
     {% block scripts %}{% endblock %}
 </body>

@@ -1,5 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Dashboard — EDUagent{% endblock %}
+{% block breadcrumbs %}
+<div class="breadcrumbs"><div class="container"><a href="/">Home</a><span class="sep">/</span>Dashboard</div></div>
+{% endblock %}
 {% block content %}
 
 {# ── Teacher Profile Card ─────────────────────────────────── #}
@@ -39,7 +42,7 @@
     </div>
     <div class="stat-card">
         <span class="stat-num">{{ stats.chats }}</span>
-        <span class="stat-label">Student Questions Today</span>
+        <span class="stat-label">Students Served Today</span>
     </div>
 </div>
 
@@ -47,7 +50,7 @@
 {% if active_lesson %}
 <div class="active-lesson-bar">
     <span class="pulse-dot"></span>
-    <strong>Active lesson for students:</strong> {{ active_lesson.title }}
+    <strong>Student bot active:</strong> {{ active_lesson.title }}
     {% if active_lesson.share_token %}
     <span class="class-code">Code: {{ active_lesson.share_token[:6] | upper }}</span>
     {% endif %}
@@ -87,7 +90,7 @@
         <div class="activity-body">
             <span class="activity-title">
                 {% if item.type == 'unit' %}
-                <a href="/dashboard">{{ item.title }}</a>
+                <a href="/library">{{ item.title }}</a>
                 {% elif item.type == 'lesson' and item.id %}
                 <a href="/lesson/{{ item.id }}">{{ item.title }}</a>
                 {% else %}
@@ -100,7 +103,7 @@
             {% if item.type == 'lesson' and item.id %}
             <a href="/lesson/{{ item.id }}" class="btn btn-sm">View</a>
             {% elif item.type == 'unit' %}
-            <a href="/dashboard" class="btn btn-sm">View</a>
+            <a href="/library" class="btn btn-sm">View</a>
             {% endif %}
         </div>
     </div>
@@ -131,7 +134,7 @@
     <tbody>
         {% for u in units %}
         <tr>
-            <td><a href="/dashboard">{{ u.title }}</a></td>
+            <td><a href="/library">{{ u.title }}</a></td>
             <td>{{ u.subject }}</td>
             <td>{{ u.grade_level }}</td>
             <td>{{ u.lesson_count }}</td>
