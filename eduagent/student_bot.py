@@ -9,6 +9,7 @@ homework, and tracks what students are asking so the teacher can see patterns.
 from __future__ import annotations
 
 import json
+import re
 import uuid
 from dataclasses import dataclass
 from datetime import datetime
@@ -39,6 +40,16 @@ class ClassInfo:
     active_lesson_json: Optional[str] = None
     hint_mode: bool = False
     created_at: str = ""
+
+
+# Pattern for detecting "I am confused about X" / "I don't understand X"
+_CONFUSION_RE = re.compile(
+    r"(?:i(?:'m| am) confused (?:about|by|on)|"
+    r"i don(?:'t|t) (?:understand|get)|"
+    r"(?:can you |could you )?(?:explain|help me (?:understand|with)))"
+    r"\s+(.+)",
+    re.IGNORECASE,
+)
 
 
 class StudentBot:
@@ -103,12 +114,121 @@ class StudentBot:
                 )
 
     def set_hint_mode(self, class_code: str, enabled: bool) -> None:
-        """Toggle hint-only mode for a class (no direct answers to homework)."""
+        """Toggle hint mode for a class.
+
+        When hint mode is ON: Socratic questioning only, NEVER give direct
+        answers to homework/assessment questions.
+        When hint mode is OFF (answer mode): full explanations allowed.
+        """
         with _get_conn() as conn:
             conn.execute(
                 "UPDATE classes SET hint_mode = ? WHERE class_code = ?",
                 (1 if enabled else 0, class_code),
             )
+
+    def get_mode(self, class_code: str) -> str:
+        """Return 'hint' or 'answer' based on current class mode."""
+        info = self.get_class(class_code)
+        if info and info.hint_mode:
+            return "hint"
+        return "answer"
+
+    # ── Student registration ─────────────────────────────────────────────
+
+    def register_student(
+        self, student_id: str, class_code: str, display_name: str = ""
+    ) -> str:
+        """Register a first-time student with a class code.
+
+        Returns a status message. If the class doesn't exist, tells the
+        student to check with their teacher.
+        """
+        class_info = self.get_class(class_code)
+        if not class_info:
+            return (
+                "Hmm, I don't recognize that class code. "
+                "Double-check with your teacher and try again!"
+            )
+
+        with _get_conn() as conn:
+            existing = conn.execute(
+                "SELECT id FROM registered_students WHERE student_id = ? AND class_code = ?",
+                (student_id, class_code),
+            ).fetchone()
+            if existing:
+                return f"You're already registered for {class_code}! Ask me anything."
+
+            conn.execute(
+                """INSERT INTO registered_students
+                (id, student_id, class_code, display_name)
+                VALUES (?, ?, ?, ?)""",
+                (str(uuid.uuid4()), student_id, class_code, display_name),
+            )
+
+        return (
+            f"Welcome to {class_code}! You're all set. "
+            "Ask me anything about today's lesson."
+        )
+
+    def is_registered(self, student_id: str, class_code: str) -> bool:
+        """Check if a student is registered for a class."""
+        with _get_conn() as conn:
+            row = conn.execute(
+                "SELECT id FROM registered_students WHERE student_id = ? AND class_code = ?",
+                (student_id, class_code),
+            ).fetchone()
+        return row is not None
+
+    def get_registered_students(self, class_code: str) -> list[dict[str, str]]:
+        """Return all registered students for a class."""
+        with _get_conn() as conn:
+            rows = conn.execute(
+                "SELECT student_id, display_name, registered_at FROM registered_students WHERE class_code = ?",
+                (class_code,),
+            ).fetchall()
+        return [
+            {
+                "student_id": r["student_id"],
+                "display_name": r["display_name"] or r["student_id"],
+                "registered_at": r["registered_at"],
+            }
+            for r in rows
+        ]
+
+    # ── Confusion detection ──────────────────────────────────────────────
+
+    @staticmethod
+    def detect_confusion_topic(message: str) -> Optional[str]:
+        """Extract the topic from an 'I'm confused about X' message.
+
+        Returns the topic string if detected, otherwise None.
+        """
+        match = _CONFUSION_RE.search(message)
+        if match:
+            return match.group(1).strip().rstrip("?.!")
+        return None
+
+    @staticmethod
+    def _find_lesson_section_for_topic(
+        topic: str, lesson_json: dict[str, Any]
+    ) -> str:
+        """Search lesson content for the section most relevant to the topic.
+
+        Returns the matching section text, or empty string if not found.
+        """
+        topic_lower = topic.lower()
+        # Search these fields in priority order
+        sections = [
+            ("direct_instruction", lesson_json.get("direct_instruction", "")),
+            ("guided_practice", lesson_json.get("guided_practice", "")),
+            ("do_now", lesson_json.get("do_now", "")),
+            ("independent_work", lesson_json.get("independent_work", "")),
+            ("objective", lesson_json.get("objective", "")),
+        ]
+        for _name, content in sections:
+            if topic_lower in content.lower():
+                return content
+        return ""
 
     # ── Student message handling ─────────────────────────────────────────
 
@@ -155,22 +275,38 @@ class StudentBot:
         # Build the response using the existing chat engine
         from eduagent.chat import student_chat
 
-        # Build hint mode instruction
+        # Build hint mode / answer mode instruction
         hint_instruction = ""
         if class_info.hint_mode:
             hint_instruction = (
-                "\n\nIMPORTANT — HINT MODE IS ON:\n"
-                "- Do NOT give direct answers to homework or assessment questions.\n"
-                "- Instead, guide the student with hints, leading questions, and scaffolding.\n"
-                "- Encourage them to think through the problem step by step.\n"
-                "- It's okay to confirm correct thinking or redirect wrong paths.\n"
+                "\n\nIMPORTANT — HINT MODE IS ON (Socratic questioning only):\n"
+                "- NEVER give direct answers to homework, assessment, or exit ticket questions.\n"
+                "- Use Socratic questioning: ask guiding questions that lead the student to discover the answer.\n"
+                "- Break the problem into smaller steps and ask the student to work through each one.\n"
+                "- It's okay to confirm correct thinking, give encouragement, or redirect wrong paths.\n"
+                "- If the student asks 'what's the answer to #3?' respond with a question like "
+                "'What do you think? Let's start with what we learned about...' \n"
+                "- Be warm and patient — never make the student feel bad for asking.\n"
             )
+
+        # Detect confusion pattern and inject relevant lesson section
+        confusion_context = ""
+        confusion_topic = self.detect_confusion_topic(message)
+        if confusion_topic:
+            section = self._find_lesson_section_for_topic(confusion_topic, lesson_json)
+            if section:
+                confusion_context = (
+                    f"\n\nThe student is confused about '{confusion_topic}'. "
+                    f"Here is the specific part of the lesson that covers this:\n"
+                    f"---\n{section[:600]}\n---\n"
+                    f"Use this content to explain the concept clearly and patiently."
+                )
 
         # Get recent chat history for this student/class
         history = self._get_student_history(student_id, class_code, limit=6)
 
         answer = await student_chat(
-            question=message + hint_instruction,
+            question=message + hint_instruction + confusion_context,
             lesson_json=lesson_json,
             persona=persona,
             chat_history=history,
@@ -224,6 +360,27 @@ class StudentBot:
                 for q in questions
             ],
         }
+
+    def get_student_conversation(
+        self, student_id: str, class_code: str, limit: int = 20
+    ) -> list[dict[str, str]]:
+        """Get a student's full conversation history for today (teacher view)."""
+        today = datetime.utcnow().strftime("%Y-%m-%d")
+        with _get_conn() as conn:
+            rows = conn.execute(
+                """SELECT question, answer, created_at FROM student_questions
+                WHERE student_id = ? AND class_code = ? AND created_at LIKE ?
+                ORDER BY created_at ASC LIMIT ?""",
+                (student_id, class_code, f"{today}%", limit),
+            ).fetchall()
+        return [
+            {
+                "question": r["question"],
+                "answer": r["answer"],
+                "time": r["created_at"],
+            }
+            for r in rows
+        ]
 
     # ── Internal helpers ─────────────────────────────────────────────────
 

@@ -129,6 +129,15 @@ def init_db() -> None:
                 lesson_topic TEXT,
                 created_at TEXT DEFAULT (datetime('now'))
             );
+
+            CREATE TABLE IF NOT EXISTS registered_students (
+                id TEXT PRIMARY KEY,
+                student_id TEXT NOT NULL,
+                class_code TEXT NOT NULL,
+                display_name TEXT,
+                registered_at TEXT DEFAULT (datetime('now')),
+                UNIQUE(student_id, class_code)
+            );
         """)
 
 

@@ -1,23 +1,32 @@
-# EDUagent 🎓
+<p align="center">
+  <h1 align="center">EDUagent 🎓</h1>
+  <p align="center"><strong>Your teaching files, your AI co-teacher.</strong></p>
+  <p align="center">Open-source AI assistant that learns from your lesson plans and generates new ones in your exact teaching voice.</p>
+  <p align="center">No cloud service. No vendor lock-in. Your materials stay on your machine.</p>
+</p>
 
-> Your teaching files → your AI co-teacher.
+<p align="center">
+  <a href="https://github.com/SirhanMacx/eduagent/actions/workflows/ci.yml"><img src="https://github.com/SirhanMacx/eduagent/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://pypi.org/project/eduagent/"><img src="https://img.shields.io/pypi/v/eduagent" alt="PyPI"></a>
+  <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.10+-blue" alt="Python 3.10+"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License"></a>
+  <a href="https://github.com/SirhanMacx/eduagent/stargazers"><img src="https://img.shields.io/github/stars/SirhanMacx/eduagent" alt="GitHub stars"></a>
+</p>
 
-EDUagent is an open-source AI assistant for teachers. It learns from your existing lesson plans, and from that point on generates lessons, units, worksheets, and assessments in your exact teaching voice — your vocabulary, your structure, your pedagogical approach.
-
-No cloud service. No vendor lock-in. Your materials stay on your machine.
-
-[![CI](https://github.com/SirhanMacx/eduagent/actions/workflows/ci.yml/badge.svg)](https://github.com/SirhanMacx/eduagent/actions/workflows/ci.yml)
-[![PyPI](https://img.shields.io/pypi/v/eduagent)](https://pypi.org/project/eduagent/)
-[![Python 3.10+](https://img.shields.io/badge/Python-3.10+-blue)](https://python.org)
-[![MIT License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![GitHub stars](https://img.shields.io/github/stars/SirhanMacx/eduagent)](https://github.com/SirhanMacx/eduagent/stargazers)
+<p align="center">
+  <a href="#-quickstart-5-minutes">Quickstart</a> · <a href="FEATURES.md">Features</a> · <a href="ROADMAP.md">Roadmap</a> · <a href="CONTRIBUTING.md">Contributing</a>
+</p>
 
 ---
 
-## ✨ What it does
+> **If EDUagent helps your teaching, [give it a star](https://github.com/SirhanMacx/eduagent/stargazers).** It helps other teachers find it.
+
+---
+
+## How it works
 
 ```
-Your 9 years of lesson plans
+Your lesson plans (PDFs, DOCX, PPTX, TXT)
         ↓
 EDUagent reads them and learns your teaching fingerprint:
   • Teaching style (inquiry-based, direct instruction, Socratic...)
@@ -25,15 +34,48 @@ EDUagent reads them and learns your teaching fingerprint:
   • Vocabulary level and tone
   • Assessment approach
         ↓
-You ask: "Plan a 3-week unit on WWI for my 10th graders"
+You ask: "Plan a 2-week unit on WWI for my 10th graders"
         ↓
 EDUagent generates:
   • Full unit plan with essential questions
-  • 15 daily lesson plans in YOUR voice
+  • 10 daily lesson plans in YOUR voice
   • Student worksheets, assessments, rubrics
   • IEP/504 accommodations
   • Differentiation for struggling/advanced/ELL students
 ```
+
+## Real output
+
+This is actual EDUagent output — not mockups. Generated for an 8th grade Social Studies class studying the American Revolution.
+
+**Unit plan:**
+
+```
+Unit: "Liberty and Loyalty: The American Revolution"
+Duration: 2 weeks (10 lessons)
+
+Essential Questions:
+  1. Was war inevitable?
+  2. What defines freedom?
+  3. How do ideas change the world?
+  4. When is rebellion justified?
+```
+
+**Lesson 1 — Do Now (verbatim from generation):**
+
+> Alright, friends, as you settle in, I want you to take out your notebook and answer this question on the board: 'What does freedom mean to you? Is there ever a time when following the rules is more important than being free?' Take 5 minutes to jot down your honest thoughts. There are no wrong answers here; I just want to hear your voice.
+
+**Lesson 1 — Direct Instruction (verbatim):**
+
+> Alright, friends, today we're starting one of my favorite units in all of history. We're going to answer a question that sounds simple but is actually incredible: How did ordinary people decide to risk everything for freedom? I want you to really sit with this for a second.
+
+**Lesson 2 — Do Now (verbatim):**
+
+> Alright, friends, settle in. Grab your notebooks. I want you to think about this: Have you ever had to pay for something or follow a rule that you didn't agree with? Maybe a chore you didn't want to do, or a fee you thought was unfair? Write down: 1) What was the rule or cost? 2) How did it make you feel? 3) Did you speak up against it? You have 5 minutes. Let's get those minds warming up.
+
+Every lesson includes differentiation, exit tickets, and homework — all in the teacher's voice. See [FEATURES.md](FEATURES.md) for more.
+
+---
 
 ## 🚀 Quickstart (5 minutes)
 
@@ -134,9 +176,9 @@ EDUagent works with any of these. You bring your own API key — nothing is shar
 
 | Provider | Quality | Cost | Setup |
 |----------|---------|------|-------|
-| **Ollama** (recommended) | ⭐⭐⭐⭐⭐ | Free / ~$20/mo cloud | `eduagent config set-model ollama` |
-| **Anthropic** (Claude) | ⭐⭐⭐⭐⭐ | Pay per token | `export ANTHROPIC_API_KEY=sk-...` |
-| **OpenAI** (GPT-4o) | ⭐⭐⭐⭐ | Pay per token | `export OPENAI_API_KEY=sk-...` |
+| **Ollama** (recommended) | ★★★★★ | Free / ~$20/mo cloud | `eduagent config set-model ollama` |
+| **Anthropic** (Claude) | ★★★★★ | Pay per token | `export ANTHROPIC_API_KEY=sk-...` |
+| **OpenAI** (GPT-4o) | ★★★★ | Pay per token | `export OPENAI_API_KEY=sk-...` |
 
 ```bash
 eduagent config set-model ollama      # Use local/cloud Ollama
@@ -202,6 +244,8 @@ Delivery:
 - [ ] Google Classroom export (personal accounts only — never school accounts)
 - [ ] Hosted version (coming soon)
 
+See [FEATURES.md](FEATURES.md) for detailed descriptions and screenshots.
+
 ## 🔒 Privacy
 
 - **Your files never leave your machine** unless you choose a cloud LLM
@@ -210,16 +254,17 @@ Delivery:
 
 ## 🗺️ Roadmap
 
-- [ ] Hosted version: no installation, school-safe, $10/teacher/month
-- [ ] Google Classroom one-click export (personal accounts)
-- [ ] iOS/Android app
-- [ ] District-wide deployment with admin dashboard
-- [ ] Multi-language support (Spanish, Mandarin, French)
-- [ ] Standards auto-update (live sync with state DOE)
+See [ROADMAP.md](ROADMAP.md) for the full plan. Highlights:
+
+| Version | What's coming |
+|---------|--------------|
+| **v0.2.0** | Hosted version — no install, no terminal, no API keys |
+| **v0.3.0** | iOS and Android apps |
+| **v1.0.0** | District deployment with admin dashboard and SSO |
 
 ## 🤝 Contributing
 
-See [CONTRIBUTING.md](docs/CONTRIBUTING.md). First issues are labeled `good first issue`.
+See [CONTRIBUTING.md](CONTRIBUTING.md). First issues are labeled `good first issue`.
 
 Subject matter experts welcome: if you know how great lessons are structured in your subject, open a PR for `eduagent/skills/your_subject.py`.
 
@@ -229,4 +274,14 @@ MIT. Build on it, sell it, use it in your classroom. Just don't be evil.
 
 ---
 
-*Built by a teacher, for teachers. Jon Maccarello — 9 years, Great Neck South — is the primary user and the reason this exists.*
+## 👨‍🏫 Built by a teacher
+
+EDUagent was created by **Jon Maccarello** — 9 years teaching Social Studies at Great Neck South Middle School. This isn't a startup's idea of what teachers need. It's a tool built by someone who writes lesson plans every week, knows what a good Do Now looks like, and got tired of starting from scratch.
+
+Jon is the primary user and the reason this exists. Every feature was built because he needed it.
+
+---
+
+<p align="center">
+  <strong>If EDUagent saves you time, <a href="https://github.com/SirhanMacx/eduagent/stargazers">star it on GitHub</a></strong> so other teachers can find it.
+</p>

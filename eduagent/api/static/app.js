@@ -1,8 +1,63 @@
-/* EDUagent — JS for wizard, settings, form handling, SSE progress, chat, feedback. */
+/* EDUagent — JS for dark mode, wizard, settings, form handling, SSE, chat, feedback. */
 
 document.addEventListener('DOMContentLoaded', function () {
 
-    // ── Hamburger Menu ──────────────────────────────────────────────────
+    // ── Dark Mode Toggle ─────────────────────────────────────────────
+    var darkToggle = document.getElementById('dark-toggle');
+    if (darkToggle) {
+        // Set initial icon
+        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        darkToggle.textContent = isDark ? '\u2600' : '\u263E';
+
+        darkToggle.addEventListener('click', function () {
+            var html = document.documentElement;
+            var current = html.getAttribute('data-theme');
+            if (current === 'dark') {
+                html.removeAttribute('data-theme');
+                localStorage.setItem('eduagent-theme', 'light');
+                darkToggle.textContent = '\u263E';
+            } else {
+                html.setAttribute('data-theme', 'dark');
+                localStorage.setItem('eduagent-theme', 'dark');
+                darkToggle.textContent = '\u2600';
+            }
+        });
+    }
+
+    // ── Toast Notifications ──────────────────────────────────────────
+    var toastEl = document.getElementById('toast');
+    window.eduToast = function (msg, type) {
+        if (!toastEl) return;
+        toastEl.textContent = msg;
+        toastEl.className = 'toast visible' + (type ? ' toast-' + type : '');
+        clearTimeout(toastEl._timer);
+        toastEl._timer = setTimeout(function () {
+            toastEl.className = 'toast';
+        }, 3000);
+    };
+
+    // ── Notification Badge ───────────────────────────────────────────
+    var notifyBadge = document.getElementById('notify-badge');
+    var notifyCount = 0;
+    window.eduNotify = function () {
+        notifyCount++;
+        if (notifyBadge) {
+            notifyBadge.textContent = notifyCount;
+            notifyBadge.classList.add('visible');
+        }
+    };
+    // Clear badge when clicking analytics
+    if (notifyBadge) {
+        var analyticsLink = notifyBadge.parentElement.querySelector('a');
+        if (analyticsLink) {
+            analyticsLink.addEventListener('click', function () {
+                notifyCount = 0;
+                notifyBadge.classList.remove('visible');
+            });
+        }
+    }
+
+    // ── Hamburger Menu ───────────────────────────────────────────────
     var hamburger = document.getElementById('nav-hamburger');
     var navLinks = document.getElementById('nav-links');
     if (hamburger && navLinks) {
@@ -11,17 +66,17 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ── Health Check (Status Bar) ───────────────────────────────────────
+    // ── Health Check (Status Bar) ────────────────────────────────────
     var statusDot = document.getElementById('status-dot');
     var statusText = document.getElementById('status-text');
     if (statusDot && statusText) {
         fetch('/api/health').then(function (r) { return r.json(); }).then(function (data) {
             if (data.llm_connected) {
                 statusDot.className = 'status-dot connected';
-                statusText.textContent = 'Connected — ' + data.llm_model;
+                statusText.textContent = 'Connected \u2014 ' + data.llm_model;
             } else {
                 statusDot.className = 'status-dot disconnected';
-                statusText.textContent = 'Not connected — check settings';
+                statusText.textContent = 'Not connected \u2014 check settings';
             }
         }).catch(function () {
             statusDot.className = 'status-dot disconnected';
@@ -29,7 +84,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ── Onboarding Wizard ───────────────────────────────────────────────
+    // ── Onboarding Wizard ────────────────────────────────────────────
     var wizard = document.getElementById('wizard');
     var wizardState = { teacherId: null, persona: null, unitId: null, lessonId: null };
 
@@ -42,7 +97,6 @@ document.addEventListener('DOMContentLoaded', function () {
             var target = document.getElementById(stepId);
             if (target) target.classList.add('active');
 
-            // Update step indicators
             var stepNum = parseInt(stepId.replace('step-', '').replace('a', '').replace('b', ''));
             stepIndicators.forEach(function (s) {
                 var sNum = parseInt(s.dataset.step);
@@ -233,7 +287,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (thumbsDown) {
             thumbsDown.addEventListener('click', function () {
                 if (editPanel) editPanel.hidden = false;
-                // Pre-fill edit form
                 var p = wizardState.persona || {};
                 var peName = document.getElementById('pe-name');
                 var peSubject = document.getElementById('pe-subject');
@@ -276,7 +329,6 @@ document.addEventListener('DOMContentLoaded', function () {
         // To generate button
         if (toGenerate) {
             toGenerate.addEventListener('click', function () {
-                // Pre-fill from persona
                 var p = wizardState.persona || {};
                 var wgSubject = document.getElementById('wg-subject');
                 var wgGrade = document.getElementById('wg-grade');
@@ -409,15 +461,13 @@ document.addEventListener('DOMContentLoaded', function () {
             successShare.addEventListener('click', function (e) {
                 e.preventDefault();
                 if (wizardState.lessonId) {
-                    fetch('/api/export/' + wizardState.lessonId + '?fmt=markdown').then(function () {
-                        var url = window.location.origin + '/lesson/' + wizardState.lessonId;
-                        if (navigator.clipboard) {
-                            navigator.clipboard.writeText(url);
-                            alert('Link copied: ' + url);
-                        } else {
-                            prompt('Copy this link:', url);
-                        }
-                    });
+                    var url = window.location.origin + '/lesson/' + wizardState.lessonId;
+                    if (navigator.clipboard) {
+                        navigator.clipboard.writeText(url);
+                        window.eduToast('Link copied: ' + url, 'success');
+                    } else {
+                        prompt('Copy this link:', url);
+                    }
                 }
             });
         }
@@ -432,20 +482,18 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // ── Settings Page ───────────────────────────────────────────────────
+    // ── Settings Page ────────────────────────────────────────────────
     var settingsForm = document.getElementById('settings-form');
     if (settingsForm) {
         // Provider radio toggle
         var radios = settingsForm.querySelectorAll('input[name="provider"]');
         radios.forEach(function (radio) {
             radio.addEventListener('change', function () {
-                // Toggle active class on cards
                 settingsForm.querySelectorAll('.radio-card').forEach(function (card) {
                     card.classList.remove('active');
                 });
                 radio.closest('.radio-card').classList.add('active');
 
-                // Show/hide provider settings
                 document.getElementById('anthropic-settings').hidden = radio.value !== 'anthropic';
                 document.getElementById('openai-settings').hidden = radio.value !== 'openai';
                 document.getElementById('ollama-settings').hidden = radio.value !== 'ollama';
@@ -465,7 +513,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     testBtn.disabled = false;
                     testBtn.textContent = 'Test Connection';
                     if (data.connected) {
-                        showStatus(connStatus, 'Connected — ' + data.model + ' is ready', 'success');
+                        showStatus(connStatus, 'Connected \u2014 ' + data.model + ' is ready', 'success');
                     } else {
                         showStatus(connStatus, 'Connection failed: ' + (data.error || 'Unknown error'), 'error');
                     }
@@ -521,7 +569,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (!confirm('Are you sure? This will delete all generated units, lessons, materials, and feedback. Your persona will be kept.')) return;
                 fetch('/api/settings/clear-content', { method: 'POST' }).then(function (r) { return r.json(); }).then(function (data) {
                     if (data.status === 'cleared') {
-                        alert('All generated content has been cleared.');
+                        window.eduToast('All generated content has been cleared.', 'success');
                         window.location.reload();
                     }
                 });
@@ -531,11 +579,11 @@ document.addEventListener('DOMContentLoaded', function () {
         var resetBtn = document.getElementById('reset-btn');
         if (resetBtn) {
             resetBtn.addEventListener('click', function () {
-                if (!confirm('Are you sure? This will delete EVERYTHING — all content, your persona, and all settings. This cannot be undone.')) return;
+                if (!confirm('Are you sure? This will delete EVERYTHING \u2014 all content, your persona, and all settings. This cannot be undone.')) return;
                 if (!confirm('Really? Type OK to confirm.')) return;
                 fetch('/api/settings/reset', { method: 'POST' }).then(function (r) { return r.json(); }).then(function (data) {
                     if (data.status === 'reset') {
-                        alert('EDUagent has been reset.');
+                        window.eduToast('EDUagent has been reset.', 'success');
                         window.location.href = '/';
                     }
                 });
@@ -543,7 +591,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // ── File Upload (Index Page — legacy, kept for non-wizard flow) ────
+    // ── File Upload (Index Page — legacy, kept for non-wizard flow) ──
     var uploadZone = document.getElementById('upload-zone');
     var fileInput = document.getElementById('file-input');
     var fileList = document.getElementById('file-list');
@@ -632,110 +680,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ── Generation (Generate Page) ──────────────────────────────────────
-    var genForm = document.getElementById('generate-form');
-    var genBtn = document.getElementById('gen-btn');
-    var progressPanel = document.getElementById('progress-panel');
-    var progressLog = document.getElementById('progress-log');
-    var progressDone = document.getElementById('progress-done');
-
-    if (genForm) {
-        genForm.addEventListener('submit', function (e) {
-            e.preventDefault();
-            var topic = document.getElementById('topic').value;
-            var gradeLevel = document.getElementById('grade_level').value;
-            var subject = document.getElementById('subject').value;
-            var durationWeeks = parseInt(document.getElementById('duration_weeks').value);
-            var includeHomework = document.getElementById('include_homework').checked;
-
-            if (!topic) return;
-
-            genBtn.disabled = true;
-            genBtn.textContent = 'Generating...';
-            progressPanel.hidden = false;
-            progressLog.innerHTML = '';
-            progressDone.hidden = true;
-
-            var body = JSON.stringify({
-                topic: topic,
-                grade_level: gradeLevel,
-                subject: subject,
-                duration_weeks: durationWeeks,
-                include_homework: includeHomework
-            });
-
-            fetch('/api/full', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: body
-            }).then(function (response) {
-                var reader = response.body.getReader();
-                var decoder = new TextDecoder();
-                var buffer = '';
-
-                function read() {
-                    reader.read().then(function (result) {
-                        if (result.done) {
-                            progressDone.hidden = false;
-                            genBtn.disabled = false;
-                            genBtn.textContent = 'Generate Full Unit';
-                            return;
-                        }
-                        buffer += decoder.decode(result.value, { stream: true });
-                        var lines = buffer.split('\n');
-                        buffer = lines.pop();
-
-                        lines.forEach(function (line) {
-                            if (line.startsWith('data:')) {
-                                try {
-                                    var payload = JSON.parse(line.slice(5).trim());
-                                    addLogEntry(payload);
-                                } catch (e) { /* skip malformed */ }
-                            }
-                        });
-                        read();
-                    });
-                }
-                read();
-            }).catch(function (err) {
-                addLogEntry({ status: 'error', message: 'Connection failed: ' + err });
-                genBtn.disabled = false;
-                genBtn.textContent = 'Generate Full Unit';
-            });
-        });
-    }
-
-    function addLogEntry(payload) {
-        if (!progressLog) return;
-        var div = document.createElement('div');
-        div.className = 'log-entry ' + (payload.status || '');
-        var text = '';
-        if (payload.step === 'unit') {
-            text = payload.status === 'done'
-                ? 'Unit plan created: ' + (payload.title || '') + ' (' + (payload.lesson_count || 0) + ' lessons)'
-                : payload.message || 'Working on unit plan...';
-        } else if (payload.step === 'lesson') {
-            text = payload.status === 'done'
-                ? 'Lesson ' + payload.lesson_number + ': ' + (payload.title || '') + ' done'
-                : 'Generating lesson ' + (payload.lesson_number || '') + ': ' + (payload.topic || '');
-        } else if (payload.step === 'materials') {
-            text = payload.status === 'done'
-                ? 'Materials generated for lesson'
-                : 'Generating materials...';
-        } else if (payload.error) {
-            text = 'Error: ' + payload.error;
-        } else if (payload.unit_id) {
-            text = 'All done! Unit ID: ' + payload.unit_id;
-            div.className = 'log-entry done';
-        } else {
-            text = payload.message || JSON.stringify(payload);
-        }
-        div.textContent = text;
-        progressLog.appendChild(div);
-        progressLog.scrollTop = progressLog.scrollHeight;
-    }
-
-    // ── Star Rating ─────────────────────────────────────────────────────
+    // ── Star Rating ──────────────────────────────────────────────────
     var starRating = document.getElementById('star-rating');
     var ratingValue = document.getElementById('rating-value');
 
@@ -767,7 +712,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // ── Feedback Form ───────────────────────────────────────────────────
+    // ── Feedback Form ────────────────────────────────────────────────
     var feedbackForm = document.getElementById('feedback-form');
     var feedbackStatus = document.getElementById('feedback-status');
 
@@ -796,6 +741,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     showStatus(feedbackStatus, data.error, 'error');
                 } else {
                     showStatus(feedbackStatus, 'Thank you for your feedback!', 'success');
+                    window.eduToast('Feedback saved!', 'success');
                 }
             })
             .catch(function (err) {
@@ -804,7 +750,7 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
-    // ── Chat ────────────────────────────────────────────────────────────
+    // ── Chat ─────────────────────────────────────────────────────────
     var chatForm = document.getElementById('chat-form');
     var chatMessages = document.getElementById('chat-messages');
     var chatInput = document.getElementById('chat-input');
@@ -847,7 +793,7 @@ document.addEventListener('DOMContentLoaded', function () {
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    // ── Helpers ──────────────────────────────────────────────────────────
+    // ── Helpers ───────────────────────────────────────────────────────
     function showStatus(el, msg, type) {
         if (!el) return;
         el.hidden = false;

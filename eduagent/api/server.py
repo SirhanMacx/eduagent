@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+import sqlite3
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
 from pathlib import Path
 
 from fastapi import FastAPI, Request
@@ -97,6 +99,7 @@ def create_app() -> FastAPI:
             "onboarding_complete": onboarding_complete,
             "teacher_id": teacher["id"] if teacher else None,
             "persona": persona_data,
+            "active_nav": "home",
         })
 
     @app.get("/dashboard", response_class=HTMLResponse)
@@ -165,6 +168,7 @@ def create_app() -> FastAPI:
             "recent_items": recent_items,
             "active_lesson": active_lesson,
             "config_school": config_school,
+            "active_nav": "home",
         })
 
     @app.get("/generate", response_class=HTMLResponse)
@@ -177,6 +181,7 @@ def create_app() -> FastAPI:
         return templates.TemplateResponse(request, "generate.html", {
             "has_persona": has_persona,
             "subjects": subjects,
+            "active_nav": "generate",
         })
 
     @app.get("/settings", response_class=HTMLResponse)
@@ -226,6 +231,7 @@ def create_app() -> FastAPI:
             "teacher_subjects": teacher_subjects,
             "teacher_grades": teacher_grades,
             "state_frameworks": state_frameworks,
+            "active_nav": "settings",
         })
 
     @app.get("/stats", response_class=HTMLResponse)
@@ -286,108 +292,193 @@ def create_app() -> FastAPI:
         teacher_id = teacher["id"] if teacher else "local-teacher"
         stats_data = get_teacher_stats(teacher_id)
 
-        # Topic frequency — count lessons per title
-        topic_frequency: list[dict] = []
-        try:
-            from eduagent.state import _get_conn, init_db
+        def _safe_query(sql: str, params: tuple = ()) -> list[dict]:
+            """Run a read query against state DB, returning list of Row dicts."""
+            try:
+                from eduagent.state import _get_conn, init_db
+                init_db()
+                conn = _get_conn()
+                conn.row_factory = sqlite3.Row
+                rows = conn.execute(sql, params).fetchall()
+                result = [dict(r) for r in rows]
+                conn.close()
+                return result
+            except Exception:
+                return []
 
-            init_db()
-            conn = _get_conn()
-            conn.row_factory = __import__("sqlite3").Row
-            rows = conn.execute(
-                "SELECT title as topic, COUNT(*) as count FROM generated_lessons"
-                " WHERE teacher_id = ? AND title IS NOT NULL"
-                " GROUP BY title ORDER BY count DESC LIMIT 10",
-                (teacher_id,),
-            ).fetchall()
-            topic_frequency = [{"topic": r["topic"], "count": r["count"]} for r in rows]
-            conn.close()
-        except Exception:
-            pass
+        # Topic frequency
+        topic_frequency = _safe_query(
+            "SELECT title as topic, COUNT(*) as count FROM generated_lessons"
+            " WHERE teacher_id = ? AND title IS NOT NULL"
+            " GROUP BY title ORDER BY count DESC LIMIT 10",
+            (teacher_id,),
+        )
 
-        # Student question frequency by hour
-        question_by_hour: dict[int, int] = {}
-        try:
-            init_db()
-            conn = _get_conn()
-            conn.row_factory = __import__("sqlite3").Row
-            rows = conn.execute(
-                "SELECT CAST(strftime('%H', created_at) AS INTEGER) as hour, COUNT(*) as count"
-                " FROM chat_messages WHERE role='user'"
-                " GROUP BY hour ORDER BY hour",
-            ).fetchall()
-            question_by_hour = {r["hour"]: r["count"] for r in rows}
-            conn.close()
-        except Exception:
-            pass
+        # Daily lessons generated (last 7 days)
+        daily_lessons: list[dict] = []
+        day_names_short = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+        today = datetime.now().date()
+        for i in range(6, -1, -1):
+            d = today - timedelta(days=i)
+            daily_lessons.append({
+                "date": d.isoformat(),
+                "label": day_names_short[d.weekday()],
+                "count": 0,
+            })
+        rows = _safe_query(
+            "SELECT DATE(created_at) as day, COUNT(*) as count FROM generated_lessons"
+            " WHERE teacher_id = ? AND created_at >= datetime('now', '-7 days')"
+            " GROUP BY day ORDER BY day",
+            (teacher_id,),
+        )
+        day_counts = {r["day"]: r["count"] for r in rows}
+        for item in daily_lessons:
+            item["count"] = day_counts.get(item["date"], 0)
+
+        # Daily student questions (last 7 days)
+        daily_questions: list[dict] = []
+        for i in range(6, -1, -1):
+            d = today - timedelta(days=i)
+            daily_questions.append({
+                "date": d.isoformat(),
+                "label": day_names_short[d.weekday()],
+                "count": 0,
+            })
+        q_rows = _safe_query(
+            "SELECT DATE(created_at) as day, COUNT(*) as count FROM chat_messages"
+            " WHERE role='user' AND created_at >= datetime('now', '-7 days')"
+            " GROUP BY day ORDER BY day",
+        )
+        q_counts = {r["day"]: r["count"] for r in q_rows}
+        for item in daily_questions:
+            item["count"] = q_counts.get(item["date"], 0)
 
         # Quality trend — weekly average ratings
-        quality_trend: list[dict] = []
-        try:
-            init_db()
-            conn = _get_conn()
-            conn.row_factory = __import__("sqlite3").Row
-            rows = conn.execute(
-                "SELECT strftime('%Y-W%W', created_at) as week, AVG(rating) as avg_rating"
-                " FROM generated_lessons"
-                " WHERE teacher_id = ? AND rating IS NOT NULL"
-                " GROUP BY week ORDER BY week DESC LIMIT 12",
-                (teacher_id,),
-            ).fetchall()
-            quality_trend = [
-                {
-                    "week": r["week"],
-                    "week_short": r["week"][-3:] if r["week"] else "",
-                    "avg_rating": round(r["avg_rating"], 1),
-                }
-                for r in reversed(rows)
-            ]
-            conn.close()
-        except Exception:
-            pass
+        quality_trend_rows = _safe_query(
+            "SELECT strftime('%Y-W%W', created_at) as week, AVG(rating) as avg_rating"
+            " FROM generated_lessons"
+            " WHERE teacher_id = ? AND rating IS NOT NULL"
+            " GROUP BY week ORDER BY week DESC LIMIT 12",
+            (teacher_id,),
+        )
+        quality_trend = [
+            {
+                "week": r["week"],
+                "week_short": r["week"][-3:] if r.get("week") else "",
+                "avg_rating": round(r["avg_rating"], 1) if r.get("avg_rating") else 0,
+            }
+            for r in reversed(quality_trend_rows)
+        ]
 
         # Top student questions this week
-        top_questions: list[dict] = []
-        try:
-            init_db()
-            conn = _get_conn()
-            conn.row_factory = __import__("sqlite3").Row
-            rows = conn.execute(
-                "SELECT content as question, COUNT(*) as count"
-                " FROM chat_messages WHERE role='user'"
-                " AND created_at >= datetime('now', '-7 days')"
-                " GROUP BY content ORDER BY count DESC LIMIT 10",
-            ).fetchall()
-            top_questions = [{"question": r["question"], "count": r["count"]} for r in rows]
-            conn.close()
-        except Exception:
-            pass
-
-        # Teacher usage by day of week
-        usage_by_day: dict[str, int] = {}
-        try:
-            init_db()
-            conn = _get_conn()
-            conn.row_factory = __import__("sqlite3").Row
-            day_names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
-            rows = conn.execute(
-                "SELECT CAST(strftime('%w', created_at) AS INTEGER) as dow, COUNT(*) as count"
-                " FROM generated_lessons WHERE teacher_id = ?"
-                " GROUP BY dow ORDER BY dow",
-                (teacher_id,),
-            ).fetchall()
-            usage_by_day = {day_names[r["dow"]]: r["count"] for r in rows}
-            conn.close()
-        except Exception:
-            pass
+        top_questions = _safe_query(
+            "SELECT content as question, COUNT(*) as count"
+            " FROM chat_messages WHERE role='user'"
+            " AND created_at >= datetime('now', '-7 days')"
+            " GROUP BY content ORDER BY count DESC LIMIT 10",
+        )
 
         return templates.TemplateResponse(request, "analytics.html", {
             "stats": stats_data,
             "topic_frequency": topic_frequency,
-            "question_by_hour": question_by_hour,
+            "daily_lessons": daily_lessons,
+            "daily_questions": daily_questions,
             "quality_trend": quality_trend,
             "top_questions": top_questions,
-            "usage_by_day": usage_by_day,
+            "active_nav": "analytics",
+        })
+
+    @app.get("/library", response_class=HTMLResponse)
+    async def library_page(request: Request):
+        """Library view — all units and lessons, aliased from dashboard."""
+        db = get_db()
+        stats = db.get_stats()
+        units = db.list_units()
+        for u in units:
+            u["lesson_count"] = len(db.list_lessons(u["id"]))
+        teacher = db.get_default_teacher()
+        persona_name = ""
+        persona_data = None
+        if teacher and teacher.get("persona_json"):
+            try:
+                persona_data = json.loads(teacher["persona_json"])
+                persona_name = persona_data.get("name", "")
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+        recent_items: list[dict] = []
+        for u in units[:10]:
+            recent_items.append({
+                "type": "unit",
+                "title": u["title"],
+                "id": u["id"],
+                "date": (u.get("created_at") or "")[:10],
+            })
+        for u in units[:5]:
+            for lesson in db.list_lessons(u["id"])[:3]:
+                recent_items.append({
+                    "type": "lesson",
+                    "title": lesson["title"] or f"Lesson {lesson.get('lesson_number', '')}",
+                    "id": lesson["id"],
+                    "date": (lesson.get("created_at") or "")[:10],
+                })
+        recent_items.sort(key=lambda x: x["date"], reverse=True)
+        recent_items = recent_items[:10]
+
+        active_lesson = None
+        for u in units[:5]:
+            for lesson in db.list_lessons(u["id"]):
+                if lesson.get("share_token"):
+                    active_lesson = lesson
+                    break
+            if active_lesson:
+                break
+
+        config_school = ""
+        try:
+            from eduagent.models import AppConfig
+            cfg = AppConfig.load()
+            config_school = cfg.teacher_profile.school
+        except Exception:
+            pass
+
+        return templates.TemplateResponse(request, "dashboard.html", {
+            "stats": stats,
+            "units": units,
+            "persona_name": persona_name,
+            "persona": persona_data,
+            "recent_items": recent_items,
+            "active_lesson": active_lesson,
+            "config_school": config_school,
+            "active_nav": "library",
+        })
+
+    @app.get("/students", response_class=HTMLResponse)
+    async def students_page(request: Request):
+        """Students page — chat activity and student engagement."""
+        db = get_db()
+        stats = db.get_stats()
+
+        # Gather per-lesson chat stats
+        lesson_chats: list[dict] = []
+        units = db.list_units()
+        for u in units[:10]:
+            for lesson in db.list_lessons(u["id"]):
+                history = db.get_chat_history(lesson["id"], limit=100)
+                user_msgs = [m for m in history if m.get("role") == "user"]
+                if user_msgs:
+                    lesson_chats.append({
+                        "lesson_title": lesson.get("title") or "Untitled",
+                        "lesson_id": lesson["id"],
+                        "question_count": len(user_msgs),
+                        "last_question": (user_msgs[0].get("created_at") or "")[:16] if user_msgs else "",
+                    })
+        lesson_chats.sort(key=lambda x: x["question_count"], reverse=True)
+
+        return templates.TemplateResponse(request, "students.html", {
+            "stats": stats,
+            "lesson_chats": lesson_chats[:20],
+            "active_nav": "students",
         })
 
     @app.get("/profile", response_class=HTMLResponse)

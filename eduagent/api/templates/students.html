@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}Students — EDUagent{% endblock %}
+{% block breadcrumbs %}
+<div class="breadcrumbs"><div class="container"><a href="/">Home</a><span class="sep">/</span>Students</div></div>
+{% endblock %}
+{% block content %}
+<h1>Students</h1>
+
+<div class="stats-row">
+    <div class="stat-card">
+        <span class="stat-num">{{ stats.chats }}</span>
+        <span class="stat-label">Questions Today</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-num">{{ lesson_chats | length }}</span>
+        <span class="stat-label">Active Lessons</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-num">{{ lesson_chats | sum(attribute='question_count') }}</span>
+        <span class="stat-label">Total Questions</span>
+    </div>
+</div>
+
+{% if lesson_chats %}
+<div class="section-header">
+    <h2>Student Activity by Lesson</h2>
+</div>
+<table class="data-table">
+    <thead>
+        <tr>
+            <th>Lesson</th>
+            <th>Questions</th>
+            <th>Last Activity</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for lc in lesson_chats %}
+        <tr>
+            <td><a href="/lesson/{{ lc.lesson_id }}">{{ lc.lesson_title }}</a></td>
+            <td><strong>{{ lc.question_count }}</strong></td>
+            <td>{{ lc.last_question }}</td>
+            <td><a href="/lesson/{{ lc.lesson_id }}" class="btn btn-sm">View</a></td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="empty-state">
+    <p>No student questions yet.</p>
+    <p>Share a lesson link with students and they can ask questions about the material.</p>
+</div>
+{% endif %}
+{% endblock %}
