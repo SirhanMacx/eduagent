@@ -219,6 +219,72 @@ class LLMProvider(str, Enum):
     OLLAMA = "ollama"
 
 
+class TeacherProfile(BaseModel):
+    """Teacher-specific configuration that auto-tailors all generation.
+
+    This is the key to personalization — when a teacher sets their profile,
+    every lesson plan, unit, worksheet, and assessment is automatically
+    aligned to their state standards, subjects, and grade levels.
+    """
+
+    name: str = ""
+    school: str = ""
+
+    # What they teach
+    subjects: list[str] = Field(default_factory=list)
+    grade_levels: list[str] = Field(default_factory=list)
+
+    # Standards framework (determines which standards to reference)
+    # Options: "CCSS", "NGSS", "C3", "NY_SS", "TX_TEKS", "CA_FRAMEWORKS", "custom"
+    standards_framework: str = "CCSS"
+    state: str = ""  # e.g., "NY", "CA", "TX" — used to select state-specific standards
+
+    # Teaching context
+    class_size: Optional[int] = None
+    has_iep_students: bool = True
+    has_ell_students: bool = True
+    school_year: str = "2025-26"
+
+    # Materials paths (where their curriculum lives)
+    materials_paths: list[str] = Field(default_factory=list)  # Local paths
+    drive_urls: list[str] = Field(default_factory=list)       # Google Drive URLs
+
+    # API keys (stored here for portability, keyring preferred)
+    tavily_api_key: Optional[str] = None
+
+    def get_standards_prefix(self) -> str:
+        """Get the standards code prefix for this teacher's framework."""
+        mapping = {
+            "CCSS": "CCSS",
+            "NGSS": "NGSS",
+            "C3": "C3",
+            "NY_SS": "NYS-SS",
+            "TX_TEKS": "TEKS",
+        }
+        return mapping.get(self.standards_framework, self.standards_framework)
+
+    def describe(self) -> str:
+        """Human-readable profile summary for LLM prompts."""
+        parts = []
+        if self.name:
+            parts.append(f"Teacher: {self.name}")
+        if self.school:
+            parts.append(f"School: {self.school}")
+        if self.subjects:
+            parts.append(f"Subjects: {', '.join(self.subjects)}")
+        if self.grade_levels:
+            parts.append(f"Grades: {', '.join(self.grade_levels)}")
+        if self.standards_framework:
+            parts.append(f"Standards: {self.standards_framework}")
+        if self.state:
+            parts.append(f"State: {self.state}")
+        if self.has_iep_students:
+            parts.append("Has IEP students: Yes")
+        if self.has_ell_students:
+            parts.append("Has ELL students: Yes")
+        return "\n".join(parts) if parts else "Profile not configured"
+
+
 class AppConfig(BaseModel):
     """Application configuration."""
 
@@ -230,6 +296,9 @@ class AppConfig(BaseModel):
     output_dir: str = "./eduagent_output"
     include_homework: bool = True
     export_format: str = "markdown"
+
+    # Teacher profile — the key to auto-tailoring
+    teacher_profile: TeacherProfile = Field(default_factory=TeacherProfile)
 
     @staticmethod
     def config_path() -> Path:
