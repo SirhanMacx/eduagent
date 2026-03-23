@@ -5,7 +5,10 @@ from eduagent.skills.base import SubjectSkill
 skill = SubjectSkill(
     subject="history",
     display_name="History",
-    description="Historical thinking skills (sourcing, contextualization, corroboration), causation/continuity/change analysis, periodization.",
+    description=(
+        "Historical thinking skills (sourcing, contextualization, corroboration), "
+        "causation/continuity/change analysis, periodization."
+    ),
     aliases=(
         "us history", "world history", "american history", "european history",
         "ap history", "ap us history", "apush",

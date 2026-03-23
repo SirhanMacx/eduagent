@@ -128,6 +128,19 @@ class Database:
                 rating INTEGER,
                 shared_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
+
+            CREATE TABLE IF NOT EXISTS iep_profiles (
+                id TEXT PRIMARY KEY,
+                teacher_id TEXT NOT NULL,
+                student_name TEXT NOT NULL,
+                disability_type TEXT DEFAULT '',
+                accommodations_json TEXT DEFAULT '[]',
+                modifications_json TEXT DEFAULT '[]',
+                goals_json TEXT DEFAULT '[]',
+                active BOOLEAN DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
         """)
         self.conn.commit()
         self._migrate()
@@ -479,6 +492,55 @@ class Database:
 
     def rate_shared_content(self, shared_id: str, rating: int) -> None:
         self.conn.execute("UPDATE shared_content SET rating=? WHERE id=?", (rating, shared_id))
+        self.conn.commit()
+
+    # ── IEP profiles ────────────────────────────────────────────────
+
+    def upsert_iep_profile(
+        self, teacher_id: str, student_name: str, disability_type: str = "",
+        accommodations_json: str = "[]", modifications_json: str = "[]",
+        goals_json: str = "[]", profile_id: str | None = None,
+    ) -> str:
+        pid = profile_id or self._new_id()
+        self.conn.execute(
+            """INSERT INTO iep_profiles (id, teacher_id, student_name, disability_type,
+                   accommodations_json, modifications_json, goals_json)
+               VALUES (?,?,?,?,?,?,?)
+               ON CONFLICT(id) DO UPDATE SET
+                   student_name=excluded.student_name,
+                   disability_type=excluded.disability_type,
+                   accommodations_json=excluded.accommodations_json,
+                   modifications_json=excluded.modifications_json,
+                   goals_json=excluded.goals_json,
+                   updated_at=CURRENT_TIMESTAMP""",
+            (pid, teacher_id, student_name, disability_type, accommodations_json, modifications_json, goals_json),
+        )
+        self.conn.commit()
+        return pid
+
+    def get_iep_profile(self, profile_id: str) -> Optional[dict[str, Any]]:
+        return self._fetchone("SELECT * FROM iep_profiles WHERE id=?", (profile_id,))
+
+    def list_iep_profiles(self, teacher_id: str, active_only: bool = True) -> list[dict[str, Any]]:
+        if active_only:
+            return self._fetchall(
+                "SELECT * FROM iep_profiles WHERE teacher_id=? AND active=1 ORDER BY student_name",
+                (teacher_id,),
+            )
+        return self._fetchall(
+            "SELECT * FROM iep_profiles WHERE teacher_id=? ORDER BY student_name",
+            (teacher_id,),
+        )
+
+    def deactivate_iep_profile(self, profile_id: str) -> None:
+        self.conn.execute(
+            "UPDATE iep_profiles SET active=0, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+            (profile_id,),
+        )
+        self.conn.commit()
+
+    def delete_iep_profile(self, profile_id: str) -> None:
+        self.conn.execute("DELETE FROM iep_profiles WHERE id=?", (profile_id,))
         self.conn.commit()
 
     # ── stats ────────────────────────────────────────────────────────

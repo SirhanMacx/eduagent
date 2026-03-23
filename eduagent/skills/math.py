@@ -5,8 +5,14 @@ from eduagent.skills.base import SubjectSkill
 skill = SubjectSkill(
     subject="math",
     display_name="Mathematics",
-    description="Worked examples with faded scaffolding, multiple representations (concrete-representational-abstract), problem-based learning.",
-    aliases=("mathematics", "algebra", "geometry", "calculus", "statistics", "pre-algebra", "pre-calculus", "trigonometry"),
+    description=(
+        "Worked examples with faded scaffolding, multiple representations "
+        "(concrete-representational-abstract), problem-based learning."
+    ),
+    aliases=(
+        "mathematics", "algebra", "geometry", "calculus", "statistics",
+        "pre-algebra", "pre-calculus", "trigonometry",
+    ),
     system_prompt=(
         "You are an expert mathematics educator. Prioritize conceptual understanding "
         "alongside procedural fluency. Use the Concrete-Representational-Abstract (CRA) "

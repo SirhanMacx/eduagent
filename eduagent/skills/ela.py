@@ -5,7 +5,10 @@ from eduagent.skills.base import SubjectSkill
 skill = SubjectSkill(
     subject="ela",
     display_name="English Language Arts",
-    description="Close reading protocols, textual evidence integration, writing workshop model, reading-writing connection.",
+    description=(
+        "Close reading protocols, textual evidence integration, "
+        "writing workshop model, reading-writing connection."
+    ),
     aliases=(
         "english", "english language arts", "language arts", "reading",
         "writing", "literacy", "literature",

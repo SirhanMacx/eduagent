@@ -5,8 +5,14 @@ from eduagent.skills.base import SubjectSkill
 skill = SubjectSkill(
     subject="science",
     display_name="Science",
-    description="NGSS phenomena-driven instruction, Claim-Evidence-Reasoning (CER), lab writeups, science and engineering practices.",
-    aliases=("biology", "chemistry", "physics", "earth science", "environmental science", "life science", "physical science"),
+    description=(
+        "NGSS phenomena-driven instruction, Claim-Evidence-Reasoning (CER), "
+        "lab writeups, science and engineering practices."
+    ),
+    aliases=(
+        "biology", "chemistry", "physics", "earth science",
+        "environmental science", "life science", "physical science",
+    ),
     system_prompt=(
         "You are an expert science educator aligned to the Next Generation Science Standards "
         "(NGSS). Structure all instruction around the three dimensions: Disciplinary Core "

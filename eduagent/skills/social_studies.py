@@ -5,7 +5,10 @@ from eduagent.skills.base import SubjectSkill
 skill = SubjectSkill(
     subject="social_studies",
     display_name="Social Studies",
-    description="DBQ analysis, primary source interpretation, MAIN acronym for causation, Socratic questioning techniques.",
+    description=(
+        "DBQ analysis, primary source interpretation, MAIN acronym for "
+        "causation, Socratic questioning techniques."
+    ),
     aliases=("social studies", "civics", "government", "geography", "economics"),
     system_prompt=(
         "You are an expert social studies educator. Ground all instruction in primary and "

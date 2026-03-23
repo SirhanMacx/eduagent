@@ -1,11 +1,18 @@
 """Tests for voice note transcription."""
 
+import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from eduagent.voice import AUDIO_EXTENSIONS, is_audio_file, transcribe_audio
+
+
+def _run(coro):
+    """Helper to run async coroutines in sync tests."""
+    return asyncio.run(coro)
+
 
 # ── is_audio_file ──────────────────────────────────────────────────
 
@@ -34,17 +41,17 @@ class TestIsAudioFile:
 
 
 class TestTranscribeAudio:
-    async def test_file_not_found(self, tmp_path):
+    def test_file_not_found(self, tmp_path):
         with pytest.raises(FileNotFoundError):
-            await transcribe_audio(tmp_path / "nonexistent.mp3")
+            _run(transcribe_audio(tmp_path / "nonexistent.mp3"))
 
-    async def test_unsupported_format(self, tmp_path):
+    def test_unsupported_format(self, tmp_path):
         bad_file = tmp_path / "file.xyz"
         bad_file.write_text("not audio")
         with pytest.raises(ValueError, match="Unsupported audio format"):
-            await transcribe_audio(bad_file)
+            _run(transcribe_audio(bad_file))
 
-    async def test_no_backend_available(self, tmp_path):
+    def test_no_backend_available(self, tmp_path):
         audio = tmp_path / "test.wav"
         audio.write_bytes(b"RIFF" + b"\x00" * 100)
 
@@ -53,9 +60,9 @@ class TestTranscribeAudio:
             patch("eduagent.voice.shutil.which", return_value=None),
         ):
             with pytest.raises(RuntimeError, match="No transcription backend"):
-                await transcribe_audio(audio)
+                _run(transcribe_audio(audio))
 
-    async def test_faster_whisper_backend(self, tmp_path):
+    def test_faster_whisper_backend(self, tmp_path):
         audio = tmp_path / "test.ogg"
         audio.write_bytes(b"OggS" + b"\x00" * 100)
 
@@ -64,10 +71,10 @@ class TestTranscribeAudio:
             new_callable=AsyncMock,
             return_value="Hello from the teacher",
         ):
-            result = await transcribe_audio(audio)
+            result = _run(transcribe_audio(audio))
             assert result == "Hello from the teacher"
 
-    async def test_whisper_cli_fallback(self, tmp_path):
+    def test_whisper_cli_fallback(self, tmp_path):
         audio = tmp_path / "test.mp3"
         audio.write_bytes(b"\xff\xfb" + b"\x00" * 100)
 
@@ -80,7 +87,7 @@ class TestTranscribeAudio:
                 return_value="Student question about homework",
             ),
         ):
-            result = await transcribe_audio(audio)
+            result = _run(transcribe_audio(audio))
             assert result == "Student question about homework"
 
 
@@ -88,7 +95,7 @@ class TestTranscribeAudio:
 
 
 class TestTranscribeAttachments:
-    async def test_transcribe_audio_attachments(self, tmp_path):
+    def test_transcribe_audio_attachments(self, tmp_path):
         from eduagent.openclaw_plugin import _transcribe_attachments
 
         audio = tmp_path / "voice.ogg"
@@ -99,19 +106,19 @@ class TestTranscribeAttachments:
             new_callable=AsyncMock,
             return_value="transcribed text",
         ):
-            result = await _transcribe_attachments([str(audio)])
+            result = _run(_transcribe_attachments([str(audio)]))
             assert result == "transcribed text"
 
-    async def test_skip_non_audio_attachments(self, tmp_path):
+    def test_skip_non_audio_attachments(self, tmp_path):
+        from eduagent.openclaw_plugin import _transcribe_attachments
+
         pdf = tmp_path / "lesson.pdf"
         pdf.write_bytes(b"%PDF" + b"\x00" * 100)
 
-        from eduagent.openclaw_plugin import _transcribe_attachments
-
-        result = await _transcribe_attachments([str(pdf)])
+        result = _run(_transcribe_attachments([str(pdf)]))
         assert result == ""
 
-    async def test_mixed_attachments(self, tmp_path):
+    def test_mixed_attachments(self, tmp_path):
         from eduagent.openclaw_plugin import _transcribe_attachments
 
         audio = tmp_path / "voice.m4a"
@@ -124,10 +131,10 @@ class TestTranscribeAttachments:
             new_callable=AsyncMock,
             return_value="voice content",
         ):
-            result = await _transcribe_attachments([str(audio), str(doc)])
+            result = _run(_transcribe_attachments([str(audio), str(doc)]))
             assert result == "voice content"
 
-    async def test_failed_transcription_skipped(self, tmp_path):
+    def test_failed_transcription_skipped(self, tmp_path):
         from eduagent.openclaw_plugin import _transcribe_attachments
 
         audio = tmp_path / "bad.wav"
@@ -138,5 +145,5 @@ class TestTranscribeAttachments:
             new_callable=AsyncMock,
             side_effect=RuntimeError("backend failed"),
         ):
-            result = await _transcribe_attachments([str(audio)])
+            result = _run(_transcribe_attachments([str(audio)]))
             assert result == ""

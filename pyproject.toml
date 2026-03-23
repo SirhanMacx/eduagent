@@ -44,7 +44,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Telegram bot support — run EDUagent as a standalone Telegram bot
+telegram = ["python-telegram-bot>=20.0"]
+# Google Drive support — personal accounts ONLY, never school-issued accounts
 google = ["google-api-python-client>=2.0.0", "google-auth-oauthlib>=1.0.0"]
+# Voice transcription
+voice = ["faster-whisper>=0.10.0"]
+# All optional features
+all = ["python-telegram-bot>=20.0", "faster-whisper>=0.10.0"]
 pdf = ["weasyprint>=60.0"]
 keyring = ["keyring>=24.0.0"]
 dev = ["pytest>=7.0.0", "pytest-asyncio>=0.21.0", "ruff>=0.1.0"]

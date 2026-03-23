@@ -183,6 +183,127 @@ def student_chat(
         console.print()
 
 
+# ── Sub-Packet command ──────────────────────────────────────────────────
+
+
+@app.command(name="sub-packet")
+def sub_packet(
+    date: str = typer.Option(
+        ..., "--date", "-d", help="Date for the sub packet (e.g. '2026-03-24' or 'tomorrow')"
+    ),
+    teacher_id: str = typer.Option("local-teacher", "--id", help="Teacher session ID"),
+    lesson_id: Optional[str] = typer.Option(None, "--lesson-id", "-l", help="Specific lesson ID"),
+    fmt: str = typer.Option("text", "--format", "-f", help="Output format: text, json"),
+) -> None:
+    """Generate a complete substitute teacher packet."""
+    from datetime import datetime, timedelta
+
+    from eduagent.sub_packet import format_sub_packet_text, generate_sub_packet, save_sub_packet
+
+    resolved_date = date.strip().lower()
+    if resolved_date == "tomorrow":
+        resolved_date = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+    elif resolved_date == "today":
+        resolved_date = datetime.now().strftime("%Y-%m-%d")
+
+    console.print(Panel(
+        f"Generating sub packet for [bold]{resolved_date}[/bold]",
+        title="[bold blue]Substitute Teacher Packet[/bold blue]",
+        border_style="blue",
+    ))
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Generating sub packet...", total=None)
+        packet = _run_async(generate_sub_packet(
+            teacher_id=teacher_id,
+            date=resolved_date,
+            lesson_id=lesson_id,
+        ))
+        progress.update(task, description="Sub packet complete!")
+
+    out_dir = _output_dir()
+    json_path = save_sub_packet(packet, out_dir)
+    console.print(f"[green]Saved:[/green] {json_path}")
+
+    if fmt == "text":
+        text = format_sub_packet_text(packet)
+        text_path = out_dir / f"sub_packet_{resolved_date}.txt"
+        text_path.write_text(text)
+        console.print(f"[green]Text version:[/green] {text_path}")
+        console.print()
+        console.print(Panel(text, title="Sub Packet Preview", border_style="blue"))
+    else:
+        console.print(Panel(
+            f"[bold]Teacher:[/bold] {packet.teacher_name}\n"
+            f"[bold]Date:[/bold] {packet.date}\n"
+            f"[bold]Periods:[/bold] {len(packet.schedule)}\n"
+            f"[bold]Lessons:[/bold] {len(packet.lesson_instructions)}\n"
+            f"[bold]Materials:[/bold] {len(packet.materials_checklist)} items",
+            title="Sub Packet Summary",
+        ))
+
+
+# ── Parent Note command ─────────────────────────────────────────────────
+
+
+@app.command(name="parent-note")
+def parent_note(
+    student: str = typer.Option(..., "--student", "-s", help="Student's name"),
+    topic: str = typer.Option(
+        "general progress", "--topic", "-t", help="Note context (e.g. 'midterm', 'behavior')"
+    ),
+    strengths: Optional[str] = typer.Option(None, "--strengths", help="Comma-separated strengths"),
+    growth: Optional[str] = typer.Option(None, "--growth", help="Comma-separated growth areas"),
+    teacher_id: str = typer.Option("local-teacher", "--id", help="Teacher session ID"),
+) -> None:
+    """Generate a parent progress update in the teacher's voice."""
+    from eduagent.parent_communication import (
+        format_progress_update_text,
+        generate_progress_update,
+        save_progress_update,
+    )
+    from eduagent.state import TeacherSession as _TS
+
+    session = _TS.load(teacher_id)
+    persona = session.persona
+
+    strength_list = [s.strip() for s in strengths.split(",")] if strengths else []
+    growth_list = [g.strip() for g in growth.split(",")] if growth else []
+
+    console.print(Panel(
+        f"Generating progress update for [bold]{student}[/bold]\nTopic: {topic}",
+        title="[bold green]Parent Communication[/bold green]",
+        border_style="green",
+    ))
+
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Writing progress update...", total=None)
+        update = _run_async(generate_progress_update(
+            student_name=student,
+            strengths=strength_list,
+            areas_to_grow=growth_list,
+            teacher_persona=persona,
+            topic=topic,
+        ))
+        progress.update(task, description="Progress update complete!")
+
+    out_dir = _output_dir()
+    json_path = save_progress_update(update, out_dir)
+    console.print(f"[green]Saved:[/green] {json_path}")
+
+    text = format_progress_update_text(update)
+    console.print()
+    console.print(Panel(text, title=f"Progress Update — {student}", border_style="green"))
+
+
 # ── MCP Server command ──────────────────────────────────────────────────
 
 
@@ -451,6 +572,122 @@ def materials(
         f"[bold]IEP Notes:[/bold] {len(mats.iep_notes)} accommodations",
         title="Materials Summary",
     ))
+
+
+# ── Differentiation / IEP ────────────────────────────────────────────────
+
+
+@app.command()
+def differentiate(
+    lesson_file: str = typer.Option(..., "--lesson-file", "-l", help="Path to lesson plan JSON"),
+    iep: Optional[str] = typer.Option(None, "--iep", help="Path to IEP student profiles JSON"),
+    accommodations_504: Optional[str] = typer.Option(None, "--504", help="Comma-separated 504 accommodations"),
+    tiered_topic: Optional[str] = typer.Option(None, "--tiered-topic", help="Topic for tiered assignments"),
+    tiered_grade: str = typer.Option("8", "--tiered-grade", help="Grade level for tiered assignments"),
+    tiers: int = typer.Option(3, "--tiers", help="Number of difficulty tiers"),
+):
+    """Generate IEP modifications, 504 accommodations, and tiered assignments."""
+    from eduagent.differentiation import (
+        generate_504_accommodations,
+        generate_iep_lesson_modifications,
+        generate_tiered_assignments,
+        load_iep_profiles,
+        save_modified_lessons,
+        save_tiered_assignments,
+    )
+    from eduagent.lesson import load_lesson
+
+    daily = load_lesson(Path(lesson_file))
+    out_dir = _output_dir()
+    ran_any = False
+
+    # IEP modifications
+    if iep:
+        ran_any = True
+        profiles = load_iep_profiles(Path(iep))
+        console.print(Panel(
+            f"Generating modified lessons for [bold]{len(profiles)}[/bold] IEP students",
+            title="IEP Modifications",
+        ))
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Modifying lessons for IEP students...", total=None)
+            modifications = _run_async(generate_iep_lesson_modifications(daily, profiles))
+            progress.update(task, description=f"Generated {len(modifications)} modified lessons!")
+
+        paths = save_modified_lessons(modifications, out_dir)
+        table = Table(title="IEP Modified Lessons")
+        table.add_column("Student", style="bold")
+        table.add_column("Modified Title")
+        table.add_column("File", style="dim")
+        for name, mod_lesson in modifications.items():
+            path = next((p for p in paths if name.lower().replace(" ", "_")[:50] in str(p)), paths[0])
+            table.add_row(name, mod_lesson.title, str(path))
+        console.print(table)
+
+    # 504 accommodations
+    if accommodations_504:
+        ran_any = True
+        acc_list = [a.strip() for a in accommodations_504.split(",")]
+        console.print(Panel(
+            f"Generating 504 accommodations: {', '.join(acc_list)}",
+            title="504 Accommodations",
+        ))
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Generating 504 accommodations...", total=None)
+            notes = _run_async(generate_504_accommodations(daily, acc_list))
+            progress.update(task, description="504 accommodations complete!")
+
+        console.print(Panel(
+            "\n".join(f"  - {s}" for s in notes.struggling) or "  (none)",
+            title="504 Accommodation Notes",
+        ))
+
+    # Tiered assignments
+    if tiered_topic:
+        ran_any = True
+        console.print(Panel(
+            f"Generating [bold]{tiers}-tier[/bold] assignments for: {tiered_topic}",
+            title="Tiered Assignments",
+        ))
+
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+        ) as progress:
+            task = progress.add_task("Generating tiered assignments...", total=None)
+            items = _run_async(generate_tiered_assignments(tiered_topic, tiered_grade, tiers))
+            progress.update(task, description=f"Generated {len(items)} tiered items!")
+
+        path = save_tiered_assignments(items, out_dir, tiered_topic)
+        table = Table(title="Tiered Assignment Summary")
+        table.add_column("Tier", style="bold")
+        table.add_column("Items", justify="right")
+        for t in range(tiers):
+            low = t * 100 + (1 if t == 0 else 0)
+            high = (t + 1) * 100
+            count = sum(1 for i in items if low <= i.item_number < high)
+            labels = ["Approaching", "On-Level", "Advanced"] + [f"Tier {t + 1}"]
+            table.add_row(labels[min(t, len(labels) - 1)], str(count))
+        console.print(table)
+        console.print(f"[green]Saved:[/green] {path}")
+
+    if not ran_any:
+        console.print(
+            "[yellow]Specify at least one option:[/yellow] --iep, --504, or --tiered-topic\n"
+            "Example: eduagent differentiate --lesson-file lesson.json --iep students.json"
+        )
+        raise typer.Exit(1)
 
 
 # ── Full pipeline ────────────────────────────────────────────────────────
@@ -1366,6 +1603,210 @@ def skills_show(
         for name, desc in skill.example_strategies.items():
             table.add_row(name, desc)
         console.print(table)
+
+
+# ── School commands ─────────────────────────────────────────────────
+
+
+@school_app.command("setup")
+def school_setup(
+    name: str = typer.Option(..., "--name", help="School name"),
+    state: str = typer.Option("", "--state", help="State abbreviation (e.g., NY, CA)"),
+    district: str = typer.Option("", "--district", help="School district"),
+    grade_levels: str = typer.Option("", "--grades", help="Comma-separated grade levels (e.g., '6,7,8')"),
+) -> None:
+    """Create a new school deployment for multi-teacher sharing."""
+    from eduagent.database import Database
+    from eduagent.school import setup_school
+
+    db = Database()
+    grades = [g.strip() for g in grade_levels.split(",") if g.strip()] if grade_levels else []
+    school_id = setup_school(db, name=name, state=state, district=district, grade_levels=grades)
+    db.close()
+
+    console.print(Panel(
+        f"[bold green]School created![/bold green]\n\n"
+        f"  Name:      {name}\n"
+        f"  State:     {state or '—'}\n"
+        f"  District:  {district or '—'}\n"
+        f"  Grades:    {', '.join(grades) or '—'}\n"
+        f"  School ID: [cyan]{school_id}[/cyan]\n\n"
+        f"Share this ID with teachers: [bold]eduagent school join --school-id {school_id}[/bold]",
+        title="[bold]School Setup[/bold]",
+        border_style="green",
+    ))
+
+
+@school_app.command("join")
+def school_join(
+    school_id: str = typer.Option(..., "--school-id", help="School ID to join"),
+    teacher_id: str = typer.Option("local-teacher", "--teacher-id", help="Teacher ID"),
+    department: str = typer.Option("", "--department", help="Department (e.g., 'Science', 'Math')"),
+    role: str = typer.Option("teacher", "--role", help="Role: teacher or admin"),
+) -> None:
+    """Join a school as a teacher or admin."""
+    from eduagent.database import Database
+    from eduagent.school import add_teacher
+
+    db = Database()
+    school = db.get_school(school_id)
+    if not school:
+        console.print(f"[red]School '{school_id}' not found.[/red]")
+        db.close()
+        raise typer.Exit(1)
+
+    add_teacher(db, school_id, teacher_id, role=role, department=department)
+    db.close()
+
+    console.print(f"[green]Joined [bold]{school['name']}[/bold] as {role}.[/green]")
+    if department:
+        console.print(f"  Department: {department}")
+
+
+@school_app.command("roster")
+def school_roster(
+    school_id: str = typer.Option(..., "--school-id", help="School ID"),
+) -> None:
+    """Show all teachers in a school."""
+    from eduagent.database import Database
+    from eduagent.school import list_teachers
+
+    db = Database()
+    school = db.get_school(school_id)
+    if not school:
+        console.print(f"[red]School '{school_id}' not found.[/red]")
+        db.close()
+        raise typer.Exit(1)
+
+    teachers = list_teachers(db, school_id)
+    db.close()
+
+    table = Table(title=f"Roster — {school['name']}")
+    table.add_column("Teacher ID", style="cyan")
+    table.add_column("Name", style="bold")
+    table.add_column("Role")
+    table.add_column("Department")
+    for t in teachers:
+        table.add_row(t["teacher_id"], t.get("teacher_name") or "—", t["role"], t.get("department") or "—")
+    console.print(table)
+
+
+@school_app.command("share")
+def school_share(
+    school_id: str = typer.Option(..., "--school-id", help="School ID"),
+    teacher_id: str = typer.Option("local-teacher", "--teacher-id", help="Your teacher ID"),
+    unit_id: str = typer.Option(None, "--unit-id", help="Unit ID to share"),
+    lesson_id: str = typer.Option(None, "--lesson-id", help="Lesson ID to share"),
+    department: str = typer.Option("", "--department", help="Share with a specific department"),
+) -> None:
+    """Share a unit or lesson with your school's curriculum library."""
+    from eduagent.database import Database
+    from eduagent.school import share_lesson, share_unit
+
+    if not unit_id and not lesson_id:
+        console.print("[red]Provide --unit-id or --lesson-id to share.[/red]")
+        raise typer.Exit(1)
+
+    db = Database()
+    if unit_id:
+        sid = share_unit(db, school_id, teacher_id, unit_id, department=department)
+        label = "Unit"
+    else:
+        sid = share_lesson(db, school_id, teacher_id, lesson_id, department=department)  # type: ignore[arg-type]
+        label = "Lesson"
+    db.close()
+
+    if sid:
+        dept_msg = f" with department '{department}'" if department else " with the whole school"
+        console.print(f"[green]{label} shared{dept_msg}.[/green]  Shared ID: [cyan]{sid}[/cyan]")
+    else:
+        console.print(f"[red]{label} not found.[/red]")
+        raise typer.Exit(1)
+
+
+@school_app.command("library")
+def school_library(
+    school_id: str = typer.Option(..., "--school-id", help="School ID"),
+    department: str = typer.Option("", "--department", help="Filter by department"),
+) -> None:
+    """Browse your school's shared curriculum library."""
+    from eduagent.database import Database
+    from eduagent.school import get_shared_library
+
+    db = Database()
+    school = db.get_school(school_id)
+    if not school:
+        console.print(f"[red]School '{school_id}' not found.[/red]")
+        db.close()
+        raise typer.Exit(1)
+
+    items = get_shared_library(db, school_id, department=department)
+    db.close()
+
+    title = f"Shared Library — {school['name']}"
+    if department:
+        title += f" ({department})"
+    table = Table(title=title)
+    table.add_column("Type", style="bold")
+    table.add_column("Title")
+    table.add_column("Subject")
+    table.add_column("Grade")
+    table.add_column("Shared By")
+    table.add_column("Rating", justify="right")
+    for item in items:
+        rating_str = str(item["rating"]) if item.get("rating") else "—"
+        table.add_row(
+            item["content_type"],
+            item["title"],
+            item.get("subject") or "—",
+            item.get("grade_level") or "—",
+            item.get("teacher_name") or "—",
+            rating_str,
+        )
+    console.print(table)
+    if not items:
+        console.print("[dim]No shared content yet. Use 'eduagent school share' to contribute![/dim]")
+
+
+@app.command()
+def bot(
+    token: str = typer.Option(..., "--token", "-t", envvar="TELEGRAM_BOT_TOKEN", help="Telegram bot token from @BotFather"),
+    data_dir: Optional[str] = typer.Option(None, "--data-dir", help="Data directory (default: ~/.eduagent)"),
+):
+    """Start the EDUagent Telegram bot.
+
+    Get a bot token from @BotFather on Telegram, then run:
+
+        eduagent bot --token YOUR_TOKEN
+
+    Or set TELEGRAM_BOT_TOKEN environment variable and just run:
+
+        eduagent bot
+    """
+    import asyncio
+
+    from eduagent.telegram_bot import run_bot
+
+    data_path = Path(data_dir).expanduser().resolve() if data_dir else None
+
+    console.print(Panel(
+        f"[bold green]EDUagent Telegram Bot[/bold green]\n\n"
+        f"Starting bot...\n"
+        f"Data directory: {data_path or Path.home() / '.eduagent'}\n\n"
+        f"[dim]Press Ctrl+C to stop[/dim]",
+        title="🎓 EDUagent",
+        border_style="green",
+    ))
+
+    try:
+        asyncio.run(run_bot(token=token, data_dir=data_path))
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Bot stopped.[/yellow]")
+    except ImportError as e:
+        console.print(f"[red]Missing dependency:[/red] {e}")
+        console.print("\nInstall Telegram support with:")
+        console.print("  [cyan]pip install 'python-telegram-bot>=20.0'[/cyan]")
+        raise typer.Exit(1)
 
 
 if __name__ == "__main__":

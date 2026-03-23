@@ -1,0 +1,268 @@
+"""Tests for the subject skill library."""
+
+import pytest
+
+from eduagent.skills import SkillLibrary, SubjectSkill
+
+# ── SubjectSkill dataclass ─────────────────────────────────────────
+
+
+class TestSubjectSkill:
+    def test_create_skill(self):
+        skill = SubjectSkill(
+            subject="test",
+            display_name="Test Subject",
+            description="A test skill.",
+            system_prompt="You are a test teacher.",
+            lesson_prompt_additions="Test lesson additions.",
+            assessment_style_notes="Test assessment notes.",
+            vocabulary_guidelines="Test vocabulary guidelines.",
+        )
+        assert skill.subject == "test"
+        assert skill.display_name == "Test Subject"
+        assert skill.example_strategies == {}
+        assert skill.aliases == ()
+
+    def test_skill_is_frozen(self):
+        skill = SubjectSkill(
+            subject="test",
+            display_name="Test",
+            description="Test",
+            system_prompt="",
+            lesson_prompt_additions="",
+            assessment_style_notes="",
+            vocabulary_guidelines="",
+        )
+        with pytest.raises(AttributeError):
+            skill.subject = "changed"
+
+    def test_to_system_context(self):
+        skill = SubjectSkill(
+            subject="test",
+            display_name="Test Subject",
+            description="Desc",
+            system_prompt="System prompt here.",
+            lesson_prompt_additions="Lesson additions here.",
+            assessment_style_notes="Assessment notes here.",
+            vocabulary_guidelines="Vocabulary guidelines here.",
+            example_strategies={"Strategy A": "Description of A"},
+        )
+        ctx = skill.to_system_context()
+        assert "## Subject Pedagogy: Test Subject" in ctx
+        assert "System prompt here." in ctx
+        assert "Lesson additions here." in ctx
+        assert "Assessment notes here." in ctx
+        assert "Vocabulary guidelines here." in ctx
+        assert "Strategy A" in ctx
+        assert "Description of A" in ctx
+
+    def test_to_lesson_injection(self):
+        skill = SubjectSkill(
+            subject="test",
+            display_name="Test Subject",
+            description="Desc",
+            system_prompt="System prompt.",
+            lesson_prompt_additions="Lesson guidance.",
+            assessment_style_notes="Assessment approach.",
+            vocabulary_guidelines="Vocab rules.",
+        )
+        injection = skill.to_lesson_injection()
+        assert "Test Subject" in injection
+        assert "Lesson guidance." in injection
+        assert "Assessment approach." in injection
+        assert "Vocab rules." in injection
+
+
+# ── SkillLibrary ───────────────────────────────────────────────────
+
+
+class TestSkillLibrary:
+    @pytest.fixture
+    def library(self):
+        return SkillLibrary()
+
+    def test_loads_all_five_skills(self, library):
+        assert len(library) == 5
+
+    def test_expected_subjects_present(self, library):
+        expected = {"ela", "history", "math", "science", "social_studies"}
+        assert set(library.subjects()) == expected
+
+    def test_get_by_canonical_name(self, library):
+        skill = library.get("math")
+        assert skill is not None
+        assert skill.subject == "math"
+        assert skill.display_name == "Mathematics"
+
+    def test_get_by_alias(self, library):
+        # "biology" should resolve to "science"
+        skill = library.get("biology")
+        assert skill is not None
+        assert skill.subject == "science"
+
+    def test_get_case_insensitive(self, library):
+        assert library.get("MATH") is not None
+        assert library.get("Math") is not None
+        assert library.get("  math  ") is not None
+
+    def test_get_unknown_returns_none(self, library):
+        assert library.get("underwater basket weaving") is None
+
+    def test_contains(self, library):
+        assert "math" in library
+        assert "algebra" in library  # alias
+        assert "zzz" not in library
+
+    def test_list_skills_sorted_by_display_name(self, library):
+        skills = library.list_skills()
+        names = [s.display_name for s in skills]
+        assert names == sorted(names)
+
+    def test_iterate(self, library):
+        subjects = [s.subject for s in library]
+        assert len(subjects) == 5
+
+    def test_inject_system_context_known(self, library):
+        ctx = library.inject_system_context("science")
+        assert "Subject Pedagogy: Science" in ctx
+        assert "NGSS" in ctx
+
+    def test_inject_system_context_unknown(self, library):
+        assert library.inject_system_context("xyz") == ""
+
+    def test_inject_lesson_context_known(self, library):
+        ctx = library.inject_lesson_context("ela")
+        assert "English Language Arts" in ctx
+        assert "close reading" in ctx.lower()
+
+    def test_inject_lesson_context_unknown(self, library):
+        assert library.inject_lesson_context("xyz") == ""
+
+
+# ── Individual skill modules ──────────────────────────────────────
+
+
+class TestSocialStudiesSkill:
+    def test_loads(self):
+        from eduagent.skills.social_studies import skill
+        assert skill.subject == "social_studies"
+        assert "DBQ" in skill.lesson_prompt_additions
+        assert "MAIN" in skill.lesson_prompt_additions
+        assert "Socratic" in skill.lesson_prompt_additions
+        assert len(skill.example_strategies) >= 3
+
+    def test_aliases(self):
+        from eduagent.skills.social_studies import skill
+        assert "civics" in skill.aliases
+        assert "government" in skill.aliases
+
+
+class TestMathSkill:
+    def test_loads(self):
+        from eduagent.skills.math import skill
+        assert skill.subject == "math"
+        assert "worked example" in skill.lesson_prompt_additions.lower()
+        assert "scaffold" in skill.lesson_prompt_additions.lower()
+        lpa = skill.lesson_prompt_additions.lower()
+        assert "multiple representation" in lpa or "representations" in lpa
+        assert len(skill.example_strategies) >= 3
+
+    def test_aliases(self):
+        from eduagent.skills.math import skill
+        assert "algebra" in skill.aliases
+        assert "geometry" in skill.aliases
+        assert "calculus" in skill.aliases
+
+
+class TestScienceSkill:
+    def test_loads(self):
+        from eduagent.skills.science import skill
+        assert skill.subject == "science"
+        assert "NGSS" in skill.system_prompt
+        assert "CER" in skill.lesson_prompt_additions
+        assert "5E" in skill.lesson_prompt_additions or "5e" in skill.lesson_prompt_additions.lower()
+        assert len(skill.example_strategies) >= 3
+
+    def test_aliases(self):
+        from eduagent.skills.science import skill
+        assert "biology" in skill.aliases
+        assert "chemistry" in skill.aliases
+        assert "physics" in skill.aliases
+
+
+class TestELASkill:
+    def test_loads(self):
+        from eduagent.skills.ela import skill
+        assert skill.subject == "ela"
+        assert "close reading" in skill.lesson_prompt_additions.lower()
+        lpa = skill.lesson_prompt_additions.lower()
+        assert "textual evidence" in lpa or "text" in lpa
+        assert "writing workshop" in skill.lesson_prompt_additions.lower()
+        assert len(skill.example_strategies) >= 3
+
+    def test_aliases(self):
+        from eduagent.skills.ela import skill
+        assert "english" in skill.aliases
+        assert "reading" in skill.aliases
+        assert "writing" in skill.aliases
+
+
+class TestHistorySkill:
+    def test_loads(self):
+        from eduagent.skills.history import skill
+        assert skill.subject == "history"
+        assert "causation" in skill.lesson_prompt_additions.lower()
+        assert "continuity" in skill.lesson_prompt_additions.lower()
+        assert "change" in skill.lesson_prompt_additions.lower()
+        assert "sourcing" in skill.lesson_prompt_additions.lower()
+        assert len(skill.example_strategies) >= 3
+
+    def test_aliases(self):
+        from eduagent.skills.history import skill
+        assert "us history" in skill.aliases
+        assert "world history" in skill.aliases
+        assert "apush" in skill.aliases
+
+
+# ── Alias coverage ─────────────────────────────────────────────────
+
+
+class TestAliasCoverage:
+    """Ensure common subject terms resolve to the right skill."""
+
+    @pytest.fixture
+    def library(self):
+        return SkillLibrary()
+
+    @pytest.mark.parametrize(
+        "alias,expected_subject",
+        [
+            ("mathematics", "math"),
+            ("algebra", "math"),
+            ("geometry", "math"),
+            ("calculus", "math"),
+            ("statistics", "math"),
+            ("biology", "science"),
+            ("chemistry", "science"),
+            ("physics", "science"),
+            ("earth science", "science"),
+            ("english", "ela"),
+            ("reading", "ela"),
+            ("writing", "ela"),
+            ("literature", "ela"),
+            ("language arts", "ela"),
+            ("social studies", "social_studies"),
+            ("civics", "social_studies"),
+            ("government", "social_studies"),
+            ("geography", "social_studies"),
+            ("economics", "social_studies"),
+            ("us history", "history"),
+            ("world history", "history"),
+            ("apush", "history"),
+            ("american history", "history"),
+        ],
+    )
+    def test_alias_resolves(self, library, alias, expected_subject):
+        skill = library.get(alias)
+        assert skill is not None, f"Alias '{alias}' did not resolve"
+        assert skill.subject == expected_subject, f"'{alias}' resolved to {skill.subject}, expected {expected_subject}"
