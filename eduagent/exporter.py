@@ -555,3 +555,129 @@ def export_materials(materials: LessonMaterials, output_dir: Path, fmt: str = "m
     else:
         raise ValueError(f"Unsupported format: {fmt}")
     return path
+
+
+# ── Year map / pacing exports ────────────────────────────────────────────
+
+
+def year_map_to_markdown(year_map: YearMap) -> str:
+    """Render a YearMap as formatted Markdown."""
+    lines: list[str] = [
+        f"# Full-Year Curriculum Map — {year_map.subject}, Grade {year_map.grade_level}",
+        "",
+        f"**School Year:** {year_map.school_year or 'N/A'}  ",
+        f"**Total Instructional Weeks:** {year_map.total_weeks}",
+        "",
+    ]
+
+    # Units table
+    lines.append("## Unit Sequence")
+    lines.append("")
+    lines.append("| # | Unit | Weeks | Standards |")
+    lines.append("|---|------|-------|-----------|")
+    for u in year_map.units:
+        stds = ", ".join(u.standards[:3])
+        if len(u.standards) > 3:
+            stds += f" (+{len(u.standards) - 3} more)"
+        lines.append(f"| {u.unit_number} | {u.title} | {u.duration_weeks} | {stds} |")
+    lines.append("")
+
+    # Unit details
+    for u in year_map.units:
+        lines.append(f"### Unit {u.unit_number}: {u.title}")
+        lines.append(f"**Duration:** {u.duration_weeks} weeks  ")
+        if u.description:
+            lines.append(f"\n{u.description}")
+        if u.essential_questions:
+            lines.append("\n**Essential Questions:**")
+            for eq in u.essential_questions:
+                lines.append(f"- {eq}")
+        if u.standards:
+            lines.append(f"\n**Standards:** {', '.join(u.standards)}")
+        lines.append("")
+
+    # Big ideas
+    if year_map.big_ideas:
+        lines.append("## Big Ideas (Cross-Unit Connections)")
+        lines.append("")
+        for bi in year_map.big_ideas:
+            unit_refs = ", ".join(str(n) for n in bi.connected_units)
+            lines.append(f"- **{bi.idea}** (Units {unit_refs})")
+        lines.append("")
+
+    # Assessment calendar
+    if year_map.assessment_calendar:
+        lines.append("## Assessment Calendar")
+        lines.append("")
+        lines.append("| Week | Type | Assessment | Unit |")
+        lines.append("|------|------|------------|------|")
+        for a in sorted(year_map.assessment_calendar, key=lambda x: x.week):
+            unit_label = f"Unit {a.unit_number}" if a.unit_number > 0 else "—"
+            lines.append(f"| {a.week} | {a.assessment_type.title()} | {a.title} | {unit_label} |")
+        lines.append("")
+
+    return "\n".join(lines)
+
+
+def pacing_guide_to_markdown(guide: PacingGuide) -> str:
+    """Render a PacingGuide as formatted Markdown."""
+    lines: list[str] = [
+        f"# Pacing Guide — {guide.subject}, Grade {guide.grade_level}",
+        "",
+        f"**School Year:** {guide.school_year or 'N/A'}  ",
+        f"**Start Date:** {guide.start_date}",
+        "",
+        "| Week | Dates | Unit | Topics | Notes |",
+        "|------|-------|------|--------|-------|",
+    ]
+
+    for w in guide.weeks:
+        topics = "; ".join(w.topics) if w.topics else "—"
+        notes = w.notes or ""
+        lines.append(
+            f"| {w.week_number} | {w.start_date} – {w.end_date} | "
+            f"U{w.unit_number}: {w.unit_title} | {topics} | {notes} |"
+        )
+
+    lines.append("")
+    return "\n".join(lines)
+
+
+def export_year_map(year_map: YearMap, output_dir: Path, fmt: str = "markdown") -> Path:
+    """Export a year map to the specified format."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    safe_name = f"year_map_{year_map.subject.lower().replace(' ', '_')}_{year_map.grade_level}"
+    md_text = year_map_to_markdown(year_map)
+
+    if fmt == "markdown":
+        path = output_dir / f"{safe_name}.md"
+        path.write_text(md_text)
+    elif fmt == "pdf":
+        path = output_dir / f"{safe_name}.pdf"
+        _markdown_to_pdf(md_text, path)
+    elif fmt == "docx":
+        path = output_dir / f"{safe_name}.docx"
+        _markdown_to_docx(md_text, path)
+    else:
+        raise ValueError(f"Unsupported format: {fmt}")
+    return path
+
+
+def export_pacing_guide(guide: PacingGuide, output_dir: Path, fmt: str = "markdown") -> Path:
+    """Export a pacing guide to the specified format."""
+    output_dir.mkdir(parents=True, exist_ok=True)
+    safe_name = f"pacing_{guide.subject.lower().replace(' ', '_')}_{guide.grade_level}"
+    md_text = pacing_guide_to_markdown(guide)
+
+    if fmt == "markdown":
+        path = output_dir / f"{safe_name}.md"
+        path.write_text(md_text)
+    elif fmt == "pdf":
+        path = output_dir / f"{safe_name}.pdf"
+        _markdown_to_pdf(md_text, path)
+    elif fmt == "docx":
+        path = output_dir / f"{safe_name}.docx"
+        _markdown_to_docx(md_text, path)
+    else:
+        raise ValueError(f"Unsupported format: {fmt}")
+    return path
