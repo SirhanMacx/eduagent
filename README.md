@@ -87,6 +87,38 @@ eduagent serve
 
 ---
 
+## 🐳 Quick Deploy
+
+### One-line installer (Mac/Linux)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/eduagent/eduagent/main/scripts/install.sh | bash
+```
+
+Detects your OS, installs Python if needed, installs EDUagent, and walks you through API key + Telegram setup.
+
+### Docker (no Python required)
+
+```bash
+# 1. Clone or create a folder
+mkdir eduagent && cd eduagent
+
+# 2. Create a .env file with your keys
+cat > .env <<EOF
+ANTHROPIC_API_KEY=sk-ant-your-key-here
+TELEGRAM_BOT_TOKEN=your-token-here
+EOF
+
+# 3. Start everything
+docker compose up -d
+```
+
+Web dashboard at http://localhost:8000, Telegram bot running in the background.
+
+See [docs/DOCKER_SETUP.md](docs/DOCKER_SETUP.md) for the full guide (assumes zero Docker knowledge).
+
+---
+
 ## 📦 Installation
 
 ```bash

@@ -1,0 +1,28 @@
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+    env_file: .env
+    environment:
+      - EDUAGENT_DATA_DIR=/data
+    volumes:
+      - eduagent-data:/data
+      - ./materials:/materials:ro  # Optional: mount your lesson plans here
+    restart: unless-stopped
+    command: eduagent serve --host 0.0.0.0 --port 8000
+
+  bot:
+    build: .
+    env_file: .env
+    environment:
+      - EDUAGENT_DATA_DIR=/data
+    volumes:
+      - eduagent-data:/data
+    restart: unless-stopped
+    command: eduagent bot
+    depends_on:
+      - web
+
+volumes:
+  eduagent-data:
