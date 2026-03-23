@@ -1,21 +1,34 @@
-# Maker Comment — Jon's First Comment on ProductHunt
+# EDUagent ProductHunt Maker Comment
+
+Post this as your first comment immediately after the listing goes live. Edit the bracketed sections to feel natural to you, but keep the overall structure and tone.
 
 ---
 
-Hey everyone — Jon here, the maker of EDUagent.
+## The Comment
 
-I've been a Social Studies teacher at Great Neck South for 9 years. Every Sunday night, I sit down and plan lessons for the week. After nearly a decade, I have hundreds of lesson plans, worksheets, DBQs, and assessments saved across Google Drive folders, Word docs, and old USB drives.
+Hey everyone, Jon here — I'm the maker.
 
-Last year I started experimenting with AI to help with planning, and the output was... fine. Technically correct, but it didn't sound like me. It didn't open with the warm-up style my students expect. It didn't structure the DBQ the way I've refined over years of trial and error. It was generic teacher output, not *my* teacher output.
+I've been a social studies teacher at Great Neck South Middle School in New York for 9 years. I built EDUagent because I was drowning in prep work and couldn't find a tool that actually helped.
 
-That's what EDUagent is. You feed it your actual teaching materials — your lesson plans, your worksheets, the stuff you've spent years building — and it extracts your teaching persona. Your tone, your vocabulary, your structural preferences. Then when you ask it to generate a new lesson on the French Revolution or a quiz on the water cycle, it writes it the way YOU would write it.
+Here's the thing that frustrated me: every AI lesson generator I tried produced the same generic output. It didn't matter that I spend 20 minutes crafting a Do Now that hooks my kids, or that I always open with "alright, friends" because that's how I set the tone in my room. The AI just ignored all of that and gave me something that sounded like it was written by a committee.
 
-A few things I'm proud of:
-- It works with Anthropic, OpenAI, or free local models (Ollama) — so you can try it without spending a dime
-- It aligns to your state standards automatically (all 50 states)
-- Students can chat with a bot that answers questions in your teaching voice — even at 11pm the night before the test
-- It's completely open source (MIT license) — your data stays on your machine
+So I started building something different. EDUagent reads your actual lesson plans — the ones you've already written — and learns how you teach. Your structure, your vocabulary, your warmth, your quirks. Then when it generates new lessons, they sound like you wrote them on a good day, not like an AI approximation of a teacher.
 
-I built this for teachers like me who love what they do but could use a few more hours in the week. I'd love your feedback.
+It runs locally on your machine. Your files never leave your computer. No subscriptions, no vendor lock-in. It's open source and free.
 
-— Jon
+I'm still teaching full-time while building this, so development happens on evenings, weekends, and summer break. But I use it every week for my own classes now, and it genuinely saves me hours.
+
+If you're a teacher, try it. If you're a developer who cares about education, I'd love contributors. And if you have questions about how it works under the hood, I'm here all day — ask me anything.
+
+[GitHub: github.com/SirhanMacx/eduagent](https://github.com/SirhanMacx/eduagent)
+
+---
+
+## Guidelines for the Comment
+
+- **Post immediately** after the listing goes live (within 2 minutes)
+- **Do not ask for upvotes** — this violates ProductHunt rules and will get you flagged
+- **Be yourself** — edit the wording above to sound like you, not like marketing copy
+- **Keep it between 200-300 words** (the draft above is ~260)
+- **Include the GitHub link** at the end so developers can find it instantly
+- Respond to every reply on this comment throughout launch day

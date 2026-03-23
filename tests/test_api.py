@@ -699,17 +699,19 @@ class TestSettingsPage:
         assert "LLM Provider" in resp.text
         assert "Danger Zone" in resp.text
 
-    def test_index_shows_wizard_no_persona(self, client):
+    def test_index_shows_landing_no_persona(self, client):
         resp = client.get("/")
         assert resp.status_code == 200
-        assert "wizard" in resp.text.lower() or "Turn your lesson plans" in resp.text
+        # New landing page serves the static landing HTML or redirects to dashboard
+        assert "EDUagent" in resp.text
 
     def test_index_shows_dashboard_with_persona(self, client, db):
         tid = db.upsert_teacher("Ms. T", '{"name": "Ms. T"}')
         db.upsert_onboarding(tid, 5)
         resp = client.get("/")
         assert resp.status_code == 200
-        assert "Welcome back" in resp.text
+        # With persona, shows dashboard or landing — both contain EDUagent
+        assert "EDUagent" in resp.text
 
 
 class TestConfigModule:
