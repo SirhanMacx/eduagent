@@ -19,6 +19,7 @@ from typing import Optional
 from eduagent.models import AppConfig, TeacherPersona
 from eduagent.router import Intent, ParsedIntent, needs_clarification, parse_intent
 from eduagent.state import TeacherSession
+from eduagent.student_bot import StudentBot
 
 # ── Response helpers ──────────────────────────────────────────────────────────
 
@@ -101,13 +102,13 @@ async def handle_message(
     Handle a teacher message and return a response string.
 
     This is the main entrypoint called by OpenClaw (or the web UI / CLI chat).
-    
+
     Args:
         message: The teacher's message text
         teacher_id: Unique identifier for this teacher (Telegram user ID, session UUID, etc.)
         subject: Optional default subject (from session context)
         grade: Optional default grade (from session context)
-    
+
     Returns:
         Response string formatted for the channel (Telegram-friendly by default)
     """
@@ -202,6 +203,15 @@ async def _dispatch(parsed: ParsedIntent, session: TeacherSession) -> str:
 
     if parsed.intent == Intent.SHARE_STUDENTS:
         return await _handle_share_students(parsed, session)
+
+    if parsed.intent == Intent.START_STUDENT_BOT:
+        return await _handle_start_student_bot(parsed, session)
+
+    if parsed.intent == Intent.SHOW_STUDENT_REPORT:
+        return await _handle_show_student_report(parsed, session)
+
+    if parsed.intent == Intent.SET_HINT_MODE:
+        return await _handle_set_hint_mode(parsed, session)
 
     # Unknown intent — use LLM to figure it out
     return await _handle_freeform(parsed.raw, session)
@@ -494,6 +504,96 @@ async def _handle_share_students(parsed: ParsedIntent, session: TeacherSession) 
         "🎓 *Student Chatbot*\n\n"
         "Once you run `eduagent serve`, your students can access a chatbot that answers questions about this lesson in your teaching voice.\n\n"
         "The embed code will be available at: http://localhost:8000"
+    )
+
+
+async def _handle_start_student_bot(parsed: ParsedIntent, session: TeacherSession) -> str:
+    """Activate student bot for the current lesson, returns class code."""
+    if not session.current_lesson:
+        return (
+            "Generate a lesson first, then I can activate the student bot for it.\n\n"
+            "Try: 'write a lesson on photosynthesis'"
+        )
+
+    bot = StudentBot()
+
+    # Check if teacher already has a class code in config
+    class_code = session.config.get("class_code")
+    if not class_code:
+        class_code = bot.create_class(session.teacher_id)
+        session.config["class_code"] = class_code
+        session.save()
+
+    # Set the active lesson
+    lesson_json = session.current_lesson.model_dump_json()
+    lesson_id = session.current_lesson.title
+    await bot.set_active_lesson(class_code, lesson_id, session.teacher_id, lesson_json)
+
+    return (
+        f"🎓 *Student Bot Activated!*\n\n"
+        f"📋 Class Code: `{class_code}`\n"
+        f"📝 Active Lesson: {session.current_lesson.title}\n\n"
+        f"*Share this with your students:*\n"
+        f"Students can join using: `eduagent student-chat --class-code {class_code}`\n\n"
+        f"*Teacher commands:*\n"
+        f"• 'show me what students are asking' — see student questions\n"
+        f"• 'set homework hint mode' — bot gives hints only, no direct answers\n"
+        f"• 'start student bot for lesson N' — switch to a different lesson"
+    )
+
+
+async def _handle_show_student_report(parsed: ParsedIntent, session: TeacherSession) -> str:
+    """Display student question report."""
+    class_code = session.config.get("class_code")
+    if not class_code:
+        return "You haven't activated the student bot yet. Try: 'start student bot'"
+
+    bot = StudentBot()
+    report = await bot.get_student_report(class_code)
+
+    lines = [
+        "📊 *Student Activity Report*",
+        f"Class Code: `{class_code}`",
+        "",
+        f"👥 Students: {report['student_count']}",
+        f"💬 Total Messages: {report['total_messages']}",
+    ]
+
+    if report["recent_questions"]:
+        lines.append("")
+        lines.append("📝 *Recent Questions:*")
+        for q in report["recent_questions"][:10]:
+            lines.append(f"• _{q['student_id']}_: {q['question'][:100]}")
+    else:
+        lines.append("\nNo student questions yet.")
+
+    return "\n".join(lines)
+
+
+async def _handle_set_hint_mode(parsed: ParsedIntent, session: TeacherSession) -> str:
+    """Toggle hint-only mode for student bot."""
+    class_code = session.config.get("class_code")
+    if not class_code:
+        return "You haven't activated the student bot yet. Try: 'start student bot'"
+
+    import re
+
+    # Detect if turning off
+    turning_off = bool(re.search(r"(disable|turn\s+off|deactivate|remove)", parsed.raw, re.IGNORECASE))
+
+    bot = StudentBot()
+    bot.set_hint_mode(class_code, not turning_off)
+
+    if turning_off:
+        return (
+            "✅ Hint mode *disabled*. The student bot will now give full explanations and answers."
+        )
+    return (
+        "✅ Hint mode *enabled*! The student bot will now:\n"
+        "• Give hints and guiding questions instead of direct answers\n"
+        "• Encourage students to think through problems step by step\n"
+        "• Never reveal homework or assessment answers directly\n\n"
+        "To turn off: 'disable hint mode'"
     )
 
 

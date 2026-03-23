@@ -101,6 +101,33 @@ def init_db() -> None:
                 is_active INTEGER DEFAULT 1,
                 created_at TEXT DEFAULT (datetime('now'))
             );
+
+            CREATE TABLE IF NOT EXISTS classes (
+                class_code TEXT PRIMARY KEY,
+                teacher_id TEXT NOT NULL,
+                active_lesson_id TEXT,
+                active_lesson_json TEXT,
+                hint_mode INTEGER DEFAULT 0,
+                created_at TEXT DEFAULT (datetime('now'))
+            );
+
+            CREATE TABLE IF NOT EXISTS student_sessions (
+                id TEXT PRIMARY KEY,
+                student_id TEXT NOT NULL,
+                class_code TEXT NOT NULL,
+                message_count INTEGER DEFAULT 0,
+                last_activity TEXT
+            );
+
+            CREATE TABLE IF NOT EXISTS student_questions (
+                id TEXT PRIMARY KEY,
+                student_id TEXT,
+                class_code TEXT,
+                question TEXT,
+                answer TEXT,
+                lesson_topic TEXT,
+                created_at TEXT DEFAULT (datetime('now'))
+            );
         """)
 
 

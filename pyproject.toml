@@ -39,6 +39,7 @@ dependencies = [
     "uvicorn[standard]>=0.27.0",
     "python-multipart>=0.0.6",
     "sse-starlette>=1.6.0",
+    "mcp>=1.0.0",
 ]
 
 [project.optional-dependencies]
@@ -68,6 +69,10 @@ select = ["E", "F", "I", "N", "W"]
 "eduagent/api/**" = ["E501"]
 "eduagent/templates_lib.py" = ["E501"]
 "eduagent/exporter.py" = ["E501"]
+"eduagent/openclaw_plugin.py" = ["E501"]
+"eduagent/state.py" = ["E501"]
+"eduagent/router.py" = ["E501"]
+"eduagent/corpus.py" = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

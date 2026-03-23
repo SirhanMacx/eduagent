@@ -102,6 +102,105 @@ def chat(
     chat_main(teacher_id)
 
 
+# ── Student chat command ─────────────────────────────────────────────────
+
+
+@app.command(name="student-chat")
+def student_chat(
+    class_code: str = typer.Option(..., "--class-code", help="Class code from your teacher"),
+    student_id: str = typer.Option("student-001", "--student-id", help="Your student ID"),
+) -> None:
+    """Start a student chat session — ask questions about today's lesson."""
+    from eduagent.student_bot import StudentBot
+
+    bot = StudentBot()
+    class_info = bot.get_class(class_code)
+    if not class_info:
+        console.print(f"[red]Class code '{class_code}' not found.[/red] Check with your teacher.")
+        raise typer.Exit(1)
+
+    if not class_info.active_lesson_json:
+        console.print("[yellow]Your teacher hasn't activated a lesson yet. Check back soon![/yellow]")
+        raise typer.Exit(1)
+
+    import json as _json
+
+    lesson_data = _json.loads(class_info.active_lesson_json)
+    lesson_title = lesson_data.get("title", "Today's Lesson")
+
+    console.print(
+        Panel(
+            f"📚 *{lesson_title}*\n\n"
+            f"Ask me anything about today's lesson!\n"
+            f"Type '/quit' to exit.\n",
+            title=f"[bold green]Student Chat — {class_code}[/bold green]",
+            border_style="green",
+            padding=(1, 2),
+        )
+    )
+
+    from rich.live import Live
+    from rich.prompt import Prompt
+    from rich.spinner import Spinner
+
+    while True:
+        try:
+            message = Prompt.ask("[bold cyan]You[/bold cyan]")
+        except (KeyboardInterrupt, EOFError):
+            console.print("\n[dim]Goodbye![/dim]")
+            break
+
+        text = message.strip()
+        if not text:
+            continue
+        if text.lower() in ("/quit", "/exit", "quit", "exit"):
+            console.print("[dim]Goodbye![/dim]")
+            break
+
+        with Live(
+            Spinner("dots", text="[dim]Thinking...[/dim]", style="green"),
+            console=console,
+            transient=True,
+        ):
+            try:
+                response = _run_async(bot.handle_message(text, student_id, class_code))
+            except Exception as e:
+                response = f"Oops, something went wrong: {e}"
+
+        console.print()
+        console.print(
+            Panel(
+                response,
+                title="[bold green]Teacher[/bold green]",
+                border_style="green",
+                padding=(0, 1),
+            )
+        )
+        console.print()
+
+
+# ── MCP Server command ──────────────────────────────────────────────────
+
+
+@app.command(name="mcp-server")
+def mcp_server(
+    host: str = typer.Option("localhost", "--host", help="Host to bind to"),
+    port: int = typer.Option(8100, "--port", help="Port to bind to"),
+) -> None:
+    """Start the EDUagent MCP server for tool integration."""
+    from eduagent.mcp_server import run_server
+
+    console.print(
+        Panel(
+            f"Starting MCP server on {host}:{port}\n"
+            "Tools: generate_lesson, generate_unit, ingest_materials, student_question, get_teacher_standards",
+            title="[bold blue]EDUagent MCP Server[/bold blue]",
+            border_style="blue",
+        )
+    )
+    run_server(host=host, port=port)
+
+
 # ── Ingest command ───────────────────────────────────────────────────────
 
 

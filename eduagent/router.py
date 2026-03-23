@@ -41,6 +41,11 @@ class Intent(str, Enum):
     EXPORT_CLASSROOM = "export_classroom"
     SHARE_STUDENTS = "share_students"
 
+    # Student bot management (teacher commands)
+    START_STUDENT_BOT = "start_student_bot"
+    SHOW_STUDENT_REPORT = "show_student_report"
+    SET_HINT_MODE = "set_hint_mode"
+
     # Student mode
     STUDENT_QUESTION = "student_question"
     STUDENT_QUIZ = "student_quiz"
@@ -163,6 +168,30 @@ SETUP_PATTERNS = [
     r"(i('m| am) a|i teach|i'm a teacher)",
 ]
 
+STUDENT_BOT_PATTERNS = [
+    r"start\s+student\s+bot",
+    r"activate\s+student\s+(bot|chat)",
+    r"student\s+bot\s+for\s+lesson",
+    r"open\s+student\s+(bot|chat)",
+    r"launch\s+student\s+(bot|chat)",
+    r"enable\s+student\s+(bot|chat)",
+]
+
+STUDENT_REPORT_PATTERNS = [
+    r"(show|what).{0,20}students?.{0,20}(asking|asked|questions?)",
+    r"student\s+(report|questions?|activity|analytics|insights?)",
+    r"what\s+are\s+students?\s+asking",
+    r"student\s+bot\s+(report|stats|status)",
+]
+
+HINT_MODE_PATTERNS = [
+    r"(set|enable|turn\s+on|activate).{0,20}hint\s+mode",
+    r"hint.?only\s+mode",
+    r"hints?\s+(only|mode)",
+    r"(disable|turn\s+off).{0,20}hint\s+mode",
+    r"no\s+direct\s+answers?",
+]
+
 HELP_PATTERNS = [
     r"(help|what can you|what do you do|how does this work)",
     r"(commands|features|capabilities)",
@@ -255,6 +284,16 @@ def parse_intent(message: str) -> ParsedIntent:
 
     if _any_match(text, HELP_PATTERNS):
         return ParsedIntent(intent=Intent.HELP, raw=text)
+
+    # Student bot management (check before general patterns)
+    if _any_match(text, STUDENT_BOT_PATTERNS):
+        return ParsedIntent(intent=Intent.START_STUDENT_BOT, raw=text)
+
+    if _any_match(text, STUDENT_REPORT_PATTERNS):
+        return ParsedIntent(intent=Intent.SHOW_STUDENT_REPORT, raw=text)
+
+    if _any_match(text, HINT_MODE_PATTERNS):
+        return ParsedIntent(intent=Intent.SET_HINT_MODE, raw=text)
 
     # Standards search (check before general search)
     if _any_match(text, STANDARDS_PATTERNS):
