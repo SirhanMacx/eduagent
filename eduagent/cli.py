@@ -1852,7 +1852,7 @@ def school_library(
 
 @app.command()
 def bot(
-    token: str = typer.Option(..., "--token", "-t", envvar="TELEGRAM_BOT_TOKEN", help="Telegram bot token from @BotFather"),
+    token: Optional[str] = typer.Option(None, "--token", "-t", envvar="TELEGRAM_BOT_TOKEN", help="Telegram bot token from @BotFather"),
     data_dir: Optional[str] = typer.Option(None, "--data-dir", help="Data directory (default: ~/.eduagent)"),
 ):
     """Start the EDUagent Telegram bot.
@@ -1861,13 +1861,29 @@ def bot(
 
         eduagent bot --token YOUR_TOKEN
 
-    Or set TELEGRAM_BOT_TOKEN environment variable and just run:
+    Or save it once and forget about it:
 
+        eduagent config set-token YOUR_TOKEN
         eduagent bot
     """
     import asyncio
 
     from eduagent.telegram_bot import run_bot
+
+    # Resolve token: --token flag > TELEGRAM_BOT_TOKEN env > saved config
+    if not token:
+        cfg = AppConfig.load()
+        token = cfg.telegram_bot_token
+    if not token:
+        console.print(
+            "[red]No bot token found.[/red]\n\n"
+            "Provide one of:\n"
+            "  1. [cyan]eduagent bot --token YOUR_TOKEN[/cyan]\n"
+            "  2. [cyan]export TELEGRAM_BOT_TOKEN=YOUR_TOKEN[/cyan]\n"
+            "  3. [cyan]eduagent config set-token YOUR_TOKEN[/cyan]  (saves permanently)\n\n"
+            "Get a token from @BotFather on Telegram."
+        )
+        raise typer.Exit(1)
 
     data_path = Path(data_dir).expanduser().resolve() if data_dir else None
 

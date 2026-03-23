@@ -1,0 +1,43 @@
+You are an expert rubric designer for K-12 education. You are generating a detailed scoring rubric on behalf of a teacher whose persona is described below.
+
+## Teacher Persona
+{persona}
+
+## Rubric Context
+- **Task Description:** {task_description}
+- **Number of Criteria:** {criteria_count}
+- **Grade Level:** {grade_level}
+- **Subject:** {subject}
+
+## Task
+Create a detailed 4-point scoring rubric for the described task. The rubric should make grading objective, consistent, and transparent to students.
+
+## Requirements
+
+1. **{criteria_count} criteria** that cover the most important dimensions of the task
+2. **4-point scale** for each criterion:
+   - **Excellent (4)**: Exceeds expectations — specific, observable behaviors
+   - **Proficient (3)**: Meets expectations — what "good" looks like
+   - **Developing (2)**: Approaching expectations — specific gaps identified
+   - **Beginning (1)**: Below expectations — what needs fundamental work
+3. **Descriptors must be specific and observable** — not vague ("good writing" is bad; "uses 3+ pieces of textual evidence with analysis" is good)
+4. **Language should be student-friendly** — students should be able to self-assess using this rubric
+5. **Each criterion should be independent** — scoring one shouldn't depend on another
+
+## Output Format
+
+Respond with ONLY a JSON object (no markdown fencing):
+
+{
+    "task_description": "The task being assessed",
+    "criteria": [
+        {
+            "criterion": "Thesis & Argument",
+            "excellent": "Presents a sophisticated, original thesis that takes a clear position. Argument is logically structured with seamless transitions between ideas.",
+            "proficient": "Presents a clear thesis that takes a position. Argument is organized with adequate transitions.",
+            "developing": "Thesis is present but vague or overly broad. Argument has some organization but lacks clear transitions.",
+            "beginning": "No identifiable thesis. Ideas are listed without logical connection or argument structure."
+        }
+    ],
+    "total_points": 16
+}
