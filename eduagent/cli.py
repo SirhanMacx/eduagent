@@ -89,6 +89,19 @@ def _load_persona_or_exit() -> TeacherPersona:
     return load_persona(path)
 
 
+# ── Chat command ─────────────────────────────────────────────────────────
+
+
+@app.command()
+def chat(
+    teacher_id: str = typer.Option("local-teacher", "--id", help="Teacher session ID"),
+) -> None:
+    """Start an interactive chat session with EDUagent in the terminal."""
+    from eduagent.cli_chat import main as chat_main
+
+    chat_main(teacher_id)
+
+
 # ── Ingest command ───────────────────────────────────────────────────────
 
 

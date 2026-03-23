@@ -13,15 +13,12 @@ All the hard work happens in router.py, state.py, and the generation engines.
 
 from __future__ import annotations
 
-import asyncio
-import os
 from pathlib import Path
 from typing import Optional
 
-from eduagent.models import AppConfig, LLMProvider, TeacherPersona
+from eduagent.models import AppConfig, TeacherPersona
 from eduagent.router import Intent, ParsedIntent, needs_clarification, parse_intent
 from eduagent.state import TeacherSession
-
 
 # ── Response helpers ──────────────────────────────────────────────────────────
 
@@ -276,8 +273,8 @@ async def _handle_connect_local(parsed: ParsedIntent, session: TeacherSession) -
 
 
 async def _handle_generate_unit(parsed: ParsedIntent, session: TeacherSession) -> str:
-    from eduagent.planner import plan_unit
     from eduagent.models import AppConfig
+    from eduagent.planner import plan_unit
 
     topic = parsed.topic or "the current topic"
     grade = parsed.grade or (session.persona.grade_levels[0] if session.persona and session.persona.grade_levels else "8")
@@ -303,7 +300,7 @@ async def _handle_generate_unit(parsed: ParsedIntent, session: TeacherSession) -
 
 async def _handle_generate_lesson(parsed: ParsedIntent, session: TeacherSession) -> str:
     from eduagent.lesson import generate_lesson
-    from eduagent.models import AppConfig, UnitPlan, LessonBrief
+    from eduagent.models import AppConfig, LessonBrief, UnitPlan
 
     # If we have a current unit, generate the next lesson in sequence
     if session.current_unit:
@@ -546,7 +543,7 @@ def _show_status(session: TeacherSession) -> str:
         lines.append("👩‍🏫 Persona: Not set up yet")
 
     if session.config.get("drive_url"):
-        lines.append(f"☁️ Drive: Connected")
+        lines.append("☁️ Drive: Connected")
     elif session.config.get("materials_path"):
         lines.append(f"📁 Materials: {Path(session.config['materials_path']).name}")
     else:

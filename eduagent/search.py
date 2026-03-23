@@ -153,7 +153,10 @@ async def search_standards_web(grade: str, subject: str) -> str:
         return "Standards search is temporarily unavailable."
 
     if not results:
-        return f"No standards found for grade {grade} {subject} online. Use `standards list --grade {grade} --subject {subject}` for built-in standards."
+        return (
+            f"No standards found for grade {grade} {subject} online. "
+            f"Use `standards list --grade {grade} --subject {subject}` for built-in standards."
+        )
 
     lines = [f"📋 *Online Standards: Grade {grade} {subject}*", ""]
     for item in results[:3]:
