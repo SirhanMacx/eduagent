@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from eduagent.corpus import get_few_shot_context
 from eduagent.llm import LLMClient
 from eduagent.models import AppConfig, TeacherPersona, UnitPlan
 
@@ -36,6 +37,13 @@ async def plan_unit(
     # Estimate ~5 lessons per week
     total_lessons = duration_weeks * 5
 
+    # Pull few-shot examples from the corpus for this subject/grade
+    few_shot_context = get_few_shot_context(
+        content_type="unit_plan",
+        subject=subject.lower(),
+        grade_level=grade_level,
+    )
+
     prompt_template = PROMPT_PATH.read_text()
     prompt = (
         prompt_template
@@ -46,6 +54,7 @@ async def plan_unit(
         .replace("{duration_weeks}", str(duration_weeks))
         .replace("{total_lessons}", str(total_lessons))
         .replace("{standards}", ", ".join(standards) if standards else "Use appropriate grade-level standards")
+        .replace("{few_shot_context}", few_shot_context)
     )
 
     client = LLMClient(config)

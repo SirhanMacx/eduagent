@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from eduagent.corpus import get_few_shot_context
 from eduagent.llm import LLMClient
 from eduagent.models import AppConfig, DailyLesson, TeacherPersona, UnitPlan
 
@@ -42,6 +43,13 @@ async def generate_lesson(
             f"Unit has {len(unit.daily_lessons)} lessons."
         )
 
+    # Pull few-shot examples from the corpus for this subject/grade
+    few_shot_context = get_few_shot_context(
+        content_type="lesson_plan",
+        subject=unit.subject.lower(),
+        grade_level=unit.grade_level,
+    )
+
     prompt_template = PROMPT_PATH.read_text()
     prompt = (
         prompt_template
@@ -56,6 +64,7 @@ async def generate_lesson(
         .replace("{grade_level}", unit.grade_level)
         .replace("{subject}", unit.subject)
         .replace("{include_homework}", "Yes" if include_homework else "No — do not include homework")
+        .replace("{few_shot_context}", few_shot_context)
     )
 
     client = LLMClient(config)

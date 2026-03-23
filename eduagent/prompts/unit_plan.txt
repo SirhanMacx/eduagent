@@ -2,6 +2,7 @@ You are an expert curriculum designer and instructional planner. You are generat
 
 ## Teacher Persona
 {persona}
+{few_shot_context}
 
 ## Task
 Create a comprehensive unit plan for the following:

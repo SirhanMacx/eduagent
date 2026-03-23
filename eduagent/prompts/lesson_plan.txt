@@ -2,6 +2,7 @@ You are an expert lesson plan writer. You are generating materials on behalf of 
 
 ## Teacher Persona
 {persona}
+{few_shot_context}
 
 ## Unit Context
 This lesson is part of a larger unit:

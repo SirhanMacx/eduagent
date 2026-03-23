@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import json
+
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from eduagent.api.server import get_db
+from eduagent.corpus import contribute_example
 from eduagent.feedback import analyze_feedback, collect_feedback
 from eduagent.improver import improve_prompts
 
@@ -46,7 +49,45 @@ async def submit_feedback(req: FeedbackRequest):
 
     db.rate_lesson(req.lesson_id, req.rating)
 
-    return {"feedback_id": feedback_id, "message": "Feedback recorded. Thank you!"}
+    # Auto-contribute high-quality lessons to the corpus (rating >= 4)
+    corpus_contributed = False
+    if req.rating >= 4 and lesson.get("lesson_json"):
+        try:
+            teacher = db.get_default_teacher()
+            lesson_data = json.loads(lesson["lesson_json"])
+            # Extract metadata from the lesson row / lesson data
+            grade_level = lesson_data.get("grade_level", "")
+            subject = lesson_data.get("subject", "")
+            topic = lesson_data.get("topic", lesson_data.get("title", ""))
+
+            # Fall back to unit metadata if not in lesson directly
+            if not subject or not grade_level:
+                unit_row = db.get_unit(lesson.get("unit_id", "")) if hasattr(db, "get_unit") else None
+                if unit_row and unit_row.get("unit_json"):
+                    unit_data = json.loads(unit_row["unit_json"])
+                    subject = subject or unit_data.get("subject", "")
+                    grade_level = grade_level or unit_data.get("grade_level", "")
+
+            if subject:
+                contribute_example(
+                    content_type="lesson_plan",
+                    subject=subject.lower(),
+                    grade_level=grade_level,
+                    content=lesson_data,
+                    topic=topic,
+                    quality_score=float(req.rating),
+                    teacher_id=teacher["id"] if teacher else None,
+                    source="teacher",
+                )
+                corpus_contributed = True
+        except Exception:
+            pass  # Corpus contribution is best-effort; never block feedback submission
+
+    msg = "Feedback recorded. Thank you!"
+    if corpus_contributed:
+        msg += " This lesson has been added to your teaching corpus to improve future generations."
+
+    return {"feedback_id": feedback_id, "message": msg, "corpus_contributed": corpus_contributed}
 
 
 @router.get("/feedback/{lesson_id}")
