@@ -167,6 +167,22 @@ class TestPageRoutes:
         assert resp.status_code == 404
         assert "not found" in resp.text.lower()
 
+    def test_analytics_page(self, client):
+        resp = client.get("/analytics")
+        assert resp.status_code == 200
+        assert "Analytics" in resp.text
+
+    def test_profile_page(self, client):
+        resp = client.get("/profile")
+        assert resp.status_code == 200
+        assert "Profile" in resp.text
+
+    def test_dashboard_contains_teacher_name(self, client, db):
+        db.upsert_teacher("Mr. Rodriguez", '{"name": "Mr. Rodriguez", "teaching_style": "socratic"}')
+        resp = client.get("/dashboard")
+        assert resp.status_code == 200
+        assert "Mr. Rodriguez" in resp.text
+
 
 # ── API routes ────────────────────────────────────────────────────────
 

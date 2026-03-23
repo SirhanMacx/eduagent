@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Analytics — EDUagent{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <div class="container">
+        <a href="/">Home</a> &rsaquo; <span>Analytics</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Analytics</h1>
+
+{# ── Summary Stat Cards ───────────────────────────────────── #}
+<div class="stats-row">
+    <div class="stat-card">
+        <span class="stat-num">{{ stats.total_lessons }}</span>
+        <span class="stat-label">Total Lessons</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-num">{{ stats.total_units }}</span>
+        <span class="stat-label">Total Units</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-num">{{ "%.1f"|format(stats.overall_avg_rating) }}/5</span>
+        <span class="stat-label">Avg Quality</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-num">{{ stats.streak }}</span>
+        <span class="stat-label">Day Streak</span>
+    </div>
+</div>
+
+{# ── Most Frequently Generated Topics (bar chart) ─────────── #}
+<section class="analytics-section">
+    <h2>Most Frequently Generated Topics</h2>
+    {% if topic_frequency %}
+    <div class="chart-bar-container">
+        {% set max_count = topic_frequency | map(attribute='count') | max %}
+        {% for item in topic_frequency %}
+        <div class="chart-bar-row">
+            <span class="chart-bar-label">{{ item.topic | truncate(30) }}</span>
+            <div class="chart-bar-track">
+                <div class="chart-bar-fill" style="width: {{ (item.count / max_count * 100) if max_count else 0 }}%">
+                    <span class="chart-bar-value">{{ item.count }}</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="analytics-empty">No lessons generated yet.</p>
+    {% endif %}
+</section>
+
+{# ── Student Question Frequency by Time of Day ────────────── #}
+<section class="analytics-section">
+    <h2>Student Questions by Time of Day</h2>
+    <p class="analytics-subtitle">When do students ask most?</p>
+    {% if question_by_hour %}
+    <div class="chart-hours">
+        {% set max_q = question_by_hour.values() | max %}
+        {% for hour in range(24) %}
+        {% set count = question_by_hour.get(hour, 0) %}
+        <div class="chart-hour-col" title="{{ hour }}:00 — {{ count }} questions">
+            <div class="chart-hour-bar" style="height: {{ (count / max_q * 100) if max_q else 0 }}%"></div>
+            <span class="chart-hour-label">{% if hour % 4 == 0 %}{{ hour }}{% endif %}</span>
+        </div>
+        {% endfor %}
+    </div>
+    <div class="chart-hour-axis">
+        <span>12am</span><span>6am</span><span>12pm</span><span>6pm</span><span>11pm</span>
+    </div>
+    {% else %}
+    <p class="analytics-empty">No student questions yet.</p>
+    {% endif %}
+</section>
+
+{# ── Lesson Quality Scores Over Time ──────────────────────── #}
+<section class="analytics-section">
+    <h2>Lesson Quality Over Time</h2>
+    <p class="analytics-subtitle">Are your lessons improving?</p>
+    {% if quality_trend %}
+    <div class="chart-trend">
+        {% set max_r = 5 %}
+        {% for entry in quality_trend %}
+        <div class="chart-trend-col" title="{{ entry.week }}: {{ entry.avg_rating }}/5">
+            <div class="chart-trend-bar" style="height: {{ (entry.avg_rating / max_r * 100) }}%">
+                <span class="chart-trend-value">{{ "%.1f"|format(entry.avg_rating) }}</span>
+            </div>
+            <span class="chart-trend-label">{{ entry.week_short }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="analytics-empty">Rate some lessons to see quality trends.</p>
+    {% endif %}
+</section>
+
+{# ── Top Student Questions This Week ──────────────────────── #}
+<section class="analytics-section">
+    <h2>Top Student Questions This Week</h2>
+    <p class="analytics-subtitle">What concepts confused students most?</p>
+    {% if top_questions %}
+    <div class="question-list">
+        {% for q in top_questions %}
+        <div class="question-item">
+            <span class="question-count">{{ q.count }}x</span>
+            <span class="question-text">{{ q.question | truncate(120) }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="analytics-empty">No student questions this week.</p>
+    {% endif %}
+</section>
+
+{# ── Teacher Usage Patterns ───────────────────────────────── #}
+<section class="analytics-section">
+    <h2>Your Usage Patterns</h2>
+    <p class="analytics-subtitle">When do you generate most content?</p>
+    {% if usage_by_day %}
+    <div class="chart-bar-container">
+        {% set max_u = usage_by_day.values() | max %}
+        {% for day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] %}
+        {% set count = usage_by_day.get(day, 0) %}
+        <div class="chart-bar-row">
+            <span class="chart-bar-label">{{ day }}</span>
+            <div class="chart-bar-track">
+                <div class="chart-bar-fill chart-bar-fill-alt" style="width: {{ (count / max_u * 100) if max_u else 0 }}%">
+                    {% if count %}<span class="chart-bar-value">{{ count }}</span>{% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p class="analytics-empty">Generate some content to see usage patterns.</p>
+    {% endif %}
+</section>
+
+{% endblock %}

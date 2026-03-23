@@ -109,15 +109,62 @@ def create_app() -> FastAPI:
             u["lesson_count"] = len(db.list_lessons(u["id"]))
         teacher = db.get_default_teacher()
         persona_name = ""
+        persona_data = None
         if teacher and teacher.get("persona_json"):
             try:
-                persona_name = json.loads(teacher["persona_json"]).get("name", "")
+                persona_data = json.loads(teacher["persona_json"])
+                persona_name = persona_data.get("name", "")
             except (json.JSONDecodeError, TypeError):
                 pass
+
+        # Build recent activity feed (last 10 items: units + lessons)
+        recent_items: list[dict] = []
+        for u in units[:10]:
+            recent_items.append({
+                "type": "unit",
+                "title": u["title"],
+                "id": u["id"],
+                "date": (u.get("created_at") or "")[:10],
+            })
+        for u in units[:5]:
+            for lesson in db.list_lessons(u["id"])[:3]:
+                recent_items.append({
+                    "type": "lesson",
+                    "title": lesson["title"] or f"Lesson {lesson.get('lesson_number', '')}",
+                    "id": lesson["id"],
+                    "date": (lesson.get("created_at") or "")[:10],
+                })
+        # Sort by date descending and take top 10
+        recent_items.sort(key=lambda x: x["date"], reverse=True)
+        recent_items = recent_items[:10]
+
+        # Find active lesson (most recently shared)
+        active_lesson = None
+        for u in units[:5]:
+            for lesson in db.list_lessons(u["id"]):
+                if lesson.get("share_token"):
+                    active_lesson = lesson
+                    break
+            if active_lesson:
+                break
+
+        # Teacher profile from config
+        config_school = ""
+        try:
+            from eduagent.models import AppConfig
+            cfg = AppConfig.load()
+            config_school = cfg.teacher_profile.school
+        except Exception:
+            pass
+
         return templates.TemplateResponse(request, "dashboard.html", {
             "stats": stats,
             "units": units,
             "persona_name": persona_name,
+            "persona": persona_data,
+            "recent_items": recent_items,
+            "active_lesson": active_lesson,
+            "config_school": config_school,
         })
 
     @app.get("/generate", response_class=HTMLResponse)
@@ -228,6 +275,170 @@ def create_app() -> FastAPI:
             "feedback_list": [],
             "share_url": f"/share/{token}",
             "is_shared": True,
+        })
+
+    @app.get("/analytics", response_class=HTMLResponse)
+    async def analytics_page(request: Request):
+        from eduagent.analytics import get_teacher_stats
+
+        db = get_db()
+        teacher = db.get_default_teacher()
+        teacher_id = teacher["id"] if teacher else "local-teacher"
+        stats_data = get_teacher_stats(teacher_id)
+
+        # Topic frequency — count lessons per title
+        topic_frequency: list[dict] = []
+        try:
+            from eduagent.state import _get_conn, init_db
+
+            init_db()
+            conn = _get_conn()
+            conn.row_factory = __import__("sqlite3").Row
+            rows = conn.execute(
+                "SELECT title as topic, COUNT(*) as count FROM generated_lessons"
+                " WHERE teacher_id = ? AND title IS NOT NULL"
+                " GROUP BY title ORDER BY count DESC LIMIT 10",
+                (teacher_id,),
+            ).fetchall()
+            topic_frequency = [{"topic": r["topic"], "count": r["count"]} for r in rows]
+            conn.close()
+        except Exception:
+            pass
+
+        # Student question frequency by hour
+        question_by_hour: dict[int, int] = {}
+        try:
+            init_db()
+            conn = _get_conn()
+            conn.row_factory = __import__("sqlite3").Row
+            rows = conn.execute(
+                "SELECT CAST(strftime('%H', created_at) AS INTEGER) as hour, COUNT(*) as count"
+                " FROM chat_messages WHERE role='user'"
+                " GROUP BY hour ORDER BY hour",
+            ).fetchall()
+            question_by_hour = {r["hour"]: r["count"] for r in rows}
+            conn.close()
+        except Exception:
+            pass
+
+        # Quality trend — weekly average ratings
+        quality_trend: list[dict] = []
+        try:
+            init_db()
+            conn = _get_conn()
+            conn.row_factory = __import__("sqlite3").Row
+            rows = conn.execute(
+                "SELECT strftime('%Y-W%W', created_at) as week, AVG(rating) as avg_rating"
+                " FROM generated_lessons"
+                " WHERE teacher_id = ? AND rating IS NOT NULL"
+                " GROUP BY week ORDER BY week DESC LIMIT 12",
+                (teacher_id,),
+            ).fetchall()
+            quality_trend = [
+                {
+                    "week": r["week"],
+                    "week_short": r["week"][-3:] if r["week"] else "",
+                    "avg_rating": round(r["avg_rating"], 1),
+                }
+                for r in reversed(rows)
+            ]
+            conn.close()
+        except Exception:
+            pass
+
+        # Top student questions this week
+        top_questions: list[dict] = []
+        try:
+            init_db()
+            conn = _get_conn()
+            conn.row_factory = __import__("sqlite3").Row
+            rows = conn.execute(
+                "SELECT content as question, COUNT(*) as count"
+                " FROM chat_messages WHERE role='user'"
+                " AND created_at >= datetime('now', '-7 days')"
+                " GROUP BY content ORDER BY count DESC LIMIT 10",
+            ).fetchall()
+            top_questions = [{"question": r["question"], "count": r["count"]} for r in rows]
+            conn.close()
+        except Exception:
+            pass
+
+        # Teacher usage by day of week
+        usage_by_day: dict[str, int] = {}
+        try:
+            init_db()
+            conn = _get_conn()
+            conn.row_factory = __import__("sqlite3").Row
+            day_names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+            rows = conn.execute(
+                "SELECT CAST(strftime('%w', created_at) AS INTEGER) as dow, COUNT(*) as count"
+                " FROM generated_lessons WHERE teacher_id = ?"
+                " GROUP BY dow ORDER BY dow",
+                (teacher_id,),
+            ).fetchall()
+            usage_by_day = {day_names[r["dow"]]: r["count"] for r in rows}
+            conn.close()
+        except Exception:
+            pass
+
+        return templates.TemplateResponse(request, "analytics.html", {
+            "stats": stats_data,
+            "topic_frequency": topic_frequency,
+            "question_by_hour": question_by_hour,
+            "quality_trend": quality_trend,
+            "top_questions": top_questions,
+            "usage_by_day": usage_by_day,
+        })
+
+    @app.get("/profile", response_class=HTMLResponse)
+    async def profile_page(request: Request):
+        from eduagent.config import get_api_key, mask_api_key
+        from eduagent.models import AppConfig
+        from eduagent.state_standards import (
+            get_framework_description,
+            list_states,
+        )
+
+        cfg = AppConfig.load()
+        db = get_db()
+        teacher = db.get_default_teacher()
+        persona_data = None
+        if teacher and teacher.get("persona_json"):
+            try:
+                persona_data = json.loads(teacher["persona_json"])
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+        profile = cfg.teacher_profile
+
+        # Build framework info for selected state
+        state_frameworks = []
+        if profile.state:
+            from eduagent.state_standards import STATE_STANDARDS_CONFIG
+
+            state_cfg = STATE_STANDARDS_CONFIG.get(profile.state, {})
+            for subj_key in ("math", "ela", "science", "social_studies"):
+                code = state_cfg.get(subj_key, "")
+                if code:
+                    state_frameworks.append({
+                        "label": subj_key.replace("_", " ").title(),
+                        "code": code,
+                        "description": get_framework_description(code),
+                    })
+
+        # Mask telegram token
+        telegram_token_masked = ""
+        if cfg.telegram_bot_token:
+            telegram_token_masked = mask_api_key(cfg.telegram_bot_token)
+
+        return templates.TemplateResponse(request, "profile.html", {
+            "profile": profile,
+            "persona": persona_data,
+            "states": list_states(),
+            "state_frameworks": state_frameworks,
+            "anthropic_key_masked": mask_api_key(get_api_key("anthropic")),
+            "openai_key_masked": mask_api_key(get_api_key("openai")),
+            "telegram_token_masked": telegram_token_masked,
         })
 
     return app

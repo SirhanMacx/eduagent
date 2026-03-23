@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% block title %}Profile — EDUagent{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+    <div class="container">
+        <a href="/">Home</a> &rsaquo; <span>Profile</span>
+    </div>
+</div>
+{% endblock %}
+
+{% block content %}
+<h1 class="page-title">Teacher Profile</h1>
+
+<form id="profile-form" class="profile-form">
+    {# ── Personal Info ─────────────────────────────────────────── #}
+    <section class="settings-section">
+        <h2>Personal Info</h2>
+        <div class="form-row">
+            <div class="form-group">
+                <label for="prof-name">Name</label>
+                <input type="text" id="prof-name" name="name" value="{{ profile.name or '' }}" placeholder="Ms. Johnson">
+            </div>
+            <div class="form-group">
+                <label for="prof-school">School</label>
+                <input type="text" id="prof-school" name="school" value="{{ profile.school or '' }}" placeholder="Lincoln High School">
+            </div>
+        </div>
+    </section>
+
+    {# ── Teaching Details ──────────────────────────────────────── #}
+    <section class="settings-section">
+        <h2>Teaching Details</h2>
+        <div class="form-group">
+            <label>Subjects</label>
+            <div class="checkbox-grid">
+                {% for subj in ['Math', 'ELA', 'Science', 'Social Studies', 'History', 'Economics', 'AP US History', 'AP World History', 'AP Government', 'AP Economics'] %}
+                <label class="toggle-label">
+                    <input type="checkbox" name="subjects" value="{{ subj }}" {% if subj in (profile.subjects or []) %}checked{% endif %}>
+                    {{ subj }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Grade Levels</label>
+            <div class="checkbox-grid">
+                {% for g in ['K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'] %}
+                <label class="toggle-label">
+                    <input type="checkbox" name="grade_levels" value="{{ g }}" {% if g in (profile.grade_levels or []) %}checked{% endif %}>
+                    {{ g }}
+                </label>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    {# ── State & Standards ─────────────────────────────────────── #}
+    <section class="settings-section">
+        <h2>State &amp; Standards</h2>
+        <div class="form-group">
+            <label for="prof-state">Your State</label>
+            <select id="prof-state" name="state">
+                <option value="">Select state...</option>
+                {% for st in states %}
+                <option value="{{ st.abbreviation }}" {% if profile.state == st.abbreviation %}selected{% endif %}>{{ st.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div id="profile-frameworks" class="framework-info" {% if not profile.state %}hidden{% endif %}>
+            {% if state_frameworks %}
+            {% for fw in state_frameworks %}
+            <div class="framework-tag">{{ fw.label }}: {{ fw.description }} ({{ fw.code }})</div>
+            {% endfor %}
+            {% endif %}
+        </div>
+    </section>
+
+    {# ── Materials ─────────────────────────────────────────────── #}
+    <section class="settings-section">
+        <h2>Teaching Materials</h2>
+        {% if persona %}
+        <div class="persona-summary">
+            <p><strong>Persona:</strong> {{ persona.name or 'Not set' }}</p>
+            <p><strong>Style:</strong> {{ (persona.teaching_style or 'direct_instruction') | replace('_', ' ') | title }}</p>
+            <p><strong>Subject:</strong> {{ persona.get('subject_area', 'General') }}</p>
+        </div>
+        {% endif %}
+        <a href="/" class="btn" id="reanalyze-btn">Re-analyze My Materials</a>
+    </section>
+
+    {# ── API & Bot Configuration ───────────────────────────────── #}
+    <section class="settings-section">
+        <h2>API Key Configuration</h2>
+        <div class="form-group">
+            <label for="prof-anthropic-key">Anthropic API Key</label>
+            <div class="key-input-row">
+                <input type="password" id="prof-anthropic-key" name="anthropic_key" placeholder="{% if anthropic_key_masked %}{{ anthropic_key_masked }}{% else %}sk-ant-...{% endif %}">
+                <button type="button" class="btn btn-sm" onclick="this.previousElementSibling.type = this.previousElementSibling.type === 'password' ? 'text' : 'password'">Show</button>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="prof-openai-key">OpenAI API Key</label>
+            <div class="key-input-row">
+                <input type="password" id="prof-openai-key" name="openai_key" placeholder="{% if openai_key_masked %}{{ openai_key_masked }}{% else %}sk-...{% endif %}">
+                <button type="button" class="btn btn-sm" onclick="this.previousElementSibling.type = this.previousElementSibling.type === 'password' ? 'text' : 'password'">Show</button>
+            </div>
+        </div>
+    </section>
+
+    <section class="settings-section">
+        <h2>Bot Token Configuration</h2>
+        <div class="form-group">
+            <label for="prof-telegram-token">Telegram Bot Token</label>
+            <div class="key-input-row">
+                <input type="password" id="prof-telegram-token" name="telegram_bot_token" placeholder="{% if telegram_token_masked %}{{ telegram_token_masked }}{% else %}123456:ABC-...{% endif %}">
+                <button type="button" class="btn btn-sm" onclick="this.previousElementSibling.type = this.previousElementSibling.type === 'password' ? 'text' : 'password'">Show</button>
+            </div>
+        </div>
+    </section>
+
+    {# ── Save ──────────────────────────────────────────────────── #}
+    <div id="profile-save-status" class="status-box" hidden></div>
+    <button type="submit" class="btn btn-primary btn-lg">Save All</button>
+</form>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('prof-state').addEventListener('change', function() {
+    const fw = document.getElementById('profile-frameworks');
+    fw.hidden = !this.value;
+    if (this.value) {
+        fw.innerHTML = '<div class="framework-tag">Standards will update after save.</div>';
+    }
+});
+
+document.getElementById('profile-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const status = document.getElementById('profile-save-status');
+    status.hidden = false;
+    status.className = 'status-box loading';
+    status.textContent = 'Saving...';
+
+    const formData = new FormData(this);
+    const data = {
+        name: formData.get('name'),
+        school: formData.get('school'),
+        state: formData.get('state'),
+        subjects: formData.getAll('subjects'),
+        grade_levels: formData.getAll('grade_levels'),
+        anthropic_key: formData.get('anthropic_key'),
+        openai_key: formData.get('openai_key'),
+        telegram_bot_token: formData.get('telegram_bot_token'),
+    };
+
+    try {
+        const resp = await fetch('/api/profile', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data),
+        });
+        if (resp.ok) {
+            status.className = 'status-box success';
+            status.textContent = 'Profile saved!';
+        } else {
+            status.className = 'status-box error';
+            status.textContent = 'Save failed: ' + (await resp.text());
+        }
+    } catch (err) {
+        status.className = 'status-box error';
+        status.textContent = 'Network error: ' + err.message;
+    }
+});
+</script>
+{% endblock %}

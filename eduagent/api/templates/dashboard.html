@@ -1,32 +1,122 @@
 {% extends "base.html" %}
 {% block title %}Dashboard — EDUagent{% endblock %}
 {% block content %}
-<h1>Teacher Dashboard</h1>
-{% if persona_name %}
-<p class="persona-badge">Teaching as <strong>{{ persona_name }}</strong></p>
-{% endif %}
 
+{# ── Teacher Profile Card ─────────────────────────────────── #}
+<div class="profile-card">
+    <div class="profile-card-left">
+        <div class="profile-avatar">{{ (persona.name or "T")[0] | upper }}</div>
+        <div class="profile-info">
+            <h1 class="profile-name">{{ persona.name if persona else persona_name or "Teacher" }}</h1>
+            {% if persona %}
+            <p class="profile-detail">{{ persona.get('school', '') or config_school or '' }}</p>
+            <div class="profile-tags">
+                {% for subj in persona.get('subjects', []) or ([persona.get('subject_area', '')] if persona.get('subject_area') else []) %}
+                <span class="tag">{{ subj }}</span>
+                {% endfor %}
+                {% if persona.get('years_experience') %}
+                <span class="tag tag-muted">{{ persona.years_experience }} yrs exp</span>
+                {% endif %}
+                {% if persona.get('teaching_style') %}
+                <span class="tag tag-muted">{{ persona.teaching_style | replace('_', ' ') | title }}</span>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <a href="/profile" class="btn btn-sm">Edit Profile</a>
+</div>
+
+{# ── Stat Cards ───────────────────────────────────────────── #}
 <div class="stats-row">
     <div class="stat-card">
         <span class="stat-num">{{ stats.units }}</span>
-        <span class="stat-label">Units</span>
+        <span class="stat-label">Units Generated</span>
     </div>
     <div class="stat-card">
         <span class="stat-num">{{ stats.lessons }}</span>
-        <span class="stat-label">Lessons</span>
+        <span class="stat-label">Lessons Generated</span>
     </div>
     <div class="stat-card">
         <span class="stat-num">{{ stats.chats }}</span>
-        <span class="stat-label">Student Chats</span>
+        <span class="stat-label">Student Questions Today</span>
     </div>
 </div>
 
-<div class="section-header">
-    <h2>Your Units</h2>
-    <a href="/generate" class="btn btn-primary">+ New Unit</a>
+{# ── Active Lesson Indicator ──────────────────────────────── #}
+{% if active_lesson %}
+<div class="active-lesson-bar">
+    <span class="pulse-dot"></span>
+    <strong>Active lesson for students:</strong> {{ active_lesson.title }}
+    {% if active_lesson.share_token %}
+    <span class="class-code">Code: {{ active_lesson.share_token[:6] | upper }}</span>
+    {% endif %}
+</div>
+{% endif %}
+
+{# ── Quick Generate ───────────────────────────────────────── #}
+<div class="quick-gen-card">
+    <h2>Quick Generate</h2>
+    <form class="quick-gen-form" action="/generate" method="get">
+        <div class="quick-gen-row">
+            <input type="text" name="topic" placeholder="Topic (e.g. Photosynthesis)" class="quick-gen-input" required>
+            <select name="grade_level" class="quick-gen-select">
+                <option value="">Grade</option>
+                {% for g in ['K','1','2','3','4','5','6','7','8','9','10','11','12'] %}
+                <option value="{{ g }}">{{ g }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary">Generate</button>
+        </div>
+    </form>
 </div>
 
+{# ── Recent Activity Feed ─────────────────────────────────── #}
+<div class="section-header">
+    <h2>Recent Activity</h2>
+    <a href="/generate" class="btn btn-primary btn-sm">+ New Unit</a>
+</div>
+
+{% if recent_items %}
+<div class="activity-feed">
+    {% for item in recent_items %}
+    <div class="activity-item">
+        <div class="activity-icon">
+            {% if item.type == 'unit' %}&#128218;{% elif item.type == 'lesson' %}&#128196;{% else %}&#128172;{% endif %}
+        </div>
+        <div class="activity-body">
+            <span class="activity-title">
+                {% if item.type == 'unit' %}
+                <a href="/dashboard">{{ item.title }}</a>
+                {% elif item.type == 'lesson' and item.id %}
+                <a href="/lesson/{{ item.id }}">{{ item.title }}</a>
+                {% else %}
+                {{ item.title }}
+                {% endif %}
+            </span>
+            <span class="activity-meta">{{ item.type | title }} &middot; {{ item.date }}</span>
+        </div>
+        <div class="activity-actions">
+            {% if item.type == 'lesson' and item.id %}
+            <a href="/lesson/{{ item.id }}" class="btn btn-sm">View</a>
+            {% elif item.type == 'unit' %}
+            <a href="/dashboard" class="btn btn-sm">View</a>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    <p>No activity yet. <a href="/generate">Generate your first unit</a> to get started.</p>
+</div>
+{% endif %}
+
+{# ── Units Table ──────────────────────────────────────────── #}
 {% if units %}
+<div class="section-header" style="margin-top: 2rem">
+    <h2>Your Units</h2>
+</div>
 <table class="data-table">
     <thead>
         <tr>
@@ -51,9 +141,6 @@
         {% endfor %}
     </tbody>
 </table>
-{% else %}
-<div class="empty-state">
-    <p>No units yet. <a href="/generate">Generate your first unit</a> to get started.</p>
-</div>
 {% endif %}
+
 {% endblock %}
