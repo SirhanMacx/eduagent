@@ -1696,83 +1696,120 @@ def _first_run_setup() -> None:
 def serve(
     port: int = typer.Option(8000, "--port", "-p", help="Port to listen on"),
     host: str = typer.Option("127.0.0.1", "--host", "-h", help="Host to bind to"),
-    bot: bool = typer.Option(False, "--bot", help="Also start Telegram bot"),
-    token: Optional[str] = typer.Option(None, "--token", help="Telegram bot token (or uses saved token)"),
-    tui: bool = typer.Option(True, "--tui/--no-tui", help="Show live TUI dashboard"),
-    tui_only: bool = typer.Option(False, "--tui-only", help="TUI without web server (dev mode)"),
+    token: Optional[str] = typer.Option(None, "--token", "-t", envvar="TELEGRAM_BOT_TOKEN", help="Telegram bot token"),
+    tui: bool = typer.Option(False, "--tui", help="Launch the live TUI dashboard"),
     skip_setup: bool = typer.Option(False, "--skip-setup", help="Skip first-run setup wizard"),
+    reload: bool = typer.Option(False, "--reload", help="Enable auto-reload for development"),
 ):
-    """Start EDUagent gateway — web server + optional Telegram bot + TUI dashboard."""
+    """Start the EDUagent server.
+
+    \b
+    Modes:
+      eduagent serve --token TOKEN --tui   # Full TUI + gateway + web
+      eduagent serve --token TOKEN         # Gateway + web (no TUI, for VPS)
+      eduagent serve --tui                 # TUI only (no Telegram, demos)
+      eduagent serve                       # Web server only
+    """
     if not skip_setup:
         _first_run_setup()
 
     cfg = AppConfig.load()
 
-    # Resolve Telegram token
-    tg_token = token or cfg.telegram_bot_token or ""
+    # Resolve token from saved config if not provided
+    if not token:
+        token = cfg.telegram_bot_token
 
-    # Determine what to run
-    with_web = not tui_only
-    with_telegram = bot and bool(tg_token)
-    with_tui = tui and not tui_only  # --tui-only uses TUI separately below
-
-    if bot and not tg_token:
-        console.print("[red]Telegram bot requested but no token provided.[/red]")
-        console.print("Use --token TOKEN or save one with: eduagent config set-telegram-token TOKEN")
-        raise typer.Exit(1)
-
-    # Build status display
-    services = []
-    if with_web:
-        services.append(f"Web: [cyan]http://{host}:{port}[/cyan]")
-    if with_telegram:
-        services.append("Telegram: [green]enabled[/green]")
-    if with_tui or tui_only:
-        services.append("TUI: [green]enabled[/green]")
-
-    if not (with_tui or tui_only):
-        # Headless mode — show banner
+    if tui:
+        _serve_with_tui(token=token or None, host=host, port=port, config=cfg)
+    elif token:
+        _serve_gateway_headless(token=token, host=host, port=port, config=cfg)
+    else:
+        import uvicorn
         console.print(Panel(
-            "[bold]Starting EDUagent gateway[/bold]\n" + "\n".join(services),
-            title="EDUagent",
+            f"[bold]Starting EDUagent web server[/bold]\n"
+            f"[cyan]http://{host}:{port}[/cyan]\n"
+            f"Dashboard: [cyan]http://{host}:{port}/dashboard[/cyan]\n"
+            f"Generate: [cyan]http://{host}:{port}/generate[/cyan]\n"
+            f"Settings: [cyan]http://{host}:{port}/settings[/cyan]",
+            title="EDUagent Server",
             border_style="green",
         ))
+        uvicorn.run("eduagent.api.server:app", host=host, port=port, reload=reload)
 
+
+def _serve_with_tui(
+    token: Optional[str], host: str, port: int, config: Optional[AppConfig] = None,
+) -> None:
+    """Launch the full TUI dashboard with gateway."""
+    try:
+        from eduagent.gateway import EduAgentGateway
+        from eduagent.tui import EduAgentDashboard
+    except ImportError as e:
+        console.print(f"[red]Missing dependency:[/red] {e}")
+        console.print("\nInstall TUI support with:")
+        console.print("  [cyan]pip install 'eduagent[tui]'[/cyan]")
+        raise typer.Exit(1)
+
+    gateway = EduAgentGateway(token=token, config=config)
+
+    async def _run() -> None:
+        tasks = [asyncio.create_task(gateway.start())]
+
+        # Also start web server in background
+        import uvicorn
+        uv_config = uvicorn.Config("eduagent.api.server:app", host=host, port=port, log_level="warning")
+        server = uvicorn.Server(uv_config)
+        tasks.append(asyncio.create_task(server.serve()))
+
+        # TUI blocks until quit
+        dashboard = EduAgentDashboard(gateway=gateway)
+        tasks.append(asyncio.create_task(dashboard.run_async()))
+
+        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        for t in pending:
+            t.cancel()
+        await asyncio.gather(*pending, return_exceptions=True)
+        await gateway.stop()
+
+    try:
+        asyncio.run(_run())
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Stopped.[/yellow]")
+
+
+def _serve_gateway_headless(
+    token: str, host: str, port: int, config: Optional[AppConfig] = None,
+) -> None:
+    """Run gateway + web server without TUI (VPS mode)."""
     from eduagent.gateway import EduAgentGateway
 
-    async def _serve():
-        # Gateway handles Telegram if token is provided
-        gw_token = tg_token if with_telegram else None
-        gateway = EduAgentGateway(token=gw_token, config=cfg)
+    gateway = EduAgentGateway(token=token, config=config)
 
-        tasks = []
+    console.print(Panel(
+        f"[bold green]EDUagent Gateway[/bold green]\n\n"
+        f"Telegram: connected\n"
+        f"Web: [cyan]http://{host}:{port}[/cyan]\n\n"
+        f"[dim]Press Ctrl+C to stop[/dim]",
+        title="\U0001f393 EDUagent",
+        border_style="green",
+    ))
 
-        # Start gateway (Telegram polling or demo mode)
-        tasks.append(asyncio.create_task(gateway.start()))
+    async def _run() -> None:
+        import uvicorn
+        tasks = [asyncio.create_task(gateway.start())]
+        uv_config = uvicorn.Config("eduagent.api.server:app", host=host, port=port, log_level="warning")
+        server = uvicorn.Server(uv_config)
+        tasks.append(asyncio.create_task(server.serve()))
+        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        for t in pending:
+            t.cancel()
+        await asyncio.gather(*pending, return_exceptions=True)
+        await gateway.stop()
 
-        # Start web server
-        if with_web:
-            import uvicorn
-
-            from eduagent.api.server import create_app
-            web_app = create_app()
-            uv_config = uvicorn.Config(web_app, host=host, port=port, log_level="warning")
-            server = uvicorn.Server(uv_config)
-            tasks.append(asyncio.create_task(server.serve()))
-
-        # Start TUI
-        if with_tui or tui_only:
-            from eduagent.tui import EduAgentDashboard
-            dashboard = EduAgentDashboard(gateway=gateway)
-            tasks.append(asyncio.create_task(dashboard.run_async()))
-
-        if tasks:
-            done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-            for t in pending:
-                t.cancel()
-            await asyncio.gather(*pending, return_exceptions=True)
-
-    _run_async(_serve())
+    try:
+        asyncio.run(_run())
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Gateway stopped.[/yellow]")
 
 
 @app.command()
@@ -2336,15 +2373,16 @@ def stats(
 def bot(
     token: Optional[str] = typer.Option(None, "--token", "-t", envvar="TELEGRAM_BOT_TOKEN", help="Telegram bot token from @BotFather"),
     data_dir: Optional[str] = typer.Option(None, "--data-dir", help="Data directory (default: ~/.eduagent)"),
+    live: bool = typer.Option(False, "--live", help="Show a Rich live status display while running"),
 ):
     """Start the EDUagent Telegram bot.
 
+    \b
     Get a bot token from @BotFather on Telegram, then run:
-
         eduagent bot --token YOUR_TOKEN
+        eduagent bot --token YOUR_TOKEN --live   # with live status display
 
     Or save it once and forget about it:
-
         eduagent config set-token YOUR_TOKEN
         eduagent bot
     """
@@ -2369,24 +2407,77 @@ def bot(
 
     data_path = Path(data_dir).expanduser().resolve() if data_dir else None
 
-    console.print(Panel(
-        f"[bold green]EDUagent Telegram Bot[/bold green]\n\n"
-        f"Starting bot...\n"
-        f"Data directory: {data_path or Path.home() / '.eduagent'}\n\n"
-        f"[dim]Press Ctrl+C to stop[/dim]",
-        title="🎓 EDUagent",
-        border_style="green",
-    ))
+    if live:
+        _bot_with_live_display(token=token, data_path=data_path)
+    else:
+        console.print(Panel(
+            f"[bold green]EDUagent Telegram Bot[/bold green]\n\n"
+            f"Starting bot...\n"
+            f"Data directory: {data_path or Path.home() / '.eduagent'}\n\n"
+            f"[dim]Press Ctrl+C to stop[/dim]",
+            title="\U0001f393 EDUagent",
+            border_style="green",
+        ))
+
+        try:
+            asyncio.run(run_bot(token=token, data_dir=data_path))
+        except KeyboardInterrupt:
+            console.print("\n[yellow]Bot stopped.[/yellow]")
+        except ImportError as e:
+            console.print(f"[red]Missing dependency:[/red] {e}")
+            console.print("\nInstall Telegram support with:")
+            console.print("  [cyan]pip install 'python-telegram-bot>=20.0'[/cyan]")
+            raise typer.Exit(1)
+
+
+def _bot_with_live_display(token: str, data_path: Optional[Path] = None) -> None:
+    """Run the Telegram bot with a Rich Live status panel."""
+    import asyncio
+    import time
+
+    from rich.live import Live
+
+    from eduagent.gateway import EduAgentGateway
+
+    gateway = EduAgentGateway(token=token)
+    start_time = time.monotonic()
+
+    def _make_display() -> Panel:
+        elapsed = int(time.monotonic() - start_time)
+        h, remainder = divmod(elapsed, 3600)
+        m, s = divmod(remainder, 60)
+        stats = gateway._gateway_stats
+        sessions = len(gateway.active_sessions)
+        return Panel(
+            f"[bold green]EDUagent Bot[/bold green]  [dim]running[/dim]\n\n"
+            f"  Messages:     {stats.messages_today}\n"
+            f"  Generations:  {stats.generations_today}\n"
+            f"  Errors:       {stats.errors_today}\n"
+            f"  Sessions:     {sessions}\n"
+            f"  Uptime:       {h}:{m:02d}:{s:02d}\n\n"
+            f"[dim]Press Ctrl+C to stop[/dim]",
+            title="\U0001f393 EDUagent",
+            border_style="green",
+        )
+
+    async def _run() -> None:
+        await gateway.start()
+        # Keep alive — gateway.start() returns after setup, polling runs in background
+        while True:
+            await asyncio.sleep(60)
 
     try:
-        asyncio.run(run_bot(token=token, data_dir=data_path))
+        with Live(_make_display(), console=console, refresh_per_second=1) as live_display:
+
+            async def _run_with_refresh() -> None:
+                await gateway.start()
+                while True:
+                    live_display.update(_make_display())
+                    await asyncio.sleep(1)
+
+            asyncio.run(_run_with_refresh())
     except KeyboardInterrupt:
         console.print("\n[yellow]Bot stopped.[/yellow]")
-    except ImportError as e:
-        console.print(f"[red]Missing dependency:[/red] {e}")
-        console.print("\nInstall Telegram support with:")
-        console.print("  [cyan]pip install 'python-telegram-bot>=20.0'[/cyan]")
-        raise typer.Exit(1)
 
 
 if __name__ == "__main__":

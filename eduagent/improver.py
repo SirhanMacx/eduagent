@@ -201,7 +201,6 @@ def queue_low_rated_for_improvement(rating: int, lesson_id: str, teacher_id: str
     if rating >= 3:
         return False
 
-    import json
     import logging
 
     logger = logging.getLogger(__name__)

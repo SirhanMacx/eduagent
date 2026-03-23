@@ -183,7 +183,8 @@ def get_teacher_stats(teacher_id: str) -> dict[str, Any]:
     # Rating distribution
     distribution: dict[int, int] = {1: 0, 2: 0, 3: 0, 4: 0, 5: 0}
     dist_rows = conn.execute(
-        "SELECT rating, COUNT(*) as c FROM generated_lessons WHERE teacher_id = ? AND rating IS NOT NULL GROUP BY rating",
+        "SELECT rating, COUNT(*) as c FROM generated_lessons"
+        " WHERE teacher_id = ? AND rating IS NOT NULL GROUP BY rating",
         (teacher_id,),
     ).fetchall()
     for row in dist_rows:
