@@ -1594,9 +1594,37 @@ def _esc(text: str) -> str:
 
 @app.command()
 def share(
-    lesson_file: str = typer.Option(..., "--lesson-file", "-l", help="Path to a saved lesson JSON file"),
+    lesson_file: Optional[str] = typer.Option(None, "--lesson-file", "-l", help="Path to a saved lesson JSON file"),
+    lesson_id: Optional[str] = typer.Option(None, "--lesson-id", help="Lesson ID from the database"),
+    host: str = typer.Option("http://localhost:8000", "--host", help="Server URL for shareable link"),
 ):
-    """Generate a shareable HTML file from a saved lesson plan JSON."""
+    """Generate a shareable link or HTML file from a lesson.
+
+    Use --lesson-id to get a shareable URL (requires the web server),
+    or --lesson-file to generate a self-contained HTML file.
+    """
+    if lesson_id:
+        from eduagent.database import Database
+        db = Database()
+        lesson = db.get_lesson(lesson_id)
+        if not lesson:
+            console.print(f"[red]Lesson not found:[/red] {lesson_id}")
+            db.close()
+            raise typer.Exit(1)
+        token = lesson.get("share_token")
+        if not token:
+            console.print("[red]No share token available for this lesson.[/red]")
+            db.close()
+            raise typer.Exit(1)
+        share_url = f"{host}/shared/{token}"
+        console.print(f"[green]Shareable URL:[/green] {share_url}")
+        db.close()
+        return
+
+    if not lesson_file:
+        console.print("[red]Provide --lesson-file or --lesson-id.[/red]")
+        raise typer.Exit(1)
+
     path = Path(lesson_file).expanduser().resolve()
     if not path.exists():
         console.print(f"[red]File not found:[/red] {path}")
@@ -1636,6 +1664,74 @@ def generate_landing(
     console.print(f"[green]Landing page generated:[/green] {dest}")
     if open_browser:
         webbrowser.open(dest.as_uri())
+
+
+@app.command()
+def landing(
+    serve_page: bool = typer.Option(False, "--serve", help="Serve the landing page on port 8080"),
+    port: int = typer.Option(8080, "--port", "-p", help="Port for serving"),
+):
+    """View or serve the EDUagent landing page."""
+    import http.server
+    import functools
+
+    landing_dir = Path(__file__).parent / "landing"
+    landing_file = landing_dir / "index.html"
+    if not landing_file.exists():
+        console.print("[red]Landing page not found.[/red]")
+        raise typer.Exit(1)
+
+    if serve_page:
+        handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(landing_dir))
+        with http.server.HTTPServer(("0.0.0.0", port), handler) as server:
+            console.print(f"[green]Landing page serving at[/green] http://localhost:{port}")
+            console.print("[dim]Press Ctrl+C to stop[/dim]")
+            try:
+                server.serve_forever()
+            except KeyboardInterrupt:
+                console.print("\n[yellow]Stopped.[/yellow]")
+    else:
+        webbrowser.open(landing_file.as_uri())
+
+
+# ── Waitlist commands ─────────────────────────────────────────────────
+
+
+waitlist_app = typer.Typer(help="Manage the early access waitlist.")
+app.add_typer(waitlist_app, name="waitlist")
+
+
+@waitlist_app.callback(invoke_without_command=True)
+def waitlist_default(
+    ctx: typer.Context,
+    count: bool = typer.Option(False, "--count", help="Show total signup count"),
+    export: Optional[str] = typer.Option(None, "--export", help="Export waitlist to CSV file"),
+):
+    """Manage the early access waitlist."""
+    if ctx.invoked_subcommand is not None:
+        return
+    from eduagent.waitlist import WaitlistManager
+
+    wl = WaitlistManager()
+    if export:
+        out = Path(export).expanduser().resolve()
+        wl.export_csv(out)
+        console.print(f"[green]Waitlist exported:[/green] {out}")
+    elif count:
+        console.print(f"[bold]{wl.count()}[/bold] signups on the waitlist")
+    else:
+        total = wl.count()
+        console.print(f"[bold]{total}[/bold] signups on the waitlist")
+        if total > 0:
+            signups = wl.list_all()
+            table = Table(title="Recent Signups")
+            table.add_column("Email", style="bold")
+            table.add_column("Role")
+            table.add_column("Date", style="dim")
+            for s in signups[:20]:
+                table.add_row(s["email"], s["role"], str(s.get("created_at", ""))[:16])
+            console.print(table)
+    wl.close()
 
 
 # ── Serve command ──────────────────────────────────────────────────────

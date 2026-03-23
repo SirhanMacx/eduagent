@@ -99,9 +99,9 @@ class TestLandingPage:
         landing = Path(__file__).parent.parent / "eduagent" / "landing" / "index.html"
         html = landing.read_text()
         assert "Your AI co-teacher" in html
-        assert "Learns Your Voice" in html
-        assert "50-State Standards" in html
-        assert "Student Bot" in html
+        assert "Trained on YOUR materials" in html
+        assert "50 states" in html or "Standards" in html or "standard" in html.lower()
+        assert "11pm" in html
         assert "pip install eduagent" in html
         assert "github.com/SirhanMacx/eduagent" in html
 

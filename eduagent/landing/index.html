@@ -4,26 +4,54 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EDUagent — Your AI co-teacher that sounds like you</title>
+<meta name="description" content="EDUagent learns from your curriculum files and generates lessons, worksheets, and assessments in your exact teaching voice.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0f0f1a;
+  --card: #1a1a2e;
+  --accent: #e94560;
+  --accent-hover: #d63851;
+  --text: #e0e0e0;
+  --text-muted: #8a8a9a;
+  --text-bright: #ffffff;
+  --border: rgba(233, 69, 96, 0.15);
+  --glow: rgba(233, 69, 96, 0.08);
+}
+
+html { scroll-behavior: smooth; }
+
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  line-height: 1.7; color: #e0e0e0; background: #0d1117;
+  line-height: 1.7;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
-a { color: #58a6ff; text-decoration: none; }
-a:hover { text-decoration: underline; }
 
-/* ── Hero ─────────────────────────────────────── */
+a { color: var(--accent); text-decoration: none; transition: color 0.2s; }
+a:hover { color: var(--text-bright); }
+
+/* ── Layout ─────────────────────────────────────── */
+.container {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* ── Hero ────────────────────────────────────────── */
 .hero {
   text-align: center;
   padding: 6rem 1.5rem 5rem;
-  background: linear-gradient(135deg, #0d1117 0%, #161b22 40%, #1a1e2e 100%);
   position: relative;
   overflow: hidden;
 }
+
 .hero::before {
   content: "";
   position: absolute;
@@ -31,468 +59,798 @@ a:hover { text-decoration: underline; }
   left: -50%;
   width: 200%;
   height: 200%;
-  background: radial-gradient(ellipse at 60% 40%, rgba(88, 166, 255, 0.06) 0%, transparent 60%);
+  background: radial-gradient(ellipse at 50% 80%, rgba(233, 69, 96, 0.06) 0%, transparent 60%);
   pointer-events: none;
 }
+
 .hero h1 {
-  font-size: clamp(2.2rem, 5vw, 3.5rem);
-  font-weight: 800;
-  margin-bottom: 0.75rem;
+  font-size: clamp(2.2rem, 5.5vw, 3.6rem);
+  font-weight: 900;
+  color: var(--text-bright);
+  margin-bottom: 1rem;
   letter-spacing: -0.03em;
-  color: #f0f6fc;
-  position: relative;
-}
-.hero .subtitle {
-  font-size: clamp(1.05rem, 2.2vw, 1.3rem);
-  opacity: 0.85;
-  max-width: 640px;
-  margin: 0 auto 2.5rem;
-  color: #8b949e;
+  line-height: 1.15;
   position: relative;
 }
 
-/* ── Terminal Demo ────────────────────────────── */
-.terminal {
-  max-width: 580px;
+.hero .subhead {
+  font-size: clamp(1.05rem, 2.2vw, 1.3rem);
+  color: var(--text-muted);
+  max-width: 640px;
   margin: 0 auto 2.5rem;
-  background: #161b22;
-  border: 1px solid #30363d;
-  border-radius: 10px;
-  overflow: hidden;
-  text-align: left;
+  line-height: 1.7;
   position: relative;
 }
+
+/* ── Terminal Demo ───────────────────────────────── */
+.terminal {
+  max-width: 620px;
+  margin: 0 auto 3rem;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #0a0a14;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 40px var(--glow);
+  position: relative;
+  text-align: left;
+}
+
 .terminal-bar {
+  background: #16162a;
+  padding: 0.75rem 1rem;
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 14px;
-  background: #21262d;
-  border-bottom: 1px solid #30363d;
+  gap: 0.5rem;
 }
-.terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
-.terminal-dot.red { background: #f85149; }
-.terminal-dot.yellow { background: #d29922; }
-.terminal-dot.green { background: #3fb950; }
+
+.terminal-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+.terminal-dot:nth-child(1) { background: #ff5f56; }
+.terminal-dot:nth-child(2) { background: #ffbd2e; }
+.terminal-dot:nth-child(3) { background: #27c93f; }
+
+.terminal-title {
+  flex: 1;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
 .terminal-body {
-  padding: 1.2rem 1.4rem;
-  font-family: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
-  font-size: 0.9rem;
-  line-height: 1.9;
-  color: #c9d1d9;
-  min-height: 80px;
+  padding: 1.5rem;
+  font-family: "SF Mono", "Fira Code", "Cascadia Code", "JetBrains Mono", monospace;
+  font-size: 0.92rem;
+  line-height: 1.8;
+  min-height: 52px;
+  display: flex;
+  align-items: flex-start;
 }
-.terminal-body .prompt { color: #3fb950; }
-.terminal-body .cmd { color: #f0f6fc; }
-.terminal-body .comment { color: #484f58; }
-.typewriter { display: inline; }
-.cursor {
+
+.terminal-prompt {
+  color: var(--accent);
+  margin-right: 0.6rem;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.terminal-text {
+  color: #a8d8ea;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.terminal-cursor {
   display: inline-block;
-  width: 8px;
-  height: 1.1em;
-  background: #58a6ff;
+  width: 9px;
+  height: 1.15em;
+  background: var(--accent);
   vertical-align: text-bottom;
   animation: blink 1s step-end infinite;
 }
-@keyframes blink { 50% { opacity: 0; } }
 
-/* ── CTA ─────────────────────────────────────── */
-.cta-row {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin-bottom: 1.2rem;
-  position: relative;
-}
-.cta-primary {
-  display: inline-block;
-  background: #238636;
-  color: #fff;
-  padding: 0.85rem 2.2rem;
-  border-radius: 8px;
-  font-size: 1.05rem;
-  font-weight: 600;
-  transition: background 0.2s;
-  border: none;
-  cursor: pointer;
-}
-.cta-primary:hover { background: #2ea043; text-decoration: none; }
-.cta-secondary {
-  display: inline-block;
-  background: transparent;
-  color: #c9d1d9;
-  padding: 0.85rem 2.2rem;
-  border-radius: 8px;
-  font-size: 1.05rem;
-  font-weight: 600;
-  border: 1px solid #30363d;
-  transition: border-color 0.2s;
-}
-.cta-secondary:hover { border-color: #58a6ff; text-decoration: none; }
-.badge {
-  display: inline-block;
-  padding: 0.4rem 1rem;
-  border: 1px solid #30363d;
-  border-radius: 20px;
-  font-size: 0.85rem;
-  color: #8b949e;
-  position: relative;
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
 
-/* ── Section ──────────────────────────────────── */
-.section {
-  max-width: 960px;
-  margin: 0 auto;
-  padding: 5rem 1.5rem;
-}
-.section h2 {
-  font-size: 1.8rem;
-  margin-bottom: 1.5rem;
-  color: #f0f6fc;
+/* ── Hero CTA ────────────────────────────────────── */
+.hero-cta {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--text-bright);
+  padding: 0.9rem 2.4rem;
+  border-radius: 8px;
+  font-size: 1.05rem;
   font-weight: 700;
+  transition: background 0.2s, transform 0.15s;
+  position: relative;
 }
-.section h2::after {
-  content: "";
+.hero-cta:hover {
+  background: var(--accent-hover);
+  color: var(--text-bright);
+  transform: translateY(-1px);
+}
+
+/* ── Section ─────────────────────────────────────── */
+.section {
+  padding: 5rem 0;
+}
+
+.section-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.section-header h2 {
+  font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+  font-weight: 800;
+  color: var(--text-bright);
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.02em;
+}
+
+.section-header p {
+  color: var(--text-muted);
+  font-size: 1.05rem;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.accent-line {
   display: block;
   width: 50px;
   height: 3px;
-  background: #238636;
-  margin-top: 0.5rem;
+  background: var(--accent);
+  margin: 0.75rem auto 0;
+  border-radius: 2px;
 }
 
-/* ── Value Props ──────────────────────────────── */
-.features {
+/* ── Value Props ─────────────────────────────────── */
+.value-props {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 1.5rem;
 }
-.card {
-  background: #161b22;
-  border-radius: 12px;
-  padding: 2rem;
-  border: 1px solid #21262d;
-  transition: border-color 0.2s;
-}
-.card:hover { border-color: #30363d; }
-.card .icon { font-size: 2rem; margin-bottom: 0.75rem; }
-.card h3 { font-size: 1.15rem; margin-bottom: 0.5rem; color: #f0f6fc; font-weight: 600; }
-.card p { color: #8b949e; font-size: 0.95rem; }
 
-/* ── How it Works ─────────────────────────────── */
-.steps-section { background: #161b22; border-top: 1px solid #21262d; border-bottom: 1px solid #21262d; }
-.steps {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 2rem;
-  counter-reset: step;
+.value-card {
+  background: var(--card);
+  border-radius: 16px;
+  padding: 2.2rem 1.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+  position: relative;
 }
-.step { position: relative; padding-left: 3.5rem; }
-.step::before {
-  counter-increment: step;
-  content: counter(step);
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 50%;
-  background: #238636;
-  color: #fff;
+
+.value-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+  border-color: var(--border);
+}
+
+.value-card .card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--glow);
+  border: 1px solid var(--border);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  font-size: 1.1rem;
+  font-size: 1.4rem;
+  margin-bottom: 1.2rem;
 }
-.step h3 { color: #f0f6fc; margin-bottom: 0.4rem; font-weight: 600; }
-.step p { color: #8b949e; font-size: 0.93rem; }
 
-/* ── Email Capture ────────────────────────────── */
-.signup-section {
-  background: linear-gradient(135deg, #161b22 0%, #1a1e2e 100%);
-  border-top: 1px solid #21262d;
+.value-card h3 {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: 0.6rem;
 }
-.signup-box {
-  max-width: 500px;
-  margin: 0 auto;
-  text-align: center;
-}
-.signup-box h2::after { margin-left: auto; margin-right: auto; }
-.signup-count {
-  color: #8b949e;
+
+.value-card p {
   font-size: 0.95rem;
-  margin-bottom: 1.5rem;
+  color: var(--text-muted);
+  line-height: 1.65;
 }
-.signup-form {
+
+/* ── How It Works ────────────────────────────────── */
+.how-it-works-bg {
+  background: linear-gradient(180deg, var(--bg) 0%, rgba(26, 26, 46, 0.5) 50%, var(--bg) 100%);
+}
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  position: relative;
+}
+
+.steps::before {
+  content: "";
+  position: absolute;
+  top: 36px;
+  left: 15%;
+  right: 15%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--border), var(--accent), var(--border), transparent);
+}
+
+.step {
+  text-align: center;
+  position: relative;
+}
+
+.step-number {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: var(--card);
+  border: 2px solid var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--accent);
+  margin: 0 auto 1.2rem;
+  position: relative;
+  z-index: 1;
+}
+
+.step h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text-bright);
+  margin-bottom: 0.5rem;
+}
+
+.step p {
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  max-width: 260px;
+  margin: 0 auto;
+}
+
+.step code {
+  display: inline-block;
+  margin-top: 0.6rem;
+  background: #0a0a14;
+  color: #a8d8ea;
+  padding: 0.35rem 0.8rem;
+  border-radius: 6px;
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 0.82rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ── Early Access CTA ────────────────────────────── */
+.early-access {
+  padding: 5rem 0;
+}
+
+.cta-box {
+  background: var(--card);
+  border-radius: 20px;
+  padding: 3.5rem;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  position: relative;
+  overflow: hidden;
+}
+
+.cta-box::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+
+.cta-box h2 {
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 800;
+  color: var(--text-bright);
+  margin-bottom: 0.6rem;
+}
+
+.cta-box .cta-sub {
+  color: var(--text-muted);
+  margin-bottom: 2rem;
+  font-size: 1.05rem;
+}
+
+.waitlist-counter {
+  display: inline-block;
+  background: var(--glow);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  padding: 0.4rem 1.2rem;
+  border-radius: 20px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin-bottom: 2rem;
+}
+
+.waitlist-form {
   display: flex;
   gap: 0.75rem;
+  max-width: 580px;
+  margin: 0 auto;
   flex-wrap: wrap;
   justify-content: center;
 }
-.signup-form input[type="email"] {
-  flex: 1;
-  min-width: 240px;
-  padding: 0.8rem 1rem;
+
+.waitlist-form input[type="email"],
+.waitlist-form select {
+  padding: 0.85rem 1.2rem;
   border-radius: 8px;
-  border: 1px solid #30363d;
-  background: #0d1117;
-  color: #f0f6fc;
-  font-size: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--bg);
+  color: var(--text);
   font-family: inherit;
+  font-size: 0.95rem;
   outline: none;
   transition: border-color 0.2s;
 }
-.signup-form input[type="email"]:focus { border-color: #58a6ff; }
-.signup-form input[type="email"]::placeholder { color: #484f58; }
-.signup-form button {
-  padding: 0.8rem 1.8rem;
-  border-radius: 8px;
-  background: #238636;
-  color: #fff;
-  font-size: 1rem;
-  font-weight: 600;
-  font-family: inherit;
-  border: none;
-  cursor: pointer;
-  transition: background 0.2s;
-}
-.signup-form button:hover { background: #2ea043; }
-.signup-msg {
-  margin-top: 0.75rem;
-  font-size: 0.9rem;
-  min-height: 1.5em;
-}
-.signup-msg.success { color: #3fb950; }
-.signup-msg.error { color: #f85149; }
 
-/* ── Footer ──────────────────────────────────── */
+.waitlist-form input[type="email"]::placeholder { color: #555; }
+
+.waitlist-form input[type="email"] {
+  flex: 1;
+  min-width: 220px;
+}
+
+.waitlist-form select {
+  min-width: 140px;
+  cursor: pointer;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238a8a9a' d='M1.41 0L6 4.58 10.59 0 12 1.41l-6 6-6-6z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  padding-right: 2.5rem;
+}
+
+.waitlist-form input[type="email"]:focus,
+.waitlist-form select:focus {
+  border-color: var(--accent);
+}
+
+.waitlist-form button {
+  padding: 0.85rem 2rem;
+  border-radius: 8px;
+  border: none;
+  background: var(--accent);
+  color: var(--text-bright);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  white-space: nowrap;
+}
+
+.waitlist-form button:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.waitlist-form button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.form-message {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  min-height: 1.4rem;
+}
+
+.form-message.success { color: #27c93f; }
+.form-message.error { color: var(--accent); }
+
+/* ── Footer ──────────────────────────────────────── */
 .footer {
   text-align: center;
   padding: 3rem 1.5rem;
-  background: #0d1117;
-  border-top: 1px solid #21262d;
-  color: #484f58;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
 }
-.footer a { color: #58a6ff; }
+
+.footer-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
 .gh-btn {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: #21262d;
-  color: #c9d1d9;
-  padding: 0.65rem 1.4rem;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  padding: 0.6rem 1.3rem;
   border-radius: 8px;
-  font-size: 1rem;
+  font-size: 0.92rem;
   font-weight: 600;
-  margin-bottom: 1rem;
-  transition: background 0.2s;
-}
-.gh-btn:hover { background: #30363d; text-decoration: none; }
-.gh-btn svg { width: 20px; height: 20px; fill: #c9d1d9; }
-.opensource-badge {
-  display: inline-block;
-  margin-top: 0.5rem;
-  padding: 0.3rem 0.8rem;
-  border: 1px solid #30363d;
-  border-radius: 20px;
-  font-size: 0.82rem;
-  color: #8b949e;
+  transition: background 0.2s, color 0.2s;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* ── Mobile ──────────────────────────────────── */
-@media (max-width: 600px) {
-  .hero { padding: 4rem 1rem 3rem; }
-  .terminal-body { font-size: 0.8rem; padding: 1rem; }
-  .section { padding: 3rem 1rem; }
-  .signup-form { flex-direction: column; }
-  .signup-form input[type="email"] { min-width: 100%; }
+.gh-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-bright);
+}
+
+.gh-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.oss-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 1rem;
+  border: 1px solid rgba(39, 201, 63, 0.3);
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #27c93f;
+}
+
+.oss-badge::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #27c93f;
+}
+
+.footer-copy {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+/* ── Responsive ──────────────────────────────────── */
+@media (max-width: 768px) {
+  .hero {
+    padding: 4rem 1.25rem 3.5rem;
+  }
+
+  .value-props {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .steps {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+
+  .steps::before {
+    display: none;
+  }
+
+  .cta-box {
+    padding: 2.5rem 1.5rem;
+  }
+
+  .waitlist-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .waitlist-form input[type="email"],
+  .waitlist-form select,
+  .waitlist-form button {
+    width: 100%;
+    min-width: unset;
+  }
+
+  .terminal {
+    margin: 0 auto 2.5rem;
+  }
+
+  .terminal-body {
+    font-size: 0.82rem;
+    padding: 1.2rem;
+  }
+
+  .section {
+    padding: 3.5rem 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero h1 {
+    font-size: 1.9rem;
+  }
+
+  .value-card {
+    padding: 1.8rem 1.4rem;
+  }
+
+  .footer-links {
+    flex-direction: column;
+    gap: 1rem;
+  }
 }
 </style>
 </head>
 <body>
 
 <!-- ── Hero ──────────────────────────────────────────── -->
-<div class="hero">
-  <h1>Your AI co-teacher that sounds like you</h1>
-  <p class="subtitle">
-    EDUagent learns from your curriculum files and generates lessons, worksheets,
-    and assessments in your exact teaching voice.
-  </p>
+<section class="hero">
+  <div class="container">
+    <h1>Your AI co-teacher that sounds like you</h1>
+    <p class="subhead">
+      EDUagent learns from your curriculum files and generates lessons,
+      worksheets, and assessments in your exact teaching voice.
+    </p>
 
-  <div class="terminal">
-    <div class="terminal-bar">
-      <span class="terminal-dot red"></span>
-      <span class="terminal-dot yellow"></span>
-      <span class="terminal-dot green"></span>
+    <!-- Terminal Demo -->
+    <div class="terminal">
+      <div class="terminal-bar">
+        <span class="terminal-dot"></span>
+        <span class="terminal-dot"></span>
+        <span class="terminal-dot"></span>
+        <span class="terminal-title">Terminal</span>
+      </div>
+      <div class="terminal-body">
+        <span class="terminal-prompt">$</span>
+        <span class="terminal-text" id="typewriter"></span><span class="terminal-cursor" id="cursor"></span>
+      </div>
     </div>
-    <div class="terminal-body">
-      <span class="prompt">$</span> <span class="cmd typewriter" id="line1"></span><br>
-      <span class="prompt">$</span> <span class="cmd typewriter" id="line2"></span>
-      <span class="cursor" id="cursor"></span>
+
+    <a class="hero-cta" href="#early-access">Get Early Access</a>
+  </div>
+</section>
+
+<!-- ── Value Props ───────────────────────────────────── -->
+<section class="section">
+  <div class="container">
+    <div class="section-header">
+      <h2>What makes EDUagent different</h2>
+      <span class="accent-line"></span>
+    </div>
+    <div class="value-props">
+      <div class="value-card">
+        <div class="card-icon">&#x1F4DA;</div>
+        <h3>Trained on YOUR materials</h3>
+        <p>
+          Not generic AI. EDUagent ingests your actual lesson plans, worksheets,
+          and assessments &mdash; learning from your 9 years of lessons to understand
+          exactly how you teach.
+        </p>
+      </div>
+      <div class="value-card">
+        <div class="card-icon">&#x270D;&#xFE0F;</div>
+        <h3>Generates in your voice</h3>
+        <p>
+          Do-nows, exit tickets, DBQs &mdash; the way you write them.
+          Your students won't know the difference because the output
+          sounds like it came from you.
+        </p>
+      </div>
+      <div class="value-card">
+        <div class="card-icon">&#x1F319;</div>
+        <h3>Students get you at 11pm</h3>
+        <p>
+          The student-facing chatbot answers questions the way their teacher
+          would. Homework help at midnight that sounds like your classroom,
+          not a search engine.
+        </p>
+      </div>
     </div>
   </div>
+</section>
 
-  <div class="cta-row">
-    <a class="cta-primary" href="#signup">Get Early Access</a>
-    <a class="cta-secondary" href="https://github.com/SirhanMacx/eduagent">View on GitHub</a>
-  </div>
-  <div class="badge">Open Source &middot; MIT License &middot; Works Offline</div>
-</div>
-
-<!-- ── Value Props ──────────────────────────────────── -->
-<div class="section">
-  <h2>Why teachers choose EDUagent</h2>
-  <div class="features">
-    <div class="card">
-      <div class="icon">&#x1F4DA;</div>
-      <h3>Trained on YOUR materials</h3>
-      <p>
-        Not generic AI. EDUagent ingests your 9 years of lesson plans, worksheets,
-        and assessments — then generates content that reflects how <em>you</em> actually teach.
-      </p>
+<!-- ── How It Works ──────────────────────────────────── -->
+<section class="section how-it-works-bg">
+  <div class="container">
+    <div class="section-header">
+      <h2>How it works</h2>
+      <p>Three steps. Five minutes. Then EDUagent works for you.</p>
+      <span class="accent-line"></span>
     </div>
-    <div class="card">
-      <div class="icon">&#x270D;&#xFE0F;</div>
-      <h3>Generates in your voice</h3>
-      <p>
-        Do-nows, exit tickets, DBQs — written the way you write them. Your tone,
-        your vocabulary, your structural preferences. Students won't know the difference.
-      </p>
-    </div>
-    <div class="card">
-      <div class="icon">&#x1F319;</div>
-      <h3>Students get you at 11pm</h3>
-      <p>
-        Activate a student chatbot for any lesson. It answers questions the way
-        their teacher would — with hints, not free answers. Even the night before the test.
-      </p>
-    </div>
-  </div>
-</div>
-
-<!-- ── How it Works ─────────────────────────────────── -->
-<div class="steps-section">
-  <div class="section">
-    <h2>How it works</h2>
     <div class="steps">
       <div class="step">
+        <div class="step-number">1</div>
         <h3>Install</h3>
-        <p><code>pip install eduagent</code> — one command, works on Mac, Linux, and Windows. No account needed.</p>
+        <p>One command and you're ready. Works with any Python 3.9+ environment.</p>
+        <code>pip install eduagent</code>
       </div>
       <div class="step">
+        <div class="step-number">2</div>
         <h3>Ingest</h3>
-        <p>Point it at your lesson folder. EDUagent reads PDFs, DOCX, PPTX, even SMART Board files — and extracts your teaching persona.</p>
+        <p>Point it at your lesson folders. EDUagent learns your voice, style, and standards.</p>
+        <code>eduagent ingest ./lessons</code>
       </div>
       <div class="step">
+        <div class="step-number">3</div>
         <h3>Generate</h3>
-        <p>Ask for a lesson, a unit, a worksheet, or a full course. Everything comes out in your voice, aligned to your state standards.</p>
+        <p>Create full units, single lessons, worksheets, or assessments on demand.</p>
+        <code>eduagent generate "WW2"</code>
       </div>
     </div>
   </div>
-</div>
+</section>
 
-<!-- ── Email Capture ─────────────────────────────────── -->
-<div class="signup-section" id="signup">
-  <div class="section">
-    <div class="signup-box">
+<!-- ── Early Access CTA ─────────────────────────────── -->
+<section class="early-access" id="early-access">
+  <div class="container">
+    <div class="cta-box">
       <h2>Get early access</h2>
-      <p class="signup-count" id="signup-count"></p>
-      <form class="signup-form" id="waitlist-form" action="/api/waitlist" method="POST">
-        <input type="email" name="email" placeholder="you@school.edu" required autocomplete="email">
+      <p class="cta-sub">Be the first to try EDUagent when we launch.</p>
+      <div class="waitlist-counter" id="waitlist-counter" style="display:none;">
+        Join <span id="counter-number">0</span> teachers on the early access list
+      </div>
+      <form class="waitlist-form" id="waitlist-form">
+        <input
+          type="email"
+          name="email"
+          placeholder="you@school.edu"
+          required
+          autocomplete="email"
+          aria-label="Email address"
+        >
+        <select name="role" required aria-label="Your role">
+          <option value="" disabled selected>Your role</option>
+          <option value="teacher">Teacher</option>
+          <option value="admin">Admin</option>
+          <option value="other">Other</option>
+        </select>
         <button type="submit">Join Waitlist</button>
       </form>
-      <p class="signup-msg" id="signup-msg"></p>
+      <div class="form-message" id="form-message"></div>
     </div>
   </div>
-</div>
+</section>
 
-<!-- ── Footer ──────────────────────────────────────── -->
-<div class="footer">
-  <a class="gh-btn" href="https://github.com/SirhanMacx/eduagent">
-    <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-    Star on GitHub
-  </a>
-  <div class="opensource-badge">Open Source &middot; MIT License</div>
-  <p style="margin-top:1rem;">Built by a teacher, for teachers. Made with care in New York.</p>
-  <p style="margin-top:0.5rem;font-size:0.82rem;">EDUagent &copy; 2025</p>
-</div>
+<!-- ── Footer ───────────────────────────────────────── -->
+<footer class="footer">
+  <div class="footer-links">
+    <a class="gh-btn" href="https://github.com/SirhanMacx/eduagent" target="_blank" rel="noopener noreferrer">
+      <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      Star on GitHub
+    </a>
+    <span class="oss-badge">Open Source</span>
+  </div>
+  <p class="footer-copy">
+    Built by teachers, for teachers. MIT License. &copy; 2026 EDUagent.
+  </p>
+</footer>
 
+<!-- ── Scripts ──────────────────────────────────────── -->
 <script>
-// ── Typewriter animation ─────────────────────────────
-const lines = [
-  { el: 'line1', text: 'pip install eduagent' },
-  { el: 'line2', text: 'eduagent setup' },
-];
-let lineIdx = 0, charIdx = 0;
+(function() {
+  // ── Typewriter Animation ──
+  var commands = [
+    'pip install eduagent && eduagent setup',
+    'eduagent ingest ./my-lessons/',
+    'eduagent generate "The Civil War" --grade 8',
+    'eduagent chatbot start --port 3000',
+    'eduagent export --format pdf --unit "WW2"'
+  ];
 
-function type() {
-  if (lineIdx >= lines.length) {
-    document.getElementById('cursor').style.display = 'inline-block';
-    return;
-  }
-  const { el, text } = lines[lineIdx];
-  const span = document.getElementById(el);
-  if (charIdx < text.length) {
-    span.textContent += text[charIdx];
-    charIdx++;
-    setTimeout(type, 50 + Math.random() * 40);
-  } else {
-    lineIdx++;
-    charIdx = 0;
-    setTimeout(type, 400);
-  }
-}
-setTimeout(type, 600);
+  var el = document.getElementById('typewriter');
+  var cmdIndex = 0;
+  var charIndex = 0;
+  var isDeleting = false;
+  var typeSpeed = 60;
+  var deleteSpeed = 30;
+  var pauseAfterType = 2200;
+  var pauseAfterDelete = 400;
 
-// ── Waitlist form ────────────────────────────────────
-const form = document.getElementById('waitlist-form');
-const msg = document.getElementById('signup-msg');
+  function tick() {
+    var current = commands[cmdIndex];
 
-// Load signup count
-fetch('/api/waitlist/count')
-  .then(r => r.json())
-  .then(data => {
-    if (data.count > 0) {
-      document.getElementById('signup-count').textContent =
-        'Join ' + data.count + ' teacher' + (data.count !== 1 ? 's' : '') + ' on the early access list';
+    if (!isDeleting) {
+      el.textContent = current.substring(0, charIndex + 1);
+      charIndex++;
+
+      if (charIndex >= current.length) {
+        setTimeout(function() {
+          isDeleting = true;
+          tick();
+        }, pauseAfterType);
+        return;
+      }
+
+      setTimeout(tick, typeSpeed + Math.random() * 40);
+    } else {
+      el.textContent = current.substring(0, charIndex - 1);
+      charIndex--;
+
+      if (charIndex <= 0) {
+        isDeleting = false;
+        cmdIndex = (cmdIndex + 1) % commands.length;
+        setTimeout(tick, pauseAfterDelete);
+        return;
+      }
+
+      setTimeout(tick, deleteSpeed);
     }
-  })
-  .catch(() => {});
+  }
 
-form.addEventListener('submit', function(e) {
-  e.preventDefault();
-  const email = form.querySelector('input[name="email"]').value;
-  msg.textContent = '';
-  msg.className = 'signup-msg';
+  tick();
 
-  fetch('/api/waitlist', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email: email, role: 'teacher' }),
-  })
-    .then(r => r.json())
-    .then(data => {
-      if (data.ok) {
-        msg.textContent = "You're on the list! We'll be in touch.";
-        msg.className = 'signup-msg success';
-        form.querySelector('input[name="email"]').value = '';
-        // Update count
-        if (data.count) {
-          document.getElementById('signup-count').textContent =
-            'Join ' + data.count + ' teacher' + (data.count !== 1 ? 's' : '') + ' on the early access list';
-        }
-      } else {
-        msg.textContent = data.error || 'Something went wrong. Try again.';
-        msg.className = 'signup-msg error';
+  // ── Waitlist Counter ──
+  fetch('/api/waitlist/count')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      var count = data.count || data.total || 0;
+      if (count > 0) {
+        document.getElementById('counter-number').textContent = count;
+        document.getElementById('waitlist-counter').style.display = 'inline-block';
       }
     })
-    .catch(() => {
-      // Fallback: submit to Formspree if API unavailable
-      form.action = 'https://formspree.io/f/placeholder';
-      form.submit();
+    .catch(function() {
+      // silently fail — counter stays hidden
     });
-});
+
+  // ── Waitlist Form ──
+  var form = document.getElementById('waitlist-form');
+  var msg = document.getElementById('form-message');
+
+  form.addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    var email = form.email.value.trim();
+    var role = form.role.value;
+    var btn = form.querySelector('button');
+
+    if (!email || !role) {
+      msg.textContent = 'Please fill in all fields.';
+      msg.className = 'form-message error';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Joining...';
+    msg.textContent = '';
+
+    fetch('/api/waitlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, role: role })
+    })
+    .then(function(r) {
+      if (!r.ok) throw new Error('Request failed');
+      return r.json();
+    })
+    .then(function() {
+      msg.textContent = "You're on the list! We'll be in touch soon.";
+      msg.className = 'form-message success';
+      form.reset();
+      btn.textContent = 'Joined!';
+
+      // Update counter
+      var counterEl = document.getElementById('counter-number');
+      var current = parseInt(counterEl.textContent, 10) || 0;
+      counterEl.textContent = current + 1;
+      document.getElementById('waitlist-counter').style.display = 'inline-block';
+    })
+    .catch(function() {
+      msg.textContent = 'Something went wrong. Please try again.';
+      msg.className = 'form-message error';
+      btn.disabled = false;
+      btn.textContent = 'Join Waitlist';
+    });
+  });
+})();
 </script>
 
 </body>
