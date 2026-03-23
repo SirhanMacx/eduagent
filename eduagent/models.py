@@ -311,6 +311,9 @@ class AppConfig(BaseModel):
     include_homework: bool = True
     export_format: str = "markdown"
 
+    # Ollama API key (for cloud Ollama)
+    ollama_api_key: Optional[str] = None
+
     # Teacher profile — the key to auto-tailoring
     teacher_profile: TeacherProfile = Field(default_factory=TeacherProfile)
 

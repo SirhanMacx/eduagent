@@ -159,20 +159,54 @@ class LLMClient:
     async def _ollama(
         self, prompt: str, system: str, temperature: float, max_tokens: int
     ) -> str:
-        full_prompt = f"{system}\n\n{prompt}" if system else prompt
-        async with httpx.AsyncClient(timeout=300.0) as client:
-            resp = await client.post(
-                f"{self.config.ollama_base_url}/api/generate",
-                json={
-                    "model": self.config.ollama_model,
-                    "prompt": full_prompt,
-                    "stream": False,
-                    "options": {
+        # Support both local Ollama (no auth) and Ollama Cloud (Bearer token)
+        api_key = getattr(self.config, "ollama_api_key", None) or os.environ.get("OLLAMA_API_KEY")
+        headers = {}
+        if api_key and api_key != "ollama":
+            headers["Authorization"] = f"Bearer {api_key}"
+
+        # Ollama Cloud uses OpenAI-compatible API; local uses /api/generate
+        base = self.config.ollama_base_url.rstrip("/")
+        is_cloud = "api.ollama.com" in base or "ollama.com" in base
+
+        if is_cloud:
+            # Use OpenAI-compatible endpoint for cloud
+            messages = []
+            if system:
+                messages.append({"role": "system", "content": system})
+            messages.append({"role": "user", "content": prompt})
+            async with httpx.AsyncClient(timeout=300.0) as client:
+                resp = await client.post(
+                    f"{base}/v1/chat/completions",
+                    headers=headers,
+                    json={
+                        "model": self.config.ollama_model,
+                        "messages": messages,
                         "temperature": temperature,
-                        "num_predict": max_tokens,
+                        "max_tokens": max_tokens,
+                        "stream": False,
                     },
-                },
-            )
-            resp.raise_for_status()
-            data = resp.json()
-            return data["response"]
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                return data["choices"][0]["message"]["content"]
+        else:
+            # Local Ollama
+            full_prompt = f"{system}\n\n{prompt}" if system else prompt
+            async with httpx.AsyncClient(timeout=300.0) as client:
+                resp = await client.post(
+                    f"{base}/api/generate",
+                    headers=headers,
+                    json={
+                        "model": self.config.ollama_model,
+                        "prompt": full_prompt,
+                        "stream": False,
+                        "options": {
+                            "temperature": temperature,
+                            "num_predict": max_tokens,
+                        },
+                    },
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                return data["response"]
