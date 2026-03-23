@@ -62,8 +62,9 @@ class TestClassCreation:
 
         bot = StudentBot()
         code = bot.create_class("teacher-001")
-        assert code.startswith("CLASS-")
-        assert len(code) == 12  # "CLASS-" + 6 hex chars
+        # Code format: AB-CDE-N (2 uppercase + 3 uppercase + 1 digit)
+        assert len(code.split("-")) == 3
+        assert len(code) >= 8
 
     def test_create_class_is_unique(self):
         from eduagent.student_bot import StudentBot

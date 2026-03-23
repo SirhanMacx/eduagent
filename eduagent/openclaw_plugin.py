@@ -295,7 +295,11 @@ async def _handle_connect_drive(parsed: ParsedIntent, session: TeacherSession) -
                 + _fmt_persona(persona)
             )
         else:
-            return "I connected to Drive but couldn't find any lesson plan files (PDF, DOCX, PPTX). Make sure the folder contains your lesson materials and try again."
+            return (
+                "I connected to Drive but couldn't find any lesson plan files"
+                " (PDF, DOCX, PPTX). Make sure the folder contains your lesson"
+                " materials and try again."
+            )
     except Exception as e:
         return (
             f"Connected to Drive at {parsed.url}\n\n"
@@ -331,7 +335,10 @@ async def _handle_connect_local(parsed: ParsedIntent, session: TeacherSession) -
                 + _fmt_persona(persona)
             )
         else:
-            return f"Found the folder but no lesson plan files (PDF, DOCX, PPTX, TXT) inside `{resolved.name}/`. Try a different folder?"
+            return (
+                f"Found the folder but no lesson plan files (PDF, DOCX, PPTX, TXT)"
+                f" inside `{resolved.name}/`. Try a different folder?"
+            )
     except Exception as e:
         return f"Had trouble reading files from {path}: {str(e)[:150]}"
 
@@ -341,7 +348,8 @@ async def _handle_generate_unit(parsed: ParsedIntent, session: TeacherSession) -
     from eduagent.planner import plan_unit
 
     topic = parsed.topic or "the current topic"
-    grade = parsed.grade or (session.persona.grade_levels[0] if session.persona and session.persona.grade_levels else "8")
+    has_grades = session.persona and session.persona.grade_levels
+    grade = parsed.grade or (session.persona.grade_levels[0] if has_grades else "8")
     subject = (session.persona.subject_area if session.persona and session.persona.subject_area else "General")
     weeks = parsed.weeks or 2
     persona = session.persona or TeacherPersona()
@@ -359,7 +367,10 @@ async def _handle_generate_unit(parsed: ParsedIntent, session: TeacherSession) -
         session.save_unit(unit)
         return _fmt_unit_summary(unit)
     except Exception as e:
-        return f"Ran into an issue generating the unit plan: {str(e)[:200]}\n\nMake sure your API key is configured (`/setup` to check)."
+        return (
+            f"Ran into an issue generating the unit plan: {str(e)[:200]}\n\n"
+            "Make sure your API key is configured (`/setup` to check)."
+        )
 
 
 async def _handle_generate_lesson(parsed: ParsedIntent, session: TeacherSession) -> str:
@@ -464,7 +475,13 @@ async def _handle_generate_bellringer(parsed: ParsedIntent, session: TeacherSess
     try:
         client = LLMClient(config)
         response = await client.generate(
-            prompt=f"Create 3 different bell ringer / Do-Now prompts for a lesson on {topic} for grade {persona.grade_levels[0] if persona.grade_levels else '8'}. Each should take 3-5 minutes. Match this teacher style: {persona.tone}. Format as a numbered list.",
+            prompt=(
+                f"Create 3 different bell ringer / Do-Now prompts for a lesson on"
+                f" {topic} for grade"
+                f" {persona.grade_levels[0] if persona.grade_levels else '8'}."
+                f" Each should take 3-5 minutes. Match this teacher style:"
+                f" {persona.tone}. Format as a numbered list."
+            ),
             system="You are an expert teacher. Be concise and practical.",
             temperature=0.7,
             max_tokens=400,
@@ -478,7 +495,10 @@ async def _handle_generate_differentiation(parsed: ParsedIntent, session: Teache
     lesson = session.current_lesson
     if not lesson:
         topic = parsed.topic or "the current lesson"
-        return f"Tell me more about the lesson on *{topic}* first, or generate a lesson plan and I'll add differentiation notes to it."
+        return (
+            f"Tell me more about the lesson on *{topic}* first, or generate a"
+            " lesson plan and I'll add differentiation notes to it."
+        )
 
     from eduagent.llm import LLMClient
     from eduagent.models import AppConfig
@@ -524,7 +544,8 @@ async def _handle_web_search(parsed: ParsedIntent, session: TeacherSession) -> s
 async def _handle_search_standards(parsed: ParsedIntent, session: TeacherSession) -> str:
     from eduagent.standards import get_standards
 
-    grade = parsed.grade or (session.persona.grade_levels[0] if session.persona and session.persona.grade_levels else None)
+    has_grades = session.persona and session.persona.grade_levels
+    grade = parsed.grade or (session.persona.grade_levels[0] if has_grades else None)
     subject = session.persona.subject_area if session.persona else None
 
     if not grade or not subject:
@@ -532,7 +553,11 @@ async def _handle_search_standards(parsed: ParsedIntent, session: TeacherSession
 
     standards = get_standards(grade=grade, subject=subject)
     if not standards:
-        return f"I don't have standards loaded for {subject} grade {grade}. Try 'search for NGSS {subject} grade {grade}' and I'll look it up online."
+        return (
+            f"I don't have standards loaded for {subject} grade {grade}."
+            f" Try 'search for NGSS {subject} grade {grade}'"
+            " and I'll look it up online."
+        )
 
     lines = [f"📋 *Standards: Grade {grade} {subject}*", ""]
     for s in standards[:8]:
@@ -557,7 +582,8 @@ async def _handle_share_students(parsed: ParsedIntent, session: TeacherSession) 
         return "Generate a lesson first, then I can create a student chatbot link for it."
     return (
         "🎓 *Student Chatbot*\n\n"
-        "Once you run `eduagent serve`, your students can access a chatbot that answers questions about this lesson in your teaching voice.\n\n"
+        "Once you run `eduagent serve`, your students can access a chatbot"
+        " that answers questions about this lesson in your teaching voice.\n\n"
         "The embed code will be available at: http://localhost:8000"
     )
 

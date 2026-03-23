@@ -214,7 +214,9 @@ def get_few_shot_context(
 
     for i, ex in enumerate(examples, 1):
         meta = ex.pop("_meta", {})
-        parts.append(f"\n### Example {i} (Grade {meta.get('grade_level', '?')}, Quality: {meta.get('quality_score', '?')}/5)")
+        grade = meta.get("grade_level", "?")
+        quality = meta.get("quality_score", "?")
+        parts.append(f"\n### Example {i} (Grade {grade}, Quality: {quality}/5)")
         if meta.get("topic"):
             parts.append(f"Topic: {meta['topic']}")
         # Show a condensed version of the example

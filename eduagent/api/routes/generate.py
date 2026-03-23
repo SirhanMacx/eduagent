@@ -15,6 +15,11 @@ from eduagent.models import DailyLesson, TeacherPersona, UnitPlan
 router = APIRouter(tags=["generate"])
 
 
+def _sse(event: str, **kwargs) -> dict:
+    """Build an SSE message dict."""
+    return {"event": event, "data": json.dumps(kwargs)}
+
+
 class UnitRequest(BaseModel):
     topic: str
     grade_level: str = "8"
@@ -67,7 +72,10 @@ async def create_unit(req: UnitRequest):
     db = get_db()
     persona, teacher_id = _get_persona(db)
     if not persona:
-        return JSONResponse({"error": "No persona found. Upload teaching materials first."}, status_code=400)
+        return JSONResponse(
+            {"error": "No persona found. Upload teaching materials first."},
+            status_code=400,
+        )
 
     try:
         unit = await plan_unit(
@@ -79,7 +87,9 @@ async def create_unit(req: UnitRequest):
             standards=req.standards or None,
         )
     except Exception as e:
-        return JSONResponse({"error": f"Unit generation failed: {e}"}, status_code=500)
+        return JSONResponse(
+            {"error": f"Unit generation failed: {e}"}, status_code=500
+        )
 
     unit_id = db.insert_unit(
         teacher_id=teacher_id,
@@ -101,11 +111,15 @@ async def create_lesson(req: LessonRequest):
     db = get_db()
     persona, _ = _get_persona(db)
     if not persona:
-        return JSONResponse({"error": "No persona found."}, status_code=400)
+        return JSONResponse(
+            {"error": "No persona found."}, status_code=400
+        )
 
     unit_row = db.get_unit(req.unit_id)
     if not unit_row:
-        return JSONResponse({"error": "Unit not found."}, status_code=404)
+        return JSONResponse(
+            {"error": "Unit not found."}, status_code=404
+        )
 
     unit = UnitPlan.model_validate_json(unit_row["unit_json"])
 
@@ -116,7 +130,9 @@ async def create_lesson(req: LessonRequest):
             persona=persona,
         )
     except Exception as e:
-        return JSONResponse({"error": f"Lesson generation failed: {e}"}, status_code=500)
+        return JSONResponse(
+            {"error": f"Lesson generation failed: {e}"}, status_code=500
+        )
 
     lesson_id = db.insert_lesson(
         unit_id=req.unit_id,
@@ -136,22 +152,32 @@ async def create_materials(req: MaterialsRequest):
     db = get_db()
     persona, _ = _get_persona(db)
     if not persona:
-        return JSONResponse({"error": "No persona found."}, status_code=400)
+        return JSONResponse(
+            {"error": "No persona found."}, status_code=400
+        )
 
     lesson_row = db.get_lesson(req.lesson_id)
     if not lesson_row:
-        return JSONResponse({"error": "Lesson not found."}, status_code=404)
+        return JSONResponse(
+            {"error": "Lesson not found."}, status_code=404
+        )
 
     lesson = DailyLesson.model_validate_json(lesson_row["lesson_json"])
 
     try:
         materials = await generate_all_materials(lesson, persona)
     except Exception as e:
-        return JSONResponse({"error": f"Materials generation failed: {e}"}, status_code=500)
+        return JSONResponse(
+            {"error": f"Materials generation failed: {e}"},
+            status_code=500,
+        )
 
     db.update_lesson_materials(req.lesson_id, materials.model_dump_json())
 
-    return {"lesson_id": req.lesson_id, "materials": materials.model_dump()}
+    return {
+        "lesson_id": req.lesson_id,
+        "materials": materials.model_dump(),
+    }
 
 
 @router.post("/full")
@@ -164,10 +190,15 @@ async def full_pipeline(req: FullRequest):
     db = get_db()
     persona, teacher_id = _get_persona(db)
     if not persona:
-        return JSONResponse({"error": "No persona found."}, status_code=400)
+        return JSONResponse(
+            {"error": "No persona found."}, status_code=400
+        )
 
     async def event_stream():
-        yield {"event": "progress", "data": json.dumps({"step": "unit", "status": "generating", "message": "Generating unit plan..."})}
+        yield _sse(
+            "progress", step="unit", status="generating",
+            message="Generating unit plan...",
+        )
 
         try:
             unit = await plan_unit(
@@ -179,7 +210,9 @@ async def full_pipeline(req: FullRequest):
                 standards=req.standards or None,
             )
         except Exception as e:
-            yield {"event": "error", "data": json.dumps({"error": f"Unit generation failed: {e}"})}
+            yield _sse(
+                "error", error=f"Unit generation failed: {e}"
+            )
             return
 
         unit_id = db.insert_unit(
@@ -191,7 +224,11 @@ async def full_pipeline(req: FullRequest):
             unit_json=unit.model_dump_json(),
         )
 
-        yield {"event": "progress", "data": json.dumps({"step": "unit", "status": "done", "unit_id": unit_id, "title": unit.title, "lesson_count": len(unit.daily_lessons)})}
+        yield _sse(
+            "progress", step="unit", status="done",
+            unit_id=unit_id, title=unit.title,
+            lesson_count=len(unit.daily_lessons),
+        )
 
         briefs = unit.daily_lessons
         if req.max_lessons:
@@ -199,7 +236,11 @@ async def full_pipeline(req: FullRequest):
 
         lesson_ids = []
         for brief in briefs:
-            yield {"event": "progress", "data": json.dumps({"step": "lesson", "status": "generating", "lesson_number": brief.lesson_number, "topic": brief.topic})}
+            yield _sse(
+                "progress", step="lesson", status="generating",
+                lesson_number=brief.lesson_number,
+                topic=brief.topic,
+            )
 
             try:
                 lesson = await generate_lesson(
@@ -209,7 +250,11 @@ async def full_pipeline(req: FullRequest):
                     include_homework=req.include_homework,
                 )
             except Exception as e:
-                yield {"event": "progress", "data": json.dumps({"step": "lesson", "status": "error", "lesson_number": brief.lesson_number, "error": str(e)})}
+                yield _sse(
+                    "progress", step="lesson", status="error",
+                    lesson_number=brief.lesson_number,
+                    error=str(e),
+                )
                 continue
 
             lid = db.insert_lesson(
@@ -220,53 +265,100 @@ async def full_pipeline(req: FullRequest):
             )
             lesson_ids.append(lid)
 
-            yield {"event": "progress", "data": json.dumps({"step": "lesson", "status": "done", "lesson_id": lid, "lesson_number": lesson.lesson_number, "title": lesson.title})}
+            yield _sse(
+                "progress", step="lesson", status="done",
+                lesson_id=lid,
+                lesson_number=lesson.lesson_number,
+                title=lesson.title,
+            )
 
         for lid in lesson_ids:
             lesson_row = db.get_lesson(lid)
             if not lesson_row:
                 continue
 
-            yield {"event": "progress", "data": json.dumps({"step": "materials", "status": "generating", "lesson_id": lid})}
+            yield _sse(
+                "progress", step="materials",
+                status="generating", lesson_id=lid,
+            )
 
-            lesson_obj = DailyLesson.model_validate_json(lesson_row["lesson_json"])
+            lesson_obj = DailyLesson.model_validate_json(
+                lesson_row["lesson_json"]
+            )
 
             try:
-                materials = await generate_all_materials(lesson_obj, persona)
-                db.update_lesson_materials(lid, materials.model_dump_json())
+                materials = await generate_all_materials(
+                    lesson_obj, persona
+                )
+                db.update_lesson_materials(
+                    lid, materials.model_dump_json()
+                )
             except Exception:
                 pass
 
-            yield {"event": "progress", "data": json.dumps({"step": "materials", "status": "done", "lesson_id": lid})}
+            yield _sse(
+                "progress", step="materials",
+                status="done", lesson_id=lid,
+            )
 
-        yield {"event": "done", "data": json.dumps({"unit_id": unit_id, "lesson_count": len(lesson_ids)})}
+        yield _sse(
+            "done", unit_id=unit_id,
+            lesson_count=len(lesson_ids),
+        )
 
     return EventSourceResponse(event_stream())
 
 
 @router.get("/stream/unit")
-async def stream_unit(topic: str, grade_level: str = "8", subject: str = "Science", duration_weeks: int = 3):
+async def stream_unit(
+    topic: str,
+    grade_level: str = "8",
+    subject: str = "Science",
+    duration_weeks: int = 3,
+):
     """Stream unit plan generation via SSE (GET for EventSource)."""
     from eduagent.planner import plan_unit
 
     db = get_db()
     persona, teacher_id = _get_persona(db)
     if not persona:
-        return JSONResponse({"error": "No persona found."}, status_code=400)
+        return JSONResponse(
+            {"error": "No persona found."}, status_code=400
+        )
 
     async def event_stream():
-        yield {"event": "progress", "data": json.dumps({"status": "planning_unit", "progress": 10, "message": "Planning unit structure..."})}
+        yield _sse(
+            "progress", status="planning_unit",
+            progress=10, message="Planning unit structure...",
+        )
 
         try:
-            unit = await plan_unit(subject=subject, grade_level=grade_level, topic=topic, duration_weeks=duration_weeks, persona=persona)
+            unit = await plan_unit(
+                subject=subject,
+                grade_level=grade_level,
+                topic=topic,
+                duration_weeks=duration_weeks,
+                persona=persona,
+            )
         except Exception as e:
-            yield {"event": "error", "data": json.dumps({"error": str(e)})}
+            yield _sse("error", error=str(e))
             return
 
-        unit_id = db.insert_unit(teacher_id=teacher_id, title=unit.title, subject=unit.subject, grade_level=unit.grade_level, topic=unit.topic, unit_json=unit.model_dump_json())
+        unit_id = db.insert_unit(
+            teacher_id=teacher_id,
+            title=unit.title,
+            subject=unit.subject,
+            grade_level=unit.grade_level,
+            topic=unit.topic,
+            unit_json=unit.model_dump_json(),
+        )
 
-        yield {"event": "progress", "data": json.dumps({"status": "unit_complete", "progress": 100, "unit_id": unit_id, "title": unit.title, "lesson_count": len(unit.daily_lessons)})}
-        yield {"event": "done", "data": json.dumps({"unit_id": unit_id})}
+        yield _sse(
+            "progress", status="unit_complete", progress=100,
+            unit_id=unit_id, title=unit.title,
+            lesson_count=len(unit.daily_lessons),
+        )
+        yield _sse("done", unit_id=unit_id)
 
     return EventSourceResponse(event_stream())
 
@@ -279,27 +371,48 @@ async def stream_lesson(unit_id: str, lesson_number: int = 1):
     db = get_db()
     persona, _ = _get_persona(db)
     if not persona:
-        return JSONResponse({"error": "No persona found."}, status_code=400)
+        return JSONResponse(
+            {"error": "No persona found."}, status_code=400
+        )
 
     unit_row = db.get_unit(unit_id)
     if not unit_row:
-        return JSONResponse({"error": "Unit not found."}, status_code=404)
+        return JSONResponse(
+            {"error": "Unit not found."}, status_code=404
+        )
 
     unit = UnitPlan.model_validate_json(unit_row["unit_json"])
 
     async def event_stream():
-        yield {"event": "progress", "data": json.dumps({"status": f"generating_lesson_{lesson_number}", "progress": 20, "message": f"Generating Lesson {lesson_number}..."})}
+        yield _sse(
+            "progress",
+            status=f"generating_lesson_{lesson_number}",
+            progress=20,
+            message=f"Generating Lesson {lesson_number}...",
+        )
 
         try:
-            lesson = await generate_lesson(lesson_number=lesson_number, unit=unit, persona=persona)
+            lesson = await generate_lesson(
+                lesson_number=lesson_number,
+                unit=unit,
+                persona=persona,
+            )
         except Exception as e:
-            yield {"event": "error", "data": json.dumps({"error": str(e)})}
+            yield _sse("error", error=str(e))
             return
 
-        lid = db.insert_lesson(unit_id=unit_id, lesson_number=lesson.lesson_number, title=lesson.title, lesson_json=lesson.model_dump_json())
+        lid = db.insert_lesson(
+            unit_id=unit_id,
+            lesson_number=lesson.lesson_number,
+            title=lesson.title,
+            lesson_json=lesson.model_dump_json(),
+        )
 
-        yield {"event": "progress", "data": json.dumps({"status": "lesson_complete", "progress": 100, "lesson_id": lid, "title": lesson.title})}
-        yield {"event": "done", "data": json.dumps({"lesson_id": lid})}
+        yield _sse(
+            "progress", status="lesson_complete",
+            progress=100, lesson_id=lid, title=lesson.title,
+        )
+        yield _sse("done", lesson_id=lid)
 
     return EventSourceResponse(event_stream())
 
@@ -312,7 +425,9 @@ async def create_course(req: CourseRequest):
     db = get_db()
     persona, teacher_id = _get_persona(db)
     if not persona:
-        return JSONResponse({"error": "No persona found."}, status_code=400)
+        return JSONResponse(
+            {"error": "No persona found."}, status_code=400
+        )
 
     async def event_stream():
         total = len(req.topics)
@@ -320,28 +435,62 @@ async def create_course(req: CourseRequest):
 
         for i, topic in enumerate(req.topics, 1):
             pct = int((i - 1) / total * 100)
-            yield {"event": "progress", "data": json.dumps({"status": "generating_unit", "progress": pct, "message": f"Planning unit {i}/{total}: {topic}..."})}
+            yield _sse(
+                "progress", status="generating_unit",
+                progress=pct,
+                message=f"Planning unit {i}/{total}: {topic}...",
+            )
 
             try:
-                unit = await plan_unit(subject=req.subject, grade_level=req.grade_level, topic=topic, duration_weeks=req.weeks_per_topic, persona=persona)
+                unit = await plan_unit(
+                    subject=req.subject,
+                    grade_level=req.grade_level,
+                    topic=topic,
+                    duration_weeks=req.weeks_per_topic,
+                    persona=persona,
+                )
             except Exception as e:
-                yield {"event": "progress", "data": json.dumps({"status": "error", "message": f"Failed to plan '{topic}': {e}"})}
-                course_units.append({"topic": topic, "error": str(e)})
+                yield _sse(
+                    "progress", status="error",
+                    message=f"Failed to plan '{topic}': {e}",
+                )
+                course_units.append(
+                    {"topic": topic, "error": str(e)}
+                )
                 continue
 
-            unit_id = db.insert_unit(teacher_id=teacher_id, title=unit.title, subject=unit.subject, grade_level=unit.grade_level, topic=unit.topic, unit_json=unit.model_dump_json())
+            unit_id = db.insert_unit(
+                teacher_id=teacher_id,
+                title=unit.title,
+                subject=unit.subject,
+                grade_level=unit.grade_level,
+                topic=unit.topic,
+                unit_json=unit.model_dump_json(),
+            )
 
             unit_summary = {
                 "unit_id": unit_id,
                 "title": unit.title,
                 "topic": topic,
-                "lesson_titles": [b.topic for b in unit.daily_lessons],
+                "lesson_titles": [
+                    b.topic for b in unit.daily_lessons
+                ],
             }
             course_units.append(unit_summary)
 
-            yield {"event": "progress", "data": json.dumps({"status": "unit_done", "progress": int(i / total * 100), "unit": unit_summary})}
+            yield _sse(
+                "progress", status="unit_done",
+                progress=int(i / total * 100),
+                unit=unit_summary,
+            )
 
-        yield {"event": "done", "data": json.dumps({"course": course_units, "total_units": len([u for u in course_units if "unit_id" in u])})}
+        successful = [
+            u for u in course_units if "unit_id" in u
+        ]
+        yield _sse(
+            "done", course=course_units,
+            total_units=len(successful),
+        )
 
     return EventSourceResponse(event_stream())
 
@@ -354,13 +503,18 @@ async def score_lesson(lesson_id: str):
     db = get_db()
     lesson_row = db.get_lesson(lesson_id)
     if not lesson_row:
-        return JSONResponse({"error": "Lesson not found."}, status_code=404)
+        return JSONResponse(
+            {"error": "Lesson not found."}, status_code=404
+        )
 
     lesson = DailyLesson.model_validate_json(lesson_row["lesson_json"])
     materials = None
     if lesson_row.get("materials_json"):
         from eduagent.models import LessonMaterials
-        materials = LessonMaterials.model_validate_json(lesson_row["materials_json"])
+
+        materials = LessonMaterials.model_validate_json(
+            lesson_row["materials_json"]
+        )
 
     scorer = LessonQualityScore()
     scores = await scorer.score(lesson, materials)
@@ -379,15 +533,21 @@ async def suggest_improvements_endpoint(lesson_id: str):
     db = get_db()
     lesson_row = db.get_lesson(lesson_id)
     if not lesson_row:
-        return JSONResponse({"error": "Lesson not found."}, status_code=404)
+        return JSONResponse(
+            {"error": "Lesson not found."}, status_code=404
+        )
 
     lesson = DailyLesson.model_validate_json(lesson_row["lesson_json"])
 
     # Check for feedback notes
     feedback_list = db.get_feedback_for_lesson(lesson_id)
-    notes = " | ".join(f["notes"] for f in feedback_list if f.get("notes"))
+    notes = " | ".join(
+        f["notes"] for f in feedback_list if f.get("notes")
+    )
 
-    suggestions = await suggest_improvements(lesson, feedback_notes=notes)
+    suggestions = await suggest_improvements(
+        lesson, feedback_notes=notes
+    )
     return {"lesson_id": lesson_id, "suggestions": suggestions}
 
 
@@ -395,8 +555,19 @@ async def suggest_improvements_endpoint(lesson_id: str):
 async def list_templates_endpoint():
     """List all available lesson structure templates."""
     from eduagent.templates_lib import list_templates
+
     templates = list_templates()
-    return {"templates": [{"name": t.name, "slug": t.slug, "description": t.description, "best_for": t.best_for} for t in templates]}
+    return {
+        "templates": [
+            {
+                "name": t.name,
+                "slug": t.slug,
+                "description": t.description,
+                "best_for": t.best_for,
+            }
+            for t in templates
+        ]
+    }
 
 
 @router.get("/units")

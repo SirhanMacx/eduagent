@@ -9,9 +9,11 @@ homework, and tracks what students are asking so the teacher can see patterns.
 from __future__ import annotations
 
 import json
+import random
 import re
+import string
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Optional
 
@@ -36,6 +38,10 @@ class ClassInfo:
 
     class_code: str
     teacher_id: str
+    name: str = ""
+    topic: str = ""
+    allowed_lesson_ids: list[str] = field(default_factory=list)
+    expires_at: Optional[str] = None
     active_lesson_id: Optional[str] = None
     active_lesson_json: Optional[str] = None
     hint_mode: bool = False
@@ -61,14 +67,31 @@ class StudentBot:
 
     # ── Class management ─────────────────────────────────────────────────
 
-    def create_class(self, teacher_id: str) -> str:
+    @staticmethod
+    def _generate_class_code() -> str:
+        """Generate a readable class code like AB-CDE-2."""
+        part1 = "".join(random.choices(string.ascii_uppercase, k=2))
+        part2 = "".join(random.choices(string.ascii_uppercase, k=3))
+        part3 = str(random.randint(1, 9))
+        return f"{part1}-{part2}-{part3}"
+
+    def create_class(
+        self,
+        teacher_id: str,
+        name: str = "",
+        topic: str = "",
+        allowed_lesson_ids: list[str] | None = None,
+        expires_at: str | None = None,
+    ) -> str:
         """Create a new class and return its class code."""
-        # Generate a short, readable class code
-        code = f"CLASS-{uuid.uuid4().hex[:6].upper()}"
+        code = self._generate_class_code()
+        ids_json = json.dumps(allowed_lesson_ids or [])
         with _get_conn() as conn:
             conn.execute(
-                "INSERT OR REPLACE INTO classes (class_code, teacher_id) VALUES (?, ?)",
-                (code, teacher_id),
+                "INSERT OR REPLACE INTO classes"
+                " (class_code, teacher_id, name, topic, allowed_lesson_ids, expires_at)"
+                " VALUES (?, ?, ?, ?, ?, ?)",
+                (code, teacher_id, name, topic, ids_json, expires_at),
             )
         return code
 
@@ -80,14 +103,74 @@ class StudentBot:
             ).fetchone()
         if not row:
             return None
+        allowed: list[str] = []
+        try:
+            allowed = json.loads(row["allowed_lesson_ids"] or "[]")
+        except (json.JSONDecodeError, TypeError, KeyError):
+            pass
+        name = ""
+        topic = ""
+        expires_at = None
+        try:
+            name = row["name"] or ""
+            topic = row["topic"] or ""
+            expires_at = row["expires_at"]
+        except (KeyError, IndexError):
+            pass
         return ClassInfo(
             class_code=row["class_code"],
             teacher_id=row["teacher_id"],
+            name=name,
+            topic=topic,
+            allowed_lesson_ids=allowed,
+            expires_at=expires_at,
             active_lesson_id=row["active_lesson_id"],
             active_lesson_json=row["active_lesson_json"],
             hint_mode=bool(row["hint_mode"]),
             created_at=row["created_at"],
         )
+
+    def is_expired(self, class_code: str) -> bool:
+        """Check if a class code has expired."""
+        info = self.get_class(class_code)
+        if not info or not info.expires_at:
+            return False
+        try:
+            expires = datetime.fromisoformat(info.expires_at)
+            return datetime.utcnow() > expires
+        except (ValueError, TypeError):
+            return False
+
+    def revoke_student(self, class_code: str, student_id: str) -> bool:
+        """Revoke a student's access to a class."""
+        with _get_conn() as conn:
+            cur = conn.execute(
+                "DELETE FROM registered_students WHERE class_code = ? AND student_id = ?",
+                (class_code, student_id),
+            )
+        return cur.rowcount > 0
+
+    def get_class_stats(self, class_code: str) -> dict[str, Any]:
+        """Get stats for a class code."""
+        with _get_conn() as conn:
+            student_count = conn.execute(
+                "SELECT COUNT(DISTINCT student_id) as cnt FROM registered_students WHERE class_code = ?",
+                (class_code,),
+            ).fetchone()
+            question_count = conn.execute(
+                "SELECT COUNT(*) as cnt FROM student_questions WHERE class_code = ?",
+                (class_code,),
+            ).fetchone()
+            active_count = conn.execute(
+                "SELECT COUNT(DISTINCT student_id) as cnt FROM student_sessions WHERE class_code = ?",
+                (class_code,),
+            ).fetchone()
+        return {
+            "class_code": class_code,
+            "registered_students": student_count["cnt"] if student_count else 0,
+            "total_questions": question_count["cnt"] if question_count else 0,
+            "active_students": active_count["cnt"] if active_count else 0,
+        }
 
     async def set_active_lesson(
         self, class_code: str, lesson_id: str, teacher_id: str, lesson_json: str = ""
@@ -359,6 +442,60 @@ class StudentBot:
                 }
                 for q in questions
             ],
+        }
+
+    async def get_weekly_report(self, class_code: str, week: str = "") -> dict[str, Any]:
+        """Generate a weekly progress report for a class code.
+
+        Args:
+            class_code: The class code to report on.
+            week: ISO week like '2026-W12'. If empty, uses current week.
+        """
+        if not week:
+            now = datetime.utcnow()
+            week = f"{now.year}-W{now.isocalendar()[1]:02d}"
+
+        with _get_conn() as conn:
+            # Questions per student (anonymized count)
+            per_student = conn.execute(
+                "SELECT student_id, COUNT(*) as cnt FROM student_questions"
+                " WHERE class_code = ? GROUP BY student_id ORDER BY cnt DESC",
+                (class_code,),
+            ).fetchall()
+
+            # Most common topics
+            topics = conn.execute(
+                "SELECT lesson_topic, COUNT(*) as cnt FROM student_questions"
+                " WHERE class_code = ? AND lesson_topic != ''"
+                " GROUP BY lesson_topic ORDER BY cnt DESC LIMIT 10",
+                (class_code,),
+            ).fetchall()
+
+            # All questions for struggle analysis
+            all_questions = conn.execute(
+                "SELECT question FROM student_questions WHERE class_code = ?",
+                (class_code,),
+            ).fetchall()
+
+        # Build anonymized per-student stats
+        student_activity = [
+            {"student_number": i + 1, "question_count": r["cnt"]}
+            for i, r in enumerate(per_student)
+        ]
+
+        common_topics = [
+            {"topic": r["lesson_topic"], "count": r["cnt"]}
+            for r in topics
+        ]
+
+        return {
+            "class_code": class_code,
+            "week": week,
+            "student_count": len(per_student),
+            "total_questions": sum(r["cnt"] for r in per_student),
+            "student_activity": student_activity,
+            "common_topics": common_topics,
+            "question_samples": [r["question"] for r in all_questions[:20]],
         }
 
     def get_student_conversation(

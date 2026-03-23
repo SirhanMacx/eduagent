@@ -106,6 +106,10 @@ def init_db() -> None:
             CREATE TABLE IF NOT EXISTS classes (
                 class_code TEXT PRIMARY KEY,
                 teacher_id TEXT NOT NULL,
+                name TEXT DEFAULT '',
+                topic TEXT DEFAULT '',
+                allowed_lesson_ids TEXT DEFAULT '[]',
+                expires_at TEXT,
                 active_lesson_id TEXT,
                 active_lesson_json TEXT,
                 hint_mode INTEGER DEFAULT 0,
@@ -139,6 +143,25 @@ def init_db() -> None:
                 UNIQUE(student_id, class_code)
             );
         """)
+        # Migrate: add new columns to classes table if missing
+        _migrate_classes(conn)
+
+
+def _migrate_classes(conn: sqlite3.Connection) -> None:
+    """Add new columns to the classes table for existing databases."""
+    existing = {
+        row[1] for row in conn.execute("PRAGMA table_info(classes)").fetchall()
+    }
+    migrations = [
+        ("name", "TEXT DEFAULT ''"),
+        ("topic", "TEXT DEFAULT ''"),
+        ("allowed_lesson_ids", "TEXT DEFAULT '[]'"),
+        ("expires_at", "TEXT"),
+    ]
+    for col, typedef in migrations:
+        if col not in existing:
+            conn.execute(f"ALTER TABLE classes ADD COLUMN {col} {typedef}")
+    conn.commit()
 
 
 class TeacherSession:
@@ -274,7 +297,10 @@ class TeacherSession:
                 INSERT INTO generated_units (id, teacher_id, title, subject, grade_level, topic, unit_json)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
-                (unit_id, self.teacher_id, unit.title, unit.subject, unit.grade_level, unit.topic, unit.model_dump_json()),
+                (
+                    unit_id, self.teacher_id, unit.title, unit.subject,
+                    unit.grade_level, unit.topic, unit.model_dump_json(),
+                ),
             )
         self.save()
         return unit_id
@@ -291,7 +317,11 @@ class TeacherSession:
                 INSERT INTO generated_lessons (id, unit_id, teacher_id, lesson_number, title, lesson_json, share_token)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
-                (lesson_id, unit_id, self.teacher_id, lesson.lesson_number, lesson.title, lesson.model_dump_json(), share_token),
+                (
+                    lesson_id, unit_id, self.teacher_id,
+                    lesson.lesson_number, lesson.title,
+                    lesson.model_dump_json(), share_token,
+                ),
             )
         self.save()
         return lesson_id
@@ -301,7 +331,9 @@ class TeacherSession:
         init_db()
         with _get_conn() as conn:
             rows = conn.execute(
-                "SELECT id, title, subject, grade_level, topic, created_at FROM generated_units WHERE teacher_id = ? ORDER BY created_at DESC LIMIT ?",
+                "SELECT id, title, subject, grade_level, topic, created_at"
+                " FROM generated_units"
+                " WHERE teacher_id = ? ORDER BY created_at DESC LIMIT ?",
                 (self.teacher_id, limit),
             ).fetchall()
         return [dict(r) for r in rows]

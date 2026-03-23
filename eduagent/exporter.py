@@ -252,7 +252,10 @@ body {
     font-size: 11pt; line-height: 1.6; color: #1a1a2e;
 }
 h1 { font-size: 20pt; color: #0f3460; margin-bottom: 4pt; page-break-after: avoid; }
-h2 { font-size: 14pt; color: #16213e; border-bottom: 2px solid #0f3460; padding-bottom: 3pt; margin-top: 18pt; page-break-after: avoid; }
+h2 {
+  font-size: 14pt; color: #16213e; border-bottom: 2px solid #0f3460;
+  padding-bottom: 3pt; margin-top: 18pt; page-break-after: avoid;
+}
 h3 { font-size: 12pt; color: #16213e; margin-top: 12pt; page-break-after: avoid; }
 p { margin-bottom: 6pt; }
 ul, ol { padding-left: 1.2em; margin-bottom: 8pt; }
@@ -261,11 +264,17 @@ table { width: 100%; border-collapse: collapse; margin-bottom: 12pt; }
 th, td { text-align: left; padding: 6pt 8pt; border: 1px solid #ddd; font-size: 10pt; }
 th { background: #0f3460; color: #fff; font-weight: 600; }
 tr:nth-child(even) { background: #f8f9fa; }
-.header-block { background: #f0f4ff; border: 1px solid #c7d7f5; border-radius: 6px; padding: 12pt 16pt; margin-bottom: 16pt; }
+.header-block {
+  background: #f0f4ff; border: 1px solid #c7d7f5;
+  border-radius: 6px; padding: 12pt 16pt; margin-bottom: 16pt;
+}
 .header-block p { margin: 2pt 0; font-size: 10pt; }
 .section-divider { border: none; border-top: 1px solid #e5e7eb; margin: 12pt 0; }
 .worksheet-page { page-break-before: always; }
-.score-badge { display: inline-block; padding: 2pt 8pt; border-radius: 10pt; font-weight: 600; font-size: 10pt; color: #fff; }
+.score-badge {
+  display: inline-block; padding: 2pt 8pt; border-radius: 10pt;
+  font-weight: 600; font-size: 10pt; color: #fff;
+}
 .score-green { background: #059669; }
 .score-yellow { background: #d97706; }
 .score-red { background: #dc2626; }
@@ -349,7 +358,11 @@ def _lesson_to_html_for_pdf(
         sections.append(f"<p><strong>Total Points:</strong> {total_pts}</p>")
         for item in materials.worksheet_items:
             pts = "pts" if item.point_value != 1 else "pt"
-            sections.append(f"<p><strong>{item.item_number}.</strong> ({item.point_value} {pts}) {esc(item.prompt)}</p>")
+            prompt_html = esc(item.prompt)
+            sections.append(
+                f"<p><strong>{item.item_number}.</strong>"
+                f" ({item.point_value} {pts}) {prompt_html}</p>"
+            )
         sections.append("</div>")
 
     body = "\n".join(sections)

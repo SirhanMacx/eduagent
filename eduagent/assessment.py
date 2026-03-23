@@ -308,7 +308,11 @@ async def generate_quiz(
     return await gen.generate_quiz(topic, question_count, question_types, grade, persona)
 
 
-def save_assessment(assessment: FormativeAssessment | SummativeAssessment | DBQAssessment | Quiz | Rubric, output_dir: Path, label: str = "assessment") -> Path:
+def save_assessment(
+    assessment: FormativeAssessment | SummativeAssessment | DBQAssessment | Quiz | Rubric,
+    output_dir: Path,
+    label: str = "assessment",
+) -> Path:
     """Save any assessment type to disk as JSON."""
     output_dir.mkdir(parents=True, exist_ok=True)
     # Build a safe filename from the assessment's primary identifier

@@ -129,6 +129,35 @@ class Database:
                 shared_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
 
+            CREATE TABLE IF NOT EXISTS class_codes (
+                id TEXT PRIMARY KEY,
+                code TEXT UNIQUE NOT NULL,
+                teacher_id TEXT NOT NULL,
+                name TEXT DEFAULT '',
+                topic TEXT DEFAULT '',
+                allowed_lesson_ids TEXT DEFAULT '[]',
+                expires_at TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS student_enrollments (
+                id TEXT PRIMARY KEY,
+                student_id TEXT NOT NULL,
+                class_code TEXT NOT NULL,
+                enrolled_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                last_active TIMESTAMP,
+                UNIQUE(student_id, class_code)
+            );
+
+            CREATE TABLE IF NOT EXISTS student_questions (
+                id TEXT PRIMARY KEY,
+                student_id TEXT,
+                class_code TEXT,
+                question TEXT,
+                answer TEXT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+
             CREATE TABLE IF NOT EXISTS iep_profiles (
                 id TEXT PRIMARY KEY,
                 teacher_id TEXT NOT NULL,
@@ -547,6 +576,88 @@ class Database:
     def delete_iep_profile(self, profile_id: str) -> None:
         self.conn.execute("DELETE FROM iep_profiles WHERE id=?", (profile_id,))
         self.conn.commit()
+
+    # ── class codes ────────────────────────────────────────────────────
+
+    def create_class_code(
+        self, code: str, teacher_id: str, name: str = "", topic: str = "",
+        allowed_lesson_ids: str = "[]", expires_at: str | None = None,
+    ) -> str:
+        cid = self._new_id()
+        self.conn.execute(
+            "INSERT INTO class_codes (id, code, teacher_id, name, topic, allowed_lesson_ids, expires_at)"
+            " VALUES (?,?,?,?,?,?,?)",
+            (cid, code, teacher_id, name, topic, allowed_lesson_ids, expires_at),
+        )
+        self.conn.commit()
+        return cid
+
+    def get_class_code(self, code: str) -> Optional[dict[str, Any]]:
+        return self._fetchone("SELECT * FROM class_codes WHERE code=?", (code,))
+
+    def list_class_codes(self, teacher_id: str) -> list[dict[str, Any]]:
+        return self._fetchall(
+            "SELECT * FROM class_codes WHERE teacher_id=? ORDER BY created_at DESC",
+            (teacher_id,),
+        )
+
+    # ── student enrollments ──────────────────────────────────────────
+
+    def enroll_student(self, student_id: str, class_code: str) -> str:
+        eid = self._new_id()
+        self.conn.execute(
+            "INSERT OR IGNORE INTO student_enrollments (id, student_id, class_code) VALUES (?,?,?)",
+            (eid, student_id, class_code),
+        )
+        self.conn.commit()
+        return eid
+
+    def revoke_student(self, class_code: str, student_id: str) -> bool:
+        cur = self.conn.execute(
+            "DELETE FROM student_enrollments WHERE class_code=? AND student_id=?",
+            (class_code, student_id),
+        )
+        self.conn.commit()
+        return cur.rowcount > 0
+
+    def list_enrollments(self, class_code: str) -> list[dict[str, Any]]:
+        return self._fetchall(
+            "SELECT * FROM student_enrollments WHERE class_code=? ORDER BY enrolled_at DESC",
+            (class_code,),
+        )
+
+    def count_enrollments(self, class_code: str) -> int:
+        row = self.conn.execute(
+            "SELECT COUNT(*) as c FROM student_enrollments WHERE class_code=?",
+            (class_code,),
+        ).fetchone()
+        return row["c"] if row else 0
+
+    # ── student questions (web db) ───────────────────────────────────
+
+    def insert_student_question(
+        self, student_id: str, class_code: str, question: str, answer: str,
+    ) -> str:
+        qid = self._new_id()
+        self.conn.execute(
+            "INSERT INTO student_questions (id, student_id, class_code, question, answer) VALUES (?,?,?,?,?)",
+            (qid, student_id, class_code, question, answer),
+        )
+        self.conn.commit()
+        return qid
+
+    def get_student_questions(self, class_code: str, limit: int = 50) -> list[dict[str, Any]]:
+        return self._fetchall(
+            "SELECT * FROM student_questions WHERE class_code=? ORDER BY created_at DESC LIMIT ?",
+            (class_code, limit),
+        )
+
+    def count_student_questions(self, class_code: str) -> int:
+        row = self.conn.execute(
+            "SELECT COUNT(*) as c FROM student_questions WHERE class_code=?",
+            (class_code,),
+        ).fetchone()
+        return row["c"] if row else 0
 
     # ── stats ────────────────────────────────────────────────────────
 

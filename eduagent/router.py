@@ -335,7 +335,11 @@ def parse_intent(message: str) -> ParsedIntent:
     # Export & Share
     for fmt, patterns in EXPORT_PATTERNS.items():
         if _any_match(text, patterns):
-            intent_map = {"pdf": Intent.EXPORT_PDF, "classroom": Intent.EXPORT_CLASSROOM, "share": Intent.SHARE_STUDENTS}
+            intent_map = {
+                "pdf": Intent.EXPORT_PDF,
+                "classroom": Intent.EXPORT_CLASSROOM,
+                "share": Intent.SHARE_STUDENTS,
+            }
             return ParsedIntent(intent=intent_map[fmt], format=fmt, raw=text)
 
     # Year-level planning (check before unit — "year plan" could match unit patterns)

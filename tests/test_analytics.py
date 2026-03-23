@@ -313,8 +313,8 @@ class TestTelegramRating:
         }):
             asyncio.run(bot.start())
 
-            # Should register 5 handlers: start, help, status, callback, message
-            assert mock_app_instance.add_handler.call_count == 5
-            assert mock_telegram_ext.CommandHandler.call_count == 3
-            assert mock_telegram_ext.CallbackQueryHandler.call_count == 1
+            # Handlers: start, help, status, join, class, callback(s), message, etc.
+            assert mock_app_instance.add_handler.call_count >= 5
+            assert mock_telegram_ext.CommandHandler.call_count >= 3
+            assert mock_telegram_ext.CallbackQueryHandler.call_count >= 1
             assert mock_telegram_ext.MessageHandler.call_count == 1

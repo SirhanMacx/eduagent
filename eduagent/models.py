@@ -624,16 +624,75 @@ class AppConfig(BaseModel):
     def config_path() -> Path:
         return Path.home() / ".eduagent" / "config.json"
 
+    # Fields that contain secrets and must never be written to the JSON
+    # config file.  They are stored via keyring (preferred) or env vars
+    # only.  See eduagent/config.py for the secure storage helpers.
+    _SECRET_FIELDS: tuple[str, ...] = (
+        "ollama_api_key",
+        "telegram_bot_token",
+    )
+
     @classmethod
     def load(cls) -> "AppConfig":
-        """Load config from disk, or return defaults."""
+        """Load config from disk, or return defaults.
+
+        After loading the JSON config, hydrate secret fields from the
+        secure store (keyring > env var).  This ensures API keys are
+        never read from the plaintext JSON file.
+        """
         path = cls.config_path()
         if path.exists():
-            return cls.model_validate_json(path.read_text())
-        return cls()
+            cfg = cls.model_validate_json(path.read_text())
+        else:
+            cfg = cls()
+
+        # Hydrate secrets from secure storage
+        from eduagent.config import get_api_key
+
+        if not cfg.ollama_api_key:
+            cfg.ollama_api_key = get_api_key("ollama")
+        if not cfg.telegram_bot_token:
+            cfg.telegram_bot_token = get_api_key("telegram")
+        # Teacher-profile tavily key
+        if (
+            cfg.teacher_profile
+            and not cfg.teacher_profile.tavily_api_key
+        ):
+            cfg.teacher_profile.tavily_api_key = get_api_key("tavily")
+
+        return cfg
 
     def save(self) -> None:
-        """Persist config to disk."""
+        """Persist config to disk.
+
+        Secret fields (API keys, tokens) are stripped before writing so
+        they never end up in the plaintext JSON config file.  Use
+        eduagent.config.set_api_key() to store secrets securely.
+        """
+        # Move secrets to the secure store before writing
+        from eduagent.config import set_api_key
+
+        if self.ollama_api_key:
+            set_api_key("ollama", self.ollama_api_key)
+        if self.telegram_bot_token:
+            set_api_key("telegram", self.telegram_bot_token)
+        if (
+            self.teacher_profile
+            and self.teacher_profile.tavily_api_key
+        ):
+            set_api_key("tavily", self.teacher_profile.tavily_api_key)
+
+        # Serialize, stripping secret fields so they are never on disk
+        data = self.model_dump()
+        for field in self._SECRET_FIELDS:
+            data.pop(field, None)
+        # Also strip tavily from the nested teacher profile
+        tp = data.get("teacher_profile")
+        if tp and isinstance(tp, dict):
+            tp.pop("tavily_api_key", None)
+
+        import json
+
         path = self.config_path()
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(self.model_dump_json(indent=2))
+        path.write_text(json.dumps(data, indent=2, default=str))

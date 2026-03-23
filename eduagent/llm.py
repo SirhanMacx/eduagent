@@ -76,43 +76,27 @@ class LLMClient:
             if lines and lines[-1].strip() == "```":
                 lines = lines[:-1]
             cleaned = "\n".join(lines)
-        # Handle truncated JSON: try to repair by finding the last valid content
+        # Step 1: try strict JSON parsing
         try:
             return json.loads(cleaned)
         except json.JSONDecodeError:
-            # Try to repair truncated JSON
-            stripped = cleaned.lstrip()
-            if stripped.startswith("["):
-                # JSON array: find last complete object, close the array
-                last_brace = cleaned.rfind("}")
-                if last_brace != -1:
-                    repaired = cleaned[:last_brace + 1].rstrip().rstrip(",") + "\n]"
-                    try:
-                        return json.loads(repaired)
-                    except json.JSONDecodeError:
-                        pass
-            elif stripped.startswith("{"):
-                # JSON object: find last complete key-value pair by scanning backwards
-                # Strategy: close all unclosed strings/brackets/braces
-                last_comma = cleaned.rfind(",\n")
-                if last_comma != -1:
-                    # Truncate at last full field and close the object
-                    repaired = cleaned[:last_comma] + "\n}"
-                    try:
-                        return json.loads(repaired)
-                    except json.JSONDecodeError:
-                        pass
-                # If that doesn't work, try just closing the object
-                last_value = cleaned.rfind('"')
-                if last_value != -1:
-                    # Slice to last string end and close
-                    repaired = cleaned[:last_value + 1] + "\n}"
-                    try:
-                        return json.loads(repaired)
-                    except json.JSONDecodeError:
-                        pass
-            # Re-raise original error if we can't repair
-            raise
+            pass
+
+        # Step 2: fall back to json_repair for truncated/malformed JSON
+        import json_repair
+
+        try:
+            result = json_repair.loads(cleaned)
+            if isinstance(result, (dict, list)):
+                return result
+        except Exception:
+            pass
+
+        # Step 3: raise a clear error with raw LLM output for debugging
+        preview = raw[:500] + ("..." if len(raw) > 500 else "")
+        raise ValueError(
+            f"LLM returned unparseable JSON. Raw output:\n{preview}"
+        )
 
     # ── Anthropic ────────────────────────────────────────────────────────
 

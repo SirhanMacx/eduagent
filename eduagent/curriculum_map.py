@@ -170,7 +170,10 @@ class CurriculumMapper:
         """
         persona = persona or TeacherPersona()
 
-        materials_summary = "\n".join(f"  - {m}" for m in existing_materials) if existing_materials else "No materials provided."
+        if existing_materials:
+            materials_summary = "\n".join(f"  - {m}" for m in existing_materials)
+        else:
+            materials_summary = "No materials provided."
 
         prompt_template = (PROMPT_DIR / "curriculum_gaps.txt").read_text()
         prompt = (

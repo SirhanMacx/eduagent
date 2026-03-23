@@ -9,10 +9,12 @@ go in under two minutes.
 from __future__ import annotations
 
 import asyncio
+import os
 from pathlib import Path
 
 from rich.console import Console
 from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
 from rich.prompt import Prompt
 from rich.table import Table
 
@@ -117,6 +119,46 @@ def _test_connection(config: AppConfig) -> bool:
         return False
 
 
+def _detect_available_models() -> tuple[LLMProvider | None, str]:
+    """Auto-detect what LLM backends are available.
+
+    Checks: ANTHROPIC_API_KEY, OPENAI_API_KEY, Ollama running locally.
+    Returns (provider, description) or (None, message).
+    """
+    # Check Anthropic
+    if os.environ.get("ANTHROPIC_API_KEY"):
+        return LLMProvider.ANTHROPIC, "Anthropic API key found in environment"
+
+    # Check OpenAI
+    if os.environ.get("OPENAI_API_KEY"):
+        return LLMProvider.OPENAI, "OpenAI API key found in environment"
+
+    # Check Ollama
+    try:
+        import httpx
+        resp = httpx.get("http://localhost:11434/api/tags", timeout=3.0)
+        if resp.status_code == 200:
+            data = resp.json()
+            models = [m.get("name", "") for m in data.get("models", [])]
+            # Prefer these models in order
+            preferred = ["minimax-m2.7", "llama3.2", "mistral"]
+            for pref in preferred:
+                for model in models:
+                    if pref in model:
+                        return LLMProvider.OLLAMA, f"Ollama running with {model}"
+            if models:
+                return LLMProvider.OLLAMA, f"Ollama running with {models[0]}"
+            return LLMProvider.OLLAMA, "Ollama running (no models pulled yet)"
+    except Exception:
+        pass
+
+    return None, (
+        "No LLM backend detected.\n"
+        "  Set ANTHROPIC_API_KEY or OPENAI_API_KEY in your environment,\n"
+        "  or install Ollama (https://ollama.ai) and run: ollama pull llama3.2"
+    )
+
+
 def _ask_materials() -> str | None:
     """Optionally collect a materials path for ingestion."""
     console.print()
@@ -136,23 +178,43 @@ def _ask_materials() -> str | None:
 
 
 def _ingest_materials(path_str: str, config: AppConfig) -> None:
-    """Run ingestion and show a quick persona summary."""
+    """Run ingestion with a progress bar and show persona summary."""
     from eduagent.ingestor import ingest_path
     from eduagent.persona import build_persona
 
     source = Path(path_str)
-    console.print(f"\n  [dim]Reading files from {source}...[/dim]")
 
-    docs = ingest_path(source)
-    if not docs:
+    # Count files first for progress bar
+    supported_exts = {".pdf", ".docx", ".pptx", ".txt", ".md"}
+    all_files = [
+        f for f in source.rglob("*")
+        if f.is_file() and f.suffix.lower() in supported_exts
+    ]
+
+    if not all_files:
         console.print("  [yellow]No supported files found. You can ingest later with:[/yellow]")
         console.print("    [bold]eduagent ingest <path>[/bold]")
         return
 
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        console=console,
+    ) as progress:
+        task = progress.add_task(
+            f"Reading files from {source.name}...",
+            total=len(all_files),
+        )
+        docs = ingest_path(source)
+        progress.update(task, completed=len(all_files), description="Files processed")
+
     console.print(f"  [green]\u2713 Processed {len(docs)} files.[/green]")
 
-    # Build persona from documents
+    console.print("  [dim]Extracting teaching style patterns...[/dim]")
     persona = build_persona(docs)
+
     console.print(
         Panel(
             persona.to_prompt_context(),
@@ -161,6 +223,23 @@ def _ingest_materials(path_str: str, config: AppConfig) -> None:
             padding=(0, 1),
         )
     )
+    console.print(f"  [green]\u2713 Persona saved — {persona.name or 'Teacher'} profile ready[/green]")
+
+    return persona
+
+
+def _show_persona_preview(subjects: list[str], grade_levels: list[str], state_abbr: str) -> bool:
+    """Show a preview of what we learned and ask for confirmation."""
+    from eduagent.state_standards import STATE_STANDARDS_CONFIG
+    state_name = STATE_STANDARDS_CONFIG.get(state_abbr, {}).get("name", state_abbr)
+
+    preview = (
+        f"I learned that you teach {', '.join(grade_levels)} grade "
+        f"{', '.join(subjects)} in {state_name}."
+    )
+    console.print(f"\n  [bold]{preview}[/bold]")
+    confirm = Prompt.ask("  Is this right?", choices=["y", "n"], default="y")
+    return confirm.lower() == "y"
 
 
 def run_onboarding() -> AppConfig:
@@ -179,6 +258,11 @@ def run_onboarding() -> AppConfig:
         )
     )
 
+    # ── Model auto-detection ──
+    detected_provider, detect_msg = _detect_available_models()
+    if detected_provider:
+        console.print(f"\n  [green]\u2713 Auto-detected:[/green] {detect_msg}")
+
     # ── Question 1: Subject(s) ──
     subjects_raw = Prompt.ask("\n[bold]What subject(s) do you teach?[/bold]")
     subjects = [s.strip() for s in subjects_raw.split(",") if s.strip()]
@@ -190,8 +274,28 @@ def run_onboarding() -> AppConfig:
     # ── Question 3: State ──
     state_abbr = _ask_state()
 
+    # ── Preview and confirm ──
+    confirmed = _show_persona_preview(subjects, grade_levels, state_abbr)
+    if not confirmed:
+        console.print("  [dim]Let's try again.[/dim]")
+        subjects_raw = Prompt.ask("[bold]What subject(s) do you teach?[/bold]")
+        subjects = [s.strip() for s in subjects_raw.split(",") if s.strip()]
+        grades_raw = Prompt.ask("[bold]What grade level(s)?[/bold]")
+        grade_levels = [g.strip() for g in grades_raw.split(",") if g.strip()]
+        state_abbr = _ask_state()
+
     # ── API key selection ──
-    provider, api_key = _ask_provider()
+    if detected_provider and detected_provider != LLMProvider.OLLAMA:
+        # Auto-detected a cloud provider, use it
+        provider = detected_provider
+        api_key = None  # Already in env
+        console.print(f"  [green]\u2713 Using {provider.value} from environment.[/green]")
+    elif detected_provider == LLMProvider.OLLAMA:
+        provider = LLMProvider.OLLAMA
+        api_key = None
+        console.print(f"  [green]\u2713 Using local Ollama.[/green]")
+    else:
+        provider, api_key = _ask_provider()
 
     # Save key securely
     if api_key:
@@ -217,17 +321,56 @@ def run_onboarding() -> AppConfig:
 
     # ── Materials (optional) ──
     materials_path = _ask_materials()
+    persona = None
     if materials_path:
         profile.materials_paths = [materials_path]
         config.teacher_profile = profile
         config.save()
-        _ingest_materials(materials_path, config)
+        persona = _ingest_materials(materials_path, config)
+
+    # ── Auto-generate a sample lesson ──
+    if connected:
+        console.print("\n  [dim]Generating a sample lesson so you can see EDUagent in action...[/dim]")
+        try:
+            from eduagent.llm import LLMClient
+            client = LLMClient(config)
+
+            topic = subjects[0] if subjects else "Science"
+            grade = grade_levels[0] if grade_levels else "8"
+
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                sample = loop.run_until_complete(
+                    client.generate(
+                        f"Generate a brief 3-sentence lesson opening (do-now/bell-ringer) "
+                        f"for {grade} grade {topic}. Keep it concise.",
+                        temperature=0.7,
+                        max_tokens=300,
+                    )
+                )
+            finally:
+                loop.close()
+
+            if sample and len(sample) > 10:
+                console.print(
+                    Panel(
+                        sample.strip(),
+                        title="[bold cyan]Sample Lesson Opening[/bold cyan]",
+                        border_style="cyan",
+                        padding=(0, 1),
+                    )
+                )
+        except Exception:
+            pass  # Sample lesson is best-effort
 
     # ── Success ──
     console.print(
         Panel(
-            "[bold green]You're all set![/bold green]\n\n"
-            "Try asking: [italic]\"What topic do you want to plan?\"[/italic]\n\n"
+            "[bold green]Setup complete! Here's how to use me:[/bold green]\n\n"
+            "  [bold]eduagent chat[/bold]         \u2014 Start an interactive session\n"
+            "  [bold]eduagent ingest <path>[/bold] \u2014 Feed me your lesson plans\n"
+            "  [bold]eduagent serve[/bold]         \u2014 Launch the web dashboard\n\n"
             "[dim]Tip: Run [bold]eduagent ingest <path>[/bold] anytime to add more materials.[/dim]",
             title="[bold green]\u2705 Ready[/bold green]",
             border_style="green",

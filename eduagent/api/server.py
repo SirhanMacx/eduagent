@@ -195,6 +195,112 @@ def create_app() -> FastAPI:
             "active_nav": "home",
         })
 
+    @app.get("/lessons", response_class=HTMLResponse)
+    async def lessons_list_page(request: Request):
+        """Lesson list page: all generated lessons, filterable, newest first."""
+        db = get_db()
+        subject_filter = request.query_params.get("subject", "")
+        grade_filter = request.query_params.get("grade", "")
+
+        # Gather all lessons across all units
+        all_lessons: list[dict] = []
+        units = db.list_units()
+        unit_map = {u["id"]: u for u in units}
+        for u in units:
+            if subject_filter and u.get("subject", "").lower() != subject_filter.lower():
+                continue
+            if grade_filter and u.get("grade_level", "").lower() != grade_filter.lower():
+                continue
+            for lesson in db.list_lessons(u["id"]):
+                lesson_data = {}
+                if lesson.get("lesson_json"):
+                    try:
+                        lesson_data = json.loads(lesson["lesson_json"])
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+                quality_score = None
+                if lesson.get("scores_json"):
+                    try:
+                        scores = json.loads(lesson["scores_json"])
+                        quality_score = scores.get("overall") or scores.get("total")
+                    except (json.JSONDecodeError, TypeError):
+                        pass
+                all_lessons.append({
+                    "id": lesson["id"],
+                    "title": lesson.get("title") or lesson_data.get("title") or "Untitled",
+                    "subject": u.get("subject", ""),
+                    "grade_level": u.get("grade_level", ""),
+                    "date": (lesson.get("created_at") or "")[:10],
+                    "quality_score": quality_score,
+                    "rating": lesson.get("rating"),
+                    "share_token": lesson.get("share_token"),
+                })
+
+        # Sort newest first
+        all_lessons.sort(key=lambda x: x["date"], reverse=True)
+
+        # Get unique subjects and grades for filters
+        all_subjects = sorted({u.get("subject", "") for u in units if u.get("subject")})
+        all_grades = sorted({u.get("grade_level", "") for u in units if u.get("grade_level")})
+
+        # Build a simple HTML page
+        rows_html = ""
+        for les in all_lessons:
+            score_display = f"{les['quality_score']}" if les.get("quality_score") else "-"
+            rating_display = f"{'*' * les['rating']}" if les.get("rating") else "-"
+            share_btn = f'<a href="/shared/{les["share_token"]}">Share</a>' if les.get("share_token") else ""
+            rows_html += (
+                f"<tr>"
+                f"<td><a href='/lesson/{les['id']}'>{les['title']}</a></td>"
+                f"<td>{les['subject']}</td>"
+                f"<td>{les['grade_level']}</td>"
+                f"<td>{les['date']}</td>"
+                f"<td>{score_display}</td>"
+                f"<td>{rating_display}</td>"
+                f"<td>{share_btn}</td>"
+                f"</tr>"
+            )
+
+        filter_html = ""
+        if all_subjects:
+            opts = "".join(
+                f"<option value='{s}' {'selected' if s == subject_filter else ''}>{s}</option>"
+                for s in all_subjects
+            )
+            filter_html += f"<select name='subject' onchange='this.form.submit()'><option value=''>All Subjects</option>{opts}</select> "
+        if all_grades:
+            opts = "".join(
+                f"<option value='{g}' {'selected' if g == grade_filter else ''}>{g}</option>"
+                for g in all_grades
+            )
+            filter_html += f"<select name='grade' onchange='this.form.submit()'><option value=''>All Grades</option>{opts}</select>"
+
+        html = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Lessons - EDUagent</title>
+<style>
+body {{ font-family: -apple-system, system-ui, sans-serif; max-width: 1000px; margin: 20px auto; padding: 0 20px; }}
+h1 {{ color: #1a73e8; }}
+table {{ width: 100%; border-collapse: collapse; }}
+th, td {{ padding: 10px 12px; text-align: left; border-bottom: 1px solid #e0e0e0; }}
+th {{ background: #f5f5f5; font-weight: 600; }}
+tr:hover {{ background: #f8f9fa; }}
+a {{ color: #1a73e8; text-decoration: none; }}
+a:hover {{ text-decoration: underline; }}
+.btn {{ display: inline-block; background: #1a73e8; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; margin: 12px 0; }}
+select {{ padding: 6px 10px; border-radius: 4px; border: 1px solid #ccc; margin-right: 8px; }}
+.filters {{ margin: 16px 0; }}
+</style></head><body>
+<h1>All Lessons</h1>
+<a href="/generate" class="btn">Generate New Lesson</a>
+<form class="filters" method="get">{filter_html}</form>
+<table>
+<tr><th>Title</th><th>Subject</th><th>Grade</th><th>Date</th><th>Score</th><th>Rating</th><th></th></tr>
+{rows_html}
+</table>
+{f"<p style='color:#999;margin-top:24px'>Showing {len(all_lessons)} lesson(s)</p>" if all_lessons else "<p>No lessons yet. <a href='/generate'>Generate your first lesson.</a></p>"}
+</body></html>"""
+        return HTMLResponse(html)
+
     @app.get("/generate", response_class=HTMLResponse)
     async def generate_page(request: Request):
         from eduagent.standards import STANDARDS
@@ -307,6 +413,91 @@ def create_app() -> FastAPI:
             "share_url": f"/shared/{token}",
             "is_shared": True,
         })
+
+    @app.get("/student/{class_code}", response_class=HTMLResponse)
+    async def student_class_page(request: Request, class_code: str):
+        """Minimal student-facing page for a class code."""
+        from eduagent.state import _get_conn, init_db
+        init_db()
+        conn = _get_conn()
+        conn.row_factory = sqlite3.Row
+        row = conn.execute(
+            "SELECT * FROM classes WHERE class_code = ?", (class_code,)
+        ).fetchone()
+        conn.close()
+
+        if not row:
+            return HTMLResponse("<h1>Class not found</h1>", status_code=404)
+
+        class_name = row["name"] if "name" in row.keys() else class_code
+        class_topic = row["topic"] if "topic" in row.keys() else ""
+        teacher_id = row["teacher_id"]
+
+        # Get teacher name
+        teacher_name = teacher_id
+        db = get_db()
+        teacher = db.get_teacher(teacher_id)
+        if teacher:
+            teacher_name = teacher.get("name") or teacher_id
+
+        # Get recent lesson topics from active lesson
+        lesson_topics = []
+        if row["active_lesson_json"]:
+            try:
+                lesson_data = json.loads(row["active_lesson_json"])
+                lesson_topics.append(lesson_data.get("title", ""))
+            except (json.JSONDecodeError, TypeError):
+                pass
+
+        bot_link = f"https://t.me/eduagent_bot?start={class_code}"
+
+        html = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{class_name or class_code} - EDUagent</title>
+<style>
+body {{
+  font-family: -apple-system, system-ui, sans-serif;
+  max-width: 600px; margin: 40px auto;
+  padding: 0 20px; background: #f8f9fa;
+}}
+.card {{
+  background: white; border-radius: 12px; padding: 32px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1); text-align: center;
+}}
+h1 {{ color: #1a73e8; margin-bottom: 8px; }}
+.teacher {{ color: #666; margin-bottom: 24px; }}
+.code {{
+  font-size: 2em; font-weight: bold; color: #1a73e8;
+  background: #e8f0fe; padding: 12px 24px; border-radius: 8px;
+  display: inline-block; margin: 16px 0; letter-spacing: 2px;
+}}
+.qr {{ margin: 24px 0; }}
+.qr img {{ max-width: 200px; }}
+.topic {{
+  background: #e8f5e9; padding: 8px 16px;
+  border-radius: 6px; margin: 8px 4px; display: inline-block;
+}}
+.join-btn {{
+  display: inline-block; background: #1a73e8; color: white;
+  padding: 14px 32px; border-radius: 8px;
+  text-decoration: none; font-size: 1.1em; margin-top: 16px;
+}}
+.join-btn:hover {{ background: #1557b0; }}
+.privacy {{ color: #999; font-size: 0.85em; margin-top: 24px; }}
+</style></head><body>
+<div class="card">
+<h1>{class_name or class_code}</h1>
+<p class="teacher">Teacher: {teacher_name}</p>
+<div class="code">{class_code}</div>
+{''.join(f'<span class="topic">{t}</span>' for t in lesson_topics if t)}
+{f'<p><strong>Current Topic:</strong> {class_topic}</p>' if class_topic else ''}
+<p style="margin-top:24px"><strong>Scan to chat on Telegram:</strong></p>
+<div class="qr"><img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={bot_link}" alt="QR Code"></div>
+<a href="{bot_link}" class="join-btn">Open in Telegram</a>
+<p class="privacy">No student data is displayed on this page.</p>
+</div></body></html>"""
+
+        return HTMLResponse(html)
 
     @app.get("/analytics", response_class=HTMLResponse)
     async def analytics_page(request: Request):
