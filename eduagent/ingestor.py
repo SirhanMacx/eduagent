@@ -104,7 +104,11 @@ def _extract_single(path: Path) -> Optional[Document]:
         return None
 
     extractor = EXTRACTORS[doc_type]
-    result = extractor(path)
+    try:
+        result = extractor(path)
+    except Exception:
+        # Corrupt, password-protected, or partially-transferred file — skip silently
+        return None
     if isinstance(result, tuple):
         content, page_count = result
     else:

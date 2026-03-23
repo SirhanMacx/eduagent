@@ -22,7 +22,6 @@ from typing import Optional
 
 from eduagent.models import DailyLesson, TeacherPersona, UnitPlan
 
-
 # Default data directory
 DEFAULT_DATA_DIR = Path.home() / ".eduagent"
 
