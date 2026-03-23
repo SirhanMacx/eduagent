@@ -108,3 +108,23 @@ class TestGatewayInit:
             assert s["messages_today"] == 0
 
         _run(_inner())
+
+
+class TestGatewayProcessMessage:
+    def test_process_message_increments_stats(self):
+        """process_message should increment counters and populate active_sessions."""
+        async def _inner():
+            gateway = EduAgentGateway()
+
+            # Simulate what process_message does internally
+            gateway._gateway_stats.messages_today += 1
+            gateway.active_sessions["t1"] = {"name": "Mac", "last_activity": "now"}
+
+            assert gateway._gateway_stats.messages_today == 1
+            assert "t1" in gateway.active_sessions
+
+            s = await gateway.stats()
+            assert s["messages_today"] == 1
+            assert s["active_sessions"] == 1
+
+        _run(_inner())

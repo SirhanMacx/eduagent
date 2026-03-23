@@ -1,6 +1,5 @@
 """Tests for year-level curriculum mapping models and utilities."""
 
-from pathlib import Path
 
 import pytest
 
@@ -14,7 +13,6 @@ from eduagent.models import (
     YearMap,
     YearMapUnit,
 )
-
 
 # ── YearMapUnit model ─────────────────────────────────────────────────
 
