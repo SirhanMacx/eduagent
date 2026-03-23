@@ -188,7 +188,8 @@ class TestRunOnboarding:
             "Global History",        # subjects
             "10",                    # grade levels
             "New York",              # state
-            "3",                     # provider (Ollama)
+            "y",                     # persona preview confirmation
+            "3",                     # provider (Ollama) — only asked if not auto-detected
             "",                      # materials (skip)
         ]
 
@@ -196,6 +197,7 @@ class TestRunOnboarding:
             patch.object(AppConfig, "config_path", return_value=config_file),
             patch("eduagent.onboarding.Prompt.ask", side_effect=side_effects),
             patch("eduagent.onboarding._test_connection", return_value=True),
+            patch("eduagent.onboarding._detect_available_models", return_value=(None, "No LLM found")),
         ):
             from eduagent.onboarding import run_onboarding
 

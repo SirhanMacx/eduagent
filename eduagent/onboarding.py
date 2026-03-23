@@ -14,7 +14,7 @@ from pathlib import Path
 
 from rich.console import Console
 from rich.panel import Panel
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
+from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn
 from rich.prompt import Prompt
 from rich.table import Table
 
@@ -293,7 +293,7 @@ def run_onboarding() -> AppConfig:
     elif detected_provider == LLMProvider.OLLAMA:
         provider = LLMProvider.OLLAMA
         api_key = None
-        console.print(f"  [green]\u2713 Using local Ollama.[/green]")
+        console.print("  [green]\u2713 Using local Ollama.[/green]")
     else:
         provider, api_key = _ask_provider()
 
@@ -321,12 +321,11 @@ def run_onboarding() -> AppConfig:
 
     # ── Materials (optional) ──
     materials_path = _ask_materials()
-    persona = None
     if materials_path:
         profile.materials_paths = [materials_path]
         config.teacher_profile = profile
         config.save()
-        persona = _ingest_materials(materials_path, config)
+        _ingest_materials(materials_path, config)
 
     # ── Auto-generate a sample lesson ──
     if connected:

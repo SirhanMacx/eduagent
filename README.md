@@ -7,7 +7,8 @@
 
 <p align="center">
   <a href="https://github.com/SirhanMacx/eduagent/actions/workflows/ci.yml"><img src="https://github.com/SirhanMacx/eduagent/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-  <a href="https://pypi.org/project/eduagent/"><img src="https://img.shields.io/pypi/v/eduagent" alt="PyPI"></a>
+  <a href="https://pypi.org/project/eduagent/"><img src="https://img.shields.io/pypi/v/eduagent?color=blue" alt="PyPI"></a>
+  <a href="https://pypi.org/project/eduagent/"><img src="https://img.shields.io/pypi/dm/eduagent?color=green" alt="PyPI Downloads"></a>
   <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.10+-blue" alt="Python 3.10+"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License"></a>
   <a href="https://github.com/SirhanMacx/eduagent/stargazers"><img src="https://img.shields.io/github/stars/SirhanMacx/eduagent" alt="GitHub stars"></a>
@@ -163,12 +164,16 @@ See [docs/DOCKER_SETUP.md](docs/DOCKER_SETUP.md) for the full guide (assumes zer
 
 ## 📦 Installation
 
+Available on PyPI — install with one command:
+
 ```bash
 pip install eduagent                    # Core (terminal chat + web)
 pip install 'eduagent[telegram]'        # + Telegram bot
 pip install 'eduagent[voice]'           # + Voice note transcription
 pip install 'eduagent[all]'             # Everything
 ```
+
+> **Requires Python 3.10+.** Run `python --version` to check. If needed, [install Python](https://python.org/downloads).
 
 ## 🔧 LLM Backend (choose one)
 
@@ -218,9 +223,16 @@ Generation pipeline:
   differentiation.py → IEP/504 modifications
 
 Delivery:
-  telegram_bot.py  → Telegram
-  api/server.py    → Web dashboard
-  cli.py           → Terminal
+  commands/bot.py      → Telegram bot
+  commands/generate.py → Generation CLI commands
+  commands/config.py   → Config & API key management
+  commands/export.py   → Export (PDF, Classroom, share)
+  api/server.py        → Web dashboard (FastAPI)
+  cli.py               → Entry point (~100 lines)
+
+Security:
+  API keys stored in OS keychain (keyring) — never in config.json
+  JSON repair via json-repair package for resilient LLM output parsing
 ```
 
 ## ✅ Features

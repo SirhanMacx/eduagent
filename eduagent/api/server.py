@@ -205,7 +205,6 @@ def create_app() -> FastAPI:
         # Gather all lessons across all units
         all_lessons: list[dict] = []
         units = db.list_units()
-        unit_map = {u["id"]: u for u in units}
         for u in units:
             if subject_filter and u.get("subject", "").lower() != subject_filter.lower():
                 continue
@@ -267,37 +266,54 @@ def create_app() -> FastAPI:
                 f"<option value='{s}' {'selected' if s == subject_filter else ''}>{s}</option>"
                 for s in all_subjects
             )
-            filter_html += f"<select name='subject' onchange='this.form.submit()'><option value=''>All Subjects</option>{opts}</select> "
+            filter_html += (
+                "<select name='subject' onchange='this.form.submit()'>"
+                f"<option value=''>All Subjects</option>{opts}</select> "
+            )
         if all_grades:
             opts = "".join(
                 f"<option value='{g}' {'selected' if g == grade_filter else ''}>{g}</option>"
                 for g in all_grades
             )
-            filter_html += f"<select name='grade' onchange='this.form.submit()'><option value=''>All Grades</option>{opts}</select>"
+            filter_html += (
+                "<select name='grade' onchange='this.form.submit()'>"
+                f"<option value=''>All Grades</option>{opts}</select>"
+            )
 
+        count_msg = (
+            f"<p style='color:#999;margin-top:24px'>Showing {len(all_lessons)} lesson(s)</p>"
+            if all_lessons
+            else "<p>No lessons yet. <a href='/generate'>Generate one.</a></p>"
+        )
         html = f"""<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Lessons - EDUagent</title>
 <style>
-body {{ font-family: -apple-system, system-ui, sans-serif; max-width: 1000px; margin: 20px auto; padding: 0 20px; }}
+body {{ font-family: -apple-system, system-ui, sans-serif;
+  max-width: 1000px; margin: 20px auto; padding: 0 20px; }}
 h1 {{ color: #1a73e8; }}
 table {{ width: 100%; border-collapse: collapse; }}
-th, td {{ padding: 10px 12px; text-align: left; border-bottom: 1px solid #e0e0e0; }}
+th, td {{ padding: 10px 12px; text-align: left;
+  border-bottom: 1px solid #e0e0e0; }}
 th {{ background: #f5f5f5; font-weight: 600; }}
 tr:hover {{ background: #f8f9fa; }}
 a {{ color: #1a73e8; text-decoration: none; }}
 a:hover {{ text-decoration: underline; }}
-.btn {{ display: inline-block; background: #1a73e8; color: white; padding: 10px 24px; border-radius: 6px; text-decoration: none; margin: 12px 0; }}
-select {{ padding: 6px 10px; border-radius: 4px; border: 1px solid #ccc; margin-right: 8px; }}
+.btn {{ display: inline-block; background: #1a73e8; color: white;
+  padding: 10px 24px; border-radius: 6px;
+  text-decoration: none; margin: 12px 0; }}
+select {{ padding: 6px 10px; border-radius: 4px;
+  border: 1px solid #ccc; margin-right: 8px; }}
 .filters {{ margin: 16px 0; }}
 </style></head><body>
 <h1>All Lessons</h1>
 <a href="/generate" class="btn">Generate New Lesson</a>
 <form class="filters" method="get">{filter_html}</form>
 <table>
-<tr><th>Title</th><th>Subject</th><th>Grade</th><th>Date</th><th>Score</th><th>Rating</th><th></th></tr>
+<tr><th>Title</th><th>Subject</th><th>Grade</th>
+<th>Date</th><th>Score</th><th>Rating</th><th></th></tr>
 {rows_html}
 </table>
-{f"<p style='color:#999;margin-top:24px'>Showing {len(all_lessons)} lesson(s)</p>" if all_lessons else "<p>No lessons yet. <a href='/generate'>Generate your first lesson.</a></p>"}
+{count_msg}
 </body></html>"""
         return HTMLResponse(html)
 
@@ -351,6 +367,24 @@ select {{ padding: 6px 10px; border-radius: 4px; border: 1px solid #ccc; margin-
                         "description": get_framework_description(code),
                     })
 
+        # Get class codes for management
+        class_codes_list: list[dict] = []
+        try:
+            from eduagent.state import _get_conn as _state_conn2
+            from eduagent.state import init_db as _state_init2
+            _state_init2()
+            sconn2 = _state_conn2()
+            sconn2.row_factory = sqlite3.Row
+            teacher_id_for_codes = teacher["id"] if teacher else "local-teacher"
+            cc_rows2 = sconn2.execute(
+                "SELECT class_code, name, topic, expires_at, created_at FROM classes WHERE teacher_id = ?",
+                (teacher_id_for_codes,),
+            ).fetchall()
+            class_codes_list = [dict(r) for r in cc_rows2]
+            sconn2.close()
+        except Exception:
+            pass
+
         return templates.TemplateResponse(request, "settings.html", {
             "config": cfg,
             "persona": persona_data,
@@ -361,6 +395,7 @@ select {{ padding: 6px 10px; border-radius: 4px; border: 1px solid #ccc; margin-
             "teacher_subjects": teacher_subjects,
             "teacher_grades": teacher_grades,
             "state_frameworks": state_frameworks,
+            "class_codes": class_codes_list,
             "active_nav": "settings",
         })
 
@@ -388,6 +423,30 @@ select {{ padding: 6px 10px; border-radius: 4px; border: 1px solid #ccc; margin-
         materials_data = json.loads(lesson_row["materials_json"]) if lesson_row.get("materials_json") else None
         scores_data = json.loads(lesson_row["scores_json"]) if lesson_row.get("scores_json") else None
         feedback_list = db.get_feedback_for_lesson(lesson_id)
+        # Build embed snippet for student chatbot
+        embed_snippet = (
+            f'<script src="/static/student-chat-widget.js" '
+            f'data-lesson-id="{lesson_id}" '
+            f'data-api-url="/api/chat"></script>'
+        )
+
+        # Get class codes for this lesson (if any are active)
+        class_codes = []
+        try:
+            from eduagent.state import _get_conn as _state_conn
+            from eduagent.state import init_db as _state_init
+            _state_init()
+            sconn = _state_conn()
+            sconn.row_factory = sqlite3.Row
+            cc_rows = sconn.execute(
+                "SELECT class_code, name FROM classes WHERE active_lesson_id = ?",
+                (lesson_id,),
+            ).fetchall()
+            class_codes = [{"code": r["class_code"], "name": r["name"]} for r in cc_rows]
+            sconn.close()
+        except Exception:
+            pass
+
         return templates.TemplateResponse(request, "lesson.html", {
             "lesson": lesson_row,
             "lesson_data": lesson_data,
@@ -395,6 +454,8 @@ select {{ padding: 6px 10px; border-radius: 4px; border: 1px solid #ccc; margin-
             "scores": scores_data,
             "feedback_list": feedback_list,
             "share_url": f"/shared/{lesson_row['share_token']}",
+            "embed_snippet": embed_snippet,
+            "class_codes": class_codes,
         })
 
     @app.get("/share/{token}", response_class=HTMLResponse)
