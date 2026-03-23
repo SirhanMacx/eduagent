@@ -945,6 +945,30 @@ def share(
     console.print(f"[green]Shareable lesson saved:[/green] {html_path}")
 
 
+# ── Landing page command ─────────────────────────────────────────────
+
+
+@app.command(name="generate-landing")
+def generate_landing(
+    output: str = typer.Option("./eduagent_output/landing", "--output", "-o", help="Output directory"),
+    open_browser: bool = typer.Option(True, "--open/--no-open", help="Open in browser after generating"),
+):
+    """Generate the EDUagent landing page (self-contained HTML)."""
+    landing_src = Path(__file__).parent / "landing" / "index.html"
+    if not landing_src.exists():
+        console.print("[red]Landing page template not found.[/red]")
+        raise typer.Exit(1)
+
+    out_dir = Path(output).expanduser().resolve()
+    out_dir.mkdir(parents=True, exist_ok=True)
+    dest = out_dir / "index.html"
+    dest.write_text(landing_src.read_text())
+
+    console.print(f"[green]Landing page generated:[/green] {dest}")
+    if open_browser:
+        webbrowser.open(dest.as_uri())
+
+
 # ── Serve command ──────────────────────────────────────────────────────
 
 

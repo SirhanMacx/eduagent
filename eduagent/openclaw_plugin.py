@@ -16,6 +16,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
+from eduagent.model_router import route as route_model
 from eduagent.models import AppConfig, TeacherPersona
 from eduagent.router import Intent, ParsedIntent, needs_clarification, parse_intent
 from eduagent.state import TeacherSession
@@ -293,7 +294,7 @@ async def _handle_generate_unit(parsed: ParsedIntent, session: TeacherSession) -
     persona = session.persona or TeacherPersona()
 
     try:
-        config = AppConfig.load()
+        config = route_model("unit_plan", AppConfig.load())
         unit = await plan_unit(
             subject=subject,
             grade_level=grade,
@@ -341,7 +342,7 @@ async def _handle_generate_lesson(parsed: ParsedIntent, session: TeacherSession)
     persona = session.persona or TeacherPersona()
 
     try:
-        config = AppConfig.load()
+        config = route_model("lesson_plan", AppConfig.load())
         lesson = await generate_lesson(
             lesson_number=lesson_num,
             unit=unit,
@@ -365,7 +366,7 @@ async def _handle_generate_materials(parsed: ParsedIntent, session: TeacherSessi
     persona = session.persona or TeacherPersona()
 
     try:
-        config = AppConfig.load()
+        config = route_model("materials", AppConfig.load())
         materials = await generate_materials(lesson=lesson, persona=persona, config=config)
         lines = [
             f"📋 *Materials for: {lesson.title}*",
@@ -404,7 +405,7 @@ async def _handle_generate_bellringer(parsed: ParsedIntent, session: TeacherSess
 
     topic = parsed.topic or (session.current_unit.topic if session.current_unit else "today's topic")
     persona = session.persona or TeacherPersona()
-    config = AppConfig.load()
+    config = route_model("bellringer", AppConfig.load())
 
     try:
         client = LLMClient(config)
@@ -428,7 +429,7 @@ async def _handle_generate_differentiation(parsed: ParsedIntent, session: Teache
     from eduagent.llm import LLMClient
     from eduagent.models import AppConfig
 
-    config = AppConfig.load()
+    config = route_model("differentiation", AppConfig.load())
     client = LLMClient(config)
 
     try:
@@ -602,7 +603,7 @@ async def _handle_freeform(message: str, session: TeacherSession) -> str:
     from eduagent.llm import LLMClient
     from eduagent.models import AppConfig
 
-    config = AppConfig.load()
+    config = route_model("quick_answer", AppConfig.load())
     client = LLMClient(config)
 
     persona_context = session.persona.to_prompt_context() if session.persona else "Teacher persona not yet configured."

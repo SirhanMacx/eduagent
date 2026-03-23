@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from eduagent.models import AppConfig, DailyLesson, TeacherPersona
+from eduagent.models import TeacherPersona
 from eduagent.state import init_db
 
 
@@ -142,7 +141,6 @@ class TestHandleQuestion:
     @patch("eduagent.chat.student_chat", new_callable=AsyncMock)
     def test_handle_question_returns_string(self, mock_chat):
         from eduagent.state import TeacherSession
-
         from eduagent.student_bot import StudentBot
 
         # Set up teacher session with persona
@@ -179,7 +177,6 @@ class TestHintMode:
     @patch("eduagent.chat.student_chat", new_callable=AsyncMock)
     def test_hint_mode_does_not_give_direct_answer(self, mock_chat):
         from eduagent.state import TeacherSession
-
         from eduagent.student_bot import StudentBot
 
         # Set up teacher with persona
@@ -242,7 +239,6 @@ class TestStudentReport:
     @patch("eduagent.chat.student_chat", new_callable=AsyncMock)
     def test_report_after_questions(self, mock_chat):
         from eduagent.state import TeacherSession
-
         from eduagent.student_bot import StudentBot
 
         session = TeacherSession(

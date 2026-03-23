@@ -12,8 +12,6 @@ Usage:
 import argparse
 import subprocess
 import sys
-import tempfile
-import json
 from pathlib import Path
 
 SIRHAN_HOST = "sirhan"
@@ -44,17 +42,17 @@ def run_ssh(cmd: str) -> str:
 def copy_files(remote_dir: str, local_dir: Path, max_files: int = 30) -> list[Path]:
     """Copy up to max_files from remote_dir to local_dir."""
     local_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Get file list via SSH
     file_list_cmd = f'find "{remote_dir}" -maxdepth 3 -type f \\( -name "*.pdf" -o -name "*.docx" -o -name "*.pptx" -o -name "*.txt" \\) 2>/dev/null | head -n {max_files}'
     output = run_ssh(file_list_cmd)
-    
+
     if not output:
         return []
-    
+
     files = [f.strip() for f in output.split('\n') if f.strip()]
     copied = []
-    
+
     for i, remote_file in enumerate(files[:max_files]):
         filename = Path(remote_file).name
         local_path = local_dir / filename
@@ -70,7 +68,7 @@ def copy_files(remote_dir: str, local_dir: Path, max_files: int = 30) -> list[Pa
             copied.append(local_path)
         if (i + 1) % 10 == 0:
             print(f"  Copied {i+1}/{len(files)} files...", flush=True)
-    
+
     return copied
 
 def main():
@@ -85,7 +83,7 @@ def main():
         _run_extraction()
         return
 
-    print(f"🎓 Jon's Curriculum Ingestion")
+    print("🎓 Jon's Curriculum Ingestion")
     print(f"   Source: {SIRHAN_HOST}:{CURRICULA_BASE}")
     print(f"   Cache: {LOCAL_CACHE}")
     print()
@@ -111,12 +109,12 @@ def main():
             "rsync", "-av", "--progress",
             f"{SIRHAN_HOST}:{CURRICULA_BASE}/",
             str(LOCAL_CACHE),
-            "--include=*.pdf", "--include=*.docx", "--include=*.pptx", 
+            "--include=*.pdf", "--include=*.docx", "--include=*.pptx",
             "--include=*.txt", "--include=*/",
             "--exclude=*"
         ])
         print(f"Rsync PID: {result.pid}. Running in background.")
-        print(f"Monitor: ps aux | grep rsync")
+        print("Monitor: ps aux | grep rsync")
         return
 
     # Run persona extraction on what we have
@@ -130,20 +128,20 @@ def _run_extraction():
         print(f"No cached files found at {LOCAL_CACHE}")
         print("Run with --sample first.")
         return
-    
+
     # Count files
     files = list(LOCAL_CACHE.rglob("*.pdf")) + \
             list(LOCAL_CACHE.rglob("*.docx")) + \
             list(LOCAL_CACHE.rglob("*.pptx"))
     print(f"Found {len(files)} cached files")
-    
+
     # Run eduagent ingest
     result = subprocess.run(
         [sys.executable, "-m", "eduagent.cli", "ingest", str(LOCAL_CACHE)],
         cwd=Path(__file__).parent.parent,
         capture_output=False
     )
-    
+
     if result.returncode == 0:
         print("\n✅ Jon's persona extracted successfully!")
         print("Run 'eduagent persona show' to see the result.")

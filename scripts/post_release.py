@@ -15,6 +15,7 @@ import subprocess
 import sys
 from datetime import datetime
 
+
 def get_last_commit_message() -> str:
     result = subprocess.run(
         ["git", "log", "-1", "--format=%s"],
@@ -35,7 +36,7 @@ def format_release_tweet(commit_msg: str, date: str) -> str:
     """Format commit message as OpenClaw-style release tweet."""
     # Parse conventional commit format
     lines = []
-    
+
     # Extract key changes from commit message
     if "student" in commit_msg.lower():
         lines.append("🎓 Student bot — answers questions in teacher's voice")
@@ -55,28 +56,26 @@ def format_release_tweet(commit_msg: str, date: str) -> str:
         lines.append("⚡ Streaming generation — watch lessons appear in real-time")
     if "telegram" in commit_msg.lower() or "openclaw" in commit_msg.lower():
         lines.append("💬 Telegram-native — just talk, no terminal")
-    
+
     # Fallback: use the commit message directly
     if not lines:
         # Clean up conventional commit prefix
         clean_msg = commit_msg.replace("feat: ", "✅ ").replace("fix: ", "🔧 ").replace("chore: ", "🔨 ")
         lines.append(clean_msg[:80])
-    
+
     body = "\n".join(lines[:4])  # Max 4 bullet points
-    
+
     tweet = f"EDUagent {date} 🎓\n\n{body}\n\nFirst AI co-teacher trained on YOUR curriculum.\n\ngithub.com/SirhanMacx/eduagent"
-    
+
     # Ensure under 280 chars
     if len(tweet) > 276:
         tweet = tweet[:273] + "..."
-    
+
     return tweet
 
 def post_to_x(tweet: str) -> bool:
     """Post to X using the browser automation approach."""
     try:
-        import asyncio
-        from playwright.async_api import async_playwright
         # This would use the browser automation
         # For now, print and return True (manual posting)
         print(f"\nREADY TO POST:\n{'-'*40}\n{tweet}\n{'-'*40}")
@@ -89,6 +88,6 @@ def post_to_x(tweet: str) -> bool:
 if __name__ == "__main__":
     commit_msg = sys.argv[1] if len(sys.argv) > 1 else get_last_commit_message()
     date = datetime.now().strftime("%Y.%-m.%-d")
-    
+
     tweet = format_release_tweet(commit_msg, date)
     print(tweet)

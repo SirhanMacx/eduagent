@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from eduagent.llm import LLMClient
+from eduagent.model_router import route as route_model
 from eduagent.models import (
     AppConfig,
     AssessmentQuestion,
@@ -31,6 +32,7 @@ async def generate_worksheet(
     lesson: DailyLesson,
     persona: TeacherPersona,
     config: AppConfig | None = None,
+    task_type: str = "materials",
 ) -> list[WorksheetItem]:
     """Generate a student worksheet for a lesson."""
     prompt_template = (PROMPT_DIR / "worksheet.txt").read_text()
@@ -44,6 +46,8 @@ async def generate_worksheet(
         .replace("{key_concepts}", _lesson_key_concepts(lesson))
     )
 
+    if task_type and config:
+        config = route_model(task_type, config)
     client = LLMClient(config)
     data = await client.generate_json(
         prompt=prompt,
@@ -62,6 +66,7 @@ async def generate_assessment(
     lesson: DailyLesson,
     persona: TeacherPersona,
     config: AppConfig | None = None,
+    task_type: str = "materials",
 ) -> tuple[list[AssessmentQuestion], list[RubricCriterion]]:
     """Generate a quiz/assessment with optional rubric for a lesson."""
     prompt_template = (PROMPT_DIR / "assessment.txt").read_text()
@@ -75,6 +80,8 @@ async def generate_assessment(
         .replace("{key_concepts}", _lesson_key_concepts(lesson))
     )
 
+    if task_type and config:
+        config = route_model(task_type, config)
     client = LLMClient(config)
     data = await client.generate_json(
         prompt=prompt,
@@ -94,6 +101,7 @@ async def generate_slides(
     lesson: DailyLesson,
     persona: TeacherPersona,
     config: AppConfig | None = None,
+    task_type: str = "materials",
 ) -> list[SlideOutline]:
     """Generate a slide deck outline for a lesson."""
     prompt = (
@@ -111,6 +119,8 @@ async def generate_slides(
         f'[{{"slide_number": 1, "title": "Title", "content_bullets": ["..."], "speaker_notes": "..."}}]'
     )
 
+    if task_type and config:
+        config = route_model(task_type, config)
     client = LLMClient(config)
     data = await client.generate_json(
         prompt=prompt,
@@ -128,6 +138,7 @@ async def generate_iep_notes(
     lesson: DailyLesson,
     persona: TeacherPersona,
     config: AppConfig | None = None,
+    task_type: str = "differentiation",
 ) -> list[str]:
     """Generate IEP accommodation and differentiation notes for a lesson."""
     prompt_template = (PROMPT_DIR / "differentiation.txt").read_text()
@@ -149,6 +160,8 @@ async def generate_iep_notes(
         .replace("{lesson_activities}", lesson_activities)
     )
 
+    if task_type and config:
+        config = route_model(task_type, config)
     client = LLMClient(config)
     data = await client.generate_json(
         prompt=prompt,

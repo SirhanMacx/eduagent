@@ -6,6 +6,7 @@ from pathlib import Path
 
 from eduagent.corpus import get_few_shot_context
 from eduagent.llm import LLMClient
+from eduagent.model_router import route as route_model
 from eduagent.models import AppConfig, DailyLesson, TeacherPersona, UnitPlan
 
 PROMPT_PATH = Path(__file__).parent / "prompts" / "lesson_plan.txt"
@@ -17,6 +18,7 @@ async def generate_lesson(
     persona: TeacherPersona,
     include_homework: bool = True,
     config: AppConfig | None = None,
+    task_type: str = "lesson_plan",
 ) -> DailyLesson:
     """Generate a complete daily lesson plan for a specific lesson in a unit.
 
@@ -67,6 +69,8 @@ async def generate_lesson(
         .replace("{few_shot_context}", few_shot_context)
     )
 
+    if task_type and config:
+        config = route_model(task_type, config)
     client = LLMClient(config)
     data = await client.generate_json(
         prompt=prompt,

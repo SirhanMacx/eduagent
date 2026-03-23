@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 
 class TestCliChatImport:
     def test_module_imports(self):
@@ -23,8 +21,9 @@ class TestCliChatImport:
 
 class TestChatCommand:
     def test_chat_command_registered(self):
-        from eduagent.cli import app
         from typer.testing import CliRunner
+
+        from eduagent.cli import app
 
         runner = CliRunner()
         # --help should list chat command
@@ -33,8 +32,9 @@ class TestChatCommand:
         assert "interactive chat" in result.output.lower() or "chat session" in result.output.lower()
 
     def test_chat_accepts_id_option(self):
-        from eduagent.cli import app
         from typer.testing import CliRunner
+
+        from eduagent.cli import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["chat", "--help"])

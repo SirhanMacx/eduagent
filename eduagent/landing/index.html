@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EDUagent — Your teaching files, your AI co-teacher</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.7; color: #1a1a2e; background: #fff;
+}
+a { color: #0f3460; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Hero ─────────────────────────────────────── */
+.hero {
+  text-align: center;
+  padding: 5rem 1.5rem 4rem;
+  background: linear-gradient(135deg, #0f3460 0%, #16213e 100%);
+  color: #fff;
+}
+.hero h1 {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+}
+.hero .subtitle {
+  font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+  opacity: 0.9;
+  max-width: 600px;
+  margin: 0 auto 2rem;
+}
+.hero .cta {
+  display: inline-block;
+  background: #e94560;
+  color: #fff;
+  padding: 0.85rem 2.2rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  transition: background 0.2s;
+}
+.hero .cta:hover { background: #d63851; text-decoration: none; }
+.badge {
+  display: inline-block;
+  margin-top: 1.2rem;
+  padding: 0.4rem 1rem;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: 20px;
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+/* ── Section ──────────────────────────────────── */
+.section {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 4rem 1.5rem;
+}
+.section h2 {
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  color: #16213e;
+}
+.section h2::after {
+  content: "";
+  display: block;
+  width: 50px;
+  height: 3px;
+  background: #e94560;
+  margin-top: 0.5rem;
+}
+
+/* ── Feature cards ────────────────────────────── */
+.features {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 2rem;
+}
+.card {
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 2rem;
+  border: 1px solid #e9ecef;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+.card .icon { font-size: 2rem; margin-bottom: 0.75rem; }
+.card h3 { font-size: 1.2rem; margin-bottom: 0.5rem; color: #16213e; }
+.card p { color: #555; font-size: 0.95rem; }
+
+/* ── Demo ─────────────────────────────────────── */
+.demo-section { background: #f8f9fa; }
+.demo-section .section { padding-bottom: 3rem; }
+.demo-box {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.demo-header {
+  background: #16213e;
+  color: #fff;
+  padding: 1rem 1.5rem;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.demo-body {
+  padding: 1.5rem;
+  font-size: 0.92rem;
+  max-height: 500px;
+  overflow-y: auto;
+}
+.demo-body h3 { font-size: 1.05rem; color: #16213e; margin: 1.2rem 0 0.5rem; }
+.demo-body h3:first-child { margin-top: 0; }
+.demo-body p { margin-bottom: 0.75rem; color: #333; }
+.demo-body .meta { color: #666; font-style: italic; margin-bottom: 1rem; }
+.demo-body ol, .demo-body ul { margin: 0.5rem 0 0.75rem 1.5rem; color: #333; }
+
+/* ── Install ──────────────────────────────────── */
+.install-block {
+  background: #1a1a2e;
+  color: #a8d8ea;
+  border-radius: 10px;
+  padding: 1.5rem 2rem;
+  font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+  font-size: 0.95rem;
+  line-height: 2;
+  overflow-x: auto;
+}
+.install-block .prompt { color: #e94560; }
+.install-block .comment { color: #555; }
+
+/* ── Footer / GitHub ──────────────────────────── */
+.footer {
+  text-align: center;
+  padding: 3rem 1.5rem;
+  background: #16213e;
+  color: #aaa;
+}
+.footer a { color: #a8d8ea; }
+.gh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #24292f;
+  color: #fff;
+  padding: 0.65rem 1.4rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  transition: background 0.2s;
+}
+.gh-btn:hover { background: #333; text-decoration: none; }
+.gh-btn svg { width: 20px; height: 20px; fill: #fff; }
+</style>
+</head>
+<body>
+
+<!-- ── Hero ──────────────────────────────────────────── -->
+<div class="hero">
+  <h1>Your teaching files &rarr; your AI co-teacher</h1>
+  <p class="subtitle">
+    Upload your lesson plans. EDUagent learns your voice, aligns to your state standards,
+    and generates complete units, lessons, worksheets, and assessments &mdash; in minutes.
+  </p>
+  <a class="cta" href="#install">Get Started Free</a>
+  <div class="badge">Open Source &middot; MIT License &middot; Works Offline</div>
+</div>
+
+<!-- ── Features ──────────────────────────────────────── -->
+<div class="section">
+  <h2>What makes EDUagent different</h2>
+  <div class="features">
+    <div class="card">
+      <div class="icon">&#x1F3A4;</div>
+      <h3>Learns Your Voice</h3>
+      <p>
+        Feed it your existing lesson plans and it extracts your teaching persona &mdash;
+        your tone, style, vocabulary, and favorite strategies. Every output sounds like
+        <em>you</em>, not a generic AI.
+      </p>
+    </div>
+    <div class="card">
+      <div class="icon">&#x1F5FA;</div>
+      <h3>50-State Standards</h3>
+      <p>
+        CCSS, NGSS, C3, TEKS, NY Regents &mdash; set your state once and every lesson
+        auto-aligns to the right standards. No more hunting through frameworks.
+      </p>
+    </div>
+    <div class="card">
+      <div class="icon">&#x1F393;</div>
+      <h3>Student Bot</h3>
+      <p>
+        Activate a student-facing chatbot for any lesson. Students ask questions and
+        get answers in your teaching voice. Hint mode for homework &mdash; no free answers.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ── Demo ──────────────────────────────────────────── -->
+<div class="demo-section">
+  <div class="section">
+    <h2>Real output: American Revolution unit</h2>
+    <p style="margin-bottom:1.5rem;color:#555;">
+      This was generated from a real teacher's uploaded materials. One command, 30 seconds.
+    </p>
+    <div class="demo-box">
+      <div class="demo-header">
+        eduagent full "The American Revolution" --grade 8 --subject "Social Studies" --weeks 2
+      </div>
+      <div class="demo-body">
+        <h3>Lesson 1: Liberty and Loyalty &mdash; Unit Introduction</h3>
+        <p class="meta">Grade 8 Social Studies &middot; 50 min &middot; C3 Framework D2.His.1.6-8, CCSS.ELA-LITERACY.RH.6-8.4</p>
+
+        <h3>Do-Now (5 min)</h3>
+        <p>
+          &ldquo;Alright, friends, as you settle in, answer this: <em>What does freedom mean to you?
+          Is there ever a time when following the rules is more important than being free?</em>
+          Take 5 minutes to jot down your honest thoughts. No wrong answers &mdash; I just want to hear your voice.&rdquo;
+        </p>
+
+        <h3>Direct Instruction (15&ndash;20 min)</h3>
+        <p>
+          &ldquo;We&rsquo;re starting one of my favorite units in all of history. How did ordinary people
+          decide to risk everything for freedom?&rdquo;
+        </p>
+        <ol>
+          <li>Unit Overview &mdash; stepping into the shoes of colonists</li>
+          <li>Key vocabulary: <strong>Liberty</strong>, <strong>Loyalty</strong>, <strong>Tyranny</strong></li>
+          <li>Model: filling out the Unit Vocabulary Graphic Organizer</li>
+        </ol>
+
+        <h3>Guided Practice (15&ndash;20 min)</h3>
+        <p>
+          Students work with partners on &ldquo;Tyranny&rdquo; &mdash; define it, find a school-setting example,
+          share back. Teacher circulates and checks comprehension.
+        </p>
+
+        <h3>Independent Work (10 min)</h3>
+        <p>
+          Essential Question Reflection: &ldquo;Was war inevitable?&rdquo; or &ldquo;When is rebellion justified?&rdquo;
+          &mdash; 3-sentence paragraph using at least one vocabulary word.
+        </p>
+
+        <h3>Differentiation</h3>
+        <ul>
+          <li><strong>Struggling:</strong> Word bank + sentence starters provided</li>
+          <li><strong>Advanced:</strong> Compare colonial tyranny to a modern example</li>
+          <li><strong>ELL:</strong> Bilingual vocabulary cards + partner support</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Install ───────────────────────────────────────── -->
+<div class="section" id="install">
+  <h2>Get started in 60 seconds</h2>
+  <div class="install-block">
+    <span class="comment"># Install</span><br>
+    <span class="prompt">$</span> pip install eduagent<br><br>
+    <span class="comment"># Start chatting</span><br>
+    <span class="prompt">$</span> eduagent chat<br><br>
+    <span class="comment"># Or generate a full unit from the command line</span><br>
+    <span class="prompt">$</span> eduagent full "Photosynthesis" --grade 8 --subject Science --weeks 3<br><br>
+    <span class="comment"># Works with Anthropic, OpenAI, or free Ollama</span><br>
+    <span class="prompt">$</span> eduagent config set-model ollama --model llama3.2
+  </div>
+</div>
+
+<!-- ── Footer ────────────────────────────────────────── -->
+<div class="footer">
+  <a class="gh-btn" href="https://github.com/SirhanMacx/eduagent">
+    <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+    Star on GitHub
+  </a>
+  <p>Built by teachers, for teachers. MIT License.</p>
+  <p style="margin-top:0.5rem;font-size:0.85rem;">
+    EDUagent &copy; 2025. Made with care in New York.
+  </p>
+</div>
+
+</body>
+</html>

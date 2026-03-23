@@ -314,6 +314,9 @@ class AppConfig(BaseModel):
     # Ollama API key (for cloud Ollama)
     ollama_api_key: Optional[str] = None
 
+    # Per-task model overrides (e.g. {"bellringer": "qwen3.5:cloud"})
+    task_models: Optional[dict[str, str]] = None
+
     # Teacher profile — the key to auto-tailoring
     teacher_profile: TeacherProfile = Field(default_factory=TeacherProfile)
 
