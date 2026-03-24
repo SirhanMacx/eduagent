@@ -404,6 +404,7 @@ def skills_list():
     table.add_column("Display Name", style="cyan")
     table.add_column("Description")
     table.add_column("Aliases", style="dim")
+    table.add_column("Source", style="dim")
     for s in all_skills:
         aliases = ", ".join(s.aliases[:4])
         if len(s.aliases) > 4:
@@ -413,7 +414,8 @@ def skills_list():
             if len(s.description) > 80
             else s.description
         )
-        table.add_row(s.subject, s.display_name, desc, aliases)
+        source = "[yellow]custom[/yellow]" if lib.is_custom(s.subject) else "built-in"
+        table.add_row(s.subject, s.display_name, desc, aliases, source)
     console.print(table)
 
 
@@ -448,6 +450,33 @@ def skills_show(
         for name, desc in skill.example_strategies.items():
             table.add_row(name, desc)
         console.print(table)
+
+
+@skills_app.command("create")
+def skills_create(
+    subject: str = typer.Argument(
+        help="Subject name for the new skill (e.g., 'ap_psychology')."
+    ),
+):
+    """Generate a template YAML skill file in ~/.eduagent/skills/.
+
+    Edit the generated file to customize the pedagogy for your subject,
+    then it will be automatically loaded next time EDUagent starts.
+    """
+    from eduagent.skills.library import generate_skill_template
+
+    filepath = generate_skill_template(subject)
+    console.print(
+        Panel(
+            f"[bold green]Template created![/bold green]\n\n"
+            f"  File: [cyan]{filepath}[/cyan]\n\n"
+            f"Edit this file to customize the pedagogy for {subject}.\n"
+            f"It will be loaded automatically next time you run EDUagent.\n\n"
+            f"Run [bold]eduagent skills list[/bold] to verify it loaded.",
+            title="[bold]New Custom Skill[/bold]",
+            border_style="green",
+        )
+    )
 
 
 # ── School commands ─────────────────────────────────────────────────

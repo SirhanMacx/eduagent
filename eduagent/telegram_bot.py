@@ -45,14 +45,48 @@ class ChatState:
         return self.state == ConversationState.GENERATING
 
 
-# Module-level state dict keyed by chat_id
+# Module-level state dict keyed by chat_id (in-memory cache)
 _chat_states: dict[int, ChatState] = {}
+
+# Persistent store — lazy-initialized to avoid side effects at import time
+_state_store: "BotStateStore | None" = None
+
+
+def _get_store() -> "BotStateStore":
+    global _state_store
+    if _state_store is None:
+        from eduagent.bot_state import BotStateStore
+
+        _state_store = BotStateStore()
+    return _state_store
 
 
 def _get_chat_state(chat_id: int) -> ChatState:
     if chat_id not in _chat_states:
-        _chat_states[chat_id] = ChatState()
+        # Try to restore from persistent storage
+        store = _get_store()
+        row = store.get(chat_id)
+        cs = ChatState()
+        if row is not None:
+            try:
+                cs.state = ConversationState(row["state"])
+            except (ValueError, KeyError):
+                cs.state = ConversationState.IDLE
+            cs.pending_topic = row.get("pending_topic", "")
+            cs.last_lesson_id = row.get("last_lesson_id", "")
+        _chat_states[chat_id] = cs
     return _chat_states[chat_id]
+
+
+def _persist_chat_state(chat_id: int, cs: ChatState) -> None:
+    """Write current in-memory state to the persistent store."""
+    store = _get_store()
+    store.save(
+        chat_id,
+        state=cs.state.value,
+        pending_topic=cs.pending_topic,
+        last_lesson_id=cs.last_lesson_id,
+    )
 
 
 def _log_error(error: Exception) -> None:
@@ -178,6 +212,7 @@ class EduAgentBot:
             await update.message.chat.send_action("typing")
 
             state.state = ConversationState.GENERATING
+            _persist_chat_state(chat_id, state)
             try:
                 response = await _llm_call_with_retry(text, teacher_id)
             except Exception as e:
@@ -188,6 +223,7 @@ class EduAgentBot:
                 )
             finally:
                 state.state = ConversationState.IDLE
+                _persist_chat_state(chat_id, state)
 
             await _send_response(update, response)
 
@@ -198,6 +234,7 @@ class EduAgentBot:
                 if lesson_id:
                     state.last_lesson_id = lesson_id
                     state.state = ConversationState.DONE
+                    _persist_chat_state(chat_id, state)
                     await update.message.reply_text(
                         "How was this lesson? Rate it to help me improve:",
                         reply_markup=_rating_keyboard(lesson_id),
@@ -338,6 +375,7 @@ class EduAgentBot:
             chat_id = update.message.chat_id
             state = _get_chat_state(chat_id)
             state.state = ConversationState.COLLECTING_LESSON_INFO
+            _persist_chat_state(chat_id, state)
             await update.message.reply_text(
                 "What topic should the lesson be about? "
                 "(e.g. 'photosynthesis for 6th grade' or 'causes of WWI')"

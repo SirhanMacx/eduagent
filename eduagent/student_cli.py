@@ -14,13 +14,12 @@ import asyncio
 import sys
 from typing import Optional
 
-from rich.console import Console
 from rich.live import Live
 from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.spinner import Spinner
 
-console = Console()
+from eduagent.commands._helpers import console
 
 
 def _run_async(coro):

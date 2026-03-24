@@ -27,15 +27,46 @@ STUDENT_BOT_COMMANDS: list[tuple[str, str]] = [
     ("quit", "Leave your current class"),
 ]
 
-# Module-level session store keyed by chat_id
+# Module-level session store keyed by chat_id (in-memory cache)
 _student_sessions: dict[int, dict[str, str]] = {}
+
+# Persistent store — lazy-initialized
+_student_state_store: "StudentBotStateStore | None" = None
+
+
+def _get_student_store() -> "StudentBotStateStore":
+    global _student_state_store
+    if _student_state_store is None:
+        from eduagent.bot_state import StudentBotStateStore
+
+        _student_state_store = StudentBotStateStore()
+    return _student_state_store
 
 
 def _get_session(chat_id: int) -> dict[str, str]:
     """Get or create a student session for a chat."""
     if chat_id not in _student_sessions:
-        _student_sessions[chat_id] = {}
+        # Try to restore from persistent storage
+        store = _get_student_store()
+        row = store.get(chat_id)
+        if row is not None:
+            _student_sessions[chat_id] = {
+                "class_code": row.get("class_code", ""),
+                "student_id": row.get("student_id", ""),
+            }
+        else:
+            _student_sessions[chat_id] = {}
     return _student_sessions[chat_id]
+
+
+def _persist_student_session(chat_id: int, session: dict[str, str]) -> None:
+    """Write current in-memory session to the persistent store."""
+    store = _get_student_store()
+    store.save(
+        chat_id,
+        class_code=session.get("class_code", ""),
+        student_id=session.get("student_id", ""),
+    )
 
 
 def _log_error(error: Exception) -> None:
@@ -139,6 +170,7 @@ class StudentTelegramBot:
             session = _get_session(chat_id)
             session["class_code"] = code
             session["student_id"] = student_id
+            _persist_student_session(chat_id, session)
 
             teacher_name = class_info.name or "your teacher"
             topic = class_info.topic or "today's lesson"
@@ -182,6 +214,7 @@ class StudentTelegramBot:
 
             class_name = session.get("class_code", "")
             session.clear()
+            _get_student_store().delete(chat_id)
             await update.message.reply_text(
                 f"You left {class_name}. Use /join CODE to join another class."
             )

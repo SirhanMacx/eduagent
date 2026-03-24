@@ -81,11 +81,15 @@ class TestSkillLibrary:
     def library(self):
         return SkillLibrary()
 
-    def test_loads_all_five_skills(self, library):
-        assert len(library) == 5
+    def test_loads_all_skills(self, library):
+        assert len(library) == 11
 
     def test_expected_subjects_present(self, library):
-        expected = {"ela", "history", "math", "science", "social_studies"}
+        expected = {
+            "ela", "history", "math", "science", "social_studies",
+            "foreign_language", "art", "music", "physical_education",
+            "computer_science", "special_education",
+        }
         assert set(library.subjects()) == expected
 
     def test_get_by_canonical_name(self, library):
@@ -120,7 +124,7 @@ class TestSkillLibrary:
 
     def test_iterate(self, library):
         subjects = [s.subject for s in library]
-        assert len(subjects) == 5
+        assert len(subjects) == 11
 
     def test_inject_system_context_known(self, library):
         ctx = library.inject_system_context("science")
@@ -260,9 +264,127 @@ class TestAliasCoverage:
             ("world history", "history"),
             ("apush", "history"),
             ("american history", "history"),
+            # New skill aliases
+            ("spanish", "foreign_language"),
+            ("french", "foreign_language"),
+            ("mandarin", "foreign_language"),
+            ("world languages", "foreign_language"),
+            ("latin", "foreign_language"),
+            ("visual arts", "art"),
+            ("studio art", "art"),
+            ("drawing", "art"),
+            ("painting", "art"),
+            ("band", "music"),
+            ("orchestra", "music"),
+            ("chorus", "music"),
+            ("choir", "music"),
+            ("pe", "physical_education"),
+            ("fitness", "physical_education"),
+            ("health", "physical_education"),
+            ("gym", "physical_education"),
+            ("programming", "computer_science"),
+            ("coding", "computer_science"),
+            ("ap cs", "computer_science"),
+            ("robotics", "computer_science"),
+            ("sped", "special_education"),
+            ("iep", "special_education"),
+            ("inclusion", "special_education"),
+            ("udl", "special_education"),
         ],
     )
     def test_alias_resolves(self, library, alias, expected_subject):
         skill = library.get(alias)
         assert skill is not None, f"Alias '{alias}' did not resolve"
         assert skill.subject == expected_subject, f"'{alias}' resolved to {skill.subject}, expected {expected_subject}"
+
+
+# ── New skill module tests ──────────────────────────────────────
+
+
+class TestForeignLanguageSkill:
+    def test_loads(self):
+        from eduagent.skills.foreign_language import skill
+        assert skill.subject == "foreign_language"
+        assert "communicative" in skill.lesson_prompt_additions.lower()
+        assert "actfl" in skill.system_prompt.upper() or "ACTFL" in skill.system_prompt
+        assert len(skill.example_strategies) >= 4
+
+    def test_aliases(self):
+        from eduagent.skills.foreign_language import skill
+        assert "spanish" in skill.aliases
+        assert "french" in skill.aliases
+        assert "mandarin" in skill.aliases
+
+
+class TestArtSkill:
+    def test_loads(self):
+        from eduagent.skills.art import skill
+        assert skill.subject == "art"
+        assert "studio" in skill.lesson_prompt_additions.lower()
+        assert "national core arts" in skill.system_prompt.lower()
+        assert len(skill.example_strategies) >= 4
+
+    def test_aliases(self):
+        from eduagent.skills.art import skill
+        assert "visual arts" in skill.aliases
+        assert "drawing" in skill.aliases
+        assert "painting" in skill.aliases
+
+
+class TestMusicSkill:
+    def test_loads(self):
+        from eduagent.skills.music import skill
+        assert skill.subject == "music"
+        assert "perform" in skill.lesson_prompt_additions.lower()
+        assert len(skill.example_strategies) >= 4
+
+    def test_aliases(self):
+        from eduagent.skills.music import skill
+        assert "band" in skill.aliases
+        assert "orchestra" in skill.aliases
+        assert "chorus" in skill.aliases
+
+
+class TestPhysicalEducationSkill:
+    def test_loads(self):
+        from eduagent.skills.physical_education import skill
+        assert skill.subject == "physical_education"
+        assert "shape america" in skill.system_prompt.lower()
+        assert "fitt" in skill.lesson_prompt_additions.upper() or "FITT" in skill.lesson_prompt_additions
+        assert len(skill.example_strategies) >= 4
+
+    def test_aliases(self):
+        from eduagent.skills.physical_education import skill
+        assert "pe" in skill.aliases
+        assert "fitness" in skill.aliases
+        assert "health" in skill.aliases
+
+
+class TestComputerScienceSkill:
+    def test_loads(self):
+        from eduagent.skills.computer_science import skill
+        assert skill.subject == "computer_science"
+        assert "computational thinking" in skill.system_prompt.lower()
+        assert "csta" in skill.system_prompt.upper() or "CSTA" in skill.system_prompt
+        assert len(skill.example_strategies) >= 4
+
+    def test_aliases(self):
+        from eduagent.skills.computer_science import skill
+        assert "programming" in skill.aliases
+        assert "coding" in skill.aliases
+        assert "robotics" in skill.aliases
+
+
+class TestSpecialEducationSkill:
+    def test_loads(self):
+        from eduagent.skills.special_education import skill
+        assert skill.subject == "special_education"
+        assert "udl" in skill.system_prompt.lower() or "UDL" in skill.system_prompt
+        assert "iep" in skill.lesson_prompt_additions.lower() or "IEP" in skill.lesson_prompt_additions
+        assert len(skill.example_strategies) >= 4
+
+    def test_aliases(self):
+        from eduagent.skills.special_education import skill
+        assert "sped" in skill.aliases
+        assert "iep" in skill.aliases
+        assert "inclusion" in skill.aliases

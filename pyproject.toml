@@ -43,6 +43,7 @@ dependencies = [
     "faster-whisper>=1.0.0",
     "json-repair>=0.30.0",
     "slowapi>=0.1.9,<1.0",
+    "pyyaml>=6.0,<7.0",
 ]
 
 [project.optional-dependencies]
