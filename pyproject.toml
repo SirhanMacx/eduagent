@@ -3,16 +3,16 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "eduagent"
-version = "0.2.0"
-description = "Your teaching files, your AI co-teacher. Upload curriculum materials, get a digital co-teacher that generates lessons in your voice."
+name = "clawed"
+version = "0.3.0"
+description = "Claw-ED — Your teaching files, your AI co-teacher. Upload curriculum materials, get a digital co-teacher that generates lessons in your voice."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
 authors = [
-    { name = "EDUagent Contributors" },
+    { name = "Jon Maccarello & Claw-ED contributors" },
 ]
-keywords = ["education", "teachers", "lesson-plans", "ai", "teaching"]
+keywords = ["education", "teachers", "lesson-plans", "ai", "teaching", "clawed", "claw-ed"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Education",
@@ -47,18 +47,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# Telegram bot — the default bot uses httpx (already a core dep), no extras needed.
-# The legacy bot (--legacy flag) uses python-telegram-bot for webhooks/live display.
 telegram-legacy = ["python-telegram-bot>=20.8"]
-# Backward compat alias
 telegram = ["python-telegram-bot>=20.8"]
-# Google Drive support — personal accounts ONLY, never school-issued accounts
 google = ["google-api-python-client>=2.0.0", "google-auth-oauthlib>=1.0.0"]
-# Voice transcription
 voice = ["faster-whisper>=0.10.0"]
-# TUI dashboard
 tui = ["textual>=0.56.0"]
-# All optional features
 all = [
     "python-telegram-bot>=20.0",
     "faster-whisper>=0.10.0",
@@ -73,15 +66,19 @@ keyring = ["keyring>=24.0.0"]
 dev = ["pytest>=7.0.0", "pytest-asyncio>=0.21.0", "ruff>=0.1.0", "apscheduler>=3.10.0,<4.0", "faster-whisper>=0.10.0"]
 
 [project.scripts]
-eduagent = "eduagent.cli:app"
+clawed = "clawed.cli:app"
+eduagent = "clawed.cli:app"
 
 [project.urls]
-Homepage = "https://github.com/SirhanMacx/eduagent"
-Documentation = "https://github.com/SirhanMacx/eduagent#readme"
-Issues = "https://github.com/SirhanMacx/eduagent/issues"
+Homepage = "https://github.com/SirhanMacx/clawed"
+Documentation = "https://github.com/SirhanMacx/clawed#readme"
+Issues = "https://github.com/SirhanMacx/clawed/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["clawed", "eduagent"]
 
 [tool.setuptools.package-data]
-eduagent = ["prompts/*.txt", "demo/*.json"]
+clawed = ["prompts/*.txt", "demo/*.json"]
 
 [tool.ruff]
 line-length = 120
@@ -91,8 +88,7 @@ target-version = "py310"
 select = ["E", "F", "I", "N", "W"]
 
 [tool.ruff.lint.per-file-ignores]
-# N806: XML element variable names (pPr, pBdr, tblPr) match the Office Open XML spec
-"eduagent/doc_export.py" = ["N806"]
+"clawed/doc_export.py" = ["N806"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
