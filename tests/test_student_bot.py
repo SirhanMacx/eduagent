@@ -613,6 +613,14 @@ class TestRouterStudentBotPatterns:
 # ── MCP server ──────────────────────────────────────────────────────
 
 
+_has_mcp = True
+try:
+    import mcp  # noqa: F401
+except ImportError:
+    _has_mcp = False
+
+
+@pytest.mark.skipif(not _has_mcp, reason="mcp package not installed")
 class TestMCPServer:
     def test_mcp_server_import(self):
         from eduagent.mcp_server import mcp
