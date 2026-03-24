@@ -32,7 +32,7 @@ class TestActivityEvents:
         async def _inner():
             gateway = EduAgentGateway()
             await gateway.emit("message_received", {
-                "teacher_name": "mr_mac",
+                "teacher_id": "mr_mac",
                 "text": "plan a lesson on Imperialism",
             })
 
@@ -82,7 +82,7 @@ class TestGatewayInit:
         """Gateway should initialize with default config."""
         gateway = EduAgentGateway()
         assert gateway.config is not None
-        assert gateway._gateway_stats.messages_today == 0
+        assert gateway._stats.messages_today == 0
         assert gateway.event_bus.maxsize == 500
 
     def test_gateway_start_demo_mode(self):
@@ -117,10 +117,10 @@ class TestGatewayProcessMessage:
             gateway = EduAgentGateway()
 
             # Simulate what process_message does internally
-            gateway._gateway_stats.messages_today += 1
+            gateway._stats.messages_today += 1
             gateway.active_sessions["t1"] = {"name": "Mac", "last_activity": "now"}
 
-            assert gateway._gateway_stats.messages_today == 1
+            assert gateway._stats.messages_today == 1
             assert "t1" in gateway.active_sessions
 
             s = await gateway.stats()
