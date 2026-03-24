@@ -35,6 +35,9 @@ from eduagent.commands.export import (
     export_app,
 )
 from eduagent.commands.generate import generate_app
+from eduagent.commands.queue import queue_app
+from eduagent.commands.schedule_cmd import schedule_app
+from eduagent.commands.workspace_cmd import workspace_app
 
 # ── Build the main app ──────────────────────────────────────────────────
 
@@ -75,6 +78,9 @@ app.add_typer(skills_app, name="skills")
 app.add_typer(school_app, name="school")
 app.add_typer(waitlist_app, name="waitlist")
 app.add_typer(class_app, name="class")
+app.add_typer(queue_app, name="queue")
+app.add_typer(workspace_app, name="workspace")
+app.add_typer(schedule_app, name="schedule")
 
 # ── Register top-level commands from sub-modules ────────────────────────
 # Commands from generate_app, export_app, and bot_app are registered as
