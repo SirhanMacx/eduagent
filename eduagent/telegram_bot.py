@@ -239,8 +239,8 @@ class EduAgentBot:
                     state.state = ConversationState.DONE
                     _persist_chat_state(chat_id, state)
                     await update.message.reply_text(
-                        "How was this lesson? Rate it to help me improve:",
-                        reply_markup=_rating_keyboard(lesson_id),
+                        "What would you like to do next?",
+                        reply_markup=_post_generation_keyboard(lesson_id),
                     )
                     # Log to workspace daily notes
                     try:
@@ -313,6 +313,38 @@ class EduAgentBot:
                 logger.error(f"Error saving rating: {e}")
                 _log_error(e)
                 await query.edit_message_text("Had trouble saving the rating. Try again later.")
+
+        async def handle_action_callback(update: Any, context: Any) -> None:
+            """Handle post-generation action buttons (worksheet, etc.)."""
+            query = update.callback_query
+            if not query or not query.data or not query.data.startswith(ACTION_CALLBACK_PREFIX):
+                return
+
+            await query.answer()
+
+            data = query.data[len(ACTION_CALLBACK_PREFIX):]
+            parts = data.split(":")
+            if len(parts) != 2:
+                return
+
+            action, lesson_id = parts
+
+            if action == "worksheet":
+                teacher_id = str(query.from_user.id)
+                await query.edit_message_text("Generating worksheet...")
+                try:
+                    response = await _llm_call_with_retry(
+                        f"generate a worksheet for lesson {lesson_id}", teacher_id
+                    )
+                    await query.message.reply_text(response, parse_mode="Markdown")
+                except Exception as e:
+                    logger.error(f"Error generating worksheet: {e}")
+                    _log_error(e)
+                    await query.message.reply_text(
+                        "Couldn't generate the worksheet right now. Try /worksheet."
+                    )
+            else:
+                await query.edit_message_text(f"Unknown action: {action}")
 
         async def cmd_start(update: Any, context: Any) -> None:
             await update.message.reply_text(
@@ -452,6 +484,7 @@ class EduAgentBot:
         app.add_handler(CommandHandler("assess", cmd_assess))
         app.add_handler(CommandHandler("worksheet", cmd_worksheet))
         app.add_handler(CallbackQueryHandler(handle_rating_callback, pattern=f"^{RATING_CALLBACK_PREFIX}"))
+        app.add_handler(CallbackQueryHandler(handle_action_callback, pattern=f"^{ACTION_CALLBACK_PREFIX}"))
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
         logger.info("EDUagent bot starting...")
