@@ -33,7 +33,7 @@ async def extract_persona(
     if not documents:
         raise ValueError("No documents provided for persona extraction.")
 
-    prompt_template = PROMPT_PATH.read_text()
+    prompt_template = PROMPT_PATH.read_text(encoding="utf-8")
     doc_block = _build_document_block(documents)
     prompt = prompt_template.replace("{documents}", doc_block)
 
@@ -51,7 +51,7 @@ def save_persona(persona: TeacherPersona, output_dir: Path) -> Path:
     """Save a persona to disk as JSON."""
     output_dir.mkdir(parents=True, exist_ok=True)
     path = output_dir / "persona.json"
-    path.write_text(persona.model_dump_json(indent=2))
+    path.write_text(persona.model_dump_json(indent=2), encoding="utf-8")
     return path
 
 
@@ -59,4 +59,4 @@ def load_persona(path: Path) -> TeacherPersona:
     """Load a persona from a JSON file."""
     if not path.exists():
         raise FileNotFoundError(f"Persona file not found: {path}")
-    return TeacherPersona.model_validate_json(path.read_text())
+    return TeacherPersona.model_validate_json(path.read_text(encoding="utf-8"))

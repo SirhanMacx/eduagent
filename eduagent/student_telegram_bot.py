@@ -118,7 +118,19 @@ class StudentTelegramBot:
         from eduagent.student_bot import StudentBot
 
         bot = StudentBot()
-        app = Application.builder().token(self.token).build()
+        # Configure HTTPXRequest with generous timeouts for flaky networks
+        try:
+            from telegram.request import HTTPXRequest
+            request = HTTPXRequest(
+                connection_pool_size=8,
+                connect_timeout=30.0,
+                read_timeout=30.0,
+                write_timeout=30.0,
+                pool_timeout=30.0,
+            )
+            app = Application.builder().token(self.token).request(request).build()
+        except (ImportError, TypeError):
+            app = Application.builder().token(self.token).build()
 
         # ── Command handlers ──────────────────────────────────────────
 
@@ -291,6 +303,22 @@ class StudentTelegramBot:
         app.add_handler(CommandHandler("topic", cmd_topic))
         app.add_handler(CommandHandler("quit", cmd_quit))
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+        # ── Error handler ─────────────────────────────────────────
+        async def _error_handler(update: Any, context: Any) -> None:
+            """Global error handler for the student Telegram bot."""
+            logger.error("Telegram error: %s", context.error)
+            _log_error(context.error)
+            try:
+                from telegram.error import NetworkError, TimedOut
+                if isinstance(context.error, (NetworkError, TimedOut)):
+                    logger.warning("Network issue, will retry automatically")
+                    return
+            except ImportError:
+                pass
+            logger.exception("Unhandled error in student bot", exc_info=context.error)
+
+        app.add_error_handler(_error_handler)
 
         logger.info("Student bot starting...")
         print("EDUagent student bot is running. Press Ctrl+C to stop.")

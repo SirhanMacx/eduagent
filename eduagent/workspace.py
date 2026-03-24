@@ -169,7 +169,7 @@ _DEFAULT_MEMORY = """\
 def _load_memory() -> str:
     """Read memory.md, returning default if missing."""
     if MEMORY_PATH.exists():
-        return MEMORY_PATH.read_text()
+        return MEMORY_PATH.read_text(encoding="utf-8")
     return _DEFAULT_MEMORY
 
 
@@ -228,7 +228,7 @@ def update_memory(key: str, value: str) -> None:
         content = content.rstrip() + f"\n\n{heading}\n- {value}\n"
 
     MEMORY_PATH.parent.mkdir(parents=True, exist_ok=True)
-    MEMORY_PATH.write_text(content)
+    MEMORY_PATH.write_text(content, encoding="utf-8")
 
 
 # ── Daily notes ────────────────────────────────────────────────────────
@@ -245,7 +245,7 @@ def append_daily_note(text: str, category: str = "general") -> None:
     path = _notes_path()
 
     if not path.exists():
-        path.write_text(f"# Teaching Notes — {_today()}\n\n")
+        path.write_text(f"# Teaching Notes — {_today()}\n\n", encoding="utf-8")
 
     timestamp = datetime.now(timezone.utc).strftime("%H:%M UTC")
     entry = f"- **[{timestamp}]** [{category}] {text}\n"
@@ -257,7 +257,7 @@ def get_daily_notes(day: Optional[str] = None) -> str:
     """Read a day's notes. Returns empty string if no notes exist."""
     path = _notes_path(day)
     if path.exists():
-        return path.read_text()
+        return path.read_text(encoding="utf-8")
     return ""
 
 
@@ -271,7 +271,7 @@ def get_student_profile(name: str) -> str:
     path = STUDENTS_DIR / f"{filename}.md"
 
     if path.exists():
-        return path.read_text()
+        return path.read_text(encoding="utf-8")
 
     # Create a new profile
     initial = (
@@ -280,7 +280,7 @@ def get_student_profile(name: str) -> str:
         f"## Interactions\n"
         f"*(No interactions yet.)*\n"
     )
-    path.write_text(initial)
+    path.write_text(initial, encoding="utf-8")
     return initial
 
 
@@ -294,7 +294,7 @@ def update_student_profile(name: str, interaction: str) -> None:
         # Create the profile first
         get_student_profile(name)
 
-    content = path.read_text()
+    content = path.read_text(encoding="utf-8")
 
     # Remove placeholder if present
     placeholder = "*(No interactions yet.)*"
@@ -305,7 +305,7 @@ def update_student_profile(name: str, interaction: str) -> None:
     entry = f"- **[{timestamp}]** {interaction}\n"
     content = content.rstrip() + "\n" + entry
 
-    path.write_text(content)
+    path.write_text(content, encoding="utf-8")
 
 
 def list_student_profiles() -> list[str]:
@@ -375,20 +375,20 @@ def init_workspace(
     # Re-running init only creates missing files — it never clobbers edits.
 
     if not IDENTITY_PATH.exists():
-        IDENTITY_PATH.write_text(generate_identity(persona, cfg))
+        IDENTITY_PATH.write_text(generate_identity(persona, cfg), encoding="utf-8")
 
     if not SOUL_PATH.exists():
-        SOUL_PATH.write_text(generate_soul(persona, cfg))
+        SOUL_PATH.write_text(generate_soul(persona, cfg), encoding="utf-8")
 
     if not MEMORY_PATH.exists():
-        MEMORY_PATH.write_text(_DEFAULT_MEMORY)
+        MEMORY_PATH.write_text(_DEFAULT_MEMORY, encoding="utf-8")
 
     if not HEARTBEAT_PATH.exists():
-        HEARTBEAT_PATH.write_text(_DEFAULT_HEARTBEAT)
+        HEARTBEAT_PATH.write_text(_DEFAULT_HEARTBEAT, encoding="utf-8")
 
     notes_path = _notes_path()
     if not notes_path.exists():
-        notes_path.write_text(f"# Teaching Notes — {_today()}\n\n")
+        notes_path.write_text(f"# Teaching Notes — {_today()}\n\n", encoding="utf-8")
 
     return WORKSPACE_DIR
 
@@ -412,17 +412,17 @@ def load_context() -> str:
     parts: list[str] = []
 
     if IDENTITY_PATH.exists():
-        parts.append(IDENTITY_PATH.read_text())
+        parts.append(IDENTITY_PATH.read_text(encoding="utf-8"))
 
     if SOUL_PATH.exists():
-        parts.append(SOUL_PATH.read_text())
+        parts.append(SOUL_PATH.read_text(encoding="utf-8"))
 
     today_notes = get_daily_notes()
     if today_notes:
         parts.append(today_notes)
 
     if MEMORY_PATH.exists():
-        memory = MEMORY_PATH.read_text()
+        memory = MEMORY_PATH.read_text(encoding="utf-8")
         # Only include memory if it has actual content beyond the template
         if "Nothing yet" not in memory or len(memory.split("\n")) > 15:
             parts.append(memory)

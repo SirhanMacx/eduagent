@@ -8,9 +8,7 @@ from typing import Optional
 
 import typer
 from rich.panel import Panel
-from rich.progress import Progress, SpinnerColumn, TextColumn
-
-from eduagent.commands._helpers import console
+from eduagent.commands._helpers import _safe_progress, console
 from eduagent.commands._helpers import run_async as _run_async
 from eduagent.models import AppConfig, LLMProvider
 
@@ -200,11 +198,7 @@ def _first_run_setup() -> None:
             console.print("[green]API key saved securely.[/green]")
 
     # Test connection
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
+    with _safe_progress(console=console) as progress:
         task = progress.add_task("Testing connection...", total=None)
         result = _run_async(test_llm_connection(cfg))
         progress.update(task, description="Done!")
@@ -493,6 +487,11 @@ def bot(
         envvar="EDUAGENT_WEBHOOK_SECRET",
         help="Secret token to verify Telegram webhook requests.",
     ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        help="Force start even if another instance appears to be running",
+    ),
 ):
     """Start the EDUagent Telegram bot.
 
@@ -571,7 +570,11 @@ def bot(
                 webhook_url=webhook_url,
                 webhook_port=webhook_port,
                 webhook_secret=webhook_secret or None,
+                force=force,
             )
+        except RuntimeError as e:
+            console.print(f"[red]{e}[/red]")
+            raise typer.Exit(1)
         except KeyboardInterrupt:
             console.print("\n[yellow]Bot stopped.[/yellow]")
         except ImportError as e:

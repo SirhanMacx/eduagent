@@ -19,7 +19,7 @@ def load_demo(name: str) -> dict[str, Any]:
     path = _DEMO_DIR / f"demo_{name}.json"
     if not path.exists():
         raise FileNotFoundError(f"Demo file not found: {path}")
-    return json.loads(path.read_text())
+    return json.loads(path.read_text(encoding="utf-8"))
 
 
 def load_all_demos() -> dict[str, dict[str, Any]]:
@@ -27,7 +27,7 @@ def load_all_demos() -> dict[str, dict[str, Any]]:
     demos: dict[str, dict[str, Any]] = {}
     for p in list_demo_files():
         key = p.stem.removeprefix("demo_")
-        demos[key] = json.loads(p.read_text())
+        demos[key] = json.loads(p.read_text(encoding="utf-8"))
     return demos
 
 

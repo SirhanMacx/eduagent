@@ -654,7 +654,7 @@ class AppConfig(BaseModel):
         """
         path = cls.config_path()
         if path.exists():
-            cfg = cls.model_validate_json(path.read_text())
+            cfg = cls.model_validate_json(path.read_text(encoding="utf-8"))
         else:
             cfg = cls()
 
@@ -707,7 +707,7 @@ class AppConfig(BaseModel):
 
         path = self.config_path()
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(data, indent=2, default=str))
+        path.write_text(json.dumps(data, indent=2, default=str), encoding="utf-8")
 
 
 class StudentProgress(BaseModel):

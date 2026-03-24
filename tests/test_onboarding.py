@@ -92,7 +92,9 @@ class TestCheckFirstRun:
         with (
             patch.object(AppConfig, "config_path", return_value=config_file),
             patch("eduagent.onboarding.run_onboarding") as mock_onboard,
+            patch("sys.stdin") as mock_stdin,
         ):
+            mock_stdin.isatty.return_value = True
             mock_onboard.return_value = AppConfig()
 
             from eduagent.onboarding import check_first_run
@@ -108,11 +110,29 @@ class TestCheckFirstRun:
         with (
             patch.object(AppConfig, "config_path", return_value=config_file),
             patch("eduagent.onboarding.run_onboarding", side_effect=KeyboardInterrupt),
+            patch("sys.stdin") as mock_stdin,
         ):
+            mock_stdin.isatty.return_value = True
             from eduagent.onboarding import check_first_run
 
             result = check_first_run()
             assert result is True
+
+    def test_skips_onboarding_when_non_interactive(self, tmp_path):
+        """When stdin is not a TTY, skip interactive onboarding."""
+        config_file = tmp_path / "nonexistent" / "config.json"
+
+        with (
+            patch.object(AppConfig, "config_path", return_value=config_file),
+            patch("eduagent.onboarding.run_onboarding") as mock_onboard,
+            patch("sys.stdin") as mock_stdin,
+        ):
+            mock_stdin.isatty.return_value = False
+            from eduagent.onboarding import check_first_run
+
+            result = check_first_run()
+            assert result is True
+            mock_onboard.assert_not_called()
 
 
 class TestAskProvider:

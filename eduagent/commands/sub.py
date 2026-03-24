@@ -6,9 +6,7 @@ from typing import Optional
 
 import typer
 from rich.panel import Panel
-from rich.progress import Progress, SpinnerColumn, TextColumn
-
-from eduagent.commands._helpers import console
+from eduagent.commands._helpers import _safe_progress, console
 from eduagent.commands._helpers import run_async as _run_async
 
 sub_app = typer.Typer()
@@ -74,11 +72,7 @@ def sub(
         )
     )
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
+    with _safe_progress(console=console) as progress:
         task = progress.add_task("Generating sub packet...", total=None)
         llm = LLMClient(cfg)
         packet = _run_async(generate_sub_packet(request, llm))
@@ -155,11 +149,7 @@ def parent_comm(
     )
 
     cfg = AppConfig.load()
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
+    with _safe_progress(console=console) as progress:
         task = progress.add_task("Writing parent communication...", total=None)
         llm = LLMClient(cfg)
         comm = _run_async(generate_parent_comm(request, llm))

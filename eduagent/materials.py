@@ -35,7 +35,7 @@ async def generate_worksheet(
     task_type: str = "materials",
 ) -> list[WorksheetItem]:
     """Generate a student worksheet for a lesson."""
-    prompt_template = (PROMPT_DIR / "worksheet.txt").read_text()
+    prompt_template = (PROMPT_DIR / "worksheet.txt").read_text(encoding="utf-8")
     prompt = (
         prompt_template
         .replace("{persona}", persona.to_prompt_context())
@@ -69,7 +69,7 @@ async def generate_assessment(
     task_type: str = "materials",
 ) -> tuple[list[AssessmentQuestion], list[RubricCriterion]]:
     """Generate a quiz/assessment with optional rubric for a lesson."""
-    prompt_template = (PROMPT_DIR / "assessment.txt").read_text()
+    prompt_template = (PROMPT_DIR / "assessment.txt").read_text(encoding="utf-8")
     prompt = (
         prompt_template
         .replace("{persona}", persona.to_prompt_context())
@@ -141,7 +141,7 @@ async def generate_iep_notes(
     task_type: str = "differentiation",
 ) -> list[str]:
     """Generate IEP accommodation and differentiation notes for a lesson."""
-    prompt_template = (PROMPT_DIR / "differentiation.txt").read_text()
+    prompt_template = (PROMPT_DIR / "differentiation.txt").read_text(encoding="utf-8")
 
     lesson_activities = (
         f"Do-Now: {lesson.do_now[:200]}\n"
@@ -201,5 +201,5 @@ def save_materials(materials: LessonMaterials, output_dir: Path) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     safe_title = materials.lesson_title.lower().replace(" ", "_")[:50]
     path = output_dir / f"materials_{safe_title}.json"
-    path.write_text(materials.model_dump_json(indent=2))
+    path.write_text(materials.model_dump_json(indent=2), encoding="utf-8")
     return path

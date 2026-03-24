@@ -518,7 +518,7 @@ def export_unit(unit: UnitPlan, output_dir: Path, fmt: str = "markdown") -> Path
 
     if fmt == "markdown":
         path = output_dir / f"{safe_name}.md"
-        path.write_text(md_text)
+        path.write_text(md_text, encoding="utf-8")
     elif fmt == "pdf":
         path = output_dir / f"{safe_name}.pdf"
         _markdown_to_pdf(md_text, path)
@@ -538,7 +538,7 @@ def export_lesson(lesson: DailyLesson, output_dir: Path, fmt: str = "markdown") 
 
     if fmt == "markdown":
         path = output_dir / f"{safe_name}.md"
-        path.write_text(md_text)
+        path.write_text(md_text, encoding="utf-8")
     elif fmt == "pdf":
         path = output_dir / f"{safe_name}.pdf"
         _markdown_to_pdf(md_text, path)
@@ -558,7 +558,7 @@ def export_materials(materials: LessonMaterials, output_dir: Path, fmt: str = "m
 
     if fmt == "markdown":
         path = output_dir / f"materials_{safe_name}.md"
-        path.write_text(md_text)
+        path.write_text(md_text, encoding="utf-8")
     elif fmt == "pdf":
         path = output_dir / f"materials_{safe_name}.pdf"
         _markdown_to_pdf(md_text, path)
@@ -664,7 +664,7 @@ def export_year_map(year_map: YearMap, output_dir: Path, fmt: str = "markdown") 
 
     if fmt == "markdown":
         path = output_dir / f"{safe_name}.md"
-        path.write_text(md_text)
+        path.write_text(md_text, encoding="utf-8")
     elif fmt == "pdf":
         path = output_dir / f"{safe_name}.pdf"
         _markdown_to_pdf(md_text, path)
@@ -684,7 +684,7 @@ def export_pacing_guide(guide: PacingGuide, output_dir: Path, fmt: str = "markdo
 
     if fmt == "markdown":
         path = output_dir / f"{safe_name}.md"
-        path.write_text(md_text)
+        path.write_text(md_text, encoding="utf-8")
     elif fmt == "pdf":
         path = output_dir / f"{safe_name}.pdf"
         _markdown_to_pdf(md_text, path)

@@ -51,7 +51,7 @@ async def generate_lesson(
 
         p = Path(persona_path).expanduser()
         if p.exists():
-            persona = TeacherPersona.model_validate_json(p.read_text())
+            persona = TeacherPersona.model_validate_json(p.read_text(encoding="utf-8"))
 
     # Create minimal unit context for standalone lesson
     unit = UnitPlan(

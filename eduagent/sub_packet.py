@@ -203,9 +203,9 @@ def save_sub_packet(packet: SubPacket, output_dir: Path | None = None) -> Path:
     stem = f"sub_packet_{safe_date}_{safe_class}"
 
     json_path = output_dir / f"{stem}.json"
-    json_path.write_text(packet.model_dump_json(indent=2))
+    json_path.write_text(packet.model_dump_json(indent=2), encoding="utf-8")
 
     md_path = output_dir / f"{stem}.md"
-    md_path.write_text(sub_packet_to_markdown(packet))
+    md_path.write_text(sub_packet_to_markdown(packet), encoding="utf-8")
 
     return md_path

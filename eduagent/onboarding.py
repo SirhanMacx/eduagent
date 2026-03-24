@@ -9,15 +9,17 @@ go in under two minutes.
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 from pathlib import Path
 
+logger = logging.getLogger(__name__)
+
 from rich.panel import Panel
-from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn
 from rich.prompt import Prompt
 from rich.table import Table
 
-from eduagent.commands._helpers import console
+from eduagent.commands._helpers import _safe_progress, console
 from eduagent.config import has_config, set_api_key, test_llm_connection
 from eduagent.models import AppConfig, LLMProvider, TeacherProfile
 from eduagent.state_standards import STATE_STANDARDS_CONFIG
@@ -194,13 +196,7 @@ def _ingest_materials(path_str: str, config: AppConfig) -> None:
         console.print("    [bold]eduagent ingest <path>[/bold]")
         return
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
-        TaskProgressColumn(),
-        console=console,
-    ) as progress:
+    with _safe_progress(console=console) as progress:
         task = progress.add_task(
             f"Reading files from {source.name}...",
             total=len(all_files),
@@ -386,6 +382,18 @@ def check_first_run() -> bool:
     """
     if has_config():
         return False
+
+    import sys
+    if not sys.stdin.isatty():
+        # Background mode (e.g. bot launched via cron/systemd) — skip interactive setup
+        logger.info("Non-interactive mode, skipping onboarding wizard")
+        # Create a minimal default config so the app can proceed
+        try:
+            cfg = AppConfig()
+            cfg.save()
+        except Exception:
+            pass
+        return True
 
     try:
         run_onboarding()

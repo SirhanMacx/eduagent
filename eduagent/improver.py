@@ -80,7 +80,7 @@ async def improve_prompts(
 
     # Load current prompt
     prompt_file = PROMPT_FILES.get(target_type, "lesson_plan.txt")
-    current_prompt = (PROMPT_DIR / prompt_file).read_text()
+    current_prompt = (PROMPT_DIR / prompt_file).read_text(encoding="utf-8")
 
     # Get current version number
     versions = db.get_prompt_versions(target_type)

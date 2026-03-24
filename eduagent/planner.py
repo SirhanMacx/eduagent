@@ -60,7 +60,7 @@ async def plan_unit(
             topic=topic,
         )
 
-    prompt_template = PROMPT_PATH.read_text()
+    prompt_template = PROMPT_PATH.read_text(encoding="utf-8")
     prompt = (
         prompt_template
         .replace("{persona}", persona.to_prompt_context())
@@ -94,7 +94,7 @@ def save_unit(unit: UnitPlan, output_dir: Path) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     safe_title = unit.title.lower().replace(" ", "_")[:50]
     path = output_dir / f"unit_{safe_title}.json"
-    path.write_text(unit.model_dump_json(indent=2))
+    path.write_text(unit.model_dump_json(indent=2), encoding="utf-8")
     return path
 
 
@@ -102,4 +102,4 @@ def load_unit(path: Path) -> UnitPlan:
     """Load a unit plan from a JSON file."""
     if not path.exists():
         raise FileNotFoundError(f"Unit plan file not found: {path}")
-    return UnitPlan.model_validate_json(path.read_text())
+    return UnitPlan.model_validate_json(path.read_text(encoding="utf-8"))

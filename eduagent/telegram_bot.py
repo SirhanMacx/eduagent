@@ -26,6 +26,61 @@ ACTION_CALLBACK_PREFIX = "action:"
 # Error log path
 _ERROR_LOG = Path.home() / ".eduagent" / "errors.log"
 
+# Lock file for preventing multiple bot instances
+_BOT_LOCK = Path.home() / ".eduagent" / "bot.lock"
+
+
+def _check_bot_lock(force: bool = False) -> None:
+    """Check if another bot instance is running. Create lock if not.
+
+    Args:
+        force: If True, remove stale lock and proceed.
+
+    Raises:
+        RuntimeError: If another instance is alive and force is False.
+    """
+    import os
+    import signal
+
+    if _BOT_LOCK.exists():
+        try:
+            pid = int(_BOT_LOCK.read_text(encoding="utf-8").strip())
+            if pid == os.getpid():
+                # Same process re-entering (e.g. tests) — allow it
+                pass
+            else:
+                # Check if the process is still alive
+                try:
+                    os.kill(pid, 0)  # Signal 0 = check existence
+                    if not force:
+                        raise RuntimeError(
+                            f"Another bot instance is already running (PID {pid}). "
+                            f"Stop it first or use --force."
+                        )
+                    else:
+                        logger.warning("Force-removing stale lock for PID %d", pid)
+                except OSError:
+                    # Process is dead, stale lock
+                    logger.info("Removing stale bot lock (PID %d no longer running)", pid)
+        except (ValueError, OSError):
+            logger.info("Removing invalid bot lock file")
+
+    # Write our PID
+    _BOT_LOCK.parent.mkdir(parents=True, exist_ok=True)
+    _BOT_LOCK.write_text(str(os.getpid()), encoding="utf-8")
+
+
+def _release_bot_lock() -> None:
+    """Remove the lock file on shutdown."""
+    try:
+        if _BOT_LOCK.exists():
+            import os
+            pid = int(_BOT_LOCK.read_text(encoding="utf-8").strip())
+            if pid == os.getpid():
+                _BOT_LOCK.unlink()
+    except Exception:
+        pass
+
 
 # ── Conversation state machine ────────────────────────────────────────────
 
@@ -110,6 +165,7 @@ BOT_COMMANDS = [
     ("unit", "Plan a unit"),
     ("assess", "Create an assessment"),
     ("worksheet", "Generate a worksheet"),
+    ("ingest", "Ingest teaching materials from a file"),
     ("progress", "Student progress report"),
     ("help", "Show all commands"),
     ("health", "System status"),
@@ -194,6 +250,7 @@ class EduAgentBot:
         webhook_url: Optional[str] = None,
         webhook_port: Optional[int] = None,
         webhook_secret: Optional[str] = None,
+        force: bool = False,
     ) -> None:
         """Start the bot — polling or webhook depending on configuration.
 
@@ -204,6 +261,12 @@ class EduAgentBot:
         Polling mode is the default — it works without any public URL or TLS,
         so it is ideal for local development and teacher laptops.
         """
+        # Check for existing bot instance
+        _check_bot_lock(force=force)
+
+        import atexit
+        atexit.register(_release_bot_lock)
+
         # Resolve per-call overrides vs constructor defaults
         effective_webhook = webhook_url or self.webhook_url
         effective_port = webhook_port if webhook_port is not None else self.webhook_port
@@ -226,7 +289,20 @@ class EduAgentBot:
 
         from eduagent.state import TeacherSession
 
-        app = Application.builder().token(self.token).build()
+        # Configure HTTPXRequest with generous timeouts for flaky networks
+        try:
+            from telegram.request import HTTPXRequest
+            request = HTTPXRequest(
+                connection_pool_size=8,
+                connect_timeout=30.0,
+                read_timeout=30.0,
+                write_timeout=30.0,
+                pool_timeout=30.0,
+            )
+            app = Application.builder().token(self.token).request(request).build()
+        except (ImportError, TypeError):
+            # Older python-telegram-bot versions may not have HTTPXRequest
+            app = Application.builder().token(self.token).build()
 
         def _rating_keyboard(lesson_id: str) -> InlineKeyboardMarkup:
             """Build an inline keyboard with 1-5 star buttons + skip."""
@@ -605,6 +681,77 @@ class EduAgentBot:
                     "Couldn't generate progress report right now. Try again later."
                 )
 
+        async def cmd_ingest(update: Any, context: Any) -> None:
+            """Ingest a file sent as a document."""
+            await update.message.reply_text(
+                "Send me a file (PDF, DOCX, PPTX, TXT, or MD) and I'll learn "
+                "your teaching style from it.\n\n"
+                "Just drag and drop a file into this chat!"
+            )
+
+        async def handle_document(update: Any, context: Any) -> None:
+            """Handle file uploads — ingest teaching materials progressively."""
+            if not update.message or not update.message.document:
+                return
+
+            doc = update.message.document
+            file_name = doc.file_name or "unknown"
+            supported_exts = {".pdf", ".docx", ".pptx", ".txt", ".md"}
+            ext = Path(file_name).suffix.lower()
+
+            if ext not in supported_exts:
+                await update.message.reply_text(
+                    f"I can't process {ext} files yet. "
+                    f"Supported formats: {', '.join(sorted(supported_exts))}"
+                )
+                return
+
+            await update.message.reply_text(
+                f"Got your file: {file_name}! Processing it now..."
+            )
+            await update.message.chat.send_action("typing")
+
+            try:
+                # Download the file to a temp location
+                import tempfile
+                tg_file = await doc.get_file()
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    local_path = Path(tmpdir) / file_name
+                    await tg_file.download_to_drive(str(local_path))
+
+                    # Ingest the file
+                    from eduagent.ingestor import ingest_path
+                    documents = ingest_path(local_path)
+
+                    if not documents:
+                        await update.message.reply_text(
+                            "I couldn't extract any content from that file. "
+                            "Try a different format?"
+                        )
+                        return
+
+                    # Build/update persona from the documents
+                    from eduagent.persona import extract_persona, save_persona
+                    from eduagent.commands._helpers import output_dir
+
+                    persona = await extract_persona(documents)
+                    out = save_persona(persona, output_dir())
+
+                    await update.message.reply_text(
+                        f"Learned from {file_name}!\n\n"
+                        f"Teaching style: {persona.teaching_style.value.replace('_', ' ').title()}\n"
+                        f"Tone: {persona.tone}\n"
+                        f"Subject: {persona.subject_area}\n\n"
+                        "Send more files anytime to improve my understanding "
+                        "of your teaching style, or start generating with /lesson."
+                    )
+            except Exception as e:
+                logger.error(f"Error ingesting file: {e}")
+                _log_error(e)
+                await update.message.reply_text(
+                    "Had trouble processing that file. Try again or use a different format."
+                )
+
         # Register command menu with BotFather API
         async def _post_init(application: Any) -> None:
             """Called after the application is initialized — registers commands."""
@@ -628,9 +775,28 @@ class EduAgentBot:
         app.add_handler(CommandHandler("assess", cmd_assess))
         app.add_handler(CommandHandler("worksheet", cmd_worksheet))
         app.add_handler(CommandHandler("progress", cmd_progress))
+        app.add_handler(CommandHandler("ingest", cmd_ingest))
         app.add_handler(CallbackQueryHandler(handle_rating_callback, pattern=f"^{RATING_CALLBACK_PREFIX}"))
         app.add_handler(CallbackQueryHandler(handle_action_callback, pattern=f"^{ACTION_CALLBACK_PREFIX}"))
+        app.add_handler(MessageHandler(filters.Document.ALL, handle_document))
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
+
+        # ── Error handler ─────────────────────────────────────────
+        async def _error_handler(update: Any, context: Any) -> None:
+            """Global error handler for the Telegram bot."""
+            logger.error("Telegram error: %s", context.error)
+            _log_error(context.error)
+            # Don't dump full traceback for network errors
+            try:
+                from telegram.error import NetworkError, TimedOut
+                if isinstance(context.error, (NetworkError, TimedOut)):
+                    logger.warning("Network issue, will retry automatically")
+                    return
+            except ImportError:
+                pass
+            logger.exception("Unhandled error in bot", exc_info=context.error)
+
+        app.add_error_handler(_error_handler)
 
         logger.info("EDUagent bot starting...")
         print("EDUagent bot is running. Press Ctrl+C to stop.")
@@ -669,6 +835,7 @@ def run_bot(
     webhook_url: Optional[str] = None,
     webhook_port: int = 8443,
     webhook_secret: Optional[str] = None,
+    force: bool = False,
 ) -> None:
     """Run the EDUagent Telegram bot.
 
@@ -680,6 +847,7 @@ def run_bot(
             (e.g. ``https://myserver.com/webhook``).
         webhook_port: Local port to listen on in webhook mode (default 8443).
         webhook_secret: Optional secret token to verify incoming webhook requests.
+        force: If True, remove stale lock and start even if another instance exists.
     """
     bot = EduAgentBot(
         token=token,
@@ -688,4 +856,4 @@ def run_bot(
         webhook_port=webhook_port,
         webhook_secret=webhook_secret,
     )
-    bot.start()
+    bot.start(force=force)

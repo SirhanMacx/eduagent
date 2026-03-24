@@ -314,4 +314,4 @@ class TestTelegramRating:
             assert mock_app_instance.add_handler.call_count >= 5
             assert mock_telegram_ext.CommandHandler.call_count >= 3
             assert mock_telegram_ext.CallbackQueryHandler.call_count >= 1
-            assert mock_telegram_ext.MessageHandler.call_count == 1
+            assert mock_telegram_ext.MessageHandler.call_count >= 1

@@ -93,7 +93,7 @@ async def _transcribe_whisper_cli(audio_path: Path) -> str:
     # whisper writes <stem>.txt next to the audio file
     txt_path = audio_path.with_suffix(".txt")
     if txt_path.exists():
-        text = txt_path.read_text().strip()
+        text = txt_path.read_text(encoding="utf-8").strip()
         txt_path.unlink()  # clean up
         return text
 

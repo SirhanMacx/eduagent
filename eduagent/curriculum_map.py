@@ -63,7 +63,7 @@ class CurriculumMapper:
             grade_level=grade_level,
         )
 
-        prompt_template = (PROMPT_DIR / "year_map.txt").read_text()
+        prompt_template = (PROMPT_DIR / "year_map.txt").read_text(encoding="utf-8")
         prompt = (
             prompt_template
             .replace("{persona}", persona.to_prompt_context())
@@ -129,7 +129,7 @@ class CurriculumMapper:
         else:
             calendar_events = "No specific calendar events provided — use standard US school calendar assumptions."
 
-        prompt_template = (PROMPT_DIR / "pacing_guide.txt").read_text()
+        prompt_template = (PROMPT_DIR / "pacing_guide.txt").read_text(encoding="utf-8")
         prompt = (
             prompt_template
             .replace("{persona}", persona.to_prompt_context())
@@ -175,7 +175,7 @@ class CurriculumMapper:
         else:
             materials_summary = "No materials provided."
 
-        prompt_template = (PROMPT_DIR / "curriculum_gaps.txt").read_text()
+        prompt_template = (PROMPT_DIR / "curriculum_gaps.txt").read_text(encoding="utf-8")
         prompt = (
             prompt_template
             .replace("{persona}", persona.to_prompt_context())
@@ -212,7 +212,7 @@ def save_year_map(year_map: YearMap, output_dir: Path) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     safe_name = f"year_map_{year_map.subject.lower().replace(' ', '_')}_{year_map.grade_level}"
     path = output_dir / f"{safe_name}.json"
-    path.write_text(year_map.model_dump_json(indent=2))
+    path.write_text(year_map.model_dump_json(indent=2), encoding="utf-8")
     return path
 
 
@@ -220,7 +220,7 @@ def load_year_map(path: Path) -> YearMap:
     """Load a year map from a JSON file."""
     if not path.exists():
         raise FileNotFoundError(f"Year map file not found: {path}")
-    return YearMap.model_validate_json(path.read_text())
+    return YearMap.model_validate_json(path.read_text(encoding="utf-8"))
 
 
 def save_pacing_guide(guide: PacingGuide, output_dir: Path) -> Path:
@@ -228,7 +228,7 @@ def save_pacing_guide(guide: PacingGuide, output_dir: Path) -> Path:
     output_dir.mkdir(parents=True, exist_ok=True)
     safe_name = f"pacing_{guide.subject.lower().replace(' ', '_')}_{guide.grade_level}"
     path = output_dir / f"{safe_name}.json"
-    path.write_text(guide.model_dump_json(indent=2))
+    path.write_text(guide.model_dump_json(indent=2), encoding="utf-8")
     return path
 
 
@@ -236,4 +236,4 @@ def load_pacing_guide(path: Path) -> PacingGuide:
     """Load a pacing guide from a JSON file."""
     if not path.exists():
         raise FileNotFoundError(f"Pacing guide file not found: {path}")
-    return PacingGuide.model_validate_json(path.read_text())
+    return PacingGuide.model_validate_json(path.read_text(encoding="utf-8"))

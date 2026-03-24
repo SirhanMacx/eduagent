@@ -41,7 +41,7 @@ async def generate_progress_update(
     persona = teacher_persona or TeacherPersona()
     persona_context = persona.to_prompt_context()
 
-    prompt_template = PROMPT_PATH.read_text()
+    prompt_template = PROMPT_PATH.read_text(encoding="utf-8")
     prompt = (
         prompt_template
         .replace("{persona}", persona_context)
@@ -72,7 +72,7 @@ def save_progress_update(update: ProgressUpdate, output_dir: Path) -> Path:
     safe_name = update.student_name.lower().replace(" ", "_")
     filename = f"progress_update_{safe_name}.json"
     path = output_dir / filename
-    path.write_text(update.model_dump_json(indent=2))
+    path.write_text(update.model_dump_json(indent=2), encoding="utf-8")
     return path
 
 

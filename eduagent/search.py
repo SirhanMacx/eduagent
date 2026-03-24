@@ -21,7 +21,7 @@ def _get_tavily_key() -> Optional[str]:
     config_path = Path.home() / ".eduagent" / "config.json"
     if config_path.exists():
         try:
-            data = json.loads(config_path.read_text())
+            data = json.loads(config_path.read_text(encoding="utf-8"))
             return data.get("tavily_api_key") or data.get("TAVILY_API_KEY")
         except (json.JSONDecodeError, OSError):
             pass

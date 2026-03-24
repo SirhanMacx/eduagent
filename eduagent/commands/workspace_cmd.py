@@ -69,8 +69,8 @@ def workspace_regenerate(
         persona = TeacherPersona()
 
     WORKSPACE_DIR.mkdir(parents=True, exist_ok=True)
-    IDENTITY_PATH.write_text(generate_identity(persona, cfg))
-    SOUL_PATH.write_text(generate_soul(persona, cfg))
+    IDENTITY_PATH.write_text(generate_identity(persona, cfg), encoding="utf-8")
+    SOUL_PATH.write_text(generate_soul(persona, cfg), encoding="utf-8")
     console.print("[green]identity.md and soul.md regenerated from persona.[/green]")
 
 
@@ -130,7 +130,7 @@ def workspace_show() -> None:
     if IDENTITY_PATH.exists():
         console.print(
             Panel(
-                IDENTITY_PATH.read_text(),
+                IDENTITY_PATH.read_text(encoding="utf-8"),
                 title="[bold]Identity[/bold]",
                 border_style="blue",
             )
@@ -141,7 +141,7 @@ def workspace_show() -> None:
     if SOUL_PATH.exists():
         console.print(
             Panel(
-                SOUL_PATH.read_text(),
+                SOUL_PATH.read_text(encoding="utf-8"),
                 title="[bold]Teaching Soul[/bold]",
                 border_style="cyan",
             )
@@ -183,7 +183,7 @@ def workspace_memory() -> None:
     if MEMORY_PATH.exists():
         console.print(
             Panel(
-                MEMORY_PATH.read_text(),
+                MEMORY_PATH.read_text(encoding="utf-8"),
                 title="[bold]Teaching Memory[/bold]",
                 border_style="yellow",
             )

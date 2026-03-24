@@ -408,26 +408,45 @@ STANDARDS: dict[str, list[tuple[str, str, str]]] = {
     ],
 }
 
-# Subject name aliases
+# Subject name aliases — kept in sync with eduagent.skills aliases
 SUBJECT_ALIASES: dict[str, str] = {
     "math": "math",
     "mathematics": "math",
+    "algebra": "math",
+    "geometry": "math",
+    "calculus": "math",
+    "pre-algebra": "math",
+    "pre-calculus": "math",
+    "statistics": "math",
     "ela": "ela",
     "english": "ela",
     "language arts": "ela",
     "english language arts": "ela",
     "reading": "ela",
     "writing": "ela",
+    "literacy": "ela",
     "science": "science",
     "biology": "science",
     "chemistry": "science",
     "physics": "science",
     "earth science": "science",
+    "environmental science": "science",
+    "life science": "science",
+    "physical science": "science",
     "history": "history",
     "social studies": "history",
     "civics": "history",
     "economics": "history",
     "geography": "history",
+    "us history": "history",
+    "american history": "history",
+    "world history": "history",
+    "european history": "history",
+    "ap history": "history",
+    "ap us history": "history",
+    "apush": "history",
+    "government": "history",
+    "ap government": "history",
 }
 
 

@@ -59,6 +59,30 @@ def persona_path() -> Path:
     return output_dir() / "persona.json"
 
 
+def _safe_progress(**kwargs):
+    """Create a Progress bar that works on all platforms.
+
+    On Windows with cp1252, Rich's SpinnerColumn() uses Braille characters
+    that crash.  We substitute a plain TextColumn on win32.
+    """
+    from rich.progress import (
+        BarColumn,
+        Progress,
+        SpinnerColumn,
+        TaskProgressColumn,
+        TextColumn,
+    )
+
+    columns: list = []
+    if sys.platform == "win32":
+        columns.append(TextColumn("[progress.description]{task.description}"))
+    else:
+        columns.append(SpinnerColumn())
+        columns.append(TextColumn("[progress.description]{task.description}"))
+    columns.extend([BarColumn(), TaskProgressColumn()])
+    return Progress(*columns, **kwargs)
+
+
 def load_persona_or_exit() -> TeacherPersona:
     path = persona_path()
     if not path.exists():

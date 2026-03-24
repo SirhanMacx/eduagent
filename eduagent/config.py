@@ -23,7 +23,7 @@ _SERVICE_NAME = "eduagent"
 def _load_secrets() -> dict[str, str]:
     if _SECRETS_FILE.exists():
         try:
-            return json.loads(_SECRETS_FILE.read_text())
+            return json.loads(_SECRETS_FILE.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             return {}
     return {}
@@ -31,7 +31,7 @@ def _load_secrets() -> dict[str, str]:
 
 def _save_secrets(secrets: dict[str, str]) -> None:
     _SECRETS_DIR.mkdir(parents=True, exist_ok=True)
-    _SECRETS_FILE.write_text(json.dumps(secrets, indent=2))
+    _SECRETS_FILE.write_text(json.dumps(secrets, indent=2), encoding="utf-8")
     try:
         os.chmod(str(_SECRETS_FILE), stat.S_IRUSR | stat.S_IWUSR)  # 0600
     except OSError:

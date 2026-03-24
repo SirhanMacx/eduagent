@@ -308,7 +308,7 @@ def export_cmd(
         console.print(f"[red]File not found:[/red] {path}")
         raise typer.Exit(1)
 
-    data = json.loads(path.read_text())
+    data = json.loads(path.read_text(encoding="utf-8"))
 
     if fmt == "classroom":
         description_parts = [data.get("objective", "")]
@@ -335,7 +335,7 @@ def export_cmd(
         )
 
         out_path = path.with_suffix(".classroom.json")
-        out_path.write_text(output)
+        out_path.write_text(output, encoding="utf-8")
         console.print(f"[green]Saved:[/green] {out_path}")
     else:
         console.print(f"[red]Unsupported format: {fmt}[/red]")
@@ -399,7 +399,7 @@ def share(
         console.print(f"[red]File not found:[/red] {path}")
         raise typer.Exit(1)
 
-    data = json.loads(path.read_text())
+    data = json.loads(path.read_text(encoding="utf-8"))
     title = data.get("title", "lesson")
     safe_title = re.sub(r"[^a-zA-Z0-9_-]", "_", title).strip("_")[:80]
 
@@ -407,7 +407,7 @@ def share(
     out_dir.mkdir(parents=True, exist_ok=True)
     html_path = out_dir / f"lesson_{safe_title}.html"
 
-    html_path.write_text(_lesson_to_html(data))
+    html_path.write_text(_lesson_to_html(data), encoding="utf-8")
     console.print(f"[green]Shareable lesson saved:[/green] {html_path}")
 
 
@@ -431,7 +431,7 @@ def demo(
         out_dir = Path("~/eduagent_output").expanduser().resolve()
         out_dir.mkdir(parents=True, exist_ok=True)
         html_path = out_dir / "demo.html"
-        html_path.write_text(_DEMO_HTML)
+        html_path.write_text(_DEMO_HTML, encoding="utf-8")
         console.print(f"[green]Demo HTML saved:[/green] {html_path}")
         webbrowser.open(html_path.as_uri())
         return
@@ -578,7 +578,7 @@ def generate_landing(
     out_dir = Path(output).expanduser().resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
     dest = out_dir / "index.html"
-    dest.write_text(landing_src.read_text())
+    dest.write_text(landing_src.read_text(encoding="utf-8"), encoding="utf-8")
 
     console.print(f"[green]Landing page generated:[/green] {dest}")
     if open_browser:

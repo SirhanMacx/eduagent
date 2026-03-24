@@ -31,7 +31,7 @@ def _load_keys() -> dict[str, str]:
     global _api_keys
     if _KEYS_PATH.exists():
         try:
-            _api_keys = json.loads(_KEYS_PATH.read_text())
+            _api_keys = json.loads(_KEYS_PATH.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
             _api_keys = {}
     return _api_keys
@@ -42,7 +42,7 @@ def _save_keys(keys: dict[str, str]) -> None:
     global _api_keys
     _api_keys = keys
     _KEYS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    _KEYS_PATH.write_text(json.dumps(keys, indent=2))
+    _KEYS_PATH.write_text(json.dumps(keys, indent=2), encoding="utf-8")
 
 
 def register_api_key(api_key: str, teacher_id: str) -> None:

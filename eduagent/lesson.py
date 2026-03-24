@@ -67,7 +67,7 @@ async def generate_lesson(
     )
     standards_text = format_standards_for_prompt(standards_list)
 
-    prompt_template = PROMPT_PATH.read_text()
+    prompt_template = PROMPT_PATH.read_text(encoding="utf-8")
     prompt = (
         prompt_template
         .replace("{persona}", persona.to_prompt_context())
@@ -125,7 +125,7 @@ def save_lesson(lesson: DailyLesson, output_dir: Path) -> Path:
     """Save a lesson plan to disk as JSON."""
     output_dir.mkdir(parents=True, exist_ok=True)
     path = output_dir / f"lesson_{lesson.lesson_number:02d}.json"
-    path.write_text(lesson.model_dump_json(indent=2))
+    path.write_text(lesson.model_dump_json(indent=2), encoding="utf-8")
     return path
 
 
@@ -133,4 +133,4 @@ def load_lesson(path: Path) -> DailyLesson:
     """Load a lesson plan from a JSON file."""
     if not path.exists():
         raise FileNotFoundError(f"Lesson file not found: {path}")
-    return DailyLesson.model_validate_json(path.read_text())
+    return DailyLesson.model_validate_json(path.read_text(encoding="utf-8"))

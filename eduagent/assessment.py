@@ -46,7 +46,7 @@ class AssessmentGenerator:
     ) -> FormativeAssessment:
         """Exit ticket — 3-5 questions checking TODAY's objective."""
         cfg = config or self.config
-        prompt_template = (PROMPT_DIR / "formative_assessment.txt").read_text()
+        prompt_template = (PROMPT_DIR / "formative_assessment.txt").read_text(encoding="utf-8")
         prompt = (
             prompt_template
             .replace("{persona}", persona.to_prompt_context())
@@ -84,7 +84,7 @@ class AssessmentGenerator:
     ) -> SummativeAssessment:
         """Unit test: MC, short answer, essay — aligned to all unit objectives."""
         cfg = config or self.config
-        prompt_template = (PROMPT_DIR / "summative_assessment.txt").read_text()
+        prompt_template = (PROMPT_DIR / "summative_assessment.txt").read_text(encoding="utf-8")
 
         objectives_str = "\n".join(
             f"  - {obj}" for obj in unit.enduring_understandings
@@ -134,7 +134,7 @@ class AssessmentGenerator:
     ) -> DBQAssessment:
         """Document-Based Question — NYS Regents style."""
         cfg = config or self.config
-        prompt_template = (PROMPT_DIR / "dbq_assessment.txt").read_text()
+        prompt_template = (PROMPT_DIR / "dbq_assessment.txt").read_text(encoding="utf-8")
         prompt = (
             prompt_template
             .replace("{persona}", persona.to_prompt_context())
@@ -178,7 +178,7 @@ class AssessmentGenerator:
     ) -> Rubric:
         """Generate a rubric for any written task. 4-point scale, specific descriptors."""
         cfg = config or self.config
-        prompt_template = (PROMPT_DIR / "rubric.txt").read_text()
+        prompt_template = (PROMPT_DIR / "rubric.txt").read_text(encoding="utf-8")
         prompt = (
             prompt_template
             .replace("{persona}", persona.to_prompt_context())
@@ -217,7 +217,7 @@ class AssessmentGenerator:
         """Short quiz: mix of formats the teacher specifies."""
         cfg = config or self.config
         persona = persona or TeacherPersona()
-        prompt_template = (PROMPT_DIR / "quiz.txt").read_text()
+        prompt_template = (PROMPT_DIR / "quiz.txt").read_text(encoding="utf-8")
         prompt = (
             prompt_template
             .replace("{persona}", persona.to_prompt_context())
@@ -328,5 +328,5 @@ def save_assessment(
         name = "output"
     safe_name = name.lower().replace(" ", "_")[:50]
     path = output_dir / f"{label}_{safe_name}.json"
-    path.write_text(assessment.model_dump_json(indent=2))
+    path.write_text(assessment.model_dump_json(indent=2), encoding="utf-8")
     return path

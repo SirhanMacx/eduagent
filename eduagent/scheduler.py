@@ -72,7 +72,7 @@ def load_schedule_config() -> dict[str, dict[str, Any]]:
 
     if SCHEDULE_CONFIG_PATH.exists():
         try:
-            saved = json.loads(SCHEDULE_CONFIG_PATH.read_text())
+            saved = json.loads(SCHEDULE_CONFIG_PATH.read_text(encoding="utf-8"))
             for name, overrides in saved.items():
                 if name in config:
                     if "cron" in overrides:
@@ -91,7 +91,7 @@ def load_schedule_config() -> dict[str, dict[str, Any]]:
 def save_schedule_config(config: dict[str, dict[str, Any]]) -> None:
     """Persist schedule config to disk."""
     SCHEDULE_CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
-    SCHEDULE_CONFIG_PATH.write_text(json.dumps(config, indent=2))
+    SCHEDULE_CONFIG_PATH.write_text(json.dumps(config, indent=2), encoding="utf-8")
 
 
 def enable_task(name: str) -> bool:

@@ -41,7 +41,7 @@ async def generate_iep_lesson_modifications(
     if not iep_profiles:
         return {}
 
-    prompt_template = (PROMPT_DIR / "iep_modification.txt").read_text()
+    prompt_template = (PROMPT_DIR / "iep_modification.txt").read_text(encoding="utf-8")
 
     exit_ticket_text = "; ".join(q.question for q in lesson.exit_ticket) or "None"
 
@@ -98,7 +98,7 @@ async def generate_504_accommodations(
     if not accommodations:
         return DifferentiationNotes()
 
-    prompt_template = (PROMPT_DIR / "504_accommodations.txt").read_text()
+    prompt_template = (PROMPT_DIR / "504_accommodations.txt").read_text(encoding="utf-8")
 
     prompt = (
         prompt_template
@@ -142,7 +142,7 @@ async def generate_tiered_assignments(
       - Tier 3 (Advanced): items 200-299
       - Additional tiers continue the pattern.
     """
-    prompt_template = (PROMPT_DIR / "tiered_assignments.txt").read_text()
+    prompt_template = (PROMPT_DIR / "tiered_assignments.txt").read_text(encoding="utf-8")
 
     prompt = (
         prompt_template
@@ -169,7 +169,7 @@ async def generate_tiered_assignments(
 
 def load_iep_profiles(path: Path) -> list[IEPProfile]:
     """Load IEP profiles from a JSON file (array of profile objects)."""
-    raw = json.loads(path.read_text())
+    raw = json.loads(path.read_text(encoding="utf-8"))
     if isinstance(raw, dict):
         raw = [raw]
     return [IEPProfile.model_validate(p) for p in raw]
@@ -185,7 +185,7 @@ def save_modified_lessons(
     for student_name, lesson in modifications.items():
         safe_name = student_name.lower().replace(" ", "_")[:50]
         path = output_dir / f"iep_modified_{safe_name}.json"
-        path.write_text(lesson.model_dump_json(indent=2))
+        path.write_text(lesson.model_dump_json(indent=2), encoding="utf-8")
         paths.append(path)
     return paths
 
@@ -200,5 +200,5 @@ def save_tiered_assignments(
     safe_topic = topic.lower().replace(" ", "_")[:50]
     path = output_dir / f"tiered_{safe_topic}.json"
     data = [item.model_dump() for item in items]
-    path.write_text(json.dumps(data, indent=2))
+    path.write_text(json.dumps(data, indent=2), encoding="utf-8")
     return path

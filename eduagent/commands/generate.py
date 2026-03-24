@@ -12,12 +12,11 @@ from rich.progress import (
     BarColumn,
     MofNCompleteColumn,
     Progress,
-    SpinnerColumn,
     TextColumn,
 )
 from rich.table import Table
 
-from eduagent.commands._helpers import console, load_persona_or_exit
+from eduagent.commands._helpers import _safe_progress, console, load_persona_or_exit
 from eduagent.commands._helpers import output_dir as _output_dir
 from eduagent.commands._helpers import run_async as _run_async
 from eduagent.models import AppConfig
@@ -87,13 +86,7 @@ def ingest(
 
     # Use progress bar for large directories (>20 files), spinner otherwise
     if file_count > 20:
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            BarColumn(),
-            MofNCompleteColumn(),
-            console=console,
-        ) as progress:
+        with _safe_progress(console=console) as progress:
             task = progress.add_task("Ingesting files...", total=file_count)
 
             def _update_progress(current: int, total: int) -> None:
@@ -105,11 +98,7 @@ def ingest(
                 description=f"Done — {len(documents)} documents extracted",
             )
     else:
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
-        ) as progress:
+        with _safe_progress(console=console) as progress:
             task = progress.add_task("Scanning files...", total=None)
             documents = ingest_path(source)
             progress.update(
@@ -134,11 +123,7 @@ def ingest(
     # Extract persona
     from eduagent.persona import extract_persona, save_persona
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
+    with _safe_progress(console=console) as progress:
         task = progress.add_task("Analyzing teaching style...", total=None)
         persona = _run_async(extract_persona(documents))
         progress.update(task, description="Persona extracted!")
@@ -180,11 +165,7 @@ def transcribe(
         )
         raise typer.Exit(1)
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
+    with _safe_progress(console=console) as progress:
         progress.add_task("Transcribing audio...", total=None)
         try:
             text = _run_async(transcribe_audio(source))
@@ -231,11 +212,7 @@ def unit(
         )
     )
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
+    with _safe_progress(console=console) as progress:
         task = progress.add_task("Generating unit plan...", total=None)
         unit_plan = _run_async(
             plan_unit(
@@ -300,11 +277,7 @@ def year_map(
         )
     )
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
+    with _safe_progress(console=console) as progress:
         task = progress.add_task(
             "Generating full-year curriculum map...", total=None
         )
@@ -388,7 +361,7 @@ def pacing(
         if cal_path.exists():
             import json as _json
 
-            cal_data = _json.loads(cal_path.read_text())
+            cal_data = _json.loads(cal_path.read_text(encoding="utf-8"))
             school_cal = [
                 SchoolCalendarEvent.model_validate(e) for e in cal_data
             ]
@@ -401,11 +374,7 @@ def pacing(
         )
     )
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
+    with _safe_progress(console=console) as progress:
         task = progress.add_task(
             "Creating week-by-week pacing guide...", total=None
         )
@@ -456,31 +425,62 @@ def pacing(
 
 @generate_app.command()
 def lesson(
-    topic: str = typer.Argument(..., help="Lesson topic"),
-    unit_file: str = typer.Option(
-        ..., "--unit-file", "-u", help="Path to unit plan JSON"
+    topic: str = typer.Argument(..., help="Lesson topic (e.g. 'The American Revolution')"),
+    unit_file: Optional[str] = typer.Option(
+        None, "--unit-file", "-u", help="Path to unit plan JSON (omit for standalone lesson)"
     ),
     lesson_num: int = typer.Option(
         1, "--lesson-num", "-n", help="Lesson number in unit"
     ),
+    grade: str = typer.Option(
+        "8", "--grade", "-g", help="Grade level (for standalone lesson)"
+    ),
+    subject: str = typer.Option(
+        "Social Studies", "--subject", "-s", help="Subject area (for standalone lesson)"
+    ),
     homework: bool = typer.Option(
         True, "--homework/--no-homework", help="Include homework"
     ),
-    fmt: str = typer.Option("markdown", "--format", "-f", help="Export format"),
+    fmt: str = typer.Option("markdown", "--format", "-f", help="Export format: markdown, pptx, docx, pdf"),
 ):
-    """Generate a detailed daily lesson plan."""
+    """Generate a detailed daily lesson plan.
+
+    \b
+    Standalone mode (no unit plan needed):
+        eduagent lesson "The American Revolution" --grade 8 --subject "social studies"
+
+    From a unit plan:
+        eduagent lesson "Photosynthesis" --unit-file output/unit_photosynthesis.json -n 1
+    """
     from eduagent.exporter import export_lesson
     from eduagent.lesson import generate_lesson, save_lesson
-    from eduagent.planner import load_unit
 
     persona = load_persona_or_exit()
-    unit_plan = load_unit(Path(unit_file))
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
+    if unit_file:
+        from eduagent.planner import load_unit
+        unit_plan = load_unit(Path(unit_file))
+    else:
+        # Standalone mode: create a minimal unit plan from the topic
+        from eduagent.models import LessonBrief, UnitPlan
+        unit_plan = UnitPlan(
+            title=f"{topic} Lesson",
+            subject=subject,
+            grade_level=grade,
+            overview=f"A standalone lesson on {topic} for grade {grade} {subject}.",
+            essential_questions=[f"What are the key concepts of {topic}?"],
+            daily_lessons=[
+                LessonBrief(
+                    lesson_number=1,
+                    topic=topic,
+                    description=f"Explore the key concepts, events, and significance of {topic}.",
+                    lesson_type="direct_instruction",
+                )
+            ],
+        )
+        lesson_num = 1
+
+    with _safe_progress(console=console) as progress:
         task = progress.add_task(
             f"Generating lesson {lesson_num}...", total=None
         )
@@ -497,6 +497,20 @@ def lesson(
     out_dir = _output_dir()
     json_path = save_lesson(daily, out_dir)
     export_path = export_lesson(daily, out_dir, fmt=fmt)
+
+    # If a document format was requested, also export via doc_export
+    if fmt in ("pptx", "docx", "pdf"):
+        try:
+            from eduagent.doc_export import export_lesson_docx, export_lesson_pdf, export_lesson_pptx
+            if fmt == "pptx":
+                doc_path = export_lesson_pptx(daily, persona, out_dir)
+            elif fmt == "docx":
+                doc_path = export_lesson_docx(daily, persona, out_dir)
+            else:
+                doc_path = export_lesson_pdf(daily, persona, out_dir)
+            console.print(f"[green]Document exported:[/green] {doc_path}")
+        except Exception as e:
+            console.print(f"[yellow]Document export failed: {e}[/yellow]")
 
     console.print(f"\n[green]Lesson saved:[/green] {json_path}")
     console.print(f"[green]Exported:[/green] {export_path}")
@@ -527,11 +541,7 @@ def materials(
     persona = load_persona_or_exit()
     daily = load_lesson(Path(lesson_file))
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
+    with _safe_progress(console=console) as progress:
         task = progress.add_task("Generating worksheet...", total=4)
         mats = _run_async(generate_all_materials(daily, persona))
         progress.update(
@@ -617,11 +627,7 @@ def assess(
                 title="Formative Assessment",
             )
         )
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
-        ) as progress:
+        with _safe_progress(console=console) as progress:
             task = progress.add_task(
                 "Generating exit ticket...", total=None
             )
@@ -654,11 +660,7 @@ def assess(
                 title="Summative Assessment",
             )
         )
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
-        ) as progress:
+        with _safe_progress(console=console) as progress:
             task = progress.add_task(
                 "Generating unit test...", total=None
             )
@@ -690,11 +692,7 @@ def assess(
                 title="Document-Based Question",
             )
         )
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
-        ) as progress:
+        with _safe_progress(console=console) as progress:
             task = progress.add_task(
                 "Generating DBQ with documents...", total=None
             )
@@ -729,11 +727,7 @@ def assess(
                 title="Quiz",
             )
         )
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
-        ) as progress:
+        with _safe_progress(console=console) as progress:
             task = progress.add_task("Generating quiz...", total=None)
             result = _run_async(
                 gen.generate_quiz(
@@ -788,11 +782,7 @@ def rubric(
         )
     )
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
+    with _safe_progress(console=console) as progress:
         prog_task = progress.add_task("Generating rubric...", total=None)
         result = _run_async(
             gen.generate_rubric(
@@ -871,11 +861,7 @@ def differentiate(
             )
         )
 
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
-        ) as progress:
+        with _safe_progress(console=console) as progress:
             task = progress.add_task(
                 "Modifying lessons for IEP students...", total=None
             )
@@ -917,11 +903,7 @@ def differentiate(
             )
         )
 
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
-        ) as progress:
+        with _safe_progress(console=console) as progress:
             task = progress.add_task(
                 "Generating 504 accommodations...", total=None
             )
@@ -950,11 +932,7 @@ def differentiate(
             )
         )
 
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console,
-        ) as progress:
+        with _safe_progress(console=console) as progress:
             task = progress.add_task(
                 "Generating tiered assignments...", total=None
             )
@@ -1034,11 +1012,7 @@ def full(
     )
 
     # Step 1: Unit plan
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
+    with _safe_progress(console=console) as progress:
         task = progress.add_task("Step 1/3: Planning unit...", total=None)
         unit_plan = _run_async(
             plan_unit(
@@ -1065,11 +1039,7 @@ def full(
         lesson_briefs = lesson_briefs[:max_lessons]
 
     lessons = []
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
+    with _safe_progress(console=console) as progress:
         task = progress.add_task(
             "Step 2/3: Generating lessons...", total=len(lesson_briefs)
         )
@@ -1092,11 +1062,7 @@ def full(
             progress.advance(task)
 
     # Step 3: Materials for each lesson
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
+    with _safe_progress(console=console) as progress:
         task = progress.add_task(
             "Step 3/3: Generating materials...", total=len(lessons)
         )
@@ -1190,11 +1156,7 @@ def sub_packet(
         )
     )
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
+    with _safe_progress(console=console) as progress:
         task = progress.add_task("Generating sub packet...", total=None)
         llm = LLMClient(cfg)
         packet = _run_async(generate_sub_packet(request, llm))
@@ -1274,11 +1236,7 @@ def parent_note(
         )
     )
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
+    with _safe_progress(console=console) as progress:
         task = progress.add_task(
             "Writing progress update...", total=None
         )
@@ -1328,14 +1286,10 @@ def score(
         console.print(f"[red]File not found:[/red] {path}")
         raise typer.Exit(1)
 
-    data = json.loads(path.read_text())
+    data = json.loads(path.read_text(encoding="utf-8"))
     lesson_obj = DailyLesson.model_validate(data)
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
+    with _safe_progress(console=console) as progress:
         task = progress.add_task("Scoring lesson quality...", total=None)
         scorer = LessonQualityScore()
         scores = _run_async(scorer.score(lesson_obj))
@@ -1379,11 +1333,7 @@ def improve(
 
     db = Database()
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
+    with _safe_progress(console=console) as progress:
         task = progress.add_task(
             "Analyzing feedback and improving prompts...", total=None
         )
@@ -1451,7 +1401,7 @@ def course(
 
     topics = [
         line.strip()
-        for line in path.read_text().splitlines()
+        for line in path.read_text(encoding="utf-8").splitlines()
         if line.strip()
     ]
     if not topics:
@@ -1469,11 +1419,7 @@ def course(
     out_dir = _output_dir() / "course"
     units = []
 
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console,
-    ) as progress:
+    with _safe_progress(console=console) as progress:
         task = progress.add_task(
             "Generating course...", total=len(topics)
         )
@@ -1553,13 +1499,7 @@ def evaluate(
 
     # Generate lessons
     generated: list[DailyLesson] = []
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        BarColumn(),
-        MofNCompleteColumn(),
-        console=console,
-    ) as progress:
+    with _safe_progress(console=console) as progress:
         task = progress.add_task("Generating lessons...", total=lessons)
 
         for i in range(1, lessons + 1):

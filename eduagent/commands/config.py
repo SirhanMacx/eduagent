@@ -191,7 +191,8 @@ def class_qr(
         out_path.write_text(
             f"Class: {info.name or code}\n"
             f"Code: {code}\n"
-            f"Join link: https://t.me/eduagent_bot?start={code}\n"
+            f"Join link: https://t.me/eduagent_bot?start={code}\n",
+            encoding="utf-8",
         )
         console.print(f"[yellow]qrcode package not installed. Link saved to {out_path}[/yellow]")
         console.print("[dim]Install with: pip install qrcode[pil][/dim]")
@@ -329,6 +330,16 @@ def standards_list(
     from eduagent.standards import get_standards, resolve_subject
 
     canonical = resolve_subject(subject)
+    if canonical is None:
+        # Fallback: try SkillLibrary alias resolution
+        try:
+            from eduagent.skills.library import SkillLibrary
+            lib = SkillLibrary()
+            skill = lib.get(subject)
+            if skill:
+                canonical = resolve_subject(skill.subject)
+        except Exception:
+            pass
     if canonical is None:
         console.print(
             f"[red]Unknown subject: {subject}[/red]. "

@@ -125,7 +125,7 @@ def create_app() -> FastAPI:
         # Otherwise serve the landing page
         landing_file = landing_dir / "index.html"
         if landing_file.exists():
-            return HTMLResponse(landing_file.read_text())
+            return HTMLResponse(landing_file.read_text(encoding="utf-8"))
 
         # Fallback to template-based index
         stats = db.get_stats()
@@ -150,7 +150,7 @@ def create_app() -> FastAPI:
         """Always serve the landing page (bypasses redirect)."""
         landing_file = landing_dir / "index.html"
         if landing_file.exists():
-            return HTMLResponse(landing_file.read_text())
+            return HTMLResponse(landing_file.read_text(encoding="utf-8"))
         return HTMLResponse("<h1>Landing page not found</h1>", status_code=404)
 
     @app.get("/dashboard", response_class=HTMLResponse)
