@@ -1035,17 +1035,26 @@ class EduAgentTelegramBot:
             subjects = profile.subjects if profile.subjects else ["General"]
             grades = profile.grade_levels if profile.grade_levels else ["8"]
 
-            # Load existing materials from the database
+            # Load existing materials from BOTH databases:
+            # 1. state.py generated_lessons (bot-generated via Telegram)
+            # 2. database.py lessons (web/CLI-generated)
             existing = []
+            try:
+                from eduagent.state import _get_conn as _state_conn
+                from eduagent.state import init_db as _state_init_db
+                _state_init_db()
+                with _state_conn() as conn:
+                    rows = conn.execute(
+                        "SELECT title FROM generated_lessons ORDER BY created_at DESC LIMIT 50"
+                    ).fetchall()
+                    existing.extend(r["title"] for r in rows if r["title"])
+            except Exception:
+                pass
             try:
                 from eduagent.database import Database
                 db = Database()
-                # Get lesson titles as "existing materials"
-                try:
-                    lessons = db.query("SELECT title FROM lessons LIMIT 50")
-                    existing = [r["title"] for r in lessons if r.get("title")]
-                except Exception:
-                    pass
+                web_lessons = db._fetchall("SELECT title FROM lessons ORDER BY created_at DESC LIMIT 50")
+                existing.extend(r["title"] for r in web_lessons if r.get("title"))
                 db.close()
             except Exception:
                 pass

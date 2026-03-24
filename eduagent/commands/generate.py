@@ -1695,7 +1695,7 @@ def gap_analyze(
         if p.exists():
             standards_list = [
                 line.strip()
-                for line in p.read_text().splitlines()
+                for line in p.read_text(encoding="utf-8").splitlines()
                 if line.strip()
             ]
         else:
@@ -1849,7 +1849,7 @@ def gap_analyze(
 </p>
 </body>
 </html>"""
-        html_path.write_text(html)
+        html_path.write_text(html, encoding="utf-8")
         console.print(f"\n[green]Gap report saved:[/green] {html_path}")
 
     else:
@@ -1864,5 +1864,5 @@ def gap_analyze(
         ]
         for g in sorted(gaps, key=lambda x: sev_order.get(x.severity.lower(), 3)):
             lines.append(f"| **{g.severity.upper()}** | `{g.standard}` | {g.description} | {g.suggestion} |")
-        md_path.write_text("\n".join(lines))
+        md_path.write_text("\n".join(lines), encoding="utf-8")
         console.print(f"\n[green]Gap report saved:[/green] {md_path}")
