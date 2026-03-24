@@ -245,7 +245,7 @@ Setup:
 3. Click **API Keys** in the left sidebar → **Create Key** → copy it
 4. In Terminal: `export ANTHROPIC_API_KEY=sk-ant-your-key-here`
 
-> Sonnet 4.6 runs about **$1–5/month** for a typical teacher. Opus 4.6 is ~5× more expensive — worth it if you want the absolute best.
+> Cost depends entirely on how much you use it. Light use (a few lessons a week): **$10–30/month**. Heavy daily use: **$100–200/month**. Opus 4.6 is roughly 5× more expensive than Sonnet — only worth it if output quality is your top priority.
 
 ---
 
@@ -259,7 +259,7 @@ Setup:
 3. Click **API Keys** → **Create new secret key** → copy it
 4. In Terminal: `export OPENAI_API_KEY=sk-your-key-here`
 
-> GPT-5.4 is powerful but expensive. Expect **$5–15/month** with regular use.
+> GPT-5.4 is powerful but the cost adds up fast. Light use: **$10–30/month**. Heavy daily use: **$100–200/month**. No monthly cap — you pay for every token.
 
 ---
 
