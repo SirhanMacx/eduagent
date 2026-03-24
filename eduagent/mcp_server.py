@@ -4,9 +4,11 @@ This lets OpenClaw, Claude Desktop, and other MCP clients call EDUagent
 tools directly: generate lessons, plan units, ingest materials, answer
 student questions, and look up standards.
 
+Uses stdio transport (the MCP standard). The client process spawns this
+server and communicates over stdin/stdout.
+
 Usage:
-    eduagent mcp-server              # stdio transport (default for MCP)
-    eduagent mcp-server --port 8100  # SSE transport for network access
+    eduagent mcp-server
 """
 
 from __future__ import annotations

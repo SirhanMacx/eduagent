@@ -64,7 +64,7 @@ def create_hosted_app() -> FastAPI:
         APIKeyAuthMiddleware,
         exempt_paths=[
             "/health", "/docs", "/openapi.json", "/redoc",
-            "/", "/dashboard", "/api/health",
+            "/", "/dashboard", "/landing", "/api/health",
         ],
     )
 
