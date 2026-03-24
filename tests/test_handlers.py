@@ -1,5 +1,6 @@
 """Tests for gateway handlers."""
 import pytest
+from unittest.mock import AsyncMock, patch
 from eduagent.gateway_response import GatewayResponse
 from eduagent.handlers.onboard import OnboardHandler, OnboardState
 
@@ -59,3 +60,43 @@ class TestOnboardHandler:
     def test_onboard_state_enum(self):
         assert OnboardState.ASK_SUBJECT.value == "ask_subject"
         assert OnboardState.DONE.value == "done"
+
+
+from eduagent.handlers.generate import GenerateHandler
+
+
+class TestGenerateHandler:
+    def setup_method(self):
+        self.handler = GenerateHandler()
+
+    @pytest.mark.asyncio
+    async def test_generate_lesson_returns_response(self):
+        with patch("eduagent.handlers.generate.handle_message", new_callable=AsyncMock) as mock_hm:
+            mock_hm.return_value = "Here is your lesson on photosynthesis..."
+            r = await self.handler.lesson("photosynthesis", "teacher_1")
+            assert isinstance(r, GatewayResponse)
+            assert "photosynthesis" in r.text.lower()
+            mock_hm.assert_awaited_once()
+
+    @pytest.mark.asyncio
+    async def test_generate_unit_returns_response(self):
+        with patch("eduagent.handlers.generate.handle_message", new_callable=AsyncMock) as mock_hm:
+            mock_hm.return_value = "Unit plan for WWI..."
+            r = await self.handler.unit("World War I", "teacher_1")
+            assert isinstance(r, GatewayResponse)
+            assert r.has_content
+
+    @pytest.mark.asyncio
+    async def test_generate_with_post_gen_buttons(self):
+        with patch("eduagent.handlers.generate.handle_message", new_callable=AsyncMock) as mock_hm:
+            mock_hm.return_value = "Lesson content..."
+            with patch("eduagent.handlers.generate.get_last_lesson_id", return_value="lesson_abc"):
+                r = await self.handler.lesson("fractions", "teacher_1")
+                assert len(r.button_rows) > 0 or len(r.buttons) > 0
+
+    @pytest.mark.asyncio
+    async def test_generate_error_returns_friendly_message(self):
+        with patch("eduagent.handlers.generate.handle_message", new_callable=AsyncMock) as mock_hm:
+            mock_hm.side_effect = RuntimeError("LLM timeout")
+            r = await self.handler.lesson("topic", "teacher_1")
+            assert "issue" in r.text.lower() or "error" in r.text.lower() or "try again" in r.text.lower()
