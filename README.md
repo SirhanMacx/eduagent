@@ -318,6 +318,38 @@ Then run: `eduagent config set-model ollama`
 | `eduagent sub-packet -d 2026-03-24` | Generate a substitute teacher packet |
 | `eduagent standards list -g 8 -s math` | Browse your state's standards |
 | `eduagent demo` | See example output (no API key needed) |
+| `eduagent lesson "Topic" -g 8 -s "Subject" --format pptx` | Generate a PowerPoint presentation |
+| `eduagent lesson "Topic" -g 8 -s "Subject" --format docx` | Generate a Word document |
+| `eduagent lesson "Topic" -g 8 -s "Subject" --format pdf` | Generate a PDF |
+| `eduagent workspace init` | Set up your teacher workspace (identity, memory, notes) |
+| `eduagent schedule list` | View autonomous task schedule |
+| `eduagent skills list` | Browse subject-specific teaching strategies |
+| `eduagent gap-analyze -s "Math" -g 8` | Find curriculum gaps against standards |
+| `eduagent evaluate --lessons 5` | Test voice consistency across generated lessons |
+| `eduagent config set-unsplash-key KEY` | Enable slide images (free) |
+
+### 🖼️ Slide Images (Optional — Free)
+
+EDUagent can add beautiful, relevant photos to your PowerPoint slides — a real classroom image for history, a lab photo for science, a math visualization for algebra. This is **optional** and slides look professional without it.
+
+**To enable slide images:**
+
+1. Go to [unsplash.com/developers](https://unsplash.com/developers) and click **"Register as a developer"** (free)
+2. Create a new application (name it anything, e.g., "EDUagent Slides")
+3. Copy your **Access Key** (not the Secret Key)
+4. Tell EDUagent:
+   ```bash
+   eduagent config set-unsplash-key YOUR_ACCESS_KEY
+   ```
+   Or set the environment variable: `export UNSPLASH_ACCESS_KEY=YOUR_ACCESS_KEY`
+
+That's it. Next time you generate a lesson with `--format pptx`, your slides will include:
+- **Title slide:** Full-width hero image with a semi-transparent overlay so the text stays readable
+- **Content slides:** Sidebar image (right 30% of the slide) matched to the topic
+
+Unsplash's free tier gives you **50 image searches per hour** — more than enough for a full day of lesson planning. Images are cached locally so the same topic never re-downloads.
+
+**Without an Unsplash key:** Slides still look great — clean subject-themed colors (brown/gold for History, green/blue for Science, navy for Math, purple for ELA), professional typography, and proper layouts. Images are a bonus, not a requirement.
 
 ## 🏗️ Architecture
 
@@ -365,8 +397,16 @@ Security & reliability:
 - [x] School/department curriculum sharing
 - [x] Substitute teacher packet generator
 - [x] Parent communication generator
-- [x] Subject skill libraries (Social Studies, Math, Science, ELA, History)
+- [x] Subject skill libraries (12 subjects: Social Studies, Math, Science, ELA, History, Art, Music, PE, CS, Foreign Language, Library, Special Ed)
+- [x] Custom YAML skill plugins (add your own subject)
+- [x] Professional PowerPoint export with subject-themed design and optional Unsplash images
+- [x] Word document and PDF export
+- [x] Teacher workspace (identity, memory, daily notes, student profiles)
+- [x] Autonomous scheduler (morning prep, weekly planning, feedback digest)
+- [x] Curriculum gap analyzer (compare materials against standards)
+- [x] Voice consistency evaluation
 - [x] Self-improvement loop (gets better the more it's used)
+- [x] Per-student progress tracking and struggle detection
 - [x] MCP server (tools callable from any AI agent)
 - [ ] Google Classroom export (personal accounts only — never school accounts)
 - [ ] Hosted version (coming soon)
