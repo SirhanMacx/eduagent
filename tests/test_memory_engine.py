@@ -468,19 +468,33 @@ class TestCrossSubjectFiltering:
             lesson_number=2,
             objective="Analyze Civil War causes",
         )
-        process_feedback(science_lesson, rating=5, notes="Great lab", subject="Science")
+        process_feedback(science_lesson, rating=5, notes="Great lab structure", subject="Science")
         process_feedback(history_lesson, rating=1, notes="Too much lecture", subject="History")
 
-        # Science context should include science lesson but not history complaint
-        science_ctx = build_improvement_context(subject="Science")
-        assert "Photosynthesis" in science_ctx or science_ctx == ""
-        if science_ctx:
-            assert "Civil War" not in science_ctx or "lecture" not in science_ctx
+        # Verify tags are in memory
+        content = tmp_memory.read_text()
+        assert "[Science]" in content, "Science patterns must be tagged"
+        assert "[History]" in content, "History patterns must be tagged"
 
-        # History context should include history feedback but not science praise
+        # Science context must NOT contain history feedback
+        science_ctx = build_improvement_context(subject="Science")
+        assert "Photosynthesis" in science_ctx, "Science lesson should appear in Science context"
+        assert "Civil War" not in science_ctx, "History lesson must NOT appear in Science context"
+        assert "lecture" not in science_ctx, "History complaint must NOT appear in Science context"
+
+        # History context must NOT contain science praise
         history_ctx = build_improvement_context(subject="History")
-        if history_ctx:
-            assert "Photosynthesis" not in history_ctx or "Great lab" not in history_ctx
+        assert "Civil War" in history_ctx, "History lesson should appear in History context"
+        assert "Photosynthesis" not in history_ctx, "Science lesson must NOT appear in History context"
+        assert "Great lab" not in history_ctx, "Science note must NOT appear in History context"
+
+    def test_teacher_notes_are_subject_tagged(self, tmp_memory):
+        """Teacher notes on rated lessons MUST carry the subject tag."""
+        lesson = DailyLesson(title="Lab Safety", lesson_number=1, objective="x")
+        process_feedback(lesson, rating=5, notes="Excellent hands-on activity", subject="Science")
+        content = tmp_memory.read_text()
+        # The note entry itself must have [Science] tag
+        assert "[Science]: Excellent hands-on" in content or "[Science]" in content.split("Excellent")[0]
 
     def test_untagged_patterns_included_everywhere(self, sample_lesson, tmp_memory):
         # Structural preferences have no subject tag — should appear for all subjects

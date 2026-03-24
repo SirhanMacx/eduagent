@@ -113,7 +113,7 @@ def extract_lesson_patterns(
         if notes:
             patterns.append({
                 "type": "positive",
-                "pattern": f"Teacher note on 5-star lesson: {notes[:200]}",
+                "pattern": f"Teacher note on 5-star lesson{subject_tag}: {notes[:200]}",
                 "section": SECTION_WHAT_WORKS,
             })
 
@@ -128,7 +128,7 @@ def extract_lesson_patterns(
         if notes:
             patterns.append({
                 "type": "negative",
-                "pattern": f"Teacher complaint: {notes[:200]}",
+                "pattern": f"Teacher complaint{subject_tag}: {notes[:200]}",
                 "section": SECTION_WHAT_TO_AVOID,
             })
 
@@ -136,7 +136,7 @@ def extract_lesson_patterns(
         for section_name in edited:
             patterns.append({
                 "type": "structural",
-                "pattern": f"Teacher edited '{section_name}' section -- needs improvement",
+                "pattern": f"Teacher edited '{section_name}' section{subject_tag} -- needs improvement",
                 "section": SECTION_STRUCTURAL_PREFS,
             })
 

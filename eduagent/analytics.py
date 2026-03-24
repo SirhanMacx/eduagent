@@ -246,16 +246,33 @@ def rate_lesson(teacher_id: str, lesson_id: str, rating: int, notes: str = "") -
                 lesson_json = row2["lesson_json"]
 
         if lesson_json:
-            from eduagent.models import AppConfig, DailyLesson
+            from eduagent.models import DailyLesson
             lesson_obj = DailyLesson.model_validate_json(lesson_json)
-            # Resolve subject from teacher profile for cross-subject filtering
+            # Resolve subject from the lesson's unit (not teacher profile)
+            # so a History lesson gets tagged [History] even if the teacher
+            # also teaches Science.
             subject = ""
             try:
-                cfg = AppConfig.load()
-                if cfg.teacher_profile and cfg.teacher_profile.subjects:
-                    subject = cfg.teacher_profile.subjects[0]
+                with _get_conn() as conn3:
+                    unit_row = conn3.execute(
+                        "SELECT u.subject FROM units u "
+                        "JOIN generated_lessons l ON l.unit_id = u.id "
+                        "WHERE l.id = ?",
+                        (lesson_id,),
+                    ).fetchone()
+                    if unit_row and unit_row["subject"]:
+                        subject = unit_row["subject"]
             except Exception:
                 pass
+            # Fallback to teacher profile if no unit subject found
+            if not subject:
+                try:
+                    from eduagent.models import AppConfig
+                    cfg = AppConfig.load()
+                    if cfg.teacher_profile and cfg.teacher_profile.subjects:
+                        subject = cfg.teacher_profile.subjects[0]
+                except Exception:
+                    pass
             memory_process(lesson_obj, rating, notes, subject=subject)
     except Exception as exc:
         # Memory engine is best-effort -- never block rating
