@@ -1,8 +1,18 @@
 """Image sourcing for slide presentations.
 
-Fetches relevant educational images from Unsplash (free tier) with local
-caching.  Falls back gracefully to ``None`` when no API key is configured
-or the request fails — slides still look good without images.
+Fetches relevant educational images from multiple academic sources:
+
+1. **Library of Congress** (free, no key, public domain) -- historical images,
+   maps, documents.  Ideal for history / social studies / civics.
+2. **Wikimedia Commons** (free, no key, CC-licensed) -- scientific diagrams,
+   paintings, illustrations.  Good for all subjects.
+3. **Unsplash** (free with API key) -- modern photographs.  Generic fallback.
+
+Sources are tried in subject-aware priority order.  All images are cached
+locally at ``~/.eduagent/cache/images/<source>/<hash>.jpg``.
+
+Falls back gracefully to ``None`` when no image can be found -- slides still
+look good without images.
 """
 
 from __future__ import annotations
@@ -18,18 +28,26 @@ logger = logging.getLogger(__name__)
 
 _CACHE_DIR = Path.home() / ".eduagent" / "cache" / "images"
 
-# Subject-aware keywords that help Unsplash return education-relevant images
+# Per-image network timeout (seconds)
+_FETCH_TIMEOUT = 5.0
+
+# ── Subject-aware query enrichment ───────────────────────────────────
+
 _SUBJECT_KEYWORDS: dict[str, list[str]] = {
-    "history": ["history", "education", "vintage"],
-    "social studies": ["history", "education", "vintage"],
-    "science": ["science", "education", "laboratory"],
-    "biology": ["biology", "science", "nature"],
-    "chemistry": ["chemistry", "science", "laboratory"],
-    "physics": ["physics", "science", "education"],
-    "math": ["mathematics", "education", "classroom"],
-    "mathematics": ["mathematics", "education", "classroom"],
-    "algebra": ["mathematics", "algebra", "classroom"],
-    "geometry": ["mathematics", "geometry", "education"],
+    "history": ["historical", "primary source"],
+    "social studies": ["historical", "primary source"],
+    "civics": ["historical", "government"],
+    "government": ["historical", "government"],
+    "science": ["diagram", "illustration"],
+    "biology": ["diagram", "biology"],
+    "chemistry": ["diagram", "chemistry"],
+    "physics": ["diagram", "physics"],
+    "math": ["mathematics", "education"],
+    "mathematics": ["mathematics", "education"],
+    "algebra": ["mathematics", "algebra"],
+    "geometry": ["mathematics", "geometry"],
+    "art": ["painting", "artwork"],
+    "music": ["music", "artwork"],
     "ela": ["reading", "literature", "education"],
     "english": ["reading", "literature", "education"],
     "language arts": ["reading", "literature", "education"],
@@ -42,14 +60,14 @@ def _build_search_query(topic: str, subject: str = "") -> str:
     Examples::
 
         >>> _build_search_query('The American Revolution', 'history')
-        'american revolution history education'
+        'american revolution historical primary source'
         >>> _build_search_query('Photosynthesis', 'science')
-        'photosynthesis science education'
+        'photosynthesis diagram illustration'
         >>> _build_search_query('Solving Linear Equations', 'math')
         'solving linear equations mathematics education'
     """
     # Clean up the topic: strip punctuation, lower-case
-    cleaned = re.sub(r"[^a-zA-Z0-9\s]", "", topic).strip().lower()
+    cleaned = re.sub(r"[^a-zA-Z0-9\\s]", "", topic).strip().lower()
 
     # Remove very common filler words to keep query focused
     stopwords = {"the", "a", "an", "of", "in", "on", "for", "and", "to", "is", "are"}
@@ -66,10 +84,167 @@ def _build_search_query(topic: str, subject: str = "") -> str:
     return f"{query_base} {suffix}".strip()
 
 
-def _cache_path(query: str) -> Path:
-    """Return the local cache path for a given query."""
-    h = hashlib.sha256(query.encode()).hexdigest()[:16]
-    return _CACHE_DIR / f"{h}.jpg"
+# ── Source selection ─────────────────────────────────────────────────
+
+
+def _select_sources(subject: str, topic: str = "") -> list[str]:
+    """Pick the best image sources for this subject.
+
+    Returns an ordered list of source identifiers to try.
+    """
+    subject_lower = subject.strip().lower()
+    if any(s in subject_lower for s in ("history", "social", "civics", "government")):
+        return ["loc", "wikimedia", "unsplash"]
+    elif any(s in subject_lower for s in ("science", "biology", "chemistry", "physics")):
+        return ["wikimedia", "unsplash"]
+    elif any(s in subject_lower for s in ("art", "music")):
+        return ["wikimedia", "unsplash"]
+    else:
+        return ["unsplash", "wikimedia"]
+
+
+# ── Cache helpers ────────────────────────────────────────────────────
+
+
+def _cache_path(source: str, query: str, base: Optional[Path] = None) -> Path:
+    """Return the local cache path for a given source + query."""
+    h = hashlib.sha256(f"{source}:{query}".encode()).hexdigest()[:16]
+    root = base or _CACHE_DIR
+    return root / source / f"{h}.jpg"
+
+
+def _check_cache(source: str, query: str, base: Optional[Path] = None) -> Optional[Path]:
+    """Return cached image path if it exists and is non-empty."""
+    path = _cache_path(source, query, base)
+    if path.exists() and path.stat().st_size > 0:
+        logger.debug("Image cache hit [%s] for query: %s", source, query)
+        return path
+    return None
+
+
+def _save_to_cache(
+    data: bytes, source: str, query: str, base: Optional[Path] = None,
+) -> Path:
+    """Write image bytes to the cache and return the path."""
+    path = _cache_path(source, query, base)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(data)
+    return path
+
+
+# ── Individual source fetchers ───────────────────────────────────────
+
+
+async def _fetch_loc(
+    query: str, cache_dir: Optional[Path] = None,
+) -> Optional[Path]:
+    """Fetch an image from the Library of Congress free API.
+
+    Endpoint returns JSON with ``results[].image_url`` (list) or
+    ``results[].thumb_gallery``.
+    """
+    import httpx
+
+    cached = _check_cache("loc", query, cache_dir)
+    if cached:
+        return cached
+
+    url = "https://www.loc.gov/search/"
+    params = {
+        "q": query,
+        "fa": "online-format:image",
+        "fo": "json",
+        "c": 5,
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=_FETCH_TIMEOUT) as client:
+            resp = await client.get(url, params=params)
+            resp.raise_for_status()
+            data = resp.json()
+
+            results = data.get("results", [])
+            image_url: Optional[str] = None
+            for item in results:
+                # Prefer image_url (list of URLs)
+                urls = item.get("image_url", [])
+                if urls:
+                    image_url = urls[0]
+                    break
+                # Fallback to thumb_gallery
+                thumb = item.get("thumb_gallery")
+                if thumb:
+                    image_url = thumb
+                    break
+
+            if not image_url:
+                logger.debug("No LOC results for query: %s", query)
+                return None
+
+            img_resp = await client.get(image_url, timeout=_FETCH_TIMEOUT)
+            img_resp.raise_for_status()
+
+            path = _save_to_cache(img_resp.content, "loc", query, cache_dir)
+            logger.info("Downloaded LOC image for '%s' -> %s", query, path)
+            return path
+
+    except Exception as e:
+        logger.debug("LOC fetch failed for '%s': %s", query, e)
+        return None
+
+
+async def _fetch_wikimedia(
+    query: str, cache_dir: Optional[Path] = None,
+) -> Optional[Path]:
+    """Fetch an image from Wikimedia Commons API."""
+    import httpx
+
+    cached = _check_cache("wikimedia", query, cache_dir)
+    if cached:
+        return cached
+
+    url = "https://commons.wikimedia.org/w/api.php"
+    params = {
+        "action": "query",
+        "generator": "search",
+        "gsrsearch": query,
+        "gsrnamespace": "6",
+        "prop": "imageinfo",
+        "iiprop": "url|extmetadata",
+        "iiurlwidth": "1024",
+        "format": "json",
+    }
+
+    try:
+        async with httpx.AsyncClient(timeout=_FETCH_TIMEOUT) as client:
+            resp = await client.get(url, params=params)
+            resp.raise_for_status()
+            data = resp.json()
+
+            pages = data.get("query", {}).get("pages", {})
+            image_url: Optional[str] = None
+            for _page_id, page in pages.items():
+                info_list = page.get("imageinfo", [])
+                if info_list:
+                    # Use the thumbnail URL (scaled to 1024px width)
+                    image_url = info_list[0].get("thumburl") or info_list[0].get("url")
+                    if image_url:
+                        break
+
+            if not image_url:
+                logger.debug("No Wikimedia results for query: %s", query)
+                return None
+
+            img_resp = await client.get(image_url, timeout=_FETCH_TIMEOUT)
+            img_resp.raise_for_status()
+
+            path = _save_to_cache(img_resp.content, "wikimedia", query, cache_dir)
+            logger.info("Downloaded Wikimedia image for '%s' -> %s", query, path)
+            return path
+
+    except Exception as e:
+        logger.debug("Wikimedia fetch failed for '%s': %s", query, e)
+        return None
 
 
 def _get_unsplash_key() -> Optional[str]:
@@ -86,39 +261,20 @@ def _get_unsplash_key() -> Optional[str]:
         return None
 
 
-async def fetch_slide_image(
-    topic: str,
-    subject: str = "",
-    cache_dir: Optional[Path] = None,
+async def _fetch_unsplash(
+    query: str, cache_dir: Optional[Path] = None,
 ) -> Optional[Path]:
-    """Fetch a relevant image for a slide topic.
+    """Fetch an image from the Unsplash API (requires API key)."""
+    import httpx
 
-    Returns path to downloaded image, or ``None`` if unavailable.
-    Caches images locally to avoid re-fetching.
-
-    Parameters
-    ----------
-    topic:
-        The slide topic / title (e.g. "The American Revolution").
-    subject:
-        Optional subject area for better search results.
-    cache_dir:
-        Override cache directory (useful for tests).
-    """
     access_key = _get_unsplash_key()
     if not access_key:
-        logger.debug("No Unsplash API key configured — skipping image fetch")
+        logger.debug("No Unsplash API key configured -- skipping")
         return None
 
-    query = _build_search_query(topic, subject)
-    base = cache_dir or _CACHE_DIR
-    cached = base / f"{hashlib.sha256(query.encode()).hexdigest()[:16]}.jpg"
-
-    if cached.exists() and cached.stat().st_size > 0:
-        logger.debug("Image cache hit for query: %s", query)
+    cached = _check_cache("unsplash", query, cache_dir)
+    if cached:
         return cached
-
-    import httpx
 
     url = "https://api.unsplash.com/search/photos"
     params = {
@@ -129,7 +285,7 @@ async def fetch_slide_image(
     headers = {"Authorization": f"Client-ID {access_key}"}
 
     try:
-        async with httpx.AsyncClient(timeout=5.0) as client:
+        async with httpx.AsyncClient(timeout=_FETCH_TIMEOUT) as client:
             resp = await client.get(url, params=params, headers=headers)
             resp.raise_for_status()
             data = resp.json()
@@ -143,15 +299,63 @@ async def fetch_slide_image(
             if not image_url:
                 return None
 
-            # Download the image
-            img_resp = await client.get(image_url)
+            img_resp = await client.get(image_url, timeout=_FETCH_TIMEOUT)
             img_resp.raise_for_status()
 
-            base.mkdir(parents=True, exist_ok=True)
-            cached.write_bytes(img_resp.content)
-            logger.info("Downloaded slide image for '%s' -> %s", query, cached)
-            return cached
+            path = _save_to_cache(img_resp.content, "unsplash", query, cache_dir)
+            logger.info("Downloaded Unsplash image for '%s' -> %s", query, path)
+            return path
 
     except Exception as e:
-        logger.debug("Image fetch failed for '%s': %s", query, e)
+        logger.debug("Unsplash fetch failed for '%s': %s", query, e)
         return None
+
+
+# Source name -> fetcher function mapping
+_SOURCE_FETCHERS: dict = {
+    "loc": _fetch_loc,
+    "wikimedia": _fetch_wikimedia,
+    "unsplash": _fetch_unsplash,
+}
+
+
+# ── Public API ───────────────────────────────────────────────────────
+
+
+async def fetch_slide_image(
+    topic: str,
+    subject: str = "",
+    cache_dir: Optional[Path] = None,
+) -> Optional[Path]:
+    """Fetch a relevant image for a slide topic.
+
+    Tries multiple academic sources in subject-aware priority order.
+    Returns path to downloaded image, or ``None`` if unavailable.
+    Caches images locally to avoid re-fetching.
+
+    Parameters
+    ----------
+    topic:
+        The slide topic / title (e.g. "The American Revolution").
+    subject:
+        Optional subject area for better source routing.
+    cache_dir:
+        Override cache directory (useful for tests).
+    """
+    query = _build_search_query(topic, subject)
+    sources = _select_sources(subject, topic)
+
+    for source_name in sources:
+        fetcher = _SOURCE_FETCHERS.get(source_name)
+        if not fetcher:
+            continue
+        try:
+            path = await fetcher(query, cache_dir)
+            if path:
+                return path
+        except Exception as e:
+            logger.debug("Source %s failed for '%s': %s", source_name, query, e)
+            continue
+
+    logger.debug("No image found from any source for '%s'", query)
+    return None

@@ -170,16 +170,22 @@ def _extract_single(path: Path) -> Optional[Document]:
 
 
 def _collect_files(path: Path) -> list[Path]:
-    """Collect all supported files from a directory, sorted.
+    """Collect all supported files from a directory, sorted by modification
+    time (newest first).
 
     Skips Office lock files (~$*) and macOS resource forks (._*).
+    Sorting by mtime means the most recent materials come first, which is
+    important when a cap is applied.
     """
-    return sorted(
+    files = [
         f for f in path.rglob("*")
         if f.is_file()
         and f.suffix.lower() in SUPPORTED_EXTENSIONS
         and not f.name.startswith(("~$", "._"))
-    )
+    ]
+    # Sort newest first so caps keep the most recent materials
+    files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
+    return files
 
 
 def _format_summary(files: list[Path]) -> str:
@@ -212,11 +218,18 @@ def scan_directory(path: Path) -> tuple[list[Path], str]:
     return files, summary
 
 
-def ingest_directory(path: Path, *, progress_callback=None) -> list[Document]:
+def ingest_directory(
+    path: Path,
+    *,
+    max_files: int = 0,
+    progress_callback=None,
+) -> list[Document]:
     """Recursively scan a directory and extract all supported documents.
 
     Args:
         path: Directory to scan.
+        max_files: Maximum number of files to process (0 = unlimited).
+            Files are already sorted newest-first by ``_collect_files``.
         progress_callback: Optional callable(current, total) for progress updates.
     """
     documents: list[Document] = []
@@ -224,6 +237,8 @@ def ingest_directory(path: Path, *, progress_callback=None) -> list[Document]:
         raise FileNotFoundError(f"Directory not found: {path}")
 
     files = _collect_files(path)
+    if max_files > 0:
+        files = files[:max_files]
     total = len(files)
 
     for i, file_path in enumerate(files):
@@ -247,12 +262,19 @@ def ingest_zip(path: Path, *, progress_callback=None) -> list[Document]:
         return ingest_directory(Path(tmp_dir), progress_callback=progress_callback)
 
 
-def ingest_path(path: Path, *, dry_run: bool = False, progress_callback=None) -> list[Document]:
+def ingest_path(
+    path: Path,
+    *,
+    dry_run: bool = False,
+    max_files: int = 0,
+    progress_callback=None,
+) -> list[Document]:
     """Smart ingestion: accepts a directory, ZIP file, or single file.
 
     Args:
         path: File or directory to ingest.
         dry_run: If True, scan and log what would be processed but don't extract.
+        max_files: Maximum number of files to process (0 = unlimited).
         progress_callback: Optional callable(current, total) for progress updates.
     """
     path = Path(path).expanduser().resolve()
@@ -262,7 +284,9 @@ def ingest_path(path: Path, *, dry_run: bool = False, progress_callback=None) ->
             files, summary = scan_directory(path)
             logger.info(summary)
             return _dry_run_results(files)
-        return ingest_directory(path, progress_callback=progress_callback)
+        return ingest_directory(
+            path, max_files=max_files, progress_callback=progress_callback,
+        )
     elif path.is_file() and path.suffix.lower() == ".zip":
         if dry_run:
             # For ZIP dry-run, list contents without extracting

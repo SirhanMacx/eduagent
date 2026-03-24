@@ -320,7 +320,12 @@ async def _handle_connect_drive(parsed: ParsedIntent, session: TeacherSession) -
         )
 
 
-async def _handle_connect_local(parsed: ParsedIntent, session: TeacherSession) -> str:
+async def _handle_connect_local(
+    parsed: ParsedIntent,
+    session: TeacherSession,
+    *,
+    notify_callback=None,
+) -> str:
     path = parsed.url
     if not path:
         return "What's the path to your lesson plan folder? (e.g., ~/Documents/Teaching/)"
@@ -329,7 +334,7 @@ async def _handle_connect_local(parsed: ParsedIntent, session: TeacherSession) -
     if not resolved.exists():
         return f"I can't find the folder at `{path}`. Could you double-check the path?"
 
-    # Count files first to avoid blocking on massive directories
+    # Count files first
     try:
         from eduagent.ingestor import SUPPORTED_EXTENSIONS
 
@@ -348,32 +353,91 @@ async def _handle_connect_local(parsed: ParsedIntent, session: TeacherSession) -
             f" inside `{resolved.name}/`. Try a different folder?"
         )
 
-    max_files = 100
-    if len(supported) > max_files:
-        # Suggest a narrower path
-        subdirs = sorted(set(f.parent.name for f in supported[:50]))
-        suggestion = subdirs[0] if subdirs else "a single unit folder"
-        return (
-            f"Found {len(supported)} files — that's too many to process at once.\n"
-            f"Point me at a smaller folder instead, like:\n"
-            f"  `{resolved / suggestion}`\n\n"
-            f"Or pick a specific unit folder with fewer than {max_files} files."
+    total_found = len(supported)
+    max_files = 500
+
+    # Cap message for very large directories
+    cap_msg = ""
+    if total_found > max_files:
+        cap_msg = (
+            f"Found {total_found:,} files. I'll analyze the {max_files} most "
+            f"recent to learn your style.\n\n"
         )
+
+    file_count = min(total_found, max_files)
 
     session.config["materials_path"] = str(resolved)
     session.save()
 
+    # If a notify_callback is provided we run in the background and send
+    # progress updates.  Otherwise do it synchronously for backwards compat.
+    if notify_callback is not None:
+        import threading
+
+        if cap_msg:
+            notify_callback(cap_msg)
+
+        def _bg_ingest():
+            try:
+                from eduagent.ingestor import ingest_path
+
+                batch_size = 50
+
+                def _progress(current, total):
+                    if current % batch_size == 0 or current == total:
+                        notify_callback(
+                            f"Processing files {current - batch_size + 1}-"
+                            f"{current} of {total}..."
+                        )
+
+                docs = ingest_path(
+                    resolved,
+                    max_files=max_files,
+                    progress_callback=_progress,
+                )
+                if docs:
+                    import asyncio
+                    from eduagent.persona import extract_persona
+
+                    persona_cfg = AppConfig.load()
+                    persona = asyncio.run(extract_persona(docs, persona_cfg))
+                    session.persona = persona
+                    session.save()
+                    notify_callback(
+                        f"Analyzed {len(docs)} files from {resolved.name}/\n\n"
+                        + _fmt_persona(persona)
+                    )
+                else:
+                    notify_callback(
+                        f"Found the folder but couldn't extract text from the files"
+                        f" in `{resolved.name}/`. Try a different folder?"
+                    )
+            except Exception as e:
+                notify_callback(
+                    f"Had trouble reading files from {path}: {str(e)[:150]}"
+                )
+
+        t = threading.Thread(target=_bg_ingest, daemon=True)
+        t.start()
+        return (
+            f"Scanning {resolved.name}/ ({file_count} files)... "
+            f"I'll message you when I'm done."
+        )
+
+    # Synchronous path (no callback)
     try:
         from eduagent.ingestor import ingest_path
         from eduagent.persona import extract_persona
-        docs = ingest_path(resolved)
+
+        docs = ingest_path(resolved, max_files=max_files)
         if docs:
             config = AppConfig.load()
             persona = await extract_persona(docs, config)
             session.persona = persona
             session.save()
             return (
-                f"Analyzed {len(docs)} files from {resolved.name}/\n\n"
+                cap_msg
+                + f"Analyzed {len(docs)} files from {resolved.name}/\n\n"
                 + _fmt_persona(persona)
             )
         else:

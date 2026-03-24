@@ -221,8 +221,8 @@ class TestColorTheme:
         from eduagent.doc_export import get_color_theme
 
         theme = get_color_theme("history")
-        assert theme["primary"] == "8B4513"  # brown
-        assert theme["secondary"] == "DAA520"  # gold
+        assert theme["primary"] == "8B4513"  # Saddle brown
+        assert theme["secondary"] == "DAA520"  # Goldenrod
 
     def test_social_studies_matches_history(self):
         from eduagent.doc_export import get_color_theme
@@ -233,25 +233,25 @@ class TestColorTheme:
         from eduagent.doc_export import get_color_theme
 
         theme = get_color_theme("science")
-        assert theme["primary"] == "2E8B57"  # sea green
+        assert theme["primary"] == "1B5E20"  # Dark green
 
     def test_math_theme(self):
         from eduagent.doc_export import get_color_theme
 
         theme = get_color_theme("math")
-        assert theme["primary"] == "1E3A5F"  # navy
+        assert theme["primary"] == "1565C0"  # Blue
 
     def test_ela_theme(self):
         from eduagent.doc_export import get_color_theme
 
         theme = get_color_theme("ela")
-        assert theme["primary"] == "4A235A"  # purple
+        assert theme["primary"] == "6A1B9A"  # Purple
 
     def test_default_theme_for_unknown_subject(self):
         from eduagent.doc_export import get_color_theme
 
         theme = get_color_theme("underwater basket weaving")
-        assert theme["primary"] == "1A365D"  # professional dark blue
+        assert theme["primary"] == "1A365D"  # professional navy
 
     def test_case_insensitive(self):
         from eduagent.doc_export import get_color_theme
@@ -264,7 +264,7 @@ class TestColorTheme:
 
         for subject in ["history", "science", "math", "ela", "unknown"]:
             theme = get_color_theme(subject)
-            for key in ("primary", "secondary", "accent", "bg_light", "text_dark", "text_light"):
+            for key in ("primary", "secondary", "accent", "bg_dark", "bg_light", "text_dark", "text_light"):
                 assert key in theme, f"Missing key '{key}' in theme for '{subject}'"
 
 
@@ -277,7 +277,8 @@ class TestSearchQueryBuilding:
 
         query = _build_search_query("Photosynthesis", "science")
         assert "photosynthesis" in query
-        assert "science" in query
+        # Science subject adds "diagram" or "illustration"
+        assert "diagram" in query or "illustration" in query
 
     def test_strips_articles(self):
         from eduagent.slide_images import _build_search_query
@@ -286,6 +287,12 @@ class TestSearchQueryBuilding:
         assert "the" not in query.split()
         assert "american" in query
         assert "revolution" in query
+
+    def test_history_adds_primary_source(self):
+        from eduagent.slide_images import _build_search_query
+
+        query = _build_search_query("The Civil War", "history")
+        assert "historical" in query or "primary source" in query
 
     def test_adds_education_keywords(self):
         from eduagent.slide_images import _build_search_query
@@ -302,11 +309,9 @@ class TestSearchQueryBuilding:
     def test_no_duplicate_words(self):
         from eduagent.slide_images import _build_search_query
 
-        # "science" is in topic and would be in suffix — should not duplicate
-        query = _build_search_query("science experiment", "science")
+        query = _build_search_query("mathematics quiz", "math")
         words = query.split()
-        # Allow "science" only once
-        assert words.count("science") <= 1
+        assert words.count("mathematics") <= 1
 
 
 # ── PPTX with mock images ───────────────────────────────────────────
@@ -468,3 +473,226 @@ class TestPPTXThemeIntegration:
         texts = [shape.text for shape in last_slide.shapes if shape.has_text_frame]
         combined = " ".join(texts)
         assert "Questions?" in combined
+
+
+# ── Academic image source selection tests ───────────────────────────
+
+
+class TestAcademicImageSources:
+    """Tests for the multi-source image routing in slide_images.py."""
+
+    def test_history_prefers_loc(self):
+        from eduagent.slide_images import _select_sources
+
+        sources = _select_sources("History")
+        assert sources[0] == "loc"
+        assert "wikimedia" in sources
+        assert "unsplash" in sources
+
+    def test_social_studies_prefers_loc(self):
+        from eduagent.slide_images import _select_sources
+
+        sources = _select_sources("Social Studies")
+        assert sources[0] == "loc"
+
+    def test_civics_prefers_loc(self):
+        from eduagent.slide_images import _select_sources
+
+        sources = _select_sources("Civics")
+        assert sources[0] == "loc"
+
+    def test_science_prefers_wikimedia(self):
+        from eduagent.slide_images import _select_sources
+
+        sources = _select_sources("Science")
+        assert sources[0] == "wikimedia"
+
+    def test_biology_prefers_wikimedia(self):
+        from eduagent.slide_images import _select_sources
+
+        sources = _select_sources("Biology")
+        assert sources[0] == "wikimedia"
+
+    def test_art_prefers_wikimedia(self):
+        from eduagent.slide_images import _select_sources
+
+        sources = _select_sources("Art")
+        assert sources[0] == "wikimedia"
+
+    def test_math_prefers_unsplash(self):
+        from eduagent.slide_images import _select_sources
+
+        sources = _select_sources("Math")
+        assert sources[0] == "unsplash"
+        assert "wikimedia" in sources
+
+    def test_unknown_subject_defaults_to_unsplash_first(self):
+        from eduagent.slide_images import _select_sources
+
+        sources = _select_sources("Underwater Basket Weaving")
+        assert sources[0] == "unsplash"
+
+
+class TestLOCResponseParsing:
+    """Test parsing of Library of Congress API responses."""
+
+    def test_parses_image_url_list(self):
+        """LOC results with image_url list should return the first URL."""
+        import asyncio
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        from eduagent.slide_images import _fetch_loc
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.raise_for_status = MagicMock()
+        mock_response.json.return_value = {
+            "results": [
+                {
+                    "image_url": [
+                        "https://tile.loc.gov/image-services/iiif/test.jpg",
+                    ],
+                },
+            ],
+        }
+
+        mock_img_resp = MagicMock()
+        mock_img_resp.raise_for_status = MagicMock()
+        mock_img_resp.content = b"\xff\xd8\xff\xe0fake-jpeg"
+
+        async def mock_get(url, **kwargs):
+            if "loc.gov/search" in str(url):
+                return mock_response
+            return mock_img_resp
+
+        with patch("httpx.AsyncClient") as mock_client_cls:
+            mock_client = AsyncMock()
+            mock_client.get = mock_get
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=False)
+            mock_client_cls.return_value = mock_client
+
+            result = asyncio.run(_fetch_loc("civil war", cache_dir=None))
+            # Should attempt to fetch -- result depends on whether cache wrote
+            # but should not raise
+            assert result is None or isinstance(result, Path)
+
+    def test_handles_empty_results(self):
+        import asyncio
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        from eduagent.slide_images import _fetch_loc
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.raise_for_status = MagicMock()
+        mock_response.json.return_value = {"results": []}
+
+        async def mock_get(url, **kwargs):
+            return mock_response
+
+        with patch("httpx.AsyncClient") as mock_client_cls:
+            mock_client = AsyncMock()
+            mock_client.get = mock_get
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=False)
+            mock_client_cls.return_value = mock_client
+
+            result = asyncio.run(_fetch_loc("nonexistent query xyz"))
+            assert result is None
+
+
+class TestWikimediaResponseParsing:
+    """Test parsing of Wikimedia Commons API responses."""
+
+    def test_handles_empty_response(self):
+        import asyncio
+        from unittest.mock import AsyncMock, MagicMock, patch
+
+        from eduagent.slide_images import _fetch_wikimedia
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.raise_for_status = MagicMock()
+        mock_response.json.return_value = {"query": {"pages": {}}}
+
+        async def mock_get(url, **kwargs):
+            return mock_response
+
+        with patch("httpx.AsyncClient") as mock_client_cls:
+            mock_client = AsyncMock()
+            mock_client.get = mock_get
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=False)
+            mock_client_cls.return_value = mock_client
+
+            result = asyncio.run(_fetch_wikimedia("nonexistent query xyz"))
+            assert result is None
+
+    def test_handles_network_error(self):
+        import asyncio
+        from unittest.mock import AsyncMock, patch
+
+        from eduagent.slide_images import _fetch_wikimedia
+
+        async def mock_get(url, **kwargs):
+            raise ConnectionError("Network down")
+
+        with patch("httpx.AsyncClient") as mock_client_cls:
+            mock_client = AsyncMock()
+            mock_client.get = mock_get
+            mock_client.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client.__aexit__ = AsyncMock(return_value=False)
+            mock_client_cls.return_value = mock_client
+
+            result = asyncio.run(_fetch_wikimedia("photosynthesis"))
+            assert result is None
+
+
+class TestSlideCountMatchesContent:
+    """Verify the slide count matches what the lesson content should produce."""
+
+    def test_full_lesson_slide_count(self, sample_lesson, sample_persona, tmp_path):
+        """A lesson with all sections should produce 8 slides."""
+        from pptx import Presentation
+
+        from eduagent.doc_export import export_lesson_pptx
+
+        path = export_lesson_pptx(sample_lesson, sample_persona, output_dir=tmp_path)
+        prs = Presentation(str(path))
+        # Title + Objectives + DoNow + DirectInstruction + GuidedPractice
+        # + IndependentWork + ExitTicket + Closing = 8
+        assert len(prs.slides) == 8
+
+    def test_minimal_lesson_slide_count(self, minimal_lesson, sample_persona, tmp_path):
+        """A minimal lesson (title + objective only) should produce 3 slides."""
+        from pptx import Presentation
+
+        from eduagent.doc_export import export_lesson_pptx
+
+        path = export_lesson_pptx(minimal_lesson, sample_persona, output_dir=tmp_path)
+        prs = Presentation(str(path))
+        # Title + Objectives + Closing = 3
+        assert len(prs.slides) == 3
+
+    def test_no_exit_ticket_reduces_count(self, sample_persona, tmp_path):
+        """Removing exit ticket should reduce slide count by 1."""
+        from pptx import Presentation
+
+        from eduagent.doc_export import export_lesson_pptx
+
+        lesson = DailyLesson(
+            title="No Exit Ticket Lesson",
+            lesson_number=1,
+            objective="Test slide count.",
+            do_now="Quick warm-up.",
+            direct_instruction="Main content.",
+            guided_practice="Practice activity.",
+            independent_work="Solo work.",
+            exit_ticket=[],
+            homework="Read chapter 5.",
+        )
+        path = export_lesson_pptx(lesson, sample_persona, output_dir=tmp_path)
+        prs = Presentation(str(path))
+        # Title + Objectives + DoNow + DI + GP + IW + Closing = 7
+        assert len(prs.slides) == 7

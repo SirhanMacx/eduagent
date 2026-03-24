@@ -630,13 +630,24 @@ class EduAgentTelegramBot:
     # ── Message handler ───────────────────────────────────────────────
 
     def _handle_message(self, msg: dict) -> None:
-        """Route free-text messages through the LLM."""
+        """Route free-text messages through the LLM.
+
+        If the message looks like a local folder path we hand it off to
+        ``_handle_connect_local`` in the background so the bot stays
+        responsive during large ingestions.
+        """
         chat_id = msg["chat"]["id"]
         text = msg.get("text", "").strip()
         if not text:
             return
 
         teacher_id = str(msg["from"]["id"])
+
+        # Detect folder-path messages and run ingestion in a background thread
+        if self._looks_like_path(text):
+            self._handle_path_ingestion(chat_id, teacher_id, text)
+            return
+
         self.api.send_chat_action(chat_id, "typing")
 
         try:
@@ -650,6 +661,64 @@ class EduAgentTelegramBot:
                 chat_id,
                 "Couldn't generate right now. Try /lesson again in a minute.",
             )
+
+    @staticmethod
+    def _looks_like_path(text: str) -> bool:
+        """Return True if *text* appears to be a filesystem path."""
+        stripped = text.strip().strip("'\"")
+        return (
+            stripped.startswith(("/", "~/", "C:\\"))
+            or (
+                os.sep in stripped
+                and not stripped.startswith("http")
+                and len(stripped.split()) <= 3
+            )
+        )
+
+    def _handle_path_ingestion(
+        self, chat_id: int, teacher_id: str, text: str,
+    ) -> None:
+        """Spawn a background thread that ingests files from *text* path."""
+        import threading
+
+        resolved = Path(text.strip().strip("'\"")).expanduser().resolve()
+        self.api.send_message(
+            chat_id,
+            f"Scanning {resolved.name}/... I'll message you when I'm done.",
+        )
+
+        def _notify(message: str) -> None:
+            self.api.send_message(chat_id, message)
+
+        def _run():
+            try:
+                from eduagent.openclaw_plugin import _handle_connect_local
+                from eduagent.router import ParsedIntent, Intent
+                from eduagent.state import TeacherSession
+
+                session = TeacherSession.load(teacher_id)
+                parsed = ParsedIntent(
+                    intent=Intent.CONNECT_LOCAL,
+                    raw=text,
+                    url=text.strip().strip("'\""),
+                )
+                # Run the async handler synchronously inside the thread
+                result = asyncio.run(
+                    _handle_connect_local(
+                        parsed, session, notify_callback=_notify,
+                    )
+                )
+                # The initial "Scanning..." message was already sent.
+                # If there is no callback (small dirs), send the result.
+                if result and "I'll message you" not in result:
+                    _notify(result)
+            except Exception as e:
+                logger.error("Background ingestion error: %s", e)
+                _log_error(e)
+                _notify(f"Had trouble processing {resolved.name}/: {str(e)[:150]}")
+
+        t = threading.Thread(target=_run, daemon=True)
+        t.start()
 
     # ── Document handler ──────────────────────────────────────────────
 
