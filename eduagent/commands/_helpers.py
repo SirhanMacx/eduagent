@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import sys
 from pathlib import Path
 
 import typer
@@ -10,7 +11,30 @@ from rich.console import Console
 
 from eduagent.models import AppConfig, TeacherPersona
 
-console = Console()
+
+def _is_utf8_terminal() -> bool:
+    """Check if the terminal supports UTF-8."""
+    import locale
+
+    try:
+        encoding = locale.getpreferredencoding(False)
+        return encoding.lower().replace("-", "") in ("utf8",)
+    except Exception:
+        return False
+
+
+def _make_console() -> Console:
+    """Create a Rich console with safe encoding for all platforms."""
+    # Windows cmd.exe and PowerShell may not handle UTF-8 box chars
+    force_ascii = sys.platform == "win32" and not _is_utf8_terminal()
+    return Console(
+        highlight=False,
+        safe_box=force_ascii,
+        force_terminal=None,  # Let Rich auto-detect
+    )
+
+
+console = _make_console()
 
 
 def output_dir() -> Path:

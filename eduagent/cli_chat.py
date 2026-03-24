@@ -4,17 +4,15 @@ from __future__ import annotations
 
 import asyncio
 
-from rich.console import Console
 from rich.live import Live
 from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.spinner import Spinner
 
+from eduagent.commands._helpers import console
 from eduagent.openclaw_plugin import get_last_lesson_id, handle_message
 from eduagent.state import TeacherSession
-
-console = Console()
 
 _WELCOME = """\
 👋 Welcome to **EDUagent** — your AI teaching partner.

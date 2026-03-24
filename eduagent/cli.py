@@ -13,9 +13,9 @@ from __future__ import annotations
 from typing import Optional
 
 import typer
-from rich.console import Console
 
 from eduagent import __version__
+from eduagent.commands._helpers import console
 from eduagent.commands.bot import bot_app
 from eduagent.commands.config import (
     class_app,
@@ -43,7 +43,6 @@ app = typer.Typer(
     help="Your teaching files, your AI co-teacher.",
     rich_markup_mode="rich",
 )
-console = Console()
 
 
 def _version_callback(value: bool) -> None:
