@@ -242,6 +242,16 @@ class EduAgentBot:
                         "How was this lesson? Rate it to help me improve:",
                         reply_markup=_rating_keyboard(lesson_id),
                     )
+                    # Log to workspace daily notes
+                    try:
+                        from eduagent.workspace import append_daily_note
+                        topic = text[:100] if text else "unknown topic"
+                        append_daily_note(
+                            f"Generated lesson via Telegram: {topic}",
+                            category="lesson",
+                        )
+                    except Exception:
+                        pass  # Workspace logging is best-effort
             except Exception:
                 pass  # Rating prompt is best-effort
 
@@ -283,6 +293,20 @@ class EduAgentBot:
                 if success:
                     stars = "★" * rating + "☆" * (5 - rating)
                     await query.edit_message_text(f"Thanks! Rated {stars} ({rating}/5)")
+                    # Log rating to workspace
+                    try:
+                        from eduagent.workspace import append_daily_note, update_memory
+                        append_daily_note(
+                            f"Lesson {lesson_id[:8]} rated {rating}/5",
+                            category="feedback",
+                        )
+                        if rating == 5:
+                            update_memory(
+                                "Lessons That Got 5-Star Ratings",
+                                f"Lesson {lesson_id[:8]} (via Telegram)",
+                            )
+                    except Exception:
+                        pass  # Workspace logging is best-effort
                 else:
                     await query.edit_message_text("Couldn't find that lesson to rate.")
             except Exception as e:

@@ -260,6 +260,17 @@ class StudentTelegramBot:
 
             await _send_response(update, answer)
 
+            # Log student interaction to workspace profile
+            try:
+                from eduagent.workspace import update_student_profile
+
+                student_name = f"student_{student_id}"
+                display_name = getattr(update.message.from_user, "first_name", "") or student_name
+                topic = f"[{code}] Q: {update.message.text[:100]}"
+                update_student_profile(display_name, topic)
+            except Exception:
+                pass  # Workspace logging is best-effort
+
         # Register BotFather command menu
         async def _post_init(application: Any) -> None:
             """Register commands with Telegram after app init."""

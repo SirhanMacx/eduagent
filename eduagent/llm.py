@@ -28,11 +28,17 @@ class LLMClient:
 
         In demo mode (no API key configured), returns a canned sample lesson
         so teachers can try EDUagent without any LLM credentials.
+
+        Automatically injects workspace context (identity, soul, memory)
+        into the system prompt when available.
         """
         from eduagent.demo import is_demo_mode
 
         if is_demo_mode():
             return self._demo_response(prompt)
+
+        # Inject workspace context into system prompt
+        system = self._enrich_system_prompt(system)
 
         if self.config.provider == LLMProvider.ANTHROPIC:
             return await self._anthropic(prompt, system, temperature, max_tokens)
@@ -57,6 +63,24 @@ class LLMClient:
         else:
             data = load_demo("lesson_social_studies_g8")
         return json.dumps(data, indent=2)
+
+    @staticmethod
+    def _enrich_system_prompt(system: str) -> str:
+        """Append workspace context to the system prompt if available.
+
+        This injects teacher identity, teaching philosophy, memory, and
+        today's notes so the LLM has full context about the teacher.
+        Fails silently if workspace is not initialized.
+        """
+        try:
+            from eduagent.workspace import inject_workspace_context
+
+            ws_context = inject_workspace_context()
+            if ws_context:
+                return (system + ws_context) if system else ws_context
+        except Exception:
+            pass  # Workspace not available -- that's fine
+        return system
 
     async def generate_json(
         self,
