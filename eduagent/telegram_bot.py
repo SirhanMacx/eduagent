@@ -120,15 +120,93 @@ class EduAgentBot:
 
     Uses python-telegram-bot to run a native bot.
     Imports and reuses all generation logic from the core modules.
+
+    Token resolution order:
+        1. ``token`` constructor argument
+        2. ``TELEGRAM_BOT_TOKEN`` environment variable
+        3. Saved config (``eduagent config set-token TOKEN``)
+
+    Webhook mode: pass ``webhook_url`` to ``start()`` to receive updates via
+    HTTPS POST instead of long-polling. Useful for VPS / server deployments.
     """
 
-    def __init__(self, token: str, data_dir: Optional[Path] = None):
+    def __init__(
+        self,
+        token: str,
+        data_dir: Optional[Path] = None,
+        *,
+        webhook_url: Optional[str] = None,
+        webhook_port: int = 8443,
+        webhook_secret: Optional[str] = None,
+    ):
         self.token = token
         self.data_dir = data_dir or Path.home() / ".eduagent"
         self.data_dir.mkdir(parents=True, exist_ok=True)
+        self.webhook_url = webhook_url
+        self.webhook_port = webhook_port
+        self.webhook_secret = webhook_secret
 
-    async def start(self) -> None:
-        """Start the bot and begin polling for messages."""
+    @classmethod
+    def from_env(
+        cls,
+        data_dir: Optional[Path] = None,
+        *,
+        webhook_url: Optional[str] = None,
+        webhook_port: int = 8443,
+        webhook_secret: Optional[str] = None,
+    ) -> "EduAgentBot":
+        """Create a bot by resolving the token from the environment.
+
+        Token resolution order:
+            1. ``TELEGRAM_BOT_TOKEN`` environment variable
+            2. Saved config (``eduagent config set-token TOKEN``)
+
+        Raises ``ValueError`` if no token can be found.
+        """
+        import os
+
+        token = os.environ.get("TELEGRAM_BOT_TOKEN")
+        if not token:
+            try:
+                from eduagent.models import AppConfig
+                cfg = AppConfig.load()
+                token = cfg.telegram_bot_token
+            except Exception:
+                pass
+        if not token:
+            raise ValueError(
+                "No Telegram bot token found.\n"
+                "Set the TELEGRAM_BOT_TOKEN environment variable or run:\n"
+                "  eduagent config set-token YOUR_TOKEN"
+            )
+        return cls(
+            token=token,
+            data_dir=data_dir,
+            webhook_url=webhook_url,
+            webhook_port=webhook_port,
+            webhook_secret=webhook_secret,
+        )
+
+    async def start(
+        self,
+        *,
+        webhook_url: Optional[str] = None,
+        webhook_port: Optional[int] = None,
+        webhook_secret: Optional[str] = None,
+    ) -> None:
+        """Start the bot — polling or webhook depending on configuration.
+
+        Webhook mode is activated when ``webhook_url`` is provided (either here
+        or via the constructor).  The bot will listen on ``webhook_port``
+        (default 8443) for incoming HTTPS POST requests.
+
+        Polling mode is the default — it works without any public URL or TLS,
+        so it is ideal for local development and teacher laptops.
+        """
+        # Resolve per-call overrides vs constructor defaults
+        effective_webhook = webhook_url or self.webhook_url
+        effective_port = webhook_port if webhook_port is not None else self.webhook_port
+        effective_secret = webhook_secret or self.webhook_secret
         try:
             from telegram import BotCommand, InlineKeyboardButton, InlineKeyboardMarkup
             from telegram.ext import (
@@ -491,10 +569,56 @@ class EduAgentBot:
         print("EDUagent bot is running. Press Ctrl+C to stop.")
         print(f"   Data directory: {self.data_dir}")
 
-        await app.run_polling(drop_pending_updates=True)
+        if effective_webhook:
+            # Webhook mode: Telegram pushes updates to our HTTPS endpoint.
+            # Great for VPS deployments; requires a valid TLS certificate or
+            # a reverse proxy (nginx/Caddy) terminating TLS.
+            print(f"   Mode: webhook → {effective_webhook}")
+            logger.info("Starting in webhook mode: %s", effective_webhook)
+
+            run_kwargs: dict = {
+                "webhook_url": effective_webhook,
+                "port": effective_port,
+                "drop_pending_updates": True,
+            }
+            # Secret token prevents random POST requests from triggering the bot
+            if effective_secret:
+                run_kwargs["secret_token"] = effective_secret
+
+            await app.run_webhook(**run_kwargs)
+        else:
+            # Polling mode: the bot polls Telegram for new updates.
+            # Works everywhere without any public URL — perfect for local dev
+            # and teacher laptops behind NAT/firewalls.
+            print("   Mode: polling")
+            logger.info("Starting in polling mode")
+            await app.run_polling(drop_pending_updates=True)
 
 
-async def run_bot(token: str, data_dir: Optional[Path] = None) -> None:
-    """Run the EDUagent Telegram bot."""
-    bot = EduAgentBot(token=token, data_dir=data_dir)
+async def run_bot(
+    token: str,
+    data_dir: Optional[Path] = None,
+    *,
+    webhook_url: Optional[str] = None,
+    webhook_port: int = 8443,
+    webhook_secret: Optional[str] = None,
+) -> None:
+    """Run the EDUagent Telegram bot.
+
+    Args:
+        token: Telegram bot token from @BotFather.
+        data_dir: Directory for persistent state (default: ~/.eduagent).
+        webhook_url: If provided, run in webhook mode instead of polling.
+            Must be a publicly reachable HTTPS URL
+            (e.g. ``https://myserver.com/webhook``).
+        webhook_port: Local port to listen on in webhook mode (default 8443).
+        webhook_secret: Optional secret token to verify incoming webhook requests.
+    """
+    bot = EduAgentBot(
+        token=token,
+        data_dir=data_dir,
+        webhook_url=webhook_url,
+        webhook_port=webhook_port,
+        webhook_secret=webhook_secret,
+    )
     await bot.start()

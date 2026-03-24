@@ -613,3 +613,156 @@ class TestCallbackPrefixes:
 
     def test_rating_prefix(self):
         assert RATING_CALLBACK_PREFIX == "rate:"
+
+
+# ── Webhook support ──────────────────────────────────────────────────────
+
+
+class TestWebhookSupport:
+    """Tests for webhook mode and token resolution."""
+
+    def test_bot_accepts_webhook_url(self, tmp_path):
+        bot = EduAgentBot(
+            token="fake:token",
+            data_dir=tmp_path,
+            webhook_url="https://example.com/telegram",
+            webhook_port=8443,
+        )
+        assert bot.webhook_url == "https://example.com/telegram"
+        assert bot.webhook_port == 8443
+
+    def test_bot_defaults_no_webhook(self, tmp_path):
+        bot = EduAgentBot(token="fake:token", data_dir=tmp_path)
+        assert bot.webhook_url is None
+        assert bot.webhook_port == 8443  # default port
+
+    def test_bot_accepts_webhook_secret(self, tmp_path):
+        bot = EduAgentBot(
+            token="fake:token",
+            data_dir=tmp_path,
+            webhook_url="https://example.com/telegram",
+            webhook_secret="my-secret-token",
+        )
+        assert bot.webhook_secret == "my-secret-token"
+
+    def test_from_env_reads_env_var(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "envvar:TOKEN123")
+        bot = EduAgentBot.from_env(data_dir=tmp_path)
+        assert bot.token == "envvar:TOKEN123"
+
+    def test_from_env_raises_without_token(self, tmp_path, monkeypatch):
+        monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
+        with patch("eduagent.models.AppConfig.load") as mock_cfg:
+            mock_cfg.return_value = MagicMock(telegram_bot_token=None)
+            with pytest.raises(ValueError, match="No Telegram bot token found"):
+                EduAgentBot.from_env(data_dir=tmp_path)
+
+    def test_from_env_passes_webhook_params(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test:TOKEN")
+        bot = EduAgentBot.from_env(
+            data_dir=tmp_path,
+            webhook_url="https://myserver.com/tg",
+            webhook_port=8080,
+            webhook_secret="s3cr3t",
+        )
+        assert bot.webhook_url == "https://myserver.com/tg"
+        assert bot.webhook_port == 8080
+        assert bot.webhook_secret == "s3cr3t"
+
+    def test_run_webhook_called_in_webhook_mode(self, tmp_path, monkeypatch):
+        """When webhook_url is set, app.run_webhook should be called instead of run_polling."""
+        mock_app = MagicMock()
+        mock_app.run_polling = AsyncMock()
+        mock_app.run_webhook = AsyncMock()
+        mock_builder = MagicMock()
+        mock_builder.token.return_value = mock_builder
+        mock_builder.build.return_value = mock_app
+
+        mock_ext = MagicMock()
+        mock_ext.Application.builder.return_value = mock_builder
+        mock_ext.filters.TEXT = MagicMock()
+        mock_ext.filters.COMMAND = MagicMock()
+        mock_ext.filters.TEXT.__and__ = MagicMock(return_value="text_filter")
+        mock_ext.CommandHandler = lambda *a, **kw: MagicMock()
+        mock_ext.MessageHandler = lambda *a, **kw: MagicMock()
+        mock_ext.CallbackQueryHandler = lambda *a, **kw: MagicMock()
+
+        bot = EduAgentBot(
+            token="fake:token",
+            data_dir=tmp_path,
+            webhook_url="https://example.com/telegram",
+        )
+
+        with patch.dict("sys.modules", {
+            "telegram": MagicMock(),
+            "telegram.ext": mock_ext,
+        }):
+            asyncio.run(bot.start())
+
+        mock_app.run_webhook.assert_called_once()
+        mock_app.run_polling.assert_not_called()
+
+        call_kwargs = mock_app.run_webhook.call_args.kwargs
+        assert call_kwargs["webhook_url"] == "https://example.com/telegram"
+
+    def test_run_polling_called_in_polling_mode(self, tmp_path):
+        """Without webhook_url, app.run_polling should be called."""
+        mock_app = MagicMock()
+        mock_app.run_polling = AsyncMock()
+        mock_app.run_webhook = AsyncMock()
+        mock_builder = MagicMock()
+        mock_builder.token.return_value = mock_builder
+        mock_builder.build.return_value = mock_app
+
+        mock_ext = MagicMock()
+        mock_ext.Application.builder.return_value = mock_builder
+        mock_ext.filters.TEXT = MagicMock()
+        mock_ext.filters.COMMAND = MagicMock()
+        mock_ext.filters.TEXT.__and__ = MagicMock(return_value="text_filter")
+        mock_ext.CommandHandler = lambda *a, **kw: MagicMock()
+        mock_ext.MessageHandler = lambda *a, **kw: MagicMock()
+        mock_ext.CallbackQueryHandler = lambda *a, **kw: MagicMock()
+
+        bot = EduAgentBot(token="fake:token", data_dir=tmp_path)
+
+        with patch.dict("sys.modules", {
+            "telegram": MagicMock(),
+            "telegram.ext": mock_ext,
+        }):
+            asyncio.run(bot.start())
+
+        mock_app.run_polling.assert_called_once()
+        mock_app.run_webhook.assert_not_called()
+
+    def test_webhook_secret_passed_to_run_webhook(self, tmp_path):
+        """Webhook secret token should be passed to run_webhook."""
+        mock_app = MagicMock()
+        mock_app.run_webhook = AsyncMock()
+        mock_builder = MagicMock()
+        mock_builder.token.return_value = mock_builder
+        mock_builder.build.return_value = mock_app
+
+        mock_ext = MagicMock()
+        mock_ext.Application.builder.return_value = mock_builder
+        mock_ext.filters.TEXT = MagicMock()
+        mock_ext.filters.COMMAND = MagicMock()
+        mock_ext.filters.TEXT.__and__ = MagicMock(return_value="text_filter")
+        mock_ext.CommandHandler = lambda *a, **kw: MagicMock()
+        mock_ext.MessageHandler = lambda *a, **kw: MagicMock()
+        mock_ext.CallbackQueryHandler = lambda *a, **kw: MagicMock()
+
+        bot = EduAgentBot(
+            token="fake:token",
+            data_dir=tmp_path,
+            webhook_url="https://example.com/tg",
+            webhook_secret="super-secret",
+        )
+
+        with patch.dict("sys.modules", {
+            "telegram": MagicMock(),
+            "telegram.ext": mock_ext,
+        }):
+            asyncio.run(bot.start())
+
+        call_kwargs = mock_app.run_webhook.call_args.kwargs
+        assert call_kwargs.get("secret_token") == "super-secret"

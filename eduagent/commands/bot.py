@@ -460,7 +460,7 @@ def bot(
         "--token",
         "-t",
         envvar="TELEGRAM_BOT_TOKEN",
-        help="Telegram bot token from @BotFather",
+        help="Telegram bot token from @BotFather (or set TELEGRAM_BOT_TOKEN env var)",
     ),
     data_dir: Optional[str] = typer.Option(
         None,
@@ -472,15 +472,44 @@ def bot(
         "--live",
         help="Show a Rich live status display while running",
     ),
+    webhook_url: Optional[str] = typer.Option(
+        None,
+        "--webhook-url",
+        envvar="EDUAGENT_WEBHOOK_URL",
+        help=(
+            "Public HTTPS URL for webhook mode "
+            "(e.g. https://myserver.com/telegram). "
+            "Omit to use polling mode (works anywhere, no public URL needed)."
+        ),
+    ),
+    webhook_port: int = typer.Option(
+        8443,
+        "--webhook-port",
+        help="Local port to listen on in webhook mode (default: 8443).",
+    ),
+    webhook_secret: Optional[str] = typer.Option(
+        None,
+        "--webhook-secret",
+        envvar="EDUAGENT_WEBHOOK_SECRET",
+        help="Secret token to verify Telegram webhook requests.",
+    ),
 ):
     """Start the EDUagent Telegram bot.
 
     \b
     Get a bot token from @BotFather on Telegram, then run:
-        eduagent bot --token YOUR_TOKEN
-        eduagent bot --token YOUR_TOKEN --live   # with live status display
 
-    Or save it once and forget about it:
+        # Polling mode — works on any machine, no public URL needed:
+        eduagent bot --token YOUR_TOKEN
+        export TELEGRAM_BOT_TOKEN=YOUR_TOKEN && eduagent bot
+
+        # Webhook mode — for VPS/server deployments with a public HTTPS URL:
+        eduagent bot --token YOUR_TOKEN --webhook-url https://myserver.com/telegram
+
+        # With live dashboard:
+        eduagent bot --token YOUR_TOKEN --live
+
+    Save the token permanently (so you don't have to pass it every time):
         eduagent config set-token YOUR_TOKEN
         eduagent bot
     """
@@ -492,7 +521,8 @@ def bot(
 
     from eduagent.telegram_bot import run_bot
 
-    # Resolve token: --token flag > TELEGRAM_BOT_TOKEN env > saved config
+    # Resolve token: --token flag > TELEGRAM_BOT_TOKEN env (handled by typer envvar)
+    # > saved config
     if not token:
         cfg = AppConfig.load()
         token = cfg.telegram_bot_token
@@ -516,12 +546,18 @@ def bot(
     if live:
         _bot_with_live_display(token=token, data_path=data_path)
     else:
+        mode_line = (
+            f"Webhook: [cyan]{webhook_url}[/cyan] (port {webhook_port})"
+            if webhook_url
+            else "Mode: polling"
+        )
         console.print(
             Panel(
                 f"[bold green]EDUagent Telegram Bot[/bold green]\n\n"
                 f"Starting bot...\n"
                 f"Data directory:"
-                f" {data_path or Path.home() / '.eduagent'}\n\n"
+                f" {data_path or Path.home() / '.eduagent'}\n"
+                f"{mode_line}\n\n"
                 f"[dim]Press Ctrl+C to stop[/dim]",
                 title="EDUagent",
                 border_style="green",
@@ -529,7 +565,15 @@ def bot(
         )
 
         try:
-            asyncio.run(run_bot(token=token, data_dir=data_path))
+            asyncio.run(
+                run_bot(
+                    token=token,
+                    data_dir=data_path,
+                    webhook_url=webhook_url,
+                    webhook_port=webhook_port,
+                    webhook_secret=webhook_secret or None,
+                )
+            )
         except KeyboardInterrupt:
             console.print("\n[yellow]Bot stopped.[/yellow]")
         except ImportError as e:
