@@ -13,9 +13,11 @@ This is prompt-level RLHF: no model fine-tuning required, transparent
 
 from __future__ import annotations
 
+import json
 import logging
 import re
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 from eduagent.models import AppConfig
@@ -484,6 +486,14 @@ def build_improvement_context(
         for entry in relevant[-5:]:
             parts.append(f"  - {entry}")
 
+    # Inject rule-based quality insights (no LLM calls)
+    insights = get_quality_insights()
+    if insights:
+        parts.append("")
+        parts.append("Statistical patterns from your ratings:")
+        for insight in insights[:5]:
+            parts.append(f"  - {insight}")
+
     if not parts:
         return ""
 
@@ -528,6 +538,142 @@ def reset_memory(confirm: bool = False) -> bool:
     _write_memory(DEFAULT_MEMORY_TEMPLATE)
     logger.info("Memory reset to default template.")
     return True
+
+
+# ── Rule-based lesson metadata tracking (no LLM calls) ──────────────
+
+
+def _base_dir() -> Path:
+    """Get the base data directory for stats files."""
+    import os
+    env_dir = os.environ.get("EDUAGENT_DATA_DIR")
+    if env_dir:
+        return Path(env_dir)
+    return Path.home() / ".eduagent"
+
+
+def _load_stats(stats_path: Path) -> dict[str, Any]:
+    """Load lesson stats from disk."""
+    if stats_path.exists():
+        try:
+            return json.loads(stats_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            return {}
+    return {}
+
+
+def _save_stats(stats_path: Path, stats: dict[str, Any]) -> None:
+    """Persist lesson stats to disk."""
+    stats_path.parent.mkdir(parents=True, exist_ok=True)
+    stats_path.write_text(json.dumps(stats, indent=2), encoding="utf-8")
+
+
+def track_lesson_metadata(lesson: "DailyLesson", rating: int) -> None:
+    """Track which lesson characteristics correlate with high ratings.
+
+    Pure rule-based -- no LLM calls. Builds a statistical profile
+    over time that the prompt injection can reference.
+    """
+    metadata = {
+        "has_do_now": bool(lesson.do_now and len(lesson.do_now) > 20),
+        "has_exit_ticket": bool(lesson.exit_ticket and len(lesson.exit_ticket) >= 1),
+        "exit_ticket_count": len(lesson.exit_ticket) if lesson.exit_ticket else 0,
+        "has_homework": bool(lesson.homework),
+        "has_differentiation": bool(
+            lesson.differentiation
+            and (
+                lesson.differentiation.struggling
+                or lesson.differentiation.advanced
+                or lesson.differentiation.ell
+            )
+        ),
+        "instruction_length": len(lesson.direct_instruction or ""),
+        "practice_length": len(lesson.guided_practice or ""),
+        "has_materials_list": bool(lesson.materials_needed),
+    }
+
+    stats_path = _base_dir() / "lesson_stats.json"
+    stats = _load_stats(stats_path)
+
+    # Classify rating into buckets
+    if rating >= 4:
+        bucket = "high"
+    elif rating <= 2:
+        bucket = "low"
+    else:
+        bucket = "mid"
+
+    for key, value in metadata.items():
+        if isinstance(value, bool):
+            value = 1 if value else 0
+        stats.setdefault(key, {}).setdefault(bucket, []).append(value)
+
+    _save_stats(stats_path, stats)
+
+
+def get_quality_insights() -> list[str]:
+    """Derive insights from lesson metadata statistics.
+
+    Returns plain-English insights like:
+    - "Lessons with exit tickets average higher ratings"
+    - "Including a materials list correlates with higher ratings"
+
+    Pure rule-based -- no LLM calls.
+    """
+    stats_path = _base_dir() / "lesson_stats.json"
+    stats = _load_stats(stats_path)
+
+    if not stats:
+        return []
+
+    insights: list[str] = []
+
+    for key in stats:
+        high = stats[key].get("high", [])
+        low = stats[key].get("low", [])
+
+        if not high and not low:
+            continue
+
+        high_avg = sum(high) / len(high) if high else 0
+        low_avg = sum(low) / len(low) if low else 0
+
+        # Only report if we have enough data and the difference is meaningful
+        if len(high) + len(low) < 3:
+            continue
+
+        label = key.replace("_", " ").replace("has ", "")
+
+        if key.startswith("has_"):
+            # Boolean feature: compare rates
+            if high_avg > 0.7 and low_avg < 0.4:
+                insights.append(
+                    f"Including {label} correlates with higher ratings "
+                    f"({high_avg:.0%} of top lessons vs {low_avg:.0%} of low-rated)"
+                )
+            elif low_avg > 0.7 and high_avg < 0.4:
+                insights.append(
+                    f"Lessons without {label} tend to rate higher"
+                )
+        elif key == "exit_ticket_count":
+            if high_avg > low_avg + 0.5:
+                insights.append(
+                    f"Top-rated lessons average {high_avg:.1f} exit ticket questions "
+                    f"vs {low_avg:.1f} for lower-rated"
+                )
+        elif key in ("instruction_length", "practice_length"):
+            if high_avg > low_avg * 1.3 and len(high) >= 2:
+                insights.append(
+                    f"Higher-rated lessons have longer {label} sections "
+                    f"(avg {high_avg:.0f} chars vs {low_avg:.0f})"
+                )
+            elif low_avg > high_avg * 1.3 and len(low) >= 2:
+                insights.append(
+                    f"Shorter {label} sections correlate with higher ratings "
+                    f"(avg {high_avg:.0f} chars vs {low_avg:.0f})"
+                )
+
+    return insights
 
 
 # ── Internal helpers ─────────────────────────────────────────────────

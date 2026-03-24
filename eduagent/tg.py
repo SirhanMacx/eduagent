@@ -15,6 +15,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import re
 import signal
 import tempfile
 import threading
@@ -325,7 +326,163 @@ def _detect_intent(text: str) -> tuple[str | None, str]:
     ]):
         return "help", ""
 
+    # Gaps / curriculum analysis
+    if any(phrase in lower for phrase in [
+        "what am i missing", "curriculum gaps", "what haven't i covered",
+        "what havent i covered", "gap analysis",
+    ]):
+        return "gaps", text
+
+    # Model switching
+    if any(phrase in lower for phrase in [
+        "switch to ollama", "use ollama", "change model",
+        "switch to anthropic", "use anthropic",
+        "switch to openai", "use openai",
+    ]):
+        return "model", text
+
+    # Schedule intent
+    if any(phrase in lower for phrase in [
+        "remind me", "send me", "morning reminder", "stop reminder",
+        "cancel reminder", "what's scheduled", "whats scheduled",
+        "cancel all reminder",
+    ]):
+        return "schedule", text
+
     return None, text  # Fall through to LLM
+
+
+# ── Onboarding state machine ──────────────────────────────────────────
+
+ONBOARD_ASK_SUBJECT = "ask_subject"
+ONBOARD_ASK_GRADE = "ask_grade"
+ONBOARD_ASK_NAME = "ask_name"
+ONBOARD_ASK_MODEL = "ask_model"
+ONBOARD_DONE = "done"
+
+
+def _parse_grade_and_subject(text: str) -> tuple[str, str]:
+    """Try to extract both a grade level and subject from a single message.
+
+    Returns (grade, subject) where either may be empty if not found.
+    Examples:
+        "8th grade social studies" -> ("8", "Social Studies")
+        "AP Chemistry" -> ("", "AP Chemistry")
+        "5th grade math" -> ("5", "Math")
+    """
+    text = text.strip()
+    grade = ""
+    subject = text
+
+    # Match patterns like "8th grade", "5th grade", "grade 8", "8th"
+    grade_match = re.search(
+        r'(?:(\d{1,2})(?:st|nd|rd|th)?\s*grade)|(?:grade\s*(\d{1,2}))',
+        text,
+        re.IGNORECASE,
+    )
+    if grade_match:
+        grade = grade_match.group(1) or grade_match.group(2)
+        # Remove the grade portion to isolate subject
+        subject = text[:grade_match.start()] + text[grade_match.end():]
+        subject = subject.strip().strip("-,. ")
+
+    # Capitalize subject nicely
+    if subject:
+        subject = subject.strip()
+        # Title-case but preserve "AP", "IB", etc.
+        words = subject.split()
+        capitalized = []
+        for w in words:
+            if w.upper() in ("AP", "IB", "ELA"):
+                capitalized.append(w.upper())
+            else:
+                capitalized.append(w.capitalize())
+        subject = " ".join(capitalized)
+
+    return grade, subject
+
+
+# ── Schedule parsing helpers ──────────────────────────────────────────
+
+
+def _parse_schedule_time(text: str) -> dict:
+    """Parse '7am', '7:30 PM', 'evening', 'morning', 'afternoon'."""
+    text = text.lower().strip()
+
+    # Named times
+    named = {
+        "morning": "7:00", "evening": "19:00",
+        "afternoon": "15:00", "night": "20:00",
+    }
+    for name, time_val in named.items():
+        if name in text:
+            h, m = time_val.split(":")
+            return {"hour": h, "minute": m}
+
+    # Explicit time: "7am", "7:30pm", "19:00"
+    match = re.search(r'(\d{1,2})(?::(\d{2}))?\s*(am|pm)?', text)
+    if match:
+        hour = int(match.group(1))
+        minute = int(match.group(2) or "0")
+        ampm = match.group(3)
+        if ampm == "pm" and hour < 12:
+            hour += 12
+        elif ampm == "am" and hour == 12:
+            hour = 0
+        return {"hour": str(hour), "minute": str(minute)}
+
+    return {"hour": "7", "minute": "0"}  # default morning
+
+
+def _parse_day_of_week(text: str) -> str:
+    """Extract day of week from text, or empty string for daily."""
+    days = {
+        "monday": "mon", "tuesday": "tue", "wednesday": "wed",
+        "thursday": "thu", "friday": "fri", "saturday": "sat",
+        "sunday": "sun",
+    }
+    text_lower = text.lower()
+    for name, abbr in days.items():
+        if name in text_lower:
+            return abbr
+    return ""
+
+
+def _cron_to_human(cron: dict) -> str:
+    """Convert {'hour': '7', 'minute': '0'} to 'Daily at 7:00 AM'."""
+    hour = int(cron.get("hour", "0"))
+    minute = int(cron.get("minute", "0"))
+    am_pm = "AM" if hour < 12 else "PM"
+    display_hour = hour if hour <= 12 else hour - 12
+    if display_hour == 0:
+        display_hour = 12
+    time_str = f"{display_hour}:{minute:02d} {am_pm}"
+
+    dow = cron.get("day_of_week", "")
+    if dow:
+        days = {
+            "mon": "Monday", "tue": "Tuesday", "wed": "Wednesday",
+            "thu": "Thursday", "fri": "Friday", "sat": "Saturday",
+            "sun": "Sunday",
+        }
+        return f"{days.get(dow, dow.title())}s at {time_str}"
+    return f"Daily at {time_str}"
+
+
+def _match_task_name(text: str) -> str | None:
+    """Match natural language to a task name."""
+    lower = text.lower()
+    if any(w in lower for w in ["morning", "prep", "daily prep"]):
+        return "morning-prep"
+    if any(w in lower for w in ["weekly", "week plan", "lesson plan"]):
+        return "weekly-plan"
+    if any(w in lower for w in ["feedback", "rating"]):
+        return "feedback-digest"
+    if any(w in lower for w in ["memory", "compress", "notes"]):
+        return "memory-compress"
+    if any(w in lower for w in ["student", "question", "digest"]):
+        return "student-digest"
+    return None
 
 
 class EduAgentTelegramBot:
@@ -351,6 +508,8 @@ class EduAgentTelegramBot:
         {"command": "export", "description": "Export last lesson (slides/handout/doc)"},
         {"command": "feedback", "description": "Recent ratings summary"},
         {"command": "standards", "description": "Look up standards"},
+        {"command": "schedule", "description": "Manage scheduled reminders"},
+        {"command": "gaps", "description": "Curriculum gap analysis"},
     ]
 
     def __init__(
@@ -365,6 +524,8 @@ class EduAgentTelegramBot:
         self._running = False
         self._last_lesson_id: dict[int, str] = {}
         self._last_lesson_data: dict[int, Any] = {}
+        # Onboarding state per chat: {chat_id: {"step": ..., "subject": ..., ...}}
+        self._onboard_state: dict[int, dict] = {}
 
     @classmethod
     def from_env(cls, data_dir: Path | None = None) -> "EduAgentTelegramBot":
@@ -467,6 +628,8 @@ class EduAgentTelegramBot:
             "export": self._cmd_export,
             "feedback": self._cmd_feedback,
             "standards": self._cmd_standards,
+            "schedule": self._cmd_schedule,
+            "gaps": self._cmd_gaps,
         }
 
         handler = handlers.get(cmd)
@@ -478,22 +641,39 @@ class EduAgentTelegramBot:
                 f"Unknown command: /{cmd}\nType /help to see available commands.",
             )
 
+    def _has_config(self) -> bool:
+        """Check if a config file already exists (teacher already onboarded)."""
+        from eduagent.models import AppConfig
+        return AppConfig.config_path().exists()
+
     def _cmd_start(self, chat_id: int, msg: dict, args: str) -> None:
+        if self._has_config():
+            # Already set up -- show the normal welcome
+            self.api.send_message(
+                chat_id,
+                "Hey! I'm EDUagent -- think of me as that colleague down the hall "
+                "who always has a lesson idea ready.\n\n"
+                "Here's how I work: share some of your teaching materials (just drag "
+                "files into this chat), and I'll learn your style. After that, I can "
+                "generate lessons, units, handouts, and slides that sound like YOU "
+                "wrote them.\n\n"
+                "Quick commands:\n"
+                "/lesson [topic] -- Generate a lesson\n"
+                "/unit [topic] -- Plan a full unit\n"
+                "/schedule -- Set up reminders\n"
+                "/gaps -- See what you haven't covered yet\n"
+                "/demo -- See what I can do (no setup needed)\n"
+                "/help -- All commands\n\n"
+                "Or just tell me what you need in plain English. "
+                "I'm pretty good at figuring it out.",
+            )
+            return
+
+        # No config -- start conversational onboarding
+        self._onboard_state[chat_id] = {"step": ONBOARD_ASK_SUBJECT}
         self.api.send_message(
             chat_id,
-            "Hey! I'm EDUagent -- think of me as that colleague down the hall "
-            "who always has a lesson idea ready.\n\n"
-            "Here's how I work: share some of your teaching materials (just drag "
-            "files into this chat), and I'll learn your style. After that, I can "
-            "generate lessons, units, handouts, and slides that sound like YOU "
-            "wrote them.\n\n"
-            "Quick commands:\n"
-            "/lesson [topic] -- Generate a lesson\n"
-            "/unit [topic] -- Plan a full unit\n"
-            "/demo -- See what I can do (no setup needed)\n"
-            "/help -- All commands\n\n"
-            "Or just tell me what you need in plain English. "
-            "I'm pretty good at figuring it out.",
+            "Hey! Let's get you set up. What subject do you teach?",
         )
 
     def _cmd_help(self, chat_id: int, msg: dict, args: str) -> None:
@@ -508,14 +688,20 @@ class EduAgentTelegramBot:
             "  /export slides -- PowerPoint presentation\n"
             "  /export handout -- Student worksheet (DOCX)\n"
             "  /export doc -- Full lesson plan (Word)\n\n"
-            "Setup:\n"
+            "Setup & customize:\n"
             "  /ingest -- How to send teaching materials\n"
             "  /persona -- Show current teaching persona\n"
             "  /settings -- Show current config\n"
-            "  /standards <subject> <grade> -- Look up standards\n\n"
+            "  /standards <subject> <grade> -- Look up standards\n"
+            "  /schedule -- Manage scheduled reminders\n"
+            "  /gaps -- Curriculum gap analysis\n\n"
             "Reports:\n"
             "  /progress -- Student progress report\n"
             "  /feedback -- Recent ratings summary\n\n"
+            "You can also say things like:\n"
+            '  "switch to ollama"\n'
+            '  "remind me to prep lessons every Sunday evening"\n'
+            '  "what am I missing?"\n\n'
             "Or just type what you need -- I understand plain English too!",
         )
 
@@ -737,6 +923,316 @@ class EduAgentTelegramBot:
             _log_error(e)
             self.api.send_message(chat_id, f"Could not look up standards: {e}")
 
+    # ── Schedule command ──────────────────────────────────────────────
+
+    def _cmd_schedule(self, chat_id: int, msg: dict, args: str) -> None:
+        """Handle /schedule command and natural language schedule requests."""
+        from eduagent.scheduler import (
+            disable_task,
+            load_schedule_config,
+            save_schedule_config,
+        )
+
+        if not args:
+            # Show current schedule
+            config = load_schedule_config()
+            lines = ["Your scheduled tasks:\n"]
+            for name, task in config.items():
+                status = "ON" if task["enabled"] else "OFF"
+                cron = task["cron"]
+                time_str = _cron_to_human(cron)
+                lines.append(f"  {status}  {task['description'][:50]} -- {time_str}")
+            lines.append("\nExamples:")
+            lines.append('  "morning prep at 7am"')
+            lines.append('  "student digest every Friday"')
+            lines.append('  "stop morning prep"')
+            self.api.send_message(chat_id, "\n".join(lines))
+            return
+
+        lower = args.lower()
+
+        # Cancel / stop / disable
+        if any(w in lower for w in ["stop", "cancel", "disable"]):
+            if "all" in lower:
+                config = load_schedule_config()
+                for name in config:
+                    config[name]["enabled"] = False
+                save_schedule_config(config)
+                self.api.send_message(chat_id, "All scheduled tasks disabled.")
+                return
+
+            task_name = _match_task_name(lower)
+            if task_name:
+                if disable_task(task_name):
+                    self.api.send_message(chat_id, f"Disabled: {task_name}")
+                else:
+                    self.api.send_message(chat_id, f"Could not find task: {task_name}")
+            else:
+                self.api.send_message(
+                    chat_id,
+                    "Which task? Try: stop morning prep, stop student digest, "
+                    "stop weekly plan, or cancel all",
+                )
+            return
+
+        # Enable / set schedule
+        task_name = _match_task_name(lower)
+        if not task_name:
+            # Try to guess from context
+            self.api.send_message(
+                chat_id,
+                "I'm not sure which task you mean. Available tasks:\n"
+                "  morning-prep, weekly-plan, feedback-digest, "
+                "memory-compress, student-digest\n\n"
+                "Try: /schedule morning prep at 7am",
+            )
+            return
+
+        time_dict = _parse_schedule_time(lower)
+        dow = _parse_day_of_week(lower)
+        if dow:
+            time_dict["day_of_week"] = dow
+
+        config = load_schedule_config()
+        config[task_name]["cron"] = time_dict
+        config[task_name]["enabled"] = True
+        save_schedule_config(config)
+
+        human_time = _cron_to_human(time_dict)
+        desc = config[task_name]["description"][:50]
+        self.api.send_message(
+            chat_id,
+            f"Scheduled! {desc}\n{human_time}",
+        )
+
+    # ── Gaps command ──────────────────────────────────────────────────
+
+    def _cmd_gaps(self, chat_id: int, msg: dict, args: str) -> None:
+        """Run curriculum gap analysis and send results."""
+        self.api.send_chat_action(chat_id, "typing")
+
+        try:
+            from eduagent.curriculum_map import CurriculumMapEngine
+            from eduagent.models import AppConfig, TeacherPersona
+
+            cfg = AppConfig.load()
+            profile = cfg.teacher_profile
+
+            # Need subject and grade to look up standards
+            subjects = profile.subjects if profile.subjects else ["General"]
+            grades = profile.grade_levels if profile.grade_levels else ["8"]
+
+            # Load existing materials from the database
+            existing = []
+            try:
+                from eduagent.database import Database
+                db = Database()
+                # Get lesson titles as "existing materials"
+                try:
+                    lessons = db.query("SELECT title FROM lessons LIMIT 50")
+                    existing = [r["title"] for r in lessons if r.get("title")]
+                except Exception:
+                    pass
+                db.close()
+            except Exception:
+                pass
+
+            # Get standards
+            from eduagent.standards import get_standards
+            subject = subjects[0]
+            grade = grades[0]
+            standards_list = get_standards(subject, grade)
+            if not standards_list:
+                self.api.send_message(
+                    chat_id,
+                    f"No standards found for {subject} grade {grade}. "
+                    "Try setting your profile with /start.",
+                )
+                return
+
+            standards = [f"{code}: {desc}" for code, desc, _ in standards_list[:20]]
+
+            # Load persona
+            try:
+                from eduagent.commands._helpers import load_persona_or_exit
+                persona = load_persona_or_exit()
+            except (SystemExit, Exception):
+                persona = TeacherPersona()
+
+            engine = CurriculumMapEngine(cfg)
+            gaps = asyncio.run(
+                engine.identify_curriculum_gaps(existing, standards, persona)
+            )
+
+            if not gaps:
+                self.api.send_message(
+                    chat_id,
+                    f"Looking good! No major gaps found for {subject} grade {grade}.",
+                )
+                return
+
+            lines = [f"Gap Analysis: {subject} Grade {grade}\n"]
+            for gap in gaps[:10]:
+                severity = gap.severity.upper() if gap.severity else "MEDIUM"
+                lines.append(f"  [{severity}] {gap.standard}")
+                lines.append(f"    {gap.description}")
+                if gap.suggestion:
+                    lines.append(f"    Suggestion: {gap.suggestion}")
+                lines.append("")
+
+            if len(gaps) > 10:
+                lines.append(f"...and {len(gaps) - 10} more gaps.")
+
+            self.api.send_message(chat_id, "\n".join(lines))
+
+        except Exception as e:
+            logger.error("Error in /gaps: %s", e)
+            _log_error(e)
+            self.api.send_message(
+                chat_id,
+                "Couldn't run gap analysis right now. "
+                "Make sure your profile is set up (/settings).",
+            )
+
+    # ── Model switch command ──────────────────────────────────────────
+
+    def _cmd_model_switch(self, chat_id: int, text: str) -> None:
+        """Switch the LLM provider from a natural language request."""
+        from eduagent.models import AppConfig, LLMProvider
+
+        lower = text.lower()
+        if "ollama" in lower:
+            provider = "ollama"
+        elif "anthropic" in lower:
+            provider = "anthropic"
+        elif "openai" in lower:
+            provider = "openai"
+        else:
+            self.api.send_message(
+                chat_id,
+                "Which AI? Type: ollama, anthropic, or openai",
+            )
+            return
+
+        cfg = AppConfig.load()
+        cfg.provider = LLMProvider(provider)
+        cfg.save()
+        self.api.send_message(
+            chat_id,
+            f"Switched to {provider}! All future lessons will use this.",
+        )
+
+    # ── Onboarding handler ────────────────────────────────────────────
+
+    def _handle_onboarding(self, chat_id: int, msg: dict, text: str) -> None:
+        """Process a message during the conversational onboarding flow."""
+        state = self._onboard_state[chat_id]
+        step = state["step"]
+
+        if step == ONBOARD_ASK_SUBJECT:
+            # Try to parse both grade and subject from a single message
+            grade, subject = _parse_grade_and_subject(text)
+            if not subject:
+                self.api.send_message(chat_id, "I didn't catch that. What subject do you teach?")
+                return
+
+            state["subject"] = subject
+
+            if grade:
+                # Got both -- skip grade question
+                state["grade"] = grade
+                state["step"] = ONBOARD_ASK_NAME
+                self.api.send_message(
+                    chat_id,
+                    f"{subject}, got it! And grade {grade} -- perfect.\n"
+                    "What's your name? (I'll use it on your lesson plans)",
+                )
+            else:
+                state["step"] = ONBOARD_ASK_GRADE
+                self.api.send_message(
+                    chat_id,
+                    f"{subject}, got it! What grade level?",
+                )
+
+        elif step == ONBOARD_ASK_GRADE:
+            # Extract grade number
+            grade_match = re.search(r'(\d{1,2})', text)
+            if grade_match:
+                state["grade"] = grade_match.group(1)
+            else:
+                # Accept text like "K", "kindergarten", "pre-k"
+                state["grade"] = text.strip()
+
+            state["step"] = ONBOARD_ASK_NAME
+            self.api.send_message(
+                chat_id,
+                "What's your name? (I'll use it on your lesson plans)",
+            )
+
+        elif step == ONBOARD_ASK_NAME:
+            state["name"] = text.strip()
+            state["step"] = ONBOARD_ASK_MODEL
+            self.api.send_message(
+                chat_id,
+                f"Great, {state['name']}! Last question -- which AI should I use?\n\n"
+                "  Ollama -- Free, runs on your computer (needs ollama.com installed)\n"
+                "  Anthropic -- Best quality, ~$20/month (needs API key)\n"
+                "  OpenAI -- Good quality, ~$20/month (needs API key)\n\n"
+                'Type "ollama", "anthropic", or "openai" (you can change this later)',
+            )
+
+        elif step == ONBOARD_ASK_MODEL:
+            lower = text.lower().strip()
+            from eduagent.models import AppConfig, LLMProvider, TeacherProfile
+
+            if "ollama" in lower:
+                provider = LLMProvider.OLLAMA
+            elif "anthropic" in lower:
+                provider = LLMProvider.ANTHROPIC
+            elif "openai" in lower:
+                provider = LLMProvider.OPENAI
+            else:
+                self.api.send_message(
+                    chat_id,
+                    'I need one of: "ollama", "anthropic", or "openai"',
+                )
+                return
+
+            # Build and save config
+            profile = TeacherProfile(
+                name=state.get("name", ""),
+                subjects=[state.get("subject", "")],
+                grade_levels=[state.get("grade", "")],
+            )
+            config = AppConfig(
+                provider=provider,
+                teacher_profile=profile,
+            )
+            config.save()
+
+            # Clean up onboarding state
+            state["step"] = ONBOARD_DONE
+            del self._onboard_state[chat_id]
+
+            subject = state.get("subject", "your subject")
+            grade = state.get("grade", "")
+            name = state.get("name", "")
+            provider_name = provider.value.title()
+
+            grade_display = f"Grade: {grade}\n" if grade else ""
+
+            self.api.send_message(
+                chat_id,
+                f"All set! Here's what I know about you:\n"
+                f"  Subject: {subject}\n"
+                f"  {grade_display}"
+                f"  Name: {name}\n"
+                f"  AI: {provider_name}\n\n"
+                "Now drop some of your lesson files in here (PDF, DOCX, PPTX) "
+                "and I'll learn your teaching style. Or just try:\n"
+                f'/lesson "The American Revolution"',
+            )
+
     # ── Message handler ───────────────────────────────────────────────
 
     def _handle_message(self, msg: dict) -> None:
@@ -752,6 +1248,11 @@ class EduAgentTelegramBot:
             return
 
         teacher_id = str(msg["from"]["id"])
+
+        # Check if this chat is in onboarding flow
+        if chat_id in self._onboard_state:
+            self._handle_onboarding(chat_id, msg, text)
+            return
 
         # Detect folder-path messages and run ingestion in a background thread
         if self._looks_like_path(text):
@@ -802,6 +1303,15 @@ class EduAgentTelegramBot:
                 "export_doc": "docx",
             }
             self._do_export(chat_id, lesson_id, fmt_map[intent])
+            return
+        elif intent == "gaps":
+            self._cmd_gaps(chat_id, msg, "")
+            return
+        elif intent == "model":
+            self._cmd_model_switch(chat_id, text)
+            return
+        elif intent == "schedule":
+            self._cmd_schedule(chat_id, msg, text)
             return
 
         # Fall through to LLM for anything else
