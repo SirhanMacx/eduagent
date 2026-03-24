@@ -77,124 +77,138 @@ Every lesson includes differentiation, exit tickets, and homework — all in the
 
 ---
 
-## 🚀 Quickstart (5 minutes)
+## 🚀 Getting Started
 
-### Terminal chat (fastest way to try it)
+**Never used a terminal? No problem.** We'll walk you through everything step by step.
 
-```bash
+---
+
+### Step 1 — Check that Python is installed
+
+EDUagent runs on Python. Most Macs already have it. Here's how to check:
+
+1. On a **Mac**: press `Cmd + Space`, type `Terminal`, hit Enter
+2. On **Windows**: press the Windows key, type `cmd`, hit Enter
+3. In the window that opens, type this and press Enter:
+   ```
+   python --version
+   ```
+   If you see something like `Python 3.11.2`, you're good. If you see an error, [download Python here](https://www.python.org/downloads/) — click the big yellow button and run the installer.
+
+---
+
+### Step 2 — Install EDUagent
+
+In the same Terminal window, type this and press Enter:
+
+```
 pip install eduagent
-export ANTHROPIC_API_KEY=sk-...   # or OPENAI_API_KEY, or use Ollama (free)
+```
+
+Wait about 30 seconds. You'll see text scrolling — that's normal. When it stops and you see a `$` again, it worked.
+
+---
+
+### Step 3 — Get an AI key (free to start)
+
+EDUagent needs an AI brain. The easiest option is **Anthropic Claude** — you get $5 free credit, no credit card required.
+
+1. Go to [console.anthropic.com](https://console.anthropic.com) and create a free account
+2. Click **API Keys** in the left sidebar → **Create Key**
+3. Copy the key (starts with `sk-ant-...`)
+4. Back in Terminal, type this (replace the key with yours):
+   - **Mac/Linux:**
+     ```
+     export ANTHROPIC_API_KEY=sk-ant-your-key-here
+     ```
+   - **Windows:**
+     ```
+     set ANTHROPIC_API_KEY=sk-ant-your-key-here
+     ```
+
+> **Prefer ChatGPT?** Use `OPENAI_API_KEY=` instead. **Want free?** [Install Ollama](https://ollama.com) and run `eduagent config set-model ollama` — no API key needed.
+
+---
+
+### Step 4 — Start EDUagent
+
+```
 eduagent chat
 ```
 
+That's it. EDUagent will ask you a few questions about what you teach, then you can point it at your existing lesson plans (or just start from scratch).
+
+**Example:**
 ```
-You: I teach 9th grade Global History at a public high school in New York
-EDUagent: Great! I'm ready to help. Share some of your lesson plans and I'll learn your style.
+EDUagent: What do you teach?
+You: 9th grade Global History in New York
 
-You: my materials are in ~/Documents/Teaching/
-EDUagent: Analyzing 246 files... done.
+EDUagent: Do you have any lesson plans or materials I can learn from?
+You: yes, they're in my Documents/Teaching folder
 
-  📚 Your Teaching Profile
-  • Style: Inquiry-based
-  • Format: AIM → Do Now → Document Analysis → Guided Practice
-  • Loves: Primary sources, DBQs, Socratic questioning
-  • Goes by: Mr. Mac
+EDUagent: Analyzing 246 files... I can see your style now.
+  You love Socratic questioning, primary sources, and AIM questions.
+  Ready to help — what do you need?
 
-You: plan a unit on the causes of WWI, 2 weeks
-EDUagent: Planning your unit... 🌿
-
-  Unit: "Chain Reaction: Unpacking the Causes of World War I"
-  Essential Questions:
-  • Was WWI inevitable, or could it have been prevented?
-  • How do alliances protect nations versus how do they provoke conflict?
-  ...
+You: write a do now for tomorrow's lesson on the causes of WWI
+EDUagent: Here's your Do Now...
 ```
 
-### Telegram bots (best for daily use)
+---
 
-```bash
-pip install 'eduagent[telegram]'
+### 📱 Want it on your phone? (Telegram bot)
 
-# Teacher bot — generate lessons, units, assessments
-eduagent bot --token YOUR_TEACHER_BOT_TOKEN
+Once EDUagent is working on your computer, you can set up a Telegram bot so you can generate lessons from your phone during your commute or prep period.
 
-# Student bot — students ask questions in your teacher voice
-eduagent student-bot --token YOUR_STUDENT_BOT_TOKEN
+1. Open Telegram and search for **@BotFather**
+2. Send `/newbot` — follow the prompts to name your bot
+3. BotFather gives you a token (looks like `123456:ABC-DEF...`) — copy it
+4. In Terminal:
+   ```
+   pip install 'eduagent[telegram]'
+   eduagent bot --token PASTE-YOUR-TOKEN-HERE
+   ```
+5. Find your new bot in Telegram and start chatting
+
+> **Student bot:** Your students can also have their own bot that answers questions in your voice. See [FEATURES.md](FEATURES.md) for setup.
+
+---
+
+### 🌐 Prefer a website interface?
+
 ```
-
-**How they work together:** The teacher creates a class code, shares it with students.
-Students use `/join CODE` in the student bot to connect, then ask questions about the lesson.
-The student bot answers in the teacher's voice using the active lesson context.
-
-### Web dashboard
-
-```bash
 eduagent serve
-# Opens at http://localhost:8000
 ```
+
+Then open your browser and go to **http://localhost:8000** — you'll see a full dashboard.
 
 ---
 
-## 🐳 Quick Deploy
-
-### One-line installer (Mac/Linux)
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/eduagent/eduagent/main/scripts/install.sh | bash
-```
-
-Detects your OS, installs Python if needed, installs EDUagent, and walks you through API key + Telegram setup.
-
-### Docker (no Python required)
-
-```bash
-# 1. Clone or create a folder
-mkdir eduagent && cd eduagent
-
-# 2. Create a .env file with your keys
-cat > .env <<EOF
-ANTHROPIC_API_KEY=sk-ant-your-key-here
-TELEGRAM_BOT_TOKEN=your-token-here
-EOF
-
-# 3. Start everything
-docker compose up -d
-```
-
-Web dashboard at http://localhost:8000, Telegram bot running in the background.
-
-See [docs/DOCKER_SETUP.md](docs/DOCKER_SETUP.md) for the full guide (assumes zero Docker knowledge).
-
 ---
 
-## 📦 Installation
-
-Available on PyPI — install with one command:
+## 📦 Installation options
 
 ```bash
-pip install eduagent                    # Core (terminal chat + web)
-pip install 'eduagent[telegram]'        # + Telegram bot
+pip install eduagent                    # Core (terminal chat + web dashboard)
+pip install 'eduagent[telegram]'        # + Telegram bot for teacher and students
 pip install 'eduagent[voice]'           # + Voice note transcription
 pip install 'eduagent[all]'             # Everything
+
+# Requires Python 3.10+. Run: python --version
+# Don't have Python? Download at https://python.org/downloads
 ```
 
-> **Requires Python 3.10+.** Run `python --version` to check. If needed, [install Python](https://python.org/downloads).
+## 🔧 Which AI should I use?
 
-## 🔧 LLM Backend (choose one)
+EDUagent works with several AI providers. **You keep your own API key** — nothing goes through our servers.
 
-EDUagent works with any of these. You bring your own API key — nothing is shared with us.
+| Provider | Cost | How to get a key |
+|----------|------|-----------------|
+| **Anthropic (Claude)** — recommended | $5 free, then pay-as-you-go | [console.anthropic.com](https://console.anthropic.com) → API Keys |
+| **OpenAI (GPT-4o)** | Pay-as-you-go | [platform.openai.com](https://platform.openai.com) → API Keys |
+| **Ollama** — 100% free | Free (runs on your computer) | [ollama.com](https://ollama.com) — download and install |
 
-| Provider | Quality | Cost | Setup |
-|----------|---------|------|-------|
-| **Ollama** (recommended) | ★★★★★ | Free / ~$20/mo cloud | `eduagent config set-model ollama` |
-| **Anthropic** (Claude) | ★★★★★ | Pay per token | `export ANTHROPIC_API_KEY=sk-...` |
-| **OpenAI** (GPT-4o) | ★★★★ | Pay per token | `export OPENAI_API_KEY=sk-...` |
-
-```bash
-eduagent config set-model ollama      # Use local/cloud Ollama
-eduagent config set-model anthropic   # Use Claude
-eduagent config set-model openai      # Use GPT-4o
-```
+For most teachers, **Anthropic Claude** is the best balance of quality and cost. A typical month of daily use costs $2–5.
 
 ## 📋 Commands
 
