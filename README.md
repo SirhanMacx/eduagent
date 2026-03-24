@@ -201,7 +201,8 @@ eduagent config set-model openai      # Use GPT-4o
 | Command | What it does |
 |---------|-------------|
 | `eduagent chat` | Start terminal chat |
-| `eduagent bot --token TOKEN` | Start Telegram bot |
+| `eduagent bot --token TOKEN` | Start teacher Telegram bot |
+| `eduagent student-bot --token TOKEN` | Start student Telegram bot |
 | `eduagent serve` | Start web dashboard |
 | `eduagent ingest <path>` | Learn from your lesson plans |
 | `eduagent persona show` | See what EDUagent learned about you |
@@ -235,9 +236,12 @@ Delivery:
   api/server.py        → Web dashboard (FastAPI)
   cli.py               → Entry point (~100 lines)
 
-Security:
+Security & reliability:
   API keys stored in OS keychain (keyring) — never in config.json
   JSON repair via json-repair package for resilient LLM output parsing
+  Thread-safe SQLite with per-operation connections and context managers
+  SQL injection guards on all dynamic queries
+  CORS middleware + slowapi rate limiting on API endpoints
 ```
 
 ## ✅ Features
