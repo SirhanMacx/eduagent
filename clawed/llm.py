@@ -1,0 +1,390 @@
+"""Unified LLM client supporting Anthropic, OpenAI, and Ollama backends."""
+
+from __future__ import annotations
+
+import json
+import os
+from typing import Any, Optional, Type
+
+import httpx
+from pydantic import BaseModel, ValidationError
+
+from clawed.models import AppConfig, LLMProvider
+
+
+class LLMClient:
+    """Unified async LLM client for all supported backends."""
+
+    def __init__(self, config: Optional[AppConfig] = None):
+        self.config = config or AppConfig.load()
+
+    async def generate(
+        self,
+        prompt: str,
+        system: str = "",
+        temperature: float = 0.7,
+        max_tokens: int = 4096,
+    ) -> str:
+        """Generate text from the configured LLM backend.
+
+        In demo mode (no API key configured), returns a canned sample lesson
+        so teachers can try EDUagent without any LLM credentials.
+
+        Automatically injects workspace context (identity, soul, memory)
+        into the system prompt when available.
+        """
+        from clawed.demo import is_demo_mode
+
+        if is_demo_mode(config=self.config):
+            return self._demo_response(prompt)
+
+        # Inject workspace context into system prompt
+        system = self._enrich_system_prompt(system, prompt=prompt)
+
+        if self.config.provider == LLMProvider.ANTHROPIC:
+            return await self._anthropic(prompt, system, temperature, max_tokens)
+        elif self.config.provider == LLMProvider.OPENAI:
+            return await self._openai(prompt, system, temperature, max_tokens)
+        elif self.config.provider == LLMProvider.OLLAMA:
+            return await self._ollama(prompt, system, temperature, max_tokens)
+        raise ValueError(f"Unknown provider: {self.config.provider}")
+
+    @staticmethod
+    def _demo_response(prompt: str) -> str:
+        """Return a canned demo response based on prompt keywords."""
+        from clawed.demo import load_demo
+
+        prompt_lower = prompt.lower()
+        if "assessment" in prompt_lower or "dbq" in prompt_lower:
+            data = load_demo("assessment")
+        elif "unit" in prompt_lower:
+            data = load_demo("unit_plan")
+        elif "science" in prompt_lower:
+            data = load_demo("lesson_science_g6")
+        else:
+            data = load_demo("lesson_social_studies_g8")
+        return json.dumps(data, indent=2)
+
+    def _enrich_system_prompt(self, system: str, prompt: str = "") -> str:
+        """Append workspace context and improvement context to the system prompt.
+
+        This injects teacher identity, teaching philosophy, memory, and
+        today's notes so the LLM has full context about the teacher.
+        Additionally injects learned patterns from the feedback loop
+        (memory engine) so generation quality improves over time.
+        Fails silently if workspace is not initialized.
+
+        Args:
+            system: The current system prompt.
+            prompt: The user prompt text — used to detect the subject being
+                generated so multi-subject teachers get the right feedback.
+        """
+        try:
+            from clawed.workspace import inject_workspace_context
+
+            ws_context = inject_workspace_context()
+            if ws_context:
+                system = (system + ws_context) if system else ws_context
+        except Exception:
+            pass  # Workspace not available -- that's fine
+
+        # Inject improvement context from the memory engine (feedback loop).
+        # Detect subject from the prompt text so multi-subject teachers get
+        # correctly filtered feedback (not always subjects[0]).
+        try:
+            from clawed.memory_engine import build_improvement_context
+
+            subject = self._detect_subject_from_prompt(prompt)
+            improvement_ctx = build_improvement_context(subject=subject)
+            if improvement_ctx:
+                system = (system + "\n" + improvement_ctx) if system else improvement_ctx
+        except Exception:
+            pass  # Memory engine not available -- that's fine
+
+        return system
+
+    def _detect_subject_from_prompt(self, prompt: str) -> str:
+        """Detect the subject being generated from the prompt text.
+
+        Checks for explicit subject mentions, then falls back to
+        teacher_profile.subjects[0].
+        """
+        if not prompt:
+            return self._default_subject()
+
+        lower = prompt.lower()
+        # Check for explicit subject keywords in the prompt
+        subject_keywords = {
+            "history": "History",
+            "social studies": "Social Studies",
+            "science": "Science",
+            "biology": "Science",
+            "chemistry": "Science",
+            "physics": "Science",
+            "math": "Math",
+            "algebra": "Math",
+            "geometry": "Math",
+            "calculus": "Math",
+            "english": "ELA",
+            "ela": "ELA",
+            "language arts": "ELA",
+            "literature": "ELA",
+            "reading": "ELA",
+            "writing": "ELA",
+            "art": "Art",
+            "music": "Music",
+            "physical education": "PE",
+            "computer science": "Computer Science",
+            "spanish": "Foreign Language",
+            "french": "Foreign Language",
+        }
+        for keyword, subject in subject_keywords.items():
+            if keyword in lower:
+                return subject
+
+        return self._default_subject()
+
+    def _default_subject(self) -> str:
+        """Get the first subject from teacher profile, or empty string."""
+        if hasattr(self.config, "teacher_profile") and self.config.teacher_profile:
+            subjects = getattr(self.config.teacher_profile, "subjects", [])
+            return subjects[0] if subjects else ""
+        return ""
+
+    async def generate_json(
+        self,
+        prompt: str,
+        system: str = "",
+        temperature: float = 0.4,
+        max_tokens: int = 8192,
+    ) -> dict[str, Any]:
+        """Generate and parse a JSON response from the LLM."""
+        raw = await self.generate(prompt, system, temperature, max_tokens)
+        # Extract JSON from markdown code fences if present
+        cleaned = raw.strip()
+        if cleaned.startswith("```"):
+            lines = cleaned.split("\n")
+            # Drop first line (```json or ```) and last line (```)
+            lines = lines[1:]
+            if lines and lines[-1].strip() == "```":
+                lines = lines[:-1]
+            cleaned = "\n".join(lines)
+        # Step 1: try strict JSON parsing
+        try:
+            return json.loads(cleaned)
+        except json.JSONDecodeError:
+            pass
+
+        # Step 2: fall back to json_repair for truncated/malformed JSON
+        import json_repair
+
+        try:
+            result = json_repair.loads(cleaned)
+            if isinstance(result, (dict, list)):
+                return result
+        except Exception:
+            pass
+
+        # Step 3: raise a clear error with raw LLM output for debugging
+        preview = raw[:500] + ("..." if len(raw) > 500 else "")
+        raise ValueError(
+            f"LLM returned unparseable JSON. Raw output:\n{preview}"
+        )
+
+    async def safe_generate_json(
+        self,
+        prompt: str,
+        model_class: Type[BaseModel],
+        max_retries: int = 1,
+        **kwargs: Any,
+    ) -> BaseModel:
+        """Generate JSON and parse into a Pydantic model with automatic retry.
+
+        On validation failure, retries once with the error appended to the prompt.
+        On second failure, raises a clear RuntimeError (not a traceback).
+        """
+        for attempt in range(max_retries + 1):
+            raw = await self.generate_json(prompt, **kwargs)
+            try:
+                return model_class.model_validate(raw)
+            except ValidationError as e:
+                if attempt < max_retries:
+                    # Retry with error context
+                    error_msg = str(e)
+                    prompt = prompt + f"\n\nPREVIOUS ATTEMPT FAILED. Fix these errors:\n{error_msg}"
+                    continue
+                raise RuntimeError(
+                    f"Generation failed after {max_retries + 1} attempts. "
+                    f"The AI returned data that doesn't match the expected format. "
+                    f"Try again or use a different AI model."
+                ) from e
+
+    # ── Anthropic ────────────────────────────────────────────────────────
+
+    async def _anthropic(
+        self, prompt: str, system: str, temperature: float, max_tokens: int
+    ) -> str:
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        if not api_key:
+            raise EnvironmentError(
+                "ANTHROPIC_API_KEY not set. Export it or run: eduagent config set-model ollama"
+            )
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                body: dict[str, Any] = {
+                    "model": self.config.anthropic_model,
+                    "max_tokens": max_tokens,
+                    "temperature": temperature,
+                    "messages": [{"role": "user", "content": prompt}],
+                }
+                if system:
+                    body["system"] = system
+                resp = await client.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={
+                        "x-api-key": api_key,
+                        "anthropic-version": "2023-06-01",
+                        "content-type": "application/json",
+                    },
+                    json=body,
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                return data["content"][0]["text"]
+        except httpx.ConnectError:
+            raise ConnectionError(
+                "Could not connect to the Anthropic API.\n"
+                "Check your internet connection and try again."
+            )
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
+                raise EnvironmentError(
+                    "Invalid ANTHROPIC_API_KEY. Check your key at https://console.anthropic.com"
+                )
+            raise
+
+    # ── OpenAI ───────────────────────────────────────────────────────────
+
+    async def _openai(
+        self, prompt: str, system: str, temperature: float, max_tokens: int
+    ) -> str:
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if not api_key:
+            raise EnvironmentError(
+                "OPENAI_API_KEY not set. Export it or run: eduagent config set-model ollama"
+            )
+        messages: list[dict[str, str]] = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                resp = await client.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-type": "application/json",
+                    },
+                    json={
+                        "model": self.config.openai_model,
+                        "messages": messages,
+                        "temperature": temperature,
+                        "max_tokens": max_tokens,
+                    },
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                return data["choices"][0]["message"]["content"]
+        except httpx.ConnectError:
+            raise ConnectionError(
+                "Could not connect to the OpenAI API.\n"
+                "Check your internet connection and try again."
+            )
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
+                raise EnvironmentError(
+                    "Invalid OPENAI_API_KEY. Check your key at https://platform.openai.com"
+                )
+            raise
+
+    # ── Ollama ───────────────────────────────────────────────────────────
+
+    async def _ollama(
+        self, prompt: str, system: str, temperature: float, max_tokens: int
+    ) -> str:
+        # Support both local Ollama (no auth) and Ollama Cloud (Bearer token)
+        api_key = getattr(self.config, "ollama_api_key", None) or os.environ.get("OLLAMA_API_KEY")
+        headers = {}
+        if api_key and api_key != "ollama":
+            headers["Authorization"] = f"Bearer {api_key}"
+
+        # Ollama Cloud uses OpenAI-compatible API; local uses /api/generate
+        base = self.config.ollama_base_url.rstrip("/")
+        is_cloud = "api.ollama.com" in base or "ollama.com" in base
+        model = self.config.ollama_model
+
+        try:
+            if is_cloud:
+                # Use OpenAI-compatible endpoint for cloud
+                messages = []
+                if system:
+                    messages.append({"role": "system", "content": system})
+                messages.append({"role": "user", "content": prompt})
+                async with httpx.AsyncClient(timeout=300.0) as client:
+                    resp = await client.post(
+                        f"{base}/v1/chat/completions",
+                        headers=headers,
+                        json={
+                            "model": model,
+                            "messages": messages,
+                            "temperature": temperature,
+                            "max_tokens": max_tokens,
+                            "stream": False,
+                        },
+                    )
+                    if resp.status_code == 404:
+                        raise ConnectionError(
+                            f"Ollama model '{model}' not found on the cloud.\n"
+                            f"Check available models at https://ollama.com/library"
+                        )
+                    resp.raise_for_status()
+                    data = resp.json()
+                    return data["choices"][0]["message"]["content"]
+            else:
+                # Local Ollama
+                full_prompt = f"{system}\n\n{prompt}" if system else prompt
+                async with httpx.AsyncClient(timeout=300.0) as client:
+                    resp = await client.post(
+                        f"{base}/api/generate",
+                        headers=headers,
+                        json={
+                            "model": model,
+                            "prompt": full_prompt,
+                            "stream": False,
+                            "options": {
+                                "temperature": temperature,
+                                "num_predict": max_tokens,
+                            },
+                        },
+                    )
+                    if resp.status_code == 404:
+                        # Parse Ollama's error body for details
+                        try:
+                            err_body = resp.json()
+                            err_msg = err_body.get("error", "")
+                        except Exception:
+                            err_msg = ""
+                        raise ConnectionError(
+                            f"Ollama model '{model}' not installed.\n"
+                            f"Run: ollama pull {model}"
+                            + (f"\n\nOllama says: {err_msg}" if err_msg else "")
+                        )
+                    resp.raise_for_status()
+                    data = resp.json()
+                    return data["response"]
+        except httpx.ConnectError:
+            raise ConnectionError(
+                "Could not connect to Ollama.\n"
+                "Install from https://ollama.com and make sure it's running."
+            )
