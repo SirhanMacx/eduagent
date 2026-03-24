@@ -421,22 +421,45 @@ def build_improvement_context(
 
     parts: list[str] = []
 
+    # Subject aliases for cross-matching (ELA ↔ English, History ↔ Social Studies)
+    _subject_groups: list[set[str]] = [
+        {"ela", "english", "language arts", "reading", "writing", "literature"},
+        {"history", "social studies", "civics", "government", "geography"},
+        {"science", "biology", "chemistry", "physics", "earth science"},
+        {"math", "mathematics", "algebra", "geometry", "calculus", "statistics"},
+        {"art", "visual arts", "studio art"},
+        {"music", "band", "orchestra", "choir"},
+        {"pe", "physical education", "health"},
+        {"cs", "computer science", "programming", "coding"},
+        {"foreign language", "spanish", "french", "mandarin", "latin", "german"},
+    ]
+
+    def _subjects_match(a: str, b: str) -> bool:
+        """Check if two subject names refer to the same subject family."""
+        a_lower, b_lower = a.lower(), b.lower()
+        if a_lower == b_lower or a_lower in b_lower or b_lower in a_lower:
+            return True
+        for group in _subject_groups:
+            if any(alias in a_lower or a_lower in alias for alias in group):
+                if any(alias in b_lower or b_lower in alias for alias in group):
+                    return True
+        return False
+
     def _filter_by_subject(entries: list[str], subj: str) -> list[str]:
         """Filter entries to those relevant to the given subject.
 
-        Entries tagged with [Subject] are only included if they match.
+        Entries tagged with [Subject] are only included if they match
+        (using alias groups: ELA=English, History=Social Studies, etc.).
         Entries without a tag are always included (they're universal).
         """
         if not subj:
             return entries
-        subj_lower = subj.lower()
         result = []
         for e in entries:
-            # Check if entry has a subject tag like [Science] or [History]
             tag_match = re.search(r"\[([^\]]+)\]", e)
             if tag_match:
-                tag = tag_match.group(1).lower()
-                if subj_lower in tag or tag in subj_lower:
+                tag = tag_match.group(1)
+                if _subjects_match(subj, tag):
                     result.append(e)
                 # Skip entries tagged for other subjects
             else:

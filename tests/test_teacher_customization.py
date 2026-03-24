@@ -564,13 +564,10 @@ class TestGapsCommand:
         mock_cfg.teacher_profile.subjects = ["Math"]
         mock_cfg.teacher_profile.grade_levels = ["8"]
 
-        # Mock identify_curriculum_gaps as a plain function (not async) to
-        # prevent creating an unawaited coroutine when asyncio.run is mocked.
+        # Mock asyncio.run to raise immediately, preventing the async
+        # identify_curriculum_gaps coroutine from leaking.
         with patch("eduagent.models.AppConfig.load", return_value=mock_cfg):
-            with patch(
-                "eduagent.curriculum_map.CurriculumMapper.identify_curriculum_gaps",
-                side_effect=Exception("No LLM"),
-            ):
+            with patch("eduagent.tg.asyncio.run", side_effect=Exception("No LLM")):
                 bot._cmd_gaps(100, _msg("/gaps"), "")
 
         bot.api.send_chat_action.assert_called_with(100, "typing")

@@ -341,25 +341,32 @@ def _detect_intent(text: str) -> tuple[str | None, str]:
     ]):
         return "model", text
 
-    # Schedule intent — match broad range of natural language requests
-    if any(phrase in lower for phrase in [
-        "remind me", "send me", "morning reminder", "stop reminder",
-        "cancel reminder", "what's scheduled", "whats scheduled",
+    # Schedule intent — requires a scheduling VERB + task context.
+    # Must not hijack normal messages like "what should I teach every Friday?"
+    _schedule_verbs = [
+        "remind me", "send me a digest", "send me a report", "send me student",
+        "send me feedback", "send me a summary",
+        "morning reminder", "stop reminder", "cancel reminder",
+        "what's scheduled", "whats scheduled", "my schedule",
         "cancel all reminder",
-        # Direct task name references
-        "morning prep", "weekly plan", "student digest",
-        "feedback digest", "memory compress",
-        # Action + time patterns
-        "every sunday", "every monday", "every tuesday", "every wednesday",
-        "every thursday", "every friday", "every saturday",
-        "at 7am", "at 8am", "at 6am", "at 7pm", "at 8pm",
-        # Enable/disable language
-        "stop morning", "stop weekly", "stop student", "stop feedback",
-        "enable morning", "enable weekly", "enable student", "enable feedback",
-        "disable morning", "disable weekly", "disable student", "disable feedback",
-        "turn on morning", "turn off morning",
-        "turn on weekly", "turn off weekly",
-    ]):
+    ]
+    # Enable/disable/stop + specific task name = scheduling
+    _schedule_actions = [
+        "stop morning prep", "stop weekly plan", "stop student digest",
+        "stop feedback digest", "stop memory compress",
+        "enable morning prep", "enable weekly plan", "enable student digest",
+        "enable feedback digest",
+        "disable morning prep", "disable weekly plan", "disable student digest",
+        "disable feedback digest",
+        "turn on morning prep", "turn off morning prep",
+        "turn on weekly plan", "turn off weekly plan",
+        "set morning prep", "set weekly plan", "set student digest",
+        "set feedback digest",
+    ]
+    if any(phrase in lower for phrase in _schedule_verbs + _schedule_actions):
+        return "schedule", text
+    # Also catch "morning prep at <time>" but NOT bare "every friday"
+    if re.search(r"(morning prep|weekly plan|student digest|feedback digest)\s+(at|to)\b", lower):
         return "schedule", text
 
     return None, text  # Fall through to LLM
