@@ -246,9 +246,17 @@ def rate_lesson(teacher_id: str, lesson_id: str, rating: int, notes: str = "") -
                 lesson_json = row2["lesson_json"]
 
         if lesson_json:
-            from eduagent.models import DailyLesson
+            from eduagent.models import AppConfig, DailyLesson
             lesson_obj = DailyLesson.model_validate_json(lesson_json)
-            memory_process(lesson_obj, rating, notes)
+            # Resolve subject from teacher profile for cross-subject filtering
+            subject = ""
+            try:
+                cfg = AppConfig.load()
+                if cfg.teacher_profile and cfg.teacher_profile.subjects:
+                    subject = cfg.teacher_profile.subjects[0]
+            except Exception:
+                pass
+            memory_process(lesson_obj, rating, notes, subject=subject)
     except Exception as exc:
         # Memory engine is best-effort -- never block rating
         logger.debug("Memory engine feedback processing failed: %s", exc)

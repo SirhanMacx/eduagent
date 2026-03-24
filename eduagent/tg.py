@@ -777,7 +777,7 @@ class EduAgentTelegramBot:
                 # Feed the memory engine for prompt-level improvement
                 try:
                     from eduagent.memory_engine import process_feedback as memory_process
-                    from eduagent.models import DailyLesson
+                    from eduagent.models import AppConfig, DailyLesson
                     from eduagent.state import _get_conn, init_db
                     init_db()
                     with _get_conn() as _fb_conn:
@@ -787,7 +787,14 @@ class EduAgentTelegramBot:
                         ).fetchone()
                     if _fb_row and _fb_row["lesson_json"]:
                         _fb_lesson = DailyLesson.model_validate_json(_fb_row["lesson_json"])
-                        memory_process(_fb_lesson, rating)
+                        _subject = ""
+                        try:
+                            _cfg = AppConfig.load()
+                            if _cfg.teacher_profile and _cfg.teacher_profile.subjects:
+                                _subject = _cfg.teacher_profile.subjects[0]
+                        except Exception:
+                            pass
+                        memory_process(_fb_lesson, rating, subject=_subject)
                 except Exception:
                     pass  # Memory engine is best-effort
             else:
