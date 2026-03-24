@@ -255,7 +255,7 @@ def rate_lesson(teacher_id: str, lesson_id: str, rating: int, notes: str = "") -
             try:
                 with _get_conn() as conn3:
                     unit_row = conn3.execute(
-                        "SELECT u.subject FROM units u "
+                        "SELECT u.subject FROM generated_units u "
                         "JOIN generated_lessons l ON l.unit_id = u.id "
                         "WHERE l.id = ?",
                         (lesson_id,),
@@ -274,6 +274,9 @@ def rate_lesson(teacher_id: str, lesson_id: str, rating: int, notes: str = "") -
                 except Exception:
                     pass
             memory_process(lesson_obj, rating, notes, subject=subject)
+            # Track lesson metadata for rule-based quality insights
+            from eduagent.memory_engine import track_lesson_metadata
+            track_lesson_metadata(lesson_obj, rating)
     except Exception as exc:
         # Memory engine is best-effort -- never block rating
         logger.debug("Memory engine feedback processing failed: %s", exc)

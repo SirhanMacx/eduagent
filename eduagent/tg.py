@@ -341,11 +341,24 @@ def _detect_intent(text: str) -> tuple[str | None, str]:
     ]):
         return "model", text
 
-    # Schedule intent
+    # Schedule intent — match broad range of natural language requests
     if any(phrase in lower for phrase in [
         "remind me", "send me", "morning reminder", "stop reminder",
         "cancel reminder", "what's scheduled", "whats scheduled",
         "cancel all reminder",
+        # Direct task name references
+        "morning prep", "weekly plan", "student digest",
+        "feedback digest", "memory compress",
+        # Action + time patterns
+        "every sunday", "every monday", "every tuesday", "every wednesday",
+        "every thursday", "every friday", "every saturday",
+        "at 7am", "at 8am", "at 6am", "at 7pm", "at 8pm",
+        # Enable/disable language
+        "stop morning", "stop weekly", "stop student", "stop feedback",
+        "enable morning", "enable weekly", "enable student", "enable feedback",
+        "disable morning", "disable weekly", "disable student", "disable feedback",
+        "turn on morning", "turn off morning",
+        "turn on weekly", "turn off weekly",
     ]):
         return "schedule", text
 
@@ -1012,7 +1025,7 @@ class EduAgentTelegramBot:
         self.api.send_chat_action(chat_id, "typing")
 
         try:
-            from eduagent.curriculum_map import CurriculumMapEngine
+            from eduagent.curriculum_map import CurriculumMapper
             from eduagent.models import AppConfig, TeacherPersona
 
             cfg = AppConfig.load()
@@ -1059,7 +1072,7 @@ class EduAgentTelegramBot:
             except (SystemExit, Exception):
                 persona = TeacherPersona()
 
-            engine = CurriculumMapEngine(cfg)
+            engine = CurriculumMapper(cfg)
             gaps = asyncio.run(
                 engine.identify_curriculum_gaps(existing, standards, persona)
             )
@@ -1526,7 +1539,7 @@ class EduAgentTelegramBot:
                         try:
                             with _get_conn() as _subj_conn:
                                 _unit_row = _subj_conn.execute(
-                                    "SELECT u.subject FROM units u "
+                                    "SELECT u.subject FROM generated_units u "
                                     "JOIN generated_lessons l ON l.unit_id = u.id "
                                     "WHERE l.id = ?",
                                     (lesson_id,),

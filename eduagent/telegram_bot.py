@@ -484,7 +484,7 @@ class EduAgentBot:
                             try:
                                 with _get_conn() as _subj_conn:
                                     _unit_row = _subj_conn.execute(
-                                        "SELECT u.subject FROM units u "
+                                        "SELECT u.subject FROM generated_units u "
                                         "JOIN generated_lessons l ON l.unit_id = u.id "
                                         "WHERE l.id = ?",
                                         (lesson_id,),

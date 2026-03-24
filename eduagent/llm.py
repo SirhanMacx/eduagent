@@ -39,7 +39,7 @@ class LLMClient:
             return self._demo_response(prompt)
 
         # Inject workspace context into system prompt
-        system = self._enrich_system_prompt(system)
+        system = self._enrich_system_prompt(system, prompt=prompt)
 
         if self.config.provider == LLMProvider.ANTHROPIC:
             return await self._anthropic(prompt, system, temperature, max_tokens)
@@ -65,7 +65,7 @@ class LLMClient:
             data = load_demo("lesson_social_studies_g8")
         return json.dumps(data, indent=2)
 
-    def _enrich_system_prompt(self, system: str) -> str:
+    def _enrich_system_prompt(self, system: str, prompt: str = "") -> str:
         """Append workspace context and improvement context to the system prompt.
 
         This injects teacher identity, teaching philosophy, memory, and
@@ -73,6 +73,11 @@ class LLMClient:
         Additionally injects learned patterns from the feedback loop
         (memory engine) so generation quality improves over time.
         Fails silently if workspace is not initialized.
+
+        Args:
+            system: The current system prompt.
+            prompt: The user prompt text — used to detect the subject being
+                generated so multi-subject teachers get the right feedback.
         """
         try:
             from eduagent.workspace import inject_workspace_context
@@ -84,14 +89,12 @@ class LLMClient:
             pass  # Workspace not available -- that's fine
 
         # Inject improvement context from the memory engine (feedback loop).
-        # Extract subject/topic from persona config to filter cross-subject patterns.
+        # Detect subject from the prompt text so multi-subject teachers get
+        # correctly filtered feedback (not always subjects[0]).
         try:
             from eduagent.memory_engine import build_improvement_context
 
-            subject = ""
-            if hasattr(self.config, "teacher_profile") and self.config.teacher_profile:
-                subjects = getattr(self.config.teacher_profile, "subjects", [])
-                subject = subjects[0] if subjects else ""
+            subject = self._detect_subject_from_prompt(prompt)
             improvement_ctx = build_improvement_context(subject=subject)
             if improvement_ctx:
                 system = (system + "\n" + improvement_ctx) if system else improvement_ctx
@@ -99,6 +102,54 @@ class LLMClient:
             pass  # Memory engine not available -- that's fine
 
         return system
+
+    def _detect_subject_from_prompt(self, prompt: str) -> str:
+        """Detect the subject being generated from the prompt text.
+
+        Checks for explicit subject mentions, then falls back to
+        teacher_profile.subjects[0].
+        """
+        if not prompt:
+            return self._default_subject()
+
+        lower = prompt.lower()
+        # Check for explicit subject keywords in the prompt
+        subject_keywords = {
+            "history": "History",
+            "social studies": "Social Studies",
+            "science": "Science",
+            "biology": "Science",
+            "chemistry": "Science",
+            "physics": "Science",
+            "math": "Math",
+            "algebra": "Math",
+            "geometry": "Math",
+            "calculus": "Math",
+            "english": "ELA",
+            "ela": "ELA",
+            "language arts": "ELA",
+            "literature": "ELA",
+            "reading": "ELA",
+            "writing": "ELA",
+            "art": "Art",
+            "music": "Music",
+            "physical education": "PE",
+            "computer science": "Computer Science",
+            "spanish": "Foreign Language",
+            "french": "Foreign Language",
+        }
+        for keyword, subject in subject_keywords.items():
+            if keyword in lower:
+                return subject
+
+        return self._default_subject()
+
+    def _default_subject(self) -> str:
+        """Get the first subject from teacher profile, or empty string."""
+        if hasattr(self.config, "teacher_profile") and self.config.teacher_profile:
+            subjects = getattr(self.config.teacher_profile, "subjects", [])
+            return subjects[0] if subjects else ""
+        return ""
 
     async def generate_json(
         self,
