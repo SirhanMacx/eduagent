@@ -457,20 +457,31 @@ class EduAgentBot:
                 if success:
                     stars = "★" * rating + "☆" * (5 - rating)
                     await query.edit_message_text(f"Thanks! Rated {stars} ({rating}/5)")
-                    # Log rating to workspace
+                    # Log rating to workspace + feed memory engine
                     try:
-                        from eduagent.workspace import append_daily_note, update_memory
+                        from eduagent.workspace import append_daily_note
                         append_daily_note(
                             f"Lesson {lesson_id[:8]} rated {rating}/5",
                             category="feedback",
                         )
-                        if rating == 5:
-                            update_memory(
-                                "Lessons That Got 5-Star Ratings",
-                                f"Lesson {lesson_id[:8]} (via Telegram)",
-                            )
                     except Exception:
                         pass  # Workspace logging is best-effort
+                    # Feed the memory engine for prompt-level improvement
+                    try:
+                        from eduagent.memory_engine import process_feedback as memory_process
+                        from eduagent.state import _get_conn, init_db
+                        from eduagent.models import DailyLesson
+                        init_db()
+                        with _get_conn() as _fb_conn:
+                            _fb_row = _fb_conn.execute(
+                                "SELECT lesson_json FROM generated_lessons WHERE id = ?",
+                                (lesson_id,),
+                            ).fetchone()
+                        if _fb_row and _fb_row["lesson_json"]:
+                            _fb_lesson = DailyLesson.model_validate_json(_fb_row["lesson_json"])
+                            memory_process(_fb_lesson, rating)
+                    except Exception:
+                        pass  # Memory engine is best-effort
                 else:
                     await query.edit_message_text("Couldn't find that lesson to rate.")
             except Exception as e:

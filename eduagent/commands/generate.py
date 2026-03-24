@@ -1330,44 +1330,108 @@ def improve(
     days: int = typer.Option(
         7, "--days", "-d", help="Feedback window in days"
     ),
+    analyze: bool = typer.Option(
+        False, "--analyze", help="Run full analysis of feedback and update memory"
+    ),
+    reset: bool = typer.Option(
+        False, "--reset", help="Clear all learned patterns (with confirmation)"
+    ),
 ):
-    """Run one cycle of prompt improvement based on teacher feedback."""
-    from eduagent.database import Database
-    from eduagent.improver import improve_prompts
+    """Show improvement stats, recent patterns, and memory contents.
 
-    db = Database()
+    With --analyze: run a full analysis of recent feedback and update memory.
+    With --reset: clear all learned patterns (requires confirmation).
+    Without flags: show current improvement stats and learned patterns.
+    """
+    from eduagent.memory_engine import get_improvement_stats, reset_memory
 
-    with _safe_progress(console=console) as progress:
-        task = progress.add_task(
-            "Analyzing feedback and improving prompts...", total=None
+    # Handle --reset
+    if reset:
+        confirm = typer.confirm(
+            "This will clear ALL learned patterns from memory.md. Are you sure?"
         )
-        result = _run_async(improve_prompts(db, feedback_window_days=days))
-        progress.update(task, description="Done!")
+        if confirm:
+            reset_memory(confirm=True)
+            console.print("[yellow]Memory reset to default template.[/yellow]")
+        else:
+            console.print("[dim]Reset cancelled.[/dim]")
+        return
 
-    db.close()
+    # Handle --analyze (existing prompt improvement + memory engine)
+    if analyze:
+        from eduagent.database import Database
+        from eduagent.improver import improve_prompts
 
-    status = result.get("status", "unknown")
-    message = result.get("message", "")
+        db = Database()
 
-    if status == "no_feedback":
-        console.print(f"[yellow]{message}[/yellow]")
-    elif status == "good":
-        console.print(f"[green]{message}[/green]")
-    elif status == "improved":
-        console.print(
-            Panel(
-                f"[green]{message}[/green]\n"
-                f"[bold]Prompt type:[/bold]"
-                f" {result.get('prompt_type', '')}\n"
-                f"[bold]New version:[/bold]"
-                f" {result.get('new_version', '')}\n"
-                f"[bold]Avg rating:[/bold]"
-                f" {result.get('feedback_summary', {}).get('avg_rating', '')}/5",
-                title="Prompt Improvement",
+        with _safe_progress(console=console) as progress:
+            task = progress.add_task(
+                "Analyzing feedback and improving prompts...", total=None
             )
+            result = _run_async(improve_prompts(db, feedback_window_days=days))
+            progress.update(task, description="Done!")
+
+        db.close()
+
+        status = result.get("status", "unknown")
+        message = result.get("message", "")
+
+        if status == "no_feedback":
+            console.print(f"[yellow]{message}[/yellow]")
+        elif status == "good":
+            console.print(f"[green]{message}[/green]")
+        elif status == "improved":
+            console.print(
+                Panel(
+                    f"[green]{message}[/green]\n"
+                    f"[bold]Prompt type:[/bold]"
+                    f" {result.get('prompt_type', '')}\n"
+                    f"[bold]New version:[/bold]"
+                    f" {result.get('new_version', '')}\n"
+                    f"[bold]Avg rating:[/bold]"
+                    f" {result.get('feedback_summary', {}).get('avg_rating', '')}/5",
+                    title="Prompt Improvement",
+                )
+            )
+        else:
+            console.print(f"[dim]{message}[/dim]")
+        return
+
+    # Default: show improvement stats and learned patterns
+    stats = get_improvement_stats()
+
+    # Build the stats table
+    table = Table(title="Improvement Stats")
+    table.add_column("Metric", style="bold")
+    table.add_column("Value")
+
+    table.add_row("Total lessons rated", str(stats["total_rated"]))
+    avg = f"{stats['avg_rating']:.1f}/5" if stats["avg_rating"] > 0 else "--"
+    table.add_row("Average rating", avg)
+    table.add_row("Rating trend", stats["trend"])
+    table.add_row("Total patterns learned", str(stats["total_patterns"]))
+    table.add_row("  What works", str(stats["what_works_count"]))
+    table.add_row("  What to avoid", str(stats["what_to_avoid_count"]))
+    table.add_row("  Structural prefs", str(stats["structural_count"]))
+    table.add_row("  Topic notes", str(stats["topic_notes_count"]))
+    console.print(table)
+
+    # Show recent patterns
+    if stats["what_works"]:
+        console.print("\n[green bold]Recent 'What Works' patterns:[/green bold]")
+        for entry in stats["what_works"]:
+            console.print(f"  [green]+[/green] {entry}")
+
+    if stats["what_to_avoid"]:
+        console.print("\n[red bold]Recent 'What to Avoid' patterns:[/red bold]")
+        for entry in stats["what_to_avoid"]:
+            console.print(f"  [red]-[/red] {entry}")
+
+    if stats["total_patterns"] == 0:
+        console.print(
+            "\n[dim]No patterns learned yet. "
+            "Generate and rate some lessons to start the feedback loop.[/dim]"
         )
-    else:
-        console.print(f"[dim]{message}[/dim]")
 
 
 # ── Course command ───────────────────────────────────────────────────

@@ -67,10 +67,12 @@ class LLMClient:
 
     @staticmethod
     def _enrich_system_prompt(system: str) -> str:
-        """Append workspace context to the system prompt if available.
+        """Append workspace context and improvement context to the system prompt.
 
         This injects teacher identity, teaching philosophy, memory, and
         today's notes so the LLM has full context about the teacher.
+        Additionally injects learned patterns from the feedback loop
+        (memory engine) so generation quality improves over time.
         Fails silently if workspace is not initialized.
         """
         try:
@@ -78,9 +80,20 @@ class LLMClient:
 
             ws_context = inject_workspace_context()
             if ws_context:
-                return (system + ws_context) if system else ws_context
+                system = (system + ws_context) if system else ws_context
         except Exception:
             pass  # Workspace not available -- that's fine
+
+        # Inject improvement context from the memory engine (feedback loop)
+        try:
+            from eduagent.memory_engine import build_improvement_context
+
+            improvement_ctx = build_improvement_context()
+            if improvement_ctx:
+                system = (system + "\n" + improvement_ctx) if system else improvement_ctx
+        except Exception:
+            pass  # Memory engine not available -- that's fine
+
         return system
 
     async def generate_json(

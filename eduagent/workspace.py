@@ -154,17 +154,25 @@ def generate_soul(persona: TeacherPersona, config: Optional[AppConfig] = None) -
 _DEFAULT_MEMORY = """\
 # Teaching Memory
 
-## Lessons That Got 5-Star Ratings
-*(Nothing yet -- keep teaching!)*
+## What Works (from 5-star lessons)
+*(Patterns from your highest-rated lessons appear here automatically.)*
+
+## What to Avoid (from 1-2-star lessons)
+*(Patterns from your lowest-rated lessons appear here automatically.)*
+
+## Structural Preferences
+*(How you prefer lessons structured -- learned from your edits.)*
+
+## Topic-Specific Notes
+*(What works for specific subjects/topics.)*
 
 ## Common Student Questions
 *(Patterns will appear here as students interact.)*
 
-## Curriculum Insights
-*(Notes about pacing, sequencing, and what works.)*
-
-## Things to Improve
-*(Captured from low-rated lessons and feedback.)*
+## Generation Statistics
+- Total lessons rated: 0
+- Average rating: --
+- Rating trend: --
 """
 
 
@@ -202,8 +210,11 @@ def update_memory(key: str, value: str) -> None:
                 if (
                     stripped.startswith(placeholder)
                     or stripped.startswith("*(Patterns will")
+                    or stripped.startswith("*(Patterns from")
                     or stripped.startswith("*(Notes about")
                     or stripped.startswith("*(Captured from")
+                    or stripped.startswith("*(How you prefer")
+                    or stripped.startswith("*(What works for")
                 ):
                     new_lines.append(f"- {value}")
                     inserted = True

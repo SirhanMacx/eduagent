@@ -777,6 +777,22 @@ class EduAgentTelegramBot:
                     chat_id, message_id,
                     f"Thanks! Rated {stars} ({rating}/5)",
                 )
+                # Feed the memory engine for prompt-level improvement
+                try:
+                    from eduagent.memory_engine import process_feedback as memory_process
+                    from eduagent.state import _get_conn, init_db
+                    from eduagent.models import DailyLesson
+                    init_db()
+                    with _get_conn() as _fb_conn:
+                        _fb_row = _fb_conn.execute(
+                            "SELECT lesson_json FROM generated_lessons WHERE id = ?",
+                            (lesson_id,),
+                        ).fetchone()
+                    if _fb_row and _fb_row["lesson_json"]:
+                        _fb_lesson = DailyLesson.model_validate_json(_fb_row["lesson_json"])
+                        memory_process(_fb_lesson, rating)
+                except Exception:
+                    pass  # Memory engine is best-effort
             else:
                 self.api.edit_message_text(
                     chat_id, message_id,

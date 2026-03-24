@@ -211,7 +211,7 @@ async def _task_weekly_plan() -> str:
 
 
 async def _task_feedback_digest() -> str:
-    """Feedback digest: summarize today's ratings."""
+    """Feedback digest: summarize today's ratings and update the memory engine."""
     from eduagent.workspace import append_daily_note
 
     try:
@@ -227,6 +227,19 @@ async def _task_feedback_digest() -> str:
         summary = f"Feedback digest: {total} ratings today, avg {avg}/5."
     except Exception as exc:
         summary = f"Feedback digest: could not analyze ({exc})"
+
+    # Update memory engine stats
+    try:
+        from eduagent.memory_engine import get_improvement_stats
+
+        stats = get_improvement_stats()
+        if stats["total_rated"] > 0:
+            summary += (
+                f" Memory engine: {stats['total_patterns']} patterns learned, "
+                f"avg {stats['avg_rating']}/5, trend: {stats['trend']}."
+            )
+    except Exception as exc:
+        logger.debug("Memory engine stats failed: %s", exc)
 
     append_daily_note(summary, category="feedback-digest")
     logger.info("feedback-digest: %s", summary)

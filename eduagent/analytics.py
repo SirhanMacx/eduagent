@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from eduagent.state import _get_conn, init_db
+
+logger = logging.getLogger(__name__)
 
 
 def average_rating_by_subject(teacher_id: str) -> dict[str, float]:
@@ -227,5 +230,27 @@ def rate_lesson(teacher_id: str, lesson_id: str, rating: int, notes: str = "") -
     from eduagent.improver import queue_low_rated_for_improvement
 
     queue_low_rated_for_improvement(rating, lesson_id, teacher_id)
+
+    # Feed into the memory engine for prompt-level RLHF
+    try:
+        from eduagent.memory_engine import process_feedback as memory_process
+
+        # Load the lesson data to extract patterns
+        lesson_json = None
+        with _get_conn() as conn2:
+            row2 = conn2.execute(
+                "SELECT lesson_json FROM generated_lessons WHERE id = ?",
+                (lesson_id,),
+            ).fetchone()
+            if row2:
+                lesson_json = row2["lesson_json"]
+
+        if lesson_json:
+            from eduagent.models import DailyLesson
+            lesson_obj = DailyLesson.model_validate_json(lesson_json)
+            memory_process(lesson_obj, rating, notes)
+    except Exception as exc:
+        # Memory engine is best-effort -- never block rating
+        logger.debug("Memory engine feedback processing failed: %s", exc)
 
     return True
