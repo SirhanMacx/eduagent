@@ -252,7 +252,8 @@ class Database:
         uid = self._new_id()
         with self._connect() as conn:
             conn.execute(
-                "INSERT INTO units (id, teacher_id, title, subject, grade_level, topic, unit_json) VALUES (?,?,?,?,?,?,?)",
+                "INSERT INTO units (id, teacher_id, title, subject, grade_level, topic, unit_json)"
+                " VALUES (?,?,?,?,?,?,?)",
                 (uid, teacher_id, title, subject, grade_level, topic, unit_json),
             )
         return uid
@@ -490,8 +491,10 @@ class Database:
     ) -> None:
         with self._connect() as conn:
             conn.execute(
-                """INSERT INTO school_teachers (school_id, teacher_id, role, department) VALUES (?,?,?,?)
-                   ON CONFLICT(school_id, teacher_id) DO UPDATE SET role=excluded.role, department=excluded.department""",
+                "INSERT INTO school_teachers (school_id, teacher_id, role, department)"
+                " VALUES (?,?,?,?)"
+                " ON CONFLICT(school_id, teacher_id)"
+                " DO UPDATE SET role=excluded.role, department=excluded.department",
                 (school_id, teacher_id, role, department),
             )
 

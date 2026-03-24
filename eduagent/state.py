@@ -23,13 +23,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
+from eduagent.models import DailyLesson, TeacherPersona, UnitPlan
+
 logger = logging.getLogger(__name__)
 
 # Pattern for validating migration identifiers: alphanumeric, underscore,
 # space, parentheses, single-quotes, and periods only.
 _SAFE_SQL_IDENTIFIER_RE = re.compile(r"^[A-Za-z0-9_ ()'.\[\]]+$")
-
-from eduagent.models import DailyLesson, TeacherPersona, UnitPlan
 
 # Default data directory
 DEFAULT_DATA_DIR = Path.home() / ".eduagent"

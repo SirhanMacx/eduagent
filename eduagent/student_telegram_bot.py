@@ -12,7 +12,10 @@ from __future__ import annotations
 import asyncio
 import logging
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from eduagent.bot_state import StudentBotStateStore
 
 logger = logging.getLogger(__name__)
 

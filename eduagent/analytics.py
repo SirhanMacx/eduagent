@@ -159,7 +159,9 @@ def get_teacher_stats(teacher_id: str) -> dict[str, Any]:
         ).fetchone()["c"]
 
         avg_rating_row = conn.execute(
-            "SELECT AVG(rating) as avg FROM generated_lessons WHERE teacher_id = ? AND rating IS NOT NULL", (teacher_id,)
+            "SELECT AVG(rating) as avg FROM generated_lessons"
+            " WHERE teacher_id = ? AND rating IS NOT NULL",
+            (teacher_id,),
         ).fetchone()
         overall_avg = round(avg_rating_row["avg"], 2) if avg_rating_row["avg"] else 0.0
 

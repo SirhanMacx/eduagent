@@ -60,7 +60,7 @@ class SkillLibrary:
             return
 
         try:
-            import yaml
+            import yaml  # noqa: F401 — checked here for availability, used in _parse_yaml_skill
         except ImportError:
             logger.warning(
                 "pyyaml is not installed — custom YAML skills will not be loaded. "

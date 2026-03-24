@@ -13,7 +13,10 @@ import asyncio
 import enum
 import logging
 from pathlib import Path
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
+
+if TYPE_CHECKING:
+    from eduagent.bot_state import BotStateStore
 
 logger = logging.getLogger(__name__)
 
