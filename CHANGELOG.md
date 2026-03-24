@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.1] - 2026-03-24
+
+### Added
+- Background task queue (`eduagent/task_queue.py`) — submit long-running generation jobs (lessons, units, worksheets, assessments) and check back later
+- CLI commands: `eduagent queue submit`, `eduagent queue status`, `eduagent queue list`, `eduagent queue worker`
+- 6 new subject skills (Art, Music, PE, CS, Health, Economics)
+- Custom YAML skill plugin system
+- Persistent bot state across restarts
+- Windows UTF-8 compatibility improvements
+
+### Fixed
+- Resolved all ruff lint issues (line lengths, unused imports, type annotations)
+- Added `apscheduler` to dev dependencies
+- Pinned dependency versions for stability
+
 ## [0.1.0] - 2026-03-23
 
 ### Added
