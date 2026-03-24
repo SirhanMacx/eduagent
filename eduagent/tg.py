@@ -848,19 +848,35 @@ class EduAgentTelegramBot:
     # ── LLM call helper ───────────────────────────────────────────────
 
     def _llm_call(self, text: str, teacher_id: str) -> str:
-        """Call the LLM with one retry on failure."""
+        """Call the LLM with one retry on failure.
+
+        Runs in a thread to avoid blocking the Telegram polling loop.
+        If the call takes too long (>120s), times out gracefully.
+        """
+        from concurrent.futures import ThreadPoolExecutor
+        from concurrent.futures import TimeoutError as FutureTimeout
+
         from eduagent.openclaw_plugin import handle_message as process
 
-        try:
-            return asyncio.run(process(text, teacher_id=teacher_id))
-        except Exception as first_err:
-            _log_error(first_err)
-            logger.warning("First attempt failed: %s, retrying...", first_err)
-            time.sleep(1)
+        def _run() -> str:
             try:
                 return asyncio.run(process(text, teacher_id=teacher_id))
-            except Exception as retry_err:
-                _log_error(retry_err)
+            except Exception as first_err:
+                _log_error(first_err)
+                logger.warning("First attempt failed: %s, retrying...", first_err)
+                time.sleep(1)
+                return asyncio.run(process(text, teacher_id=teacher_id))
+
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(_run)
+            try:
+                return future.result(timeout=120)
+            except FutureTimeout:
+                raise RuntimeError(
+                    "That's taking too long — try a smaller request "
+                    "or a more specific topic."
+                )
+            except Exception:
                 raise
 
     def _try_offer_rating(self, chat_id: int, teacher_id: str) -> None:

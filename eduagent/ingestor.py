@@ -170,10 +170,15 @@ def _extract_single(path: Path) -> Optional[Document]:
 
 
 def _collect_files(path: Path) -> list[Path]:
-    """Collect all supported files from a directory, sorted."""
+    """Collect all supported files from a directory, sorted.
+
+    Skips Office lock files (~$*) and macOS resource forks (._*).
+    """
     return sorted(
         f for f in path.rglob("*")
-        if f.is_file() and f.suffix.lower() in SUPPORTED_EXTENSIONS
+        if f.is_file()
+        and f.suffix.lower() in SUPPORTED_EXTENSIONS
+        and not f.name.startswith(("~$", "._"))
     )
 
 

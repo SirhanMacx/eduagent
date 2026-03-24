@@ -329,6 +329,37 @@ async def _handle_connect_local(parsed: ParsedIntent, session: TeacherSession) -
     if not resolved.exists():
         return f"I can't find the folder at `{path}`. Could you double-check the path?"
 
+    # Count files first to avoid blocking on massive directories
+    try:
+        from eduagent.ingestor import SUPPORTED_EXTENSIONS
+
+        supported = [
+            f for f in resolved.rglob("*")
+            if f.is_file()
+            and f.suffix.lower() in SUPPORTED_EXTENSIONS
+            and not f.name.startswith(("~$", "._"))
+        ]
+    except Exception:
+        supported = []
+
+    if not supported:
+        return (
+            f"Found the folder but no lesson plan files (PDF, DOCX, PPTX, TXT)"
+            f" inside `{resolved.name}/`. Try a different folder?"
+        )
+
+    max_files = 100
+    if len(supported) > max_files:
+        # Suggest a narrower path
+        subdirs = sorted(set(f.parent.name for f in supported[:50]))
+        suggestion = subdirs[0] if subdirs else "a single unit folder"
+        return (
+            f"Found {len(supported)} files — that's too many to process at once.\n"
+            f"Point me at a smaller folder instead, like:\n"
+            f"  `{resolved / suggestion}`\n\n"
+            f"Or pick a specific unit folder with fewer than {max_files} files."
+        )
+
     session.config["materials_path"] = str(resolved)
     session.save()
 
@@ -342,13 +373,13 @@ async def _handle_connect_local(parsed: ParsedIntent, session: TeacherSession) -
             session.persona = persona
             session.save()
             return (
-                f"✅ Analyzed {len(docs)} files from {resolved.name}/\n\n"
+                f"Analyzed {len(docs)} files from {resolved.name}/\n\n"
                 + _fmt_persona(persona)
             )
         else:
             return (
-                f"Found the folder but no lesson plan files (PDF, DOCX, PPTX, TXT)"
-                f" inside `{resolved.name}/`. Try a different folder?"
+                f"Found the folder but couldn't extract text from the files"
+                f" in `{resolved.name}/`. Try a different folder?"
             )
     except Exception as e:
         return f"Had trouble reading files from {path}: {str(e)[:150]}"
