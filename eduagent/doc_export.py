@@ -11,7 +11,7 @@ import asyncio
 import logging
 from datetime import date
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
     from eduagent.models import DailyLesson, TeacherPersona
@@ -430,7 +430,7 @@ def export_lesson_pptx(
     _set_text_props(run, 36, theme["primary"], bold=True)
 
     # SWBAT card -- colored rounded rectangle
-    card = _rounded_card(
+    _rounded_card(
         slide,
         Inches(1.0), Inches(2.2),
         slide_w - Inches(2.0), Inches(1.8),
@@ -678,7 +678,7 @@ def export_lesson_pptx(
 
         # Time estimate in corner
         minutes = lesson.time_estimates.get("independent_work", 10)
-        badge_time = _rounded_card(
+        _rounded_card(
             slide,
             slide_w - Inches(3.0), slide_h - Inches(1.2),
             Inches(2.2), Inches(0.6),
@@ -854,7 +854,7 @@ def export_lesson_docx(
     persona: "TeacherPersona",
     output_dir: Path | None = None,
 ) -> Path:
-    """Generate a Word document from a lesson plan.
+    """Generate a Word document from a lesson plan with embedded academic images.
 
     Returns the path to the saved .docx file.
     """
@@ -863,6 +863,9 @@ def export_lesson_docx(
 
     doc = Document()
 
+    # Resolve subject for image searches
+    subject = persona.subject_area or ""
+
     # Title
     doc.add_heading(lesson.title, level=0)
     doc.add_paragraph(
@@ -870,6 +873,9 @@ def export_lesson_docx(
         f"Lesson {lesson.lesson_number}  |  "
         f"{date.today().strftime('%B %d, %Y')}"
     )
+
+    # Try to add a header image relevant to the lesson topic
+    _docx_add_image(doc, lesson.title, subject, width_inches=5.5)
 
     # Standards table
     if lesson.standards:
@@ -892,20 +898,25 @@ def export_lesson_docx(
         for m in lesson.materials_needed:
             doc.add_paragraph(m, style="List Bullet")
 
-    # Lesson Sections
+    # Lesson Sections — add relevant images to instruction sections
     sections = [
-        ("Do Now / Warm-Up", lesson.do_now),
-        ("Direct Instruction", lesson.direct_instruction),
-        ("Guided Practice", lesson.guided_practice),
-        ("Independent Work", lesson.independent_work),
+        ("Do Now / Warm-Up", lesson.do_now, False),
+        ("Direct Instruction", lesson.direct_instruction, True),
+        ("Guided Practice", lesson.guided_practice, False),
+        ("Independent Work", lesson.independent_work, False),
     ]
-    for heading, content in sections:
+    for heading, content, add_img in sections:
         if content:
             time_key = heading.lower().replace(" / warm-up", "").replace(" ", "_")
             minutes = lesson.time_estimates.get(time_key, "")
             time_label = f" ({minutes} min)" if minutes else ""
             doc.add_heading(f"{heading}{time_label}", level=2)
             doc.add_paragraph(content)
+            # Add an image to the direct instruction section
+            if add_img:
+                _docx_add_image(
+                    doc, f"{lesson.title} {heading}", subject, width_inches=4.0,
+                )
 
     # Exit Ticket
     if lesson.exit_ticket:
@@ -937,6 +948,34 @@ def export_lesson_docx(
     out = _resolve_output(output_dir, lesson, ".docx")
     doc.save(str(out))
     return out
+
+
+def _docx_add_image(
+    doc: "Any",  # docx.Document
+    topic: str,
+    subject: str,
+    width_inches: float = 5.0,
+) -> None:
+    """Try to fetch and embed an academic image into the DOCX.
+
+    Fails silently — handout works fine without images.
+    """
+    try:
+        import asyncio
+
+        from docx.shared import Inches
+
+        from eduagent.slide_images import fetch_slide_image
+
+        img_path = asyncio.run(fetch_slide_image(topic, subject=subject))
+        if img_path and img_path.exists():
+            doc.add_picture(str(img_path), width=Inches(width_inches))
+            # Center the image
+            last_para = doc.paragraphs[-1]
+            from docx.enum.text import WD_ALIGN_PARAGRAPH
+            last_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    except Exception:
+        pass  # Images are a bonus, not a requirement
 
 
 # ── PDF export ─────────────────────────────────────────────────────────

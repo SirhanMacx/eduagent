@@ -327,28 +327,30 @@ Then run: `eduagent config set-model ollama`
 | `eduagent evaluate --lessons 5` | Test voice consistency across generated lessons |
 | `eduagent config set-unsplash-key KEY` | Enable slide images (free) |
 
-### 🖼️ Slide Images (Optional — Free)
+### 🖼️ Academic Images — Built In, No Setup Required
 
-EDUagent can add beautiful, relevant photos to your PowerPoint slides — a real classroom image for history, a lab photo for science, a math visualization for algebra. This is **optional** and slides look professional without it.
+EDUagent automatically finds relevant academic images for your slides and handouts. **No API keys needed.** It searches these sources in order:
 
-**To enable slide images:**
+| Source | Best for | Cost | Key needed? |
+|--------|----------|------|-------------|
+| **Library of Congress** | History, Social Studies, Civics | Free | No |
+| **Wikimedia Commons** | Science, Art, Music, all subjects | Free | No |
+| **Unsplash** (fallback) | Modern photos, generic visuals | Free | Optional |
 
-1. Go to [unsplash.com/developers](https://unsplash.com/developers) and click **"Register as a developer"** (free)
-2. Create a new application (name it anything, e.g., "EDUagent Slides")
-3. Copy your **Access Key** (not the Secret Key)
-4. Tell EDUagent:
-   ```bash
-   eduagent config set-unsplash-key YOUR_ACCESS_KEY
-   ```
-   Or set the environment variable: `export UNSPLASH_ACCESS_KEY=YOUR_ACCESS_KEY`
+**How it works:** When you generate a lesson with `--format pptx` or `--format docx`, EDUagent searches for images that match your topic and subject. A lesson on "The American Revolution" gets historical paintings and primary source documents from the Library of Congress. A lesson on "Photosynthesis" gets scientific diagrams from Wikimedia Commons.
 
-That's it. Next time you generate a lesson with `--format pptx`, your slides will include:
-- **Title slide:** Full-width hero image with a semi-transparent overlay so the text stays readable
-- **Content slides:** Sidebar image (right 30% of the slide) matched to the topic
+**What you get:**
+- **Title slide:** Full-bleed academic image with dark overlay for readability
+- **Content slides:** Sidebar images (right 35%) matched to key concepts
+- **Student handouts (DOCX):** Embedded images alongside relevant sections
+- **No images?** Slides still look professional — subject-themed colors, clean typography, proper layouts
 
-Unsplash's free tier gives you **50 image searches per hour** — more than enough for a full day of lesson planning. Images are cached locally so the same topic never re-downloads.
+**Image caching:** Every image is cached locally at `~/.eduagent/cache/images/` so the same topic never re-downloads. Searches have a 5-second timeout — if a source is slow, it's skipped gracefully.
 
-**Without an Unsplash key:** Slides still look great — clean subject-themed colors (brown/gold for History, green/blue for Science, navy for Math, purple for ELA), professional typography, and proper layouts. Images are a bonus, not a requirement.
+**Want even more images?** Optionally add an Unsplash key for modern photography:
+```bash
+eduagent config set-unsplash-key YOUR_KEY   # from unsplash.com/developers (free)
+```
 
 ## 🏗️ Architecture
 

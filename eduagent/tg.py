@@ -693,7 +693,7 @@ class EduAgentTelegramBot:
         def _run():
             try:
                 from eduagent.openclaw_plugin import _handle_connect_local
-                from eduagent.router import ParsedIntent, Intent
+                from eduagent.router import Intent, ParsedIntent
                 from eduagent.state import TeacherSession
 
                 session = TeacherSession.load(teacher_id)

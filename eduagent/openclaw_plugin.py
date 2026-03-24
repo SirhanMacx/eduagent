@@ -397,6 +397,7 @@ async def _handle_connect_local(
                 )
                 if docs:
                     import asyncio
+
                     from eduagent.persona import extract_persona
 
                     persona_cfg = AppConfig.load()
