@@ -56,10 +56,10 @@ class TestTranscribeAudio:
         audio.write_bytes(b"RIFF" + b"\x00" * 100)
 
         with (
-            patch("eduagent.voice._transcribe_faster_whisper", side_effect=ImportError),
+            patch("eduagent.voice.WhisperModel", None),
             patch("eduagent.voice.shutil.which", return_value=None),
         ):
-            with pytest.raises(RuntimeError, match="No transcription backend"):
+            with pytest.raises(RuntimeError, match="Voice transcription requires faster-whisper"):
                 _run(transcribe_audio(audio))
 
     def test_faster_whisper_backend(self, tmp_path):
@@ -79,7 +79,7 @@ class TestTranscribeAudio:
         audio.write_bytes(b"\xff\xfb" + b"\x00" * 100)
 
         with (
-            patch("eduagent.voice._transcribe_faster_whisper", side_effect=ImportError),
+            patch("eduagent.voice.WhisperModel", None),
             patch("eduagent.voice.shutil.which", return_value="/usr/bin/whisper"),
             patch(
                 "eduagent.voice._transcribe_whisper_cli",

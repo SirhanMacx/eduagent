@@ -223,8 +223,8 @@ Then open your browser and go to **http://localhost:8000** — you'll see a full
 ```bash
 pip install eduagent                    # Core (terminal chat + web dashboard)
 pip install 'eduagent[telegram]'        # + Telegram bot for teacher and students
-pip install 'eduagent[voice]'           # + Voice note transcription
-pip install 'eduagent[all]'             # Everything
+pip install 'eduagent[voice]'           # + Voice note transcription (optional)
+pip install 'eduagent[all]'             # Everything (Telegram, voice, TUI, hosted)
 
 # Requires Python 3.10+. Run: python --version
 # Don't have Python? Download at https://python.org/downloads
@@ -312,11 +312,11 @@ Then run: `eduagent config set-model ollama`
 | `eduagent serve` | Start web dashboard |
 | `eduagent ingest <path>` | Learn from your lesson plans |
 | `eduagent persona show` | See what EDUagent learned about you |
-| `eduagent unit <topic>` | Generate a unit plan |
-| `eduagent lesson <topic>` | Generate a single lesson |
-| `eduagent materials` | Generate worksheet + assessment |
-| `eduagent sub-packet` | Generate a substitute teacher packet |
-| `eduagent standards list` | Browse your state's standards |
+| `eduagent unit "Topic" -g 8 -s "Subject"` | Generate a unit plan |
+| `eduagent lesson "Topic" -g 8 -s "Subject"` | Generate a single lesson |
+| `eduagent materials -l lesson.json` | Generate worksheet + assessment |
+| `eduagent sub-packet -d 2026-03-24` | Generate a substitute teacher packet |
+| `eduagent standards list -g 8 -s math` | Browse your state's standards |
 | `eduagent demo` | See example output (no API key needed) |
 
 ## 🏗️ Architecture
@@ -357,11 +357,11 @@ Security & reliability:
 - [x] Daily lesson generation (AIM, Do Now, instruction, exit ticket)
 - [x] Worksheets, assessments, rubrics
 - [x] IEP/504 accommodation generation
-- [x] 50-state standards alignment (auto-detects your state)
+- [x] 50-state standards alignment (auto-applies your state's standards)
 - [x] Telegram bot (standalone, no other tools required)
 - [x] Web dashboard with streaming generation
 - [x] Student chatbot (students ask questions in teacher's voice)
-- [x] Voice note transcription
+- [x] Voice note transcription (optional: `pip install 'eduagent[voice]'`)
 - [x] School/department curriculum sharing
 - [x] Substitute teacher packet generator
 - [x] Parent communication generator

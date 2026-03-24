@@ -132,27 +132,39 @@ class LLMClient:
             raise EnvironmentError(
                 "ANTHROPIC_API_KEY not set. Export it or run: eduagent config set-model ollama"
             )
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            body: dict[str, Any] = {
-                "model": self.config.anthropic_model,
-                "max_tokens": max_tokens,
-                "temperature": temperature,
-                "messages": [{"role": "user", "content": prompt}],
-            }
-            if system:
-                body["system"] = system
-            resp = await client.post(
-                "https://api.anthropic.com/v1/messages",
-                headers={
-                    "x-api-key": api_key,
-                    "anthropic-version": "2023-06-01",
-                    "content-type": "application/json",
-                },
-                json=body,
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                body: dict[str, Any] = {
+                    "model": self.config.anthropic_model,
+                    "max_tokens": max_tokens,
+                    "temperature": temperature,
+                    "messages": [{"role": "user", "content": prompt}],
+                }
+                if system:
+                    body["system"] = system
+                resp = await client.post(
+                    "https://api.anthropic.com/v1/messages",
+                    headers={
+                        "x-api-key": api_key,
+                        "anthropic-version": "2023-06-01",
+                        "content-type": "application/json",
+                    },
+                    json=body,
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                return data["content"][0]["text"]
+        except httpx.ConnectError:
+            raise ConnectionError(
+                "Could not connect to the Anthropic API.\n"
+                "Check your internet connection and try again."
             )
-            resp.raise_for_status()
-            data = resp.json()
-            return data["content"][0]["text"]
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
+                raise EnvironmentError(
+                    "Invalid ANTHROPIC_API_KEY. Check your key at https://console.anthropic.com"
+                )
+            raise
 
     # ── OpenAI ───────────────────────────────────────────────────────────
 
@@ -169,23 +181,35 @@ class LLMClient:
             messages.append({"role": "system", "content": system})
         messages.append({"role": "user", "content": prompt})
 
-        async with httpx.AsyncClient(timeout=120.0) as client:
-            resp = await client.post(
-                "https://api.openai.com/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-type": "application/json",
-                },
-                json={
-                    "model": self.config.openai_model,
-                    "messages": messages,
-                    "temperature": temperature,
-                    "max_tokens": max_tokens,
-                },
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                resp = await client.post(
+                    "https://api.openai.com/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-type": "application/json",
+                    },
+                    json={
+                        "model": self.config.openai_model,
+                        "messages": messages,
+                        "temperature": temperature,
+                        "max_tokens": max_tokens,
+                    },
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                return data["choices"][0]["message"]["content"]
+        except httpx.ConnectError:
+            raise ConnectionError(
+                "Could not connect to the OpenAI API.\n"
+                "Check your internet connection and try again."
             )
-            resp.raise_for_status()
-            data = resp.json()
-            return data["choices"][0]["message"]["content"]
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
+                raise EnvironmentError(
+                    "Invalid OPENAI_API_KEY. Check your key at https://platform.openai.com"
+                )
+            raise
 
     # ── Ollama ───────────────────────────────────────────────────────────
 
@@ -201,45 +225,69 @@ class LLMClient:
         # Ollama Cloud uses OpenAI-compatible API; local uses /api/generate
         base = self.config.ollama_base_url.rstrip("/")
         is_cloud = "api.ollama.com" in base or "ollama.com" in base
+        model = self.config.ollama_model
 
-        if is_cloud:
-            # Use OpenAI-compatible endpoint for cloud
-            messages = []
-            if system:
-                messages.append({"role": "system", "content": system})
-            messages.append({"role": "user", "content": prompt})
-            async with httpx.AsyncClient(timeout=300.0) as client:
-                resp = await client.post(
-                    f"{base}/v1/chat/completions",
-                    headers=headers,
-                    json={
-                        "model": self.config.ollama_model,
-                        "messages": messages,
-                        "temperature": temperature,
-                        "max_tokens": max_tokens,
-                        "stream": False,
-                    },
-                )
-                resp.raise_for_status()
-                data = resp.json()
-                return data["choices"][0]["message"]["content"]
-        else:
-            # Local Ollama
-            full_prompt = f"{system}\n\n{prompt}" if system else prompt
-            async with httpx.AsyncClient(timeout=300.0) as client:
-                resp = await client.post(
-                    f"{base}/api/generate",
-                    headers=headers,
-                    json={
-                        "model": self.config.ollama_model,
-                        "prompt": full_prompt,
-                        "stream": False,
-                        "options": {
+        try:
+            if is_cloud:
+                # Use OpenAI-compatible endpoint for cloud
+                messages = []
+                if system:
+                    messages.append({"role": "system", "content": system})
+                messages.append({"role": "user", "content": prompt})
+                async with httpx.AsyncClient(timeout=300.0) as client:
+                    resp = await client.post(
+                        f"{base}/v1/chat/completions",
+                        headers=headers,
+                        json={
+                            "model": model,
+                            "messages": messages,
                             "temperature": temperature,
-                            "num_predict": max_tokens,
+                            "max_tokens": max_tokens,
+                            "stream": False,
                         },
-                    },
-                )
-                resp.raise_for_status()
-                data = resp.json()
-                return data["response"]
+                    )
+                    if resp.status_code == 404:
+                        raise ConnectionError(
+                            f"Ollama model '{model}' not found on the cloud.\n"
+                            f"Check available models at https://ollama.com/library"
+                        )
+                    resp.raise_for_status()
+                    data = resp.json()
+                    return data["choices"][0]["message"]["content"]
+            else:
+                # Local Ollama
+                full_prompt = f"{system}\n\n{prompt}" if system else prompt
+                async with httpx.AsyncClient(timeout=300.0) as client:
+                    resp = await client.post(
+                        f"{base}/api/generate",
+                        headers=headers,
+                        json={
+                            "model": model,
+                            "prompt": full_prompt,
+                            "stream": False,
+                            "options": {
+                                "temperature": temperature,
+                                "num_predict": max_tokens,
+                            },
+                        },
+                    )
+                    if resp.status_code == 404:
+                        # Parse Ollama's error body for details
+                        try:
+                            err_body = resp.json()
+                            err_msg = err_body.get("error", "")
+                        except Exception:
+                            err_msg = ""
+                        raise ConnectionError(
+                            f"Ollama model '{model}' not installed.\n"
+                            f"Run: ollama pull {model}"
+                            + (f"\n\nOllama says: {err_msg}" if err_msg else "")
+                        )
+                    resp.raise_for_status()
+                    data = resp.json()
+                    return data["response"]
+        except httpx.ConnectError:
+            raise ConnectionError(
+                "Could not connect to Ollama.\n"
+                "Install from https://ollama.com and make sure it's running."
+            )

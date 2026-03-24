@@ -11,6 +11,11 @@ import shutil
 import subprocess
 from pathlib import Path
 
+try:
+    from faster_whisper import WhisperModel
+except ImportError:
+    WhisperModel = None
+
 AUDIO_EXTENSIONS = {".ogg", ".wav", ".mp3", ".m4a", ".flac", ".webm", ".opus"}
 
 
@@ -43,26 +48,26 @@ async def transcribe_audio(audio_path: Path) -> str:
         raise ValueError(f"Unsupported audio format: {audio_path.suffix}")
 
     # Try faster-whisper first
-    try:
+    if WhisperModel is not None:
         return await _transcribe_faster_whisper(audio_path)
-    except ImportError:
-        pass
 
     # Fall back to whisper CLI
     if shutil.which("whisper"):
         return await _transcribe_whisper_cli(audio_path)
 
     raise RuntimeError(
-        "No transcription backend available. Install faster-whisper:\n"
-        "  pip install faster-whisper\n"
-        "Or install the whisper CLI:\n"
-        "  pip install openai-whisper"
+        "Voice transcription requires faster-whisper.\n"
+        "Install it with: pip install 'eduagent[voice]'"
     )
 
 
 async def _transcribe_faster_whisper(audio_path: Path) -> str:
     """Transcribe using the faster-whisper Python library."""
-    from faster_whisper import WhisperModel  # noqa: F811
+    if WhisperModel is None:
+        raise RuntimeError(
+            "Voice transcription requires faster-whisper.\n"
+            "Install it with: pip install 'eduagent[voice]'"
+        )
 
     loop = asyncio.get_event_loop()
 

@@ -445,6 +445,15 @@ def student_bot_cmd(
     ),
 ) -> None:
     """Run the student-facing Telegram bot (separate from the teacher bot)."""
+    try:
+        import telegram  # noqa: F401
+    except ImportError:
+        console.print(
+            "[red]Telegram support requires python-telegram-bot.[/red]\n"
+            "Install it with: [bold]pip install 'eduagent[telegram]'[/bold]"
+        )
+        raise typer.Exit(1)
+
     from eduagent.student_telegram_bot import StudentTelegramBot
 
     if not token:
@@ -537,6 +546,15 @@ def bot(
         eduagent config set-token YOUR_TOKEN
         eduagent bot
     """
+    try:
+        import telegram  # noqa: F401
+    except ImportError:
+        console.print(
+            "[red]Telegram support requires python-telegram-bot.[/red]\n"
+            "Install it with: [bold]pip install 'eduagent[telegram]'[/bold]"
+        )
+        raise typer.Exit(1)
+
     import asyncio
 
     from eduagent.onboarding import check_first_run
