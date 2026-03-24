@@ -75,6 +75,7 @@ def get_api_key(provider: str) -> Optional[str]:
         "ollama": "OLLAMA_API_KEY",
         "telegram": "TELEGRAM_BOT_TOKEN",
         "tavily": "TAVILY_API_KEY",
+        "unsplash": "UNSPLASH_ACCESS_KEY",
     }
     env_var = env_map.get(provider)
     if env_var:
