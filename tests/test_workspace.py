@@ -222,6 +222,33 @@ class TestInitWorkspace:
         init_workspace(persona, config)
         assert "Do not overwrite me" in memory.read_text()
 
+    def test_preserves_existing_identity(self, tmp_workspace, persona, config):
+        """Blank slate: init never overwrites teacher's edits to identity.md."""
+        init_workspace(persona, config)
+        identity = tmp_workspace / "identity.md"
+        identity.write_text("# My Custom Identity\nI edited this myself.")
+
+        init_workspace(persona, config)
+        assert "I edited this myself" in identity.read_text()
+
+    def test_preserves_existing_soul(self, tmp_workspace, persona, config):
+        """Blank slate: init never overwrites teacher's edits to soul.md."""
+        init_workspace(persona, config)
+        soul = tmp_workspace / "soul.md"
+        soul.write_text("# My Teaching Philosophy\nI wrote this by hand.")
+
+        init_workspace(persona, config)
+        assert "I wrote this by hand" in soul.read_text()
+
+    def test_preserves_existing_heartbeat(self, tmp_workspace, persona, config):
+        """Blank slate: init never overwrites teacher's edits to heartbeat.md."""
+        init_workspace(persona, config)
+        hb = tmp_workspace / "heartbeat.md"
+        hb.write_text("# My Custom Heartbeat\nCheck my specific things.")
+
+        init_workspace(persona, config)
+        assert "Check my specific things" in hb.read_text()
+
     def test_returns_workspace_path(self, tmp_workspace, persona, config):
         result = init_workspace(persona, config)
         assert result == tmp_workspace

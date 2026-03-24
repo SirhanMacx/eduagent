@@ -13,25 +13,106 @@ workspace_app = typer.Typer(help="Teacher workspace — identity, memory, notes,
 
 @workspace_app.command("init")
 def workspace_init() -> None:
-    """Initialize the workspace from the current persona and config."""
+    """Initialize the workspace. Only creates missing files — never overwrites your edits."""
     from eduagent.workspace import init_workspace
 
     ws_path = init_workspace()
     console.print(
         Panel(
-            f"[bold green]Workspace initialized![/bold green]\n\n"
+            f"[bold green]Workspace ready![/bold green]\n\n"
             f"  Location: [cyan]{ws_path}[/cyan]\n\n"
-            f"Files created:\n"
+            f"All files are yours to edit freely:\n"
             f"  - identity.md  (who you are)\n"
             f"  - soul.md      (teaching philosophy)\n"
             f"  - memory.md    (long-term memories)\n"
             f"  - heartbeat.md (scheduled task checks)\n"
             f"  - notes/       (daily teaching notes)\n"
-            f"  - students/    (per-student profiles)",
+            f"  - students/    (per-student profiles)\n\n"
+            f"[dim]Re-running init will NOT overwrite existing files.\n"
+            f"Use 'eduagent workspace regenerate' to rebuild from persona.[/dim]",
             title="[bold]Teacher Workspace[/bold]",
             border_style="green",
         )
     )
+
+
+@workspace_app.command("regenerate")
+def workspace_regenerate(
+    force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation"),
+) -> None:
+    """Regenerate identity.md and soul.md from the current persona. Overwrites existing files."""
+    from eduagent.workspace import (
+        IDENTITY_PATH,
+        SOUL_PATH,
+        WORKSPACE_DIR,
+        generate_identity,
+        generate_soul,
+    )
+    from eduagent.models import AppConfig, TeacherPersona
+
+    if not force:
+        confirm = typer.confirm(
+            "This will OVERWRITE identity.md and soul.md with fresh versions "
+            "generated from your persona. Any manual edits will be lost. Continue?"
+        )
+        if not confirm:
+            console.print("[yellow]Cancelled.[/yellow]")
+            raise typer.Exit()
+
+    cfg = AppConfig.load()
+    try:
+        from eduagent.commands._helpers import persona_path
+        from eduagent.persona import load_persona
+        pp = persona_path()
+        persona = load_persona(pp) if pp.exists() else TeacherPersona()
+    except Exception:
+        persona = TeacherPersona()
+
+    WORKSPACE_DIR.mkdir(parents=True, exist_ok=True)
+    IDENTITY_PATH.write_text(generate_identity(persona, cfg))
+    SOUL_PATH.write_text(generate_soul(persona, cfg))
+    console.print("[green]identity.md and soul.md regenerated from persona.[/green]")
+
+
+@workspace_app.command("edit")
+def workspace_edit(
+    file: str = typer.Argument(
+        ...,
+        help="File to edit: identity, soul, memory, heartbeat",
+    ),
+) -> None:
+    """Open a workspace file in your default editor."""
+    import os
+    import subprocess
+
+    from eduagent.workspace import (
+        HEARTBEAT_PATH,
+        IDENTITY_PATH,
+        MEMORY_PATH,
+        SOUL_PATH,
+        _ensure_workspace,
+    )
+
+    _ensure_workspace()
+
+    file_map = {
+        "identity": IDENTITY_PATH,
+        "soul": SOUL_PATH,
+        "memory": MEMORY_PATH,
+        "heartbeat": HEARTBEAT_PATH,
+    }
+
+    path = file_map.get(file.lower())
+    if path is None:
+        console.print(
+            f"[red]Unknown file '{file}'. Choose from: "
+            f"{', '.join(file_map.keys())}[/red]"
+        )
+        raise typer.Exit(1)
+
+    editor = os.environ.get("EDITOR", os.environ.get("VISUAL", "nano"))
+    console.print(f"[dim]Opening {path} in {editor}...[/dim]")
+    subprocess.run([editor, str(path)])
 
 
 @workspace_app.command("show")

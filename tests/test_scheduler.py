@@ -61,10 +61,13 @@ class TestDefaultTasks:
     def test_morning_prep_defaults(self):
         task = DEFAULT_TASKS["morning-prep"]
         assert task["cron"]["hour"] == "6"
-        assert task["enabled"] is True
+        # All tasks start disabled (blank slate — teachers opt in)
+        assert task["enabled"] is False
 
-    def test_memory_compress_disabled_by_default(self):
-        assert DEFAULT_TASKS["memory-compress"]["enabled"] is False
+    def test_all_tasks_disabled_by_default(self):
+        """Blank slate: every task starts disabled until the teacher enables it."""
+        for name, task in DEFAULT_TASKS.items():
+            assert task["enabled"] is False, f"{name} should start disabled"
 
 
 # ── Config loading and saving ─────────────────────────────────────────

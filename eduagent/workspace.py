@@ -370,21 +370,22 @@ def init_workspace(
     for d in (WORKSPACE_DIR, NOTES_DIR, STUDENTS_DIR):
         d.mkdir(parents=True, exist_ok=True)
 
-    # Generate identity.md
-    IDENTITY_PATH.write_text(generate_identity(persona, cfg))
+    # All workspace docs are teacher-editable. Never overwrite existing files.
+    # Teachers can freely edit identity.md, soul.md, memory.md, heartbeat.md.
+    # Re-running init only creates missing files — it never clobbers edits.
 
-    # Generate soul.md
-    SOUL_PATH.write_text(generate_soul(persona, cfg))
+    if not IDENTITY_PATH.exists():
+        IDENTITY_PATH.write_text(generate_identity(persona, cfg))
 
-    # Generate memory.md (only if it doesn't exist — preserve existing memories)
+    if not SOUL_PATH.exists():
+        SOUL_PATH.write_text(generate_soul(persona, cfg))
+
     if not MEMORY_PATH.exists():
         MEMORY_PATH.write_text(_DEFAULT_MEMORY)
 
-    # Generate heartbeat.md (only if it doesn't exist)
     if not HEARTBEAT_PATH.exists():
         HEARTBEAT_PATH.write_text(_DEFAULT_HEARTBEAT)
 
-    # Create today's notes file if missing
     notes_path = _notes_path()
     if not notes_path.exists():
         notes_path.write_text(f"# Teaching Notes — {_today()}\n\n")

@@ -26,21 +26,23 @@ SCHEDULE_CONFIG_PATH = Path.home() / ".eduagent" / "schedule.json"
 
 # ── Built-in task definitions ──────────────────────────────────────────
 
+# All tasks start DISABLED. Teachers opt in to what they want.
+# Schedules and enabled state are fully editable via CLI or schedule.json.
 DEFAULT_TASKS: dict[str, dict[str, Any]] = {
     "morning-prep": {
         "description": "Review today's classes. Auto-generate missing lesson drafts and notify via Telegram.",
         "cron": {"hour": "6", "minute": "0"},
-        "enabled": True,
+        "enabled": False,
     },
     "weekly-plan": {
         "description": "Draft next week's lesson plans based on unit pacing. Send summary via Telegram.",
         "cron": {"day_of_week": "sun", "hour": "19", "minute": "0"},
-        "enabled": True,
+        "enabled": False,
     },
     "feedback-digest": {
         "description": "Summarize today's ratings and student interactions. Append to daily notes.",
         "cron": {"hour": "20", "minute": "0"},
-        "enabled": True,
+        "enabled": False,
     },
     "memory-compress": {
         "description": "Compress old daily notes into memory.md highlights using the LLM.",
@@ -50,7 +52,7 @@ DEFAULT_TASKS: dict[str, dict[str, Any]] = {
     "student-digest": {
         "description": "Summarize student bot interactions for the week.",
         "cron": {"day_of_week": "fri", "hour": "16", "minute": "0"},
-        "enabled": True,
+        "enabled": False,
     },
 }
 
