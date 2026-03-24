@@ -14,7 +14,7 @@ class TestLandingPage:
         # Required elements from spec
         assert "Your AI co-teacher that sounds like you" in content
         assert "EDUagent" in content
-        assert "/api/waitlist" in content  # email capture form
+        assert "waitlist-form" in content  # email capture form (Netlify Forms)
         assert "github.com/SirhanMacx/eduagent" in content  # GitHub link
         assert "Open Source" in content
 
