@@ -177,3 +177,80 @@ class TestFeedbackHandler:
         }):
             r = await self.handler.summary("teacher_1")
             assert "4.2" in r.text or "rating" in r.text.lower()
+
+
+from eduagent.handlers.schedule import ScheduleHandler
+from eduagent.handlers.gaps import GapsHandler
+from eduagent.handlers.standards import StandardsHandler
+from eduagent.handlers.ingest import IngestHandler
+
+
+class TestScheduleHandler:
+    def setup_method(self):
+        self.handler = ScheduleHandler()
+
+    @pytest.mark.asyncio
+    async def test_show_schedule(self):
+        with patch("eduagent.handlers.schedule.load_schedule_config", return_value={
+            "tasks": {"morning-prep": {"enabled": True, "cron": {"hour": "6", "minute": "0"}}}
+        }):
+            r = await self.handler.show("teacher_1")
+            assert r.has_content
+            assert "morning" in r.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_disable_task(self):
+        with patch("eduagent.handlers.schedule.disable_task") as mock_dis:
+            r = await self.handler.disable("teacher_1", "morning-prep")
+            assert r.has_content
+            mock_dis.assert_called_once()
+
+
+class TestGapsHandler:
+    def setup_method(self):
+        self.handler = GapsHandler()
+
+    @pytest.mark.asyncio
+    async def test_gaps_returns_response(self):
+        with patch("eduagent.handlers.gaps.handle_message", new_callable=AsyncMock) as mock_hm:
+            mock_hm.return_value = "You're missing: fractions, decimals"
+            r = await self.handler.analyze("teacher_1")
+            assert r.has_content
+
+
+class TestStandardsHandler:
+    def setup_method(self):
+        self.handler = StandardsHandler()
+
+    @pytest.mark.asyncio
+    async def test_lookup_standards(self):
+        with patch("eduagent.handlers.standards.get_standards", return_value=[
+            ("CCSS.MATH.6.NS.1", "Divide fractions", "6-8")
+        ]):
+            r = await self.handler.lookup("math", "6")
+            assert r.has_content
+            assert "CCSS" in r.text or "standard" in r.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_no_standards_found(self):
+        with patch("eduagent.handlers.standards.get_standards", return_value=[]):
+            r = await self.handler.lookup("underwater basket weaving", "99")
+            assert "no standards" in r.text.lower() or "couldn't find" in r.text.lower()
+
+
+class TestIngestHandler:
+    def setup_method(self):
+        self.handler = IngestHandler()
+
+    @pytest.mark.asyncio
+    async def test_ingest_returns_instructions_when_no_files(self):
+        r = await self.handler.handle(teacher_id="teacher_1", files=[])
+        assert "upload" in r.text.lower() or "send" in r.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_ingest_with_path(self):
+        with patch("eduagent.handlers.ingest.ingest_path") as mock_ingest:
+            mock_ingest.return_value = [{"title": "doc1", "content": "stuff"}]
+            with patch("eduagent.handlers.ingest.extract_persona", new_callable=AsyncMock):
+                r = await self.handler.handle(teacher_id="teacher_1", files=[], path="/tmp/test_lessons")
+                assert r.has_content
