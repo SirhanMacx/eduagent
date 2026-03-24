@@ -14,7 +14,7 @@ import re
 import string
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any, Optional
 
 from eduagent.models import AppConfig, TeacherPersona
@@ -137,7 +137,10 @@ class StudentBot:
             return False
         try:
             expires = datetime.fromisoformat(info.expires_at)
-            return datetime.utcnow() > expires
+            # Make naive datetimes comparable by assuming UTC
+            if expires.tzinfo is None:
+                expires = expires.replace(tzinfo=timezone.utc)
+            return datetime.now(timezone.utc) > expires
         except (ValueError, TypeError):
             return False
 
@@ -452,7 +455,7 @@ class StudentBot:
             week: ISO week like '2026-W12'. If empty, uses current week.
         """
         if not week:
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             week = f"{now.year}-W{now.isocalendar()[1]:02d}"
 
         with _get_conn() as conn:
@@ -502,7 +505,7 @@ class StudentBot:
         self, student_id: str, class_code: str, limit: int = 20
     ) -> list[dict[str, str]]:
         """Get a student's full conversation history for today (teacher view)."""
-        today = datetime.utcnow().strftime("%Y-%m-%d")
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
         with _get_conn() as conn:
             rows = conn.execute(
                 """SELECT question, answer, created_at FROM student_questions
@@ -531,14 +534,14 @@ class StudentBot:
             if existing:
                 conn.execute(
                     "UPDATE student_sessions SET message_count = message_count + 1, last_activity = ? WHERE id = ?",
-                    (datetime.utcnow().isoformat(), session_id),
+                    (datetime.now(timezone.utc).isoformat(), session_id),
                 )
             else:
                 conn.execute(
                     """INSERT INTO student_sessions
                     (id, student_id, class_code, message_count, last_activity)
                     VALUES (?, ?, ?, 1, ?)""",
-                    (session_id, student_id, class_code, datetime.utcnow().isoformat()),
+                    (session_id, student_id, class_code, datetime.now(timezone.utc).isoformat()),
                 )
 
     def _log_question(

@@ -209,17 +209,15 @@ def queue_low_rated_for_improvement(rating: int, lesson_id: str, teacher_id: str
         from eduagent.state import _get_conn, init_db
 
         init_db()
-        conn = _get_conn()
-
-        # Mark the lesson as needing improvement by ensuring its feedback
-        # is stored — the improve_prompts() function already picks up
-        # low-rated lessons from the feedback table.
-        # Additionally, log this for visibility.
-        logger.info(
-            "Lesson %s rated %d/5 by teacher %s — queued for improvement analysis",
-            lesson_id, rating, teacher_id,
-        )
-        conn.close()
+        with _get_conn() as _conn:
+            # Mark the lesson as needing improvement by ensuring its feedback
+            # is stored — the improve_prompts() function already picks up
+            # low-rated lessons from the feedback table.
+            # Additionally, log this for visibility.
+            logger.info(
+                "Lesson %s rated %d/5 by teacher %s — queued for improvement analysis",
+                lesson_id, rating, teacher_id,
+            )
     except Exception as e:
         logger.warning("Failed to queue lesson for improvement: %s", e)
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
@@ -11,6 +12,8 @@ from pydantic import BaseModel, Field
 from eduagent.api.server import get_db
 from eduagent.chat import student_chat
 from eduagent.models import TeacherPersona
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["chat"])
 
@@ -30,7 +33,11 @@ async def chat_endpoint(req: ChatRequest):
     if not lesson_row:
         return JSONResponse({"error": "Lesson not found."}, status_code=404)
 
-    lesson_data = json.loads(lesson_row["lesson_json"]) if lesson_row["lesson_json"] else {}
+    try:
+        lesson_data = json.loads(lesson_row["lesson_json"]) if lesson_row["lesson_json"] else {}
+    except (json.JSONDecodeError, TypeError) as exc:
+        logger.warning("Failed to parse lesson_json for lesson %s: %s", req.lesson_id, exc)
+        lesson_data = {}
 
     teacher = db.get_default_teacher()
     if not teacher or not teacher.get("persona_json"):

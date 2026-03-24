@@ -14,11 +14,20 @@ what you were doing last time and picks up where you left off.
 from __future__ import annotations
 
 import json
+import logging
+import re
 import sqlite3
 import uuid
-from datetime import datetime
+from contextlib import contextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
+
+logger = logging.getLogger(__name__)
+
+# Pattern for validating migration identifiers: alphanumeric, underscore,
+# space, parentheses, single-quotes, and periods only.
+_SAFE_SQL_IDENTIFIER_RE = re.compile(r"^[A-Za-z0-9_ ()'.\[\]]+$")
 
 from eduagent.models import DailyLesson, TeacherPersona, UnitPlan
 
@@ -32,10 +41,22 @@ def _db_path() -> Path:
     return data_dir / "eduagent.db"
 
 
-def _get_conn() -> sqlite3.Connection:
+@contextmanager
+def _get_conn():
+    """Context manager that yields a SQLite connection.
+
+    Commits on success, rolls back on exception, and always closes.
+    """
     conn = sqlite3.connect(str(_db_path()))
     conn.row_factory = sqlite3.Row
-    return conn
+    try:
+        yield conn
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
 
 
 def init_db() -> None:
@@ -160,6 +181,10 @@ def _migrate_classes(conn: sqlite3.Connection) -> None:
     ]
     for col, typedef in migrations:
         if col not in existing:
+            if not _SAFE_SQL_IDENTIFIER_RE.match(col):
+                raise ValueError(f"Unsafe migration column name: {col!r}")
+            if not _SAFE_SQL_IDENTIFIER_RE.match(typedef):
+                raise ValueError(f"Unsafe migration type definition: {typedef!r}")
             conn.execute(f"ALTER TABLE classes ADD COLUMN {col} {typedef}")
     conn.commit()
 
@@ -185,7 +210,7 @@ class TeacherSession:
         self.current_unit = current_unit
         self.current_lesson = current_lesson
         self.context: list[dict] = context or []  # Recent conversation turns
-        self.last_activity = datetime.utcnow()
+        self.last_activity = datetime.now(timezone.utc)
         self.school_id = school_id
 
     @classmethod
@@ -205,36 +230,36 @@ class TeacherSession:
         if row["persona_json"]:
             try:
                 persona = TeacherPersona.model_validate_json(row["persona_json"])
-            except Exception:
-                pass
+            except (json.JSONDecodeError, ValueError, TypeError, KeyError) as exc:
+                logger.warning("Failed to parse persona_json for %s: %s", teacher_id, exc)
 
         current_unit = None
         if row["current_unit_json"]:
             try:
                 current_unit = UnitPlan.model_validate_json(row["current_unit_json"])
-            except Exception:
-                pass
+            except (json.JSONDecodeError, ValueError, TypeError, KeyError) as exc:
+                logger.warning("Failed to parse current_unit_json for %s: %s", teacher_id, exc)
 
         current_lesson = None
         if row["current_lesson_json"]:
             try:
                 current_lesson = DailyLesson.model_validate_json(row["current_lesson_json"])
-            except Exception:
-                pass
+            except (json.JSONDecodeError, ValueError, TypeError, KeyError) as exc:
+                logger.warning("Failed to parse current_lesson_json for %s: %s", teacher_id, exc)
 
         config = {}
         if row["config_json"]:
             try:
                 config = json.loads(row["config_json"])
-            except Exception:
-                pass
+            except (json.JSONDecodeError, ValueError, TypeError) as exc:
+                logger.warning("Failed to parse config_json for %s: %s", teacher_id, exc)
 
         context = []
         if row["context_json"]:
             try:
                 context = json.loads(row["context_json"])
-            except Exception:
-                pass
+            except (json.JSONDecodeError, ValueError, TypeError) as exc:
+                logger.warning("Failed to parse context_json for %s: %s", teacher_id, exc)
 
         school_id = None
         try:
@@ -274,7 +299,7 @@ class TeacherSession:
                     self.current_lesson.model_dump_json() if self.current_lesson else None,
                     json.dumps(self.context[-20:]),  # Keep last 20 turns
                     self.school_id,
-                    datetime.utcnow().isoformat(),
+                    datetime.now(timezone.utc).isoformat(),
                 ),
             )
 
@@ -283,7 +308,7 @@ class TeacherSession:
         self.context.append({
             "role": role,
             "content": content[:2000],  # Cap per-turn length
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         })
 
     def save_unit(self, unit: UnitPlan) -> str:

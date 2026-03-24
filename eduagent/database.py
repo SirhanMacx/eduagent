@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import sqlite3
 import uuid
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Any, Optional
 
@@ -18,18 +19,39 @@ def _ensure_dir(path: Path) -> Path:
 
 
 class Database:
-    """Thin wrapper around SQLite for EDUagent storage."""
+    """Thin wrapper around SQLite for EDUagent storage.
+
+    Uses a per-operation connection pattern for thread safety.
+    """
 
     def __init__(self, db_path: Path | str | None = None):
         self.db_path = Path(db_path) if db_path else _default_db_path()
         _ensure_dir(self.db_path)
-        self.conn = sqlite3.connect(str(self.db_path), check_same_thread=False)
-        self.conn.row_factory = sqlite3.Row
-        self.conn.execute("PRAGMA journal_mode=WAL")
-        self._create_tables()
+        # Initialize tables using a temporary connection
+        with self._connect() as conn:
+            conn.execute("PRAGMA journal_mode=WAL")
+            self._create_tables_on(conn)
+            self._migrate_on(conn)
 
-    def _create_tables(self) -> None:
-        self.conn.executescript("""
+    @contextmanager
+    def _connect(self):
+        """Context manager yielding a new SQLite connection.
+
+        Commits on success, rolls back on exception, always closes.
+        """
+        conn = sqlite3.connect(str(self.db_path))
+        conn.row_factory = sqlite3.Row
+        try:
+            yield conn
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
+
+    def _create_tables_on(self, conn: sqlite3.Connection) -> None:
+        conn.executescript("""
             CREATE TABLE IF NOT EXISTS teachers (
                 id TEXT PRIMARY KEY,
                 name TEXT,
@@ -171,22 +193,20 @@ class Database:
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             );
         """)
-        self.conn.commit()
-        self._migrate()
 
-    def _migrate(self) -> None:
+    def _migrate_on(self, conn: sqlite3.Connection) -> None:
         """Apply any schema migrations for existing databases."""
         # Add scores_json column if it doesn't exist
         try:
-            self.conn.execute("SELECT scores_json FROM lessons LIMIT 1")
+            conn.execute("SELECT scores_json FROM lessons LIMIT 1")
         except Exception:
-            self.conn.execute("ALTER TABLE lessons ADD COLUMN scores_json TEXT")
-            self.conn.commit()
+            conn.execute("ALTER TABLE lessons ADD COLUMN scores_json TEXT")
 
     def close(self) -> None:
-        self.conn.close()
+        # No persistent connection to close; kept for API compatibility.
+        pass
 
-    # ── helpers ──────────────────────────────────────────────────────
+    # -- helpers ----------------------------------------------------------
 
     @staticmethod
     def _new_id() -> str:
@@ -197,22 +217,25 @@ class Database:
         return uuid.uuid4().hex
 
     def _fetchone(self, sql: str, params: tuple = ()) -> Optional[dict[str, Any]]:
-        row = self.conn.execute(sql, params).fetchone()
+        with self._connect() as conn:
+            row = conn.execute(sql, params).fetchone()
         return dict(row) if row else None
 
     def _fetchall(self, sql: str, params: tuple = ()) -> list[dict[str, Any]]:
-        return [dict(r) for r in self.conn.execute(sql, params).fetchall()]
+        with self._connect() as conn:
+            rows = conn.execute(sql, params).fetchall()
+        return [dict(r) for r in rows]
 
-    # ── teachers ─────────────────────────────────────────────────────
+    # -- teachers ---------------------------------------------------------
 
-    def upsert_teacher(self, name: str, persona_json: str, teacher_id: str | None = None) -> str:
+    def upsert_teacher(self, name: str, persona_json: str, teacher_id: Optional[str] = None) -> str:
         tid = teacher_id or self._new_id()
-        self.conn.execute(
-            """INSERT INTO teachers (id, name, persona_json) VALUES (?, ?, ?)
-               ON CONFLICT(id) DO UPDATE SET name=excluded.name, persona_json=excluded.persona_json""",
-            (tid, name, persona_json),
-        )
-        self.conn.commit()
+        with self._connect() as conn:
+            conn.execute(
+                """INSERT INTO teachers (id, name, persona_json) VALUES (?, ?, ?)
+                   ON CONFLICT(id) DO UPDATE SET name=excluded.name, persona_json=excluded.persona_json""",
+                (tid, name, persona_json),
+            )
         return tid
 
     def get_teacher(self, teacher_id: str) -> Optional[dict[str, Any]]:
@@ -221,45 +244,45 @@ class Database:
     def get_default_teacher(self) -> Optional[dict[str, Any]]:
         return self._fetchone("SELECT * FROM teachers ORDER BY created_at DESC LIMIT 1")
 
-    # ── units ────────────────────────────────────────────────────────
+    # -- units ------------------------------------------------------------
 
     def insert_unit(
         self, teacher_id: str, title: str, subject: str, grade_level: str, topic: str, unit_json: str,
     ) -> str:
         uid = self._new_id()
-        self.conn.execute(
-            "INSERT INTO units (id, teacher_id, title, subject, grade_level, topic, unit_json) VALUES (?,?,?,?,?,?,?)",
-            (uid, teacher_id, title, subject, grade_level, topic, unit_json),
-        )
-        self.conn.commit()
+        with self._connect() as conn:
+            conn.execute(
+                "INSERT INTO units (id, teacher_id, title, subject, grade_level, topic, unit_json) VALUES (?,?,?,?,?,?,?)",
+                (uid, teacher_id, title, subject, grade_level, topic, unit_json),
+            )
         return uid
 
     def get_unit(self, unit_id: str) -> Optional[dict[str, Any]]:
         return self._fetchone("SELECT * FROM units WHERE id=?", (unit_id,))
 
-    def list_units(self, teacher_id: str | None = None) -> list[dict[str, Any]]:
+    def list_units(self, teacher_id: Optional[str] = None) -> list[dict[str, Any]]:
         if teacher_id:
             return self._fetchall("SELECT * FROM units WHERE teacher_id=? ORDER BY created_at DESC", (teacher_id,))
         return self._fetchall("SELECT * FROM units ORDER BY created_at DESC")
 
     def rate_unit(self, unit_id: str, rating: int) -> None:
-        self.conn.execute("UPDATE units SET rating=? WHERE id=?", (rating, unit_id))
-        self.conn.commit()
+        with self._connect() as conn:
+            conn.execute("UPDATE units SET rating=? WHERE id=?", (rating, unit_id))
 
-    # ── lessons ──────────────────────────────────────────────────────
+    # -- lessons ----------------------------------------------------------
 
     def insert_lesson(
         self, unit_id: str, lesson_number: int, title: str, lesson_json: str,
-        materials_json: str | None = None,
+        materials_json: Optional[str] = None,
     ) -> str:
         lid = self._new_id()
         token = self._new_token()
-        self.conn.execute(
-            "INSERT INTO lessons (id, unit_id, lesson_number, title, lesson_json, materials_json, share_token)"
-            " VALUES (?,?,?,?,?,?,?)",
-            (lid, unit_id, lesson_number, title, lesson_json, materials_json, token),
-        )
-        self.conn.commit()
+        with self._connect() as conn:
+            conn.execute(
+                "INSERT INTO lessons (id, unit_id, lesson_number, title, lesson_json, materials_json, share_token)"
+                " VALUES (?,?,?,?,?,?,?)",
+                (lid, unit_id, lesson_number, title, lesson_json, materials_json, token),
+            )
         return lid
 
     def get_lesson(self, lesson_id: str) -> Optional[dict[str, Any]]:
@@ -272,37 +295,38 @@ class Database:
         return self._fetchall("SELECT * FROM lessons WHERE unit_id=? ORDER BY lesson_number", (unit_id,))
 
     def update_lesson_json(self, lesson_id: str, lesson_json: str) -> None:
-        self.conn.execute(
-            "UPDATE lessons SET lesson_json=?, edit_count=edit_count+1 WHERE id=?",
-            (lesson_json, lesson_id),
-        )
-        self.conn.commit()
+        with self._connect() as conn:
+            conn.execute(
+                "UPDATE lessons SET lesson_json=?, edit_count=edit_count+1 WHERE id=?",
+                (lesson_json, lesson_id),
+            )
 
     def update_lesson_materials(self, lesson_id: str, materials_json: str) -> None:
-        self.conn.execute("UPDATE lessons SET materials_json=? WHERE id=?", (materials_json, lesson_id))
-        self.conn.commit()
+        with self._connect() as conn:
+            conn.execute("UPDATE lessons SET materials_json=? WHERE id=?", (materials_json, lesson_id))
 
     def update_lesson_scores(self, lesson_id: str, scores_json: str) -> None:
-        self.conn.execute("UPDATE lessons SET scores_json=? WHERE id=?", (scores_json, lesson_id))
-        self.conn.commit()
+        with self._connect() as conn:
+            conn.execute("UPDATE lessons SET scores_json=? WHERE id=?", (scores_json, lesson_id))
 
     def rate_lesson(self, lesson_id: str, rating: int) -> None:
-        self.conn.execute("UPDATE lessons SET rating=? WHERE id=?", (rating, lesson_id))
-        self.conn.commit()
+        with self._connect() as conn:
+            conn.execute("UPDATE lessons SET rating=? WHERE id=?", (rating, lesson_id))
 
     def count_lessons(self) -> int:
-        row = self.conn.execute("SELECT COUNT(*) as c FROM lessons").fetchone()
+        with self._connect() as conn:
+            row = conn.execute("SELECT COUNT(*) as c FROM lessons").fetchone()
         return row["c"] if row else 0
 
-    # ── feedback ─────────────────────────────────────────────────────
+    # -- feedback ---------------------------------------------------------
 
     def insert_feedback(self, lesson_id: str, rating: int, notes: str = "", sections_edited: str = "[]") -> str:
         fid = self._new_id()
-        self.conn.execute(
-            "INSERT INTO feedback (id, lesson_id, rating, notes, sections_edited) VALUES (?,?,?,?,?)",
-            (fid, lesson_id, rating, notes, sections_edited),
-        )
-        self.conn.commit()
+        with self._connect() as conn:
+            conn.execute(
+                "INSERT INTO feedback (id, lesson_id, rating, notes, sections_edited) VALUES (?,?,?,?,?)",
+                (fid, lesson_id, rating, notes, sections_edited),
+            )
         return fid
 
     def get_feedback_for_lesson(self, lesson_id: str) -> list[dict[str, Any]]:
@@ -323,15 +347,15 @@ class Database:
             (max_rating, f"-{days}"),
         )
 
-    # ── prompt versions ──────────────────────────────────────────────
+    # -- prompt versions --------------------------------------------------
 
     def insert_prompt_version(self, prompt_type: str, version: int, prompt_text: str) -> str:
         pid = self._new_id()
-        self.conn.execute(
-            "INSERT INTO prompt_versions (id, prompt_type, version, prompt_text) VALUES (?,?,?,?)",
-            (pid, prompt_type, version, prompt_text),
-        )
-        self.conn.commit()
+        with self._connect() as conn:
+            conn.execute(
+                "INSERT INTO prompt_versions (id, prompt_type, version, prompt_text) VALUES (?,?,?,?)",
+                (pid, prompt_type, version, prompt_text),
+            )
         return pid
 
     def get_active_prompt(self, prompt_type: str) -> Optional[dict[str, Any]]:
@@ -347,26 +371,26 @@ class Database:
         )
 
     def update_prompt_stats(self, prompt_id: str, avg_rating: float, usage_count: int) -> None:
-        self.conn.execute(
-            "UPDATE prompt_versions SET avg_rating=?, usage_count=? WHERE id=?",
-            (avg_rating, usage_count, prompt_id),
-        )
-        self.conn.commit()
+        with self._connect() as conn:
+            conn.execute(
+                "UPDATE prompt_versions SET avg_rating=?, usage_count=? WHERE id=?",
+                (avg_rating, usage_count, prompt_id),
+            )
 
     def promote_prompt(self, prompt_id: str, prompt_type: str) -> None:
-        self.conn.execute("UPDATE prompt_versions SET is_active=0 WHERE prompt_type=?", (prompt_type,))
-        self.conn.execute("UPDATE prompt_versions SET is_active=1 WHERE id=?", (prompt_id,))
-        self.conn.commit()
+        with self._connect() as conn:
+            conn.execute("UPDATE prompt_versions SET is_active=0 WHERE prompt_type=?", (prompt_type,))
+            conn.execute("UPDATE prompt_versions SET is_active=1 WHERE id=?", (prompt_id,))
 
-    # ── chat messages ────────────────────────────────────────────────
+    # -- chat messages ----------------------------------------------------
 
     def insert_chat_message(self, lesson_id: str, role: str, content: str) -> str:
         mid = self._new_id()
-        self.conn.execute(
-            "INSERT INTO chat_messages (id, lesson_id, role, content) VALUES (?,?,?,?)",
-            (mid, lesson_id, role, content),
-        )
-        self.conn.commit()
+        with self._connect() as conn:
+            conn.execute(
+                "INSERT INTO chat_messages (id, lesson_id, role, content) VALUES (?,?,?,?)",
+                (mid, lesson_id, role, content),
+            )
         return mid
 
     def get_chat_history(self, lesson_id: str, limit: int = 20) -> list[dict[str, Any]]:
@@ -376,32 +400,33 @@ class Database:
         )
 
     def count_chat_sessions(self) -> int:
-        row = self.conn.execute("SELECT COUNT(DISTINCT lesson_id) as c FROM chat_messages WHERE role='user'").fetchone()
+        with self._connect() as conn:
+            row = conn.execute("SELECT COUNT(DISTINCT lesson_id) as c FROM chat_messages WHERE role='user'").fetchone()
         return row["c"] if row else 0
 
-    # ── onboarding ─────────────────────────────────────────────────
+    # -- onboarding -------------------------------------------------------
 
     def get_onboarding(self, teacher_id: str) -> Optional[dict[str, Any]]:
         return self._fetchone("SELECT * FROM onboarding_state WHERE teacher_id=?", (teacher_id,))
 
     def upsert_onboarding(self, teacher_id: str, step_completed: int) -> None:
-        if step_completed >= 5:
-            self.conn.execute(
-                """INSERT INTO onboarding_state (teacher_id, step_completed, completed_at)
-                   VALUES (?, ?, CURRENT_TIMESTAMP)
-                   ON CONFLICT(teacher_id) DO UPDATE SET
-                       step_completed=excluded.step_completed,
-                       completed_at=CURRENT_TIMESTAMP""",
-                (teacher_id, step_completed),
-            )
-        else:
-            self.conn.execute(
-                """INSERT INTO onboarding_state (teacher_id, step_completed)
-                   VALUES (?, ?)
-                   ON CONFLICT(teacher_id) DO UPDATE SET step_completed=excluded.step_completed""",
-                (teacher_id, step_completed),
-            )
-        self.conn.commit()
+        with self._connect() as conn:
+            if step_completed >= 5:
+                conn.execute(
+                    """INSERT INTO onboarding_state (teacher_id, step_completed, completed_at)
+                       VALUES (?, ?, CURRENT_TIMESTAMP)
+                       ON CONFLICT(teacher_id) DO UPDATE SET
+                           step_completed=excluded.step_completed,
+                           completed_at=CURRENT_TIMESTAMP""",
+                    (teacher_id, step_completed),
+                )
+            else:
+                conn.execute(
+                    """INSERT INTO onboarding_state (teacher_id, step_completed)
+                       VALUES (?, ?)
+                       ON CONFLICT(teacher_id) DO UPDATE SET step_completed=excluded.step_completed""",
+                    (teacher_id, step_completed),
+                )
 
     def is_onboarding_complete(self) -> bool:
         row = self._fetchone("SELECT * FROM onboarding_state WHERE step_completed >= 5 LIMIT 1")
@@ -409,29 +434,29 @@ class Database:
 
     def clear_all_generated(self) -> None:
         """Clear all generated content (units, lessons, materials, feedback, chats)."""
-        self.conn.executescript("""
-            DELETE FROM lessons;
-            DELETE FROM units;
-            DELETE FROM feedback;
-            DELETE FROM chat_messages;
-        """)
-        self.conn.commit()
+        with self._connect() as conn:
+            conn.executescript("""
+                DELETE FROM lessons;
+                DELETE FROM units;
+                DELETE FROM feedback;
+                DELETE FROM chat_messages;
+            """)
 
     def reset_all(self) -> None:
-        """Full reset — clear everything including teachers and onboarding."""
-        self.conn.executescript("""
-            DELETE FROM lessons;
-            DELETE FROM units;
-            DELETE FROM feedback;
-            DELETE FROM chat_messages;
-            DELETE FROM prompt_versions;
-            DELETE FROM teachers;
-            DELETE FROM onboarding_state;
-            DELETE FROM shared_content;
-            DELETE FROM school_teachers;
-            DELETE FROM schools;
-        """)
-        self.conn.commit()
+        """Full reset -- clear everything including teachers and onboarding."""
+        with self._connect() as conn:
+            conn.executescript("""
+                DELETE FROM lessons;
+                DELETE FROM units;
+                DELETE FROM feedback;
+                DELETE FROM chat_messages;
+                DELETE FROM prompt_versions;
+                DELETE FROM teachers;
+                DELETE FROM onboarding_state;
+                DELETE FROM shared_content;
+                DELETE FROM school_teachers;
+                DELETE FROM schools;
+            """)
 
     def db_size_mb(self) -> float:
         """Get the database file size in MB."""
@@ -440,18 +465,18 @@ class Database:
         except OSError:
             return 0.0
 
-    # ── schools ────────────────────────────────────────────────────────
+    # -- schools ----------------------------------------------------------
 
     def create_school(  # noqa: E501
-        self, name: str, district: str = "", state: str = "", grade_levels: list[str] | None = None,
+        self, name: str, district: str = "", state: str = "", grade_levels: Optional[list[str]] = None,
     ) -> str:
-        sid = self._new_id()
         import json as _json
-        self.conn.execute(
-            "INSERT INTO schools (id, name, district, state, grade_levels_json) VALUES (?,?,?,?,?)",
-            (sid, name, district, state, _json.dumps(grade_levels or [])),
-        )
-        self.conn.commit()
+        sid = self._new_id()
+        with self._connect() as conn:
+            conn.execute(
+                "INSERT INTO schools (id, name, district, state, grade_levels_json) VALUES (?,?,?,?,?)",
+                (sid, name, district, state, _json.dumps(grade_levels or [])),
+            )
         return sid
 
     def get_school(self, school_id: str) -> Optional[dict[str, Any]]:
@@ -463,16 +488,16 @@ class Database:
     def add_teacher_to_school(
         self, school_id: str, teacher_id: str, role: str = "teacher", department: str = "",
     ) -> None:
-        self.conn.execute(
-            """INSERT INTO school_teachers (school_id, teacher_id, role, department) VALUES (?,?,?,?)
-               ON CONFLICT(school_id, teacher_id) DO UPDATE SET role=excluded.role, department=excluded.department""",
-            (school_id, teacher_id, role, department),
-        )
-        self.conn.commit()
+        with self._connect() as conn:
+            conn.execute(
+                """INSERT INTO school_teachers (school_id, teacher_id, role, department) VALUES (?,?,?,?)
+                   ON CONFLICT(school_id, teacher_id) DO UPDATE SET role=excluded.role, department=excluded.department""",
+                (school_id, teacher_id, role, department),
+            )
 
     def remove_teacher_from_school(self, school_id: str, teacher_id: str) -> None:
-        self.conn.execute("DELETE FROM school_teachers WHERE school_id=? AND teacher_id=?", (school_id, teacher_id))
-        self.conn.commit()
+        with self._connect() as conn:
+            conn.execute("DELETE FROM school_teachers WHERE school_id=? AND teacher_id=?", (school_id, teacher_id))
 
     def list_school_teachers(self, school_id: str) -> list[dict[str, Any]]:
         return self._fetchall(
@@ -483,28 +508,27 @@ class Database:
         )
 
     def get_teacher_school(self, teacher_id: str) -> Optional[dict[str, Any]]:
-        row = self._fetchone(
+        return self._fetchone(
             """SELECT s.*, st.role, st.department FROM schools s
                JOIN school_teachers st ON s.id = st.school_id
                WHERE st.teacher_id=? LIMIT 1""",
             (teacher_id,),
         )
-        return row
 
-    # ── shared content ────────────────────────────────────────────────
+    # -- shared content ----------------------------------------------------
 
     def share_content(
         self, school_id: str, teacher_id: str, content_type: str, content_id: str,
         title: str, subject: str = "", grade_level: str = "", department: str = "",
     ) -> str:
         sid = self._new_id()
-        self.conn.execute(
-            """INSERT INTO shared_content
-               (id, school_id, teacher_id, content_type, content_id, title, subject, grade_level, department)
-               VALUES (?,?,?,?,?,?,?,?,?)""",
-            (sid, school_id, teacher_id, content_type, content_id, title, subject, grade_level, department),
-        )
-        self.conn.commit()
+        with self._connect() as conn:
+            conn.execute(
+                """INSERT INTO shared_content
+                   (id, school_id, teacher_id, content_type, content_id, title, subject, grade_level, department)
+                   VALUES (?,?,?,?,?,?,?,?,?)""",
+                (sid, school_id, teacher_id, content_type, content_id, title, subject, grade_level, department),
+            )
         return sid
 
     def get_shared_library(self, school_id: str, department: str = "", limit: int = 50) -> list[dict[str, Any]]:
@@ -525,31 +549,31 @@ class Database:
         )
 
     def rate_shared_content(self, shared_id: str, rating: int) -> None:
-        self.conn.execute("UPDATE shared_content SET rating=? WHERE id=?", (rating, shared_id))
-        self.conn.commit()
+        with self._connect() as conn:
+            conn.execute("UPDATE shared_content SET rating=? WHERE id=?", (rating, shared_id))
 
-    # ── IEP profiles ────────────────────────────────────────────────
+    # -- IEP profiles ------------------------------------------------------
 
     def upsert_iep_profile(
         self, teacher_id: str, student_name: str, disability_type: str = "",
         accommodations_json: str = "[]", modifications_json: str = "[]",
-        goals_json: str = "[]", profile_id: str | None = None,
+        goals_json: str = "[]", profile_id: Optional[str] = None,
     ) -> str:
         pid = profile_id or self._new_id()
-        self.conn.execute(
-            """INSERT INTO iep_profiles (id, teacher_id, student_name, disability_type,
-                   accommodations_json, modifications_json, goals_json)
-               VALUES (?,?,?,?,?,?,?)
-               ON CONFLICT(id) DO UPDATE SET
-                   student_name=excluded.student_name,
-                   disability_type=excluded.disability_type,
-                   accommodations_json=excluded.accommodations_json,
-                   modifications_json=excluded.modifications_json,
-                   goals_json=excluded.goals_json,
-                   updated_at=CURRENT_TIMESTAMP""",
-            (pid, teacher_id, student_name, disability_type, accommodations_json, modifications_json, goals_json),
-        )
-        self.conn.commit()
+        with self._connect() as conn:
+            conn.execute(
+                """INSERT INTO iep_profiles (id, teacher_id, student_name, disability_type,
+                       accommodations_json, modifications_json, goals_json)
+                   VALUES (?,?,?,?,?,?,?)
+                   ON CONFLICT(id) DO UPDATE SET
+                       student_name=excluded.student_name,
+                       disability_type=excluded.disability_type,
+                       accommodations_json=excluded.accommodations_json,
+                       modifications_json=excluded.modifications_json,
+                       goals_json=excluded.goals_json,
+                       updated_at=CURRENT_TIMESTAMP""",
+                (pid, teacher_id, student_name, disability_type, accommodations_json, modifications_json, goals_json),
+            )
         return pid
 
     def get_iep_profile(self, profile_id: str) -> Optional[dict[str, Any]]:
@@ -567,29 +591,29 @@ class Database:
         )
 
     def deactivate_iep_profile(self, profile_id: str) -> None:
-        self.conn.execute(
-            "UPDATE iep_profiles SET active=0, updated_at=CURRENT_TIMESTAMP WHERE id=?",
-            (profile_id,),
-        )
-        self.conn.commit()
+        with self._connect() as conn:
+            conn.execute(
+                "UPDATE iep_profiles SET active=0, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                (profile_id,),
+            )
 
     def delete_iep_profile(self, profile_id: str) -> None:
-        self.conn.execute("DELETE FROM iep_profiles WHERE id=?", (profile_id,))
-        self.conn.commit()
+        with self._connect() as conn:
+            conn.execute("DELETE FROM iep_profiles WHERE id=?", (profile_id,))
 
-    # ── class codes ────────────────────────────────────────────────────
+    # -- class codes -------------------------------------------------------
 
     def create_class_code(
         self, code: str, teacher_id: str, name: str = "", topic: str = "",
-        allowed_lesson_ids: str = "[]", expires_at: str | None = None,
+        allowed_lesson_ids: str = "[]", expires_at: Optional[str] = None,
     ) -> str:
         cid = self._new_id()
-        self.conn.execute(
-            "INSERT INTO class_codes (id, code, teacher_id, name, topic, allowed_lesson_ids, expires_at)"
-            " VALUES (?,?,?,?,?,?,?)",
-            (cid, code, teacher_id, name, topic, allowed_lesson_ids, expires_at),
-        )
-        self.conn.commit()
+        with self._connect() as conn:
+            conn.execute(
+                "INSERT INTO class_codes (id, code, teacher_id, name, topic, allowed_lesson_ids, expires_at)"
+                " VALUES (?,?,?,?,?,?,?)",
+                (cid, code, teacher_id, name, topic, allowed_lesson_ids, expires_at),
+            )
         return cid
 
     def get_class_code(self, code: str) -> Optional[dict[str, Any]]:
@@ -601,24 +625,24 @@ class Database:
             (teacher_id,),
         )
 
-    # ── student enrollments ──────────────────────────────────────────
+    # -- student enrollments -----------------------------------------------
 
     def enroll_student(self, student_id: str, class_code: str) -> str:
         eid = self._new_id()
-        self.conn.execute(
-            "INSERT OR IGNORE INTO student_enrollments (id, student_id, class_code) VALUES (?,?,?)",
-            (eid, student_id, class_code),
-        )
-        self.conn.commit()
+        with self._connect() as conn:
+            conn.execute(
+                "INSERT OR IGNORE INTO student_enrollments (id, student_id, class_code) VALUES (?,?,?)",
+                (eid, student_id, class_code),
+            )
         return eid
 
     def revoke_student(self, class_code: str, student_id: str) -> bool:
-        cur = self.conn.execute(
-            "DELETE FROM student_enrollments WHERE class_code=? AND student_id=?",
-            (class_code, student_id),
-        )
-        self.conn.commit()
-        return cur.rowcount > 0
+        with self._connect() as conn:
+            cur = conn.execute(
+                "DELETE FROM student_enrollments WHERE class_code=? AND student_id=?",
+                (class_code, student_id),
+            )
+            return cur.rowcount > 0
 
     def list_enrollments(self, class_code: str) -> list[dict[str, Any]]:
         return self._fetchall(
@@ -627,23 +651,24 @@ class Database:
         )
 
     def count_enrollments(self, class_code: str) -> int:
-        row = self.conn.execute(
-            "SELECT COUNT(*) as c FROM student_enrollments WHERE class_code=?",
-            (class_code,),
-        ).fetchone()
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT COUNT(*) as c FROM student_enrollments WHERE class_code=?",
+                (class_code,),
+            ).fetchone()
         return row["c"] if row else 0
 
-    # ── student questions (web db) ───────────────────────────────────
+    # -- student questions (web db) ----------------------------------------
 
     def insert_student_question(
         self, student_id: str, class_code: str, question: str, answer: str,
     ) -> str:
         qid = self._new_id()
-        self.conn.execute(
-            "INSERT INTO student_questions (id, student_id, class_code, question, answer) VALUES (?,?,?,?,?)",
-            (qid, student_id, class_code, question, answer),
-        )
-        self.conn.commit()
+        with self._connect() as conn:
+            conn.execute(
+                "INSERT INTO student_questions (id, student_id, class_code, question, answer) VALUES (?,?,?,?,?)",
+                (qid, student_id, class_code, question, answer),
+            )
         return qid
 
     def get_student_questions(self, class_code: str, limit: int = 50) -> list[dict[str, Any]]:
@@ -653,16 +678,18 @@ class Database:
         )
 
     def count_student_questions(self, class_code: str) -> int:
-        row = self.conn.execute(
-            "SELECT COUNT(*) as c FROM student_questions WHERE class_code=?",
-            (class_code,),
-        ).fetchone()
+        with self._connect() as conn:
+            row = conn.execute(
+                "SELECT COUNT(*) as c FROM student_questions WHERE class_code=?",
+                (class_code,),
+            ).fetchone()
         return row["c"] if row else 0
 
-    # ── stats ────────────────────────────────────────────────────────
+    # -- stats -------------------------------------------------------------
 
     def get_stats(self) -> dict[str, int]:
-        units = self.conn.execute("SELECT COUNT(*) as c FROM units").fetchone()["c"]
-        lessons = self.conn.execute("SELECT COUNT(*) as c FROM lessons").fetchone()["c"]
+        with self._connect() as conn:
+            units = conn.execute("SELECT COUNT(*) as c FROM units").fetchone()["c"]
+            lessons = conn.execute("SELECT COUNT(*) as c FROM lessons").fetchone()["c"]
         chats = self.count_chat_sessions()
         return {"units": units, "lessons": lessons, "chats": chats}

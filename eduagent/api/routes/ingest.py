@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import logging
+import os
+import re
 import tempfile
 from pathlib import Path
 
@@ -12,6 +15,8 @@ from fastapi.responses import JSONResponse
 from eduagent.api.server import get_db
 from eduagent.ingestor import ingest_path
 from eduagent.persona import extract_persona
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["ingest"])
 
@@ -62,5 +67,9 @@ async def get_persona():
     if not teacher or not teacher.get("persona_json"):
         return JSONResponse({"error": "No persona found. Upload teaching materials first."}, status_code=404)
 
-    persona_data = json.loads(teacher["persona_json"])
+    try:
+        persona_data = json.loads(teacher["persona_json"])
+    except (json.JSONDecodeError, TypeError) as exc:
+        logger.warning("Failed to parse persona_json: %s", exc)
+        return JSONResponse({"error": "Persona data is corrupted."}, status_code=500)
     return {"teacher_id": teacher["id"], "persona": persona_data}

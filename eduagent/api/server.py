@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import logging
+import os
 import sqlite3
 from contextlib import asynccontextmanager
 from datetime import datetime, timedelta
@@ -13,7 +15,11 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
+from fastapi.middleware.cors import CORSMiddleware
+
 from eduagent.database import Database
+
+logger = logging.getLogger(__name__)
 
 # Paths
 _PKG_DIR = Path(__file__).parent
@@ -373,15 +379,13 @@ select {{ padding: 6px 10px; border-radius: 4px;
             from eduagent.state import _get_conn as _state_conn2
             from eduagent.state import init_db as _state_init2
             _state_init2()
-            sconn2 = _state_conn2()
-            sconn2.row_factory = sqlite3.Row
             teacher_id_for_codes = teacher["id"] if teacher else "local-teacher"
-            cc_rows2 = sconn2.execute(
-                "SELECT class_code, name, topic, expires_at, created_at FROM classes WHERE teacher_id = ?",
-                (teacher_id_for_codes,),
-            ).fetchall()
-            class_codes_list = [dict(r) for r in cc_rows2]
-            sconn2.close()
+            with _state_conn2() as sconn2:
+                cc_rows2 = sconn2.execute(
+                    "SELECT class_code, name, topic, expires_at, created_at FROM classes WHERE teacher_id = ?",
+                    (teacher_id_for_codes,),
+                ).fetchall()
+                class_codes_list = [dict(r) for r in cc_rows2]
         except Exception:
             pass
 
@@ -419,9 +423,21 @@ select {{ padding: 6px 10px; border-radius: 4px;
         lesson_row = db.get_lesson(lesson_id)
         if not lesson_row:
             return HTMLResponse("<h1>Lesson not found</h1>", status_code=404)
-        lesson_data = json.loads(lesson_row["lesson_json"]) if lesson_row["lesson_json"] else {}
-        materials_data = json.loads(lesson_row["materials_json"]) if lesson_row.get("materials_json") else None
-        scores_data = json.loads(lesson_row["scores_json"]) if lesson_row.get("scores_json") else None
+        try:
+            lesson_data = json.loads(lesson_row["lesson_json"]) if lesson_row["lesson_json"] else {}
+        except (json.JSONDecodeError, TypeError) as exc:
+            logger.warning("Failed to parse lesson_json for %s: %s", lesson_id, exc)
+            lesson_data = {}
+        try:
+            materials_data = json.loads(lesson_row["materials_json"]) if lesson_row.get("materials_json") else None
+        except (json.JSONDecodeError, TypeError) as exc:
+            logger.warning("Failed to parse materials_json for %s: %s", lesson_id, exc)
+            materials_data = None
+        try:
+            scores_data = json.loads(lesson_row["scores_json"]) if lesson_row.get("scores_json") else None
+        except (json.JSONDecodeError, TypeError) as exc:
+            logger.warning("Failed to parse scores_json for %s: %s", lesson_id, exc)
+            scores_data = None
         feedback_list = db.get_feedback_for_lesson(lesson_id)
         # Build embed snippet for student chatbot
         embed_snippet = (
@@ -436,14 +452,12 @@ select {{ padding: 6px 10px; border-radius: 4px;
             from eduagent.state import _get_conn as _state_conn
             from eduagent.state import init_db as _state_init
             _state_init()
-            sconn = _state_conn()
-            sconn.row_factory = sqlite3.Row
-            cc_rows = sconn.execute(
-                "SELECT class_code, name FROM classes WHERE active_lesson_id = ?",
-                (lesson_id,),
-            ).fetchall()
-            class_codes = [{"code": r["class_code"], "name": r["name"]} for r in cc_rows]
-            sconn.close()
+            with _state_conn() as sconn:
+                cc_rows = sconn.execute(
+                    "SELECT class_code, name FROM classes WHERE active_lesson_id = ?",
+                    (lesson_id,),
+                ).fetchall()
+                class_codes = [{"code": r["class_code"], "name": r["name"]} for r in cc_rows]
         except Exception:
             pass
 
@@ -465,7 +479,11 @@ select {{ padding: 6px 10px; border-radius: 4px;
         lesson_row = db.get_lesson_by_token(token)
         if not lesson_row:
             return HTMLResponse("<h1>Lesson not found</h1>", status_code=404)
-        lesson_data = json.loads(lesson_row["lesson_json"]) if lesson_row["lesson_json"] else {}
+        try:
+            lesson_data = json.loads(lesson_row["lesson_json"]) if lesson_row["lesson_json"] else {}
+        except (json.JSONDecodeError, TypeError) as exc:
+            logger.warning("Failed to parse shared lesson_json for token %s: %s", token, exc)
+            lesson_data = {}
         return templates.TemplateResponse(request, "lesson.html", {
             "lesson": lesson_row,
             "lesson_data": lesson_data,
@@ -480,12 +498,10 @@ select {{ padding: 6px 10px; border-radius: 4px;
         """Minimal student-facing page for a class code."""
         from eduagent.state import _get_conn, init_db
         init_db()
-        conn = _get_conn()
-        conn.row_factory = sqlite3.Row
-        row = conn.execute(
-            "SELECT * FROM classes WHERE class_code = ?", (class_code,)
-        ).fetchone()
-        conn.close()
+        with _get_conn() as conn:
+            row = conn.execute(
+                "SELECT * FROM classes WHERE class_code = ?", (class_code,)
+            ).fetchone()
 
         if not row:
             return HTMLResponse("<h1>Class not found</h1>", status_code=404)
@@ -574,11 +590,9 @@ h1 {{ color: #1a73e8; margin-bottom: 8px; }}
             try:
                 from eduagent.state import _get_conn, init_db
                 init_db()
-                conn = _get_conn()
-                conn.row_factory = sqlite3.Row
-                rows = conn.execute(sql, params).fetchall()
-                result = [dict(r) for r in rows]
-                conn.close()
+                with _get_conn() as conn:
+                    rows = conn.execute(sql, params).fetchall()
+                    result = [dict(r) for r in rows]
                 return result
             except Exception:
                 return []
