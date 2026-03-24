@@ -24,9 +24,27 @@ def _is_utf8_terminal() -> bool:
 
 
 def _make_console() -> Console:
-    """Create a Rich console with safe encoding for all platforms."""
-    # Windows cmd.exe and PowerShell may not handle UTF-8 box chars
+    """Create a Rich console with safe encoding for all platforms.
+
+    On Windows with non-UTF-8 terminals, forces UTF-8 on stdout/stderr
+    so LLM-generated Unicode (arrows, em dashes, curly quotes) doesn't
+    crash Rich's renderer. safe_box handles box-drawing characters.
+    """
     force_ascii = sys.platform == "win32" and not _is_utf8_terminal()
+
+    if force_ascii:
+        # Force UTF-8 encoding on the output stream so Rich can render
+        # Unicode content (→, —, ", etc.) even on cp1252 terminals.
+        import io
+        if hasattr(sys.stdout, "buffer"):
+            sys.stdout = io.TextIOWrapper(
+                sys.stdout.buffer, encoding="utf-8", errors="replace"
+            )
+        if hasattr(sys.stderr, "buffer"):
+            sys.stderr = io.TextIOWrapper(
+                sys.stderr.buffer, encoding="utf-8", errors="replace"
+            )
+
     return Console(
         highlight=False,
         safe_box=force_ascii,

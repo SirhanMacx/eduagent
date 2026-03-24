@@ -137,8 +137,6 @@ class StudentTelegramBot:
                 .token(self.token)
                 .request(request)
                 .get_updates_request(get_updates_request)
-                .connect_timeout(30.0)
-                .read_timeout(30.0)
                 .build()
             )
         except (ImportError, TypeError):
