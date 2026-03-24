@@ -11,11 +11,13 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-
-from fastapi.middleware.cors import CORSMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from eduagent.database import Database
 
@@ -25,6 +27,9 @@ logger = logging.getLogger(__name__)
 _PKG_DIR = Path(__file__).parent
 _TEMPLATE_DIR = _PKG_DIR / "templates"
 _STATIC_DIR = _PKG_DIR / "static"
+
+# Rate limiter (shared across the app)
+limiter = Limiter(key_func=get_remote_address)
 
 # Shared state
 _db: Database | None = None
@@ -55,6 +60,21 @@ def create_app() -> FastAPI:
         description="Your teaching files, your AI co-teacher.",
         version="0.1.0",
         lifespan=lifespan,
+    )
+
+    # Rate limiting middleware
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+    # CORS middleware — restrict origins in production via EDUAGENT_CORS_ORIGINS env var
+    cors_origins_raw = os.environ.get("EDUAGENT_CORS_ORIGINS", "")
+    cors_origins = [o.strip() for o in cors_origins_raw.split(",") if o.strip()] if cors_origins_raw else ["*"]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
     )
 
     # Static files

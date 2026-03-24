@@ -31,7 +31,10 @@ async def ingest_files(files: list[UploadFile] = File(...)):
     with tempfile.TemporaryDirectory() as tmpdir:
         tmp_path = Path(tmpdir)
         for f in files:
-            dest = tmp_path / f.filename
+            # Sanitize filename to prevent path traversal
+            raw_name = os.path.basename(f.filename or "upload")
+            safe_name = re.sub(r"[^A-Za-z0-9._-]", "_", raw_name) or "upload"
+            dest = tmp_path / safe_name
             content = await f.read()
             dest.write_bytes(content)
 
@@ -44,8 +47,9 @@ async def ingest_files(files: list[UploadFile] = File(...)):
     # Extract persona
     try:
         persona = await extract_persona(documents)
-    except Exception as e:
-        return JSONResponse({"error": f"Persona extraction failed: {e}"}, status_code=500)
+    except Exception:
+        logger.error("Persona extraction failed", exc_info=True)
+        return JSONResponse({"error": "Persona extraction failed. Please try again."}, status_code=500)
 
     # Save to database
     db = get_db()

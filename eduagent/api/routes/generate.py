@@ -3,14 +3,18 @@
 from __future__ import annotations
 
 import json
+import logging
+from typing import Optional
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 
-from eduagent.api.server import get_db
+from eduagent.api.server import get_db, limiter
 from eduagent.models import DailyLesson, TeacherPersona, UnitPlan
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["generate"])
 
@@ -21,16 +25,16 @@ def _sse(event: str, **kwargs) -> dict:
 
 
 class UnitRequest(BaseModel):
-    topic: str
-    grade_level: str = "8"
-    subject: str = "Science"
-    duration_weeks: int = 3
+    topic: str = Field(..., min_length=1, max_length=500)
+    grade_level: str = Field("8", min_length=1, max_length=20)
+    subject: str = Field("Science", min_length=1, max_length=100)
+    duration_weeks: int = Field(3, ge=1, le=52)
     standards: list[str] = Field(default_factory=list)
 
 
 class LessonRequest(BaseModel):
     unit_id: str
-    lesson_number: int = 1
+    lesson_number: int = Field(1, ge=1, le=100)
 
 
 class MaterialsRequest(BaseModel):
@@ -38,24 +42,24 @@ class MaterialsRequest(BaseModel):
 
 
 class FullRequest(BaseModel):
-    topic: str
-    grade_level: str = "8"
-    subject: str = "Science"
-    duration_weeks: int = 3
+    topic: str = Field(..., min_length=1, max_length=500)
+    grade_level: str = Field("8", min_length=1, max_length=20)
+    subject: str = Field("Science", min_length=1, max_length=100)
+    duration_weeks: int = Field(3, ge=1, le=52)
     standards: list[str] = Field(default_factory=list)
     include_homework: bool = True
-    max_lessons: int | None = None
-    template_slug: str | None = None
+    max_lessons: Optional[int] = Field(None, ge=1, le=100)
+    template_slug: Optional[str] = None
 
 
 class CourseRequest(BaseModel):
-    subject: str
-    grade_level: str
+    subject: str = Field(..., min_length=1, max_length=100)
+    grade_level: str = Field(..., min_length=1, max_length=20)
     topics: list[str]
-    weeks_per_topic: int = 2
+    weeks_per_topic: int = Field(2, ge=1, le=52)
 
 
-def _get_persona(db) -> tuple[TeacherPersona | None, str | None]:
+def _get_persona(db) -> tuple[Optional[TeacherPersona], Optional[str]]:
     """Load persona from the default teacher in the DB."""
     teacher = db.get_default_teacher()
     if not teacher or not teacher.get("persona_json"):
@@ -65,7 +69,8 @@ def _get_persona(db) -> tuple[TeacherPersona | None, str | None]:
 
 
 @router.post("/unit")
-async def create_unit(req: UnitRequest):
+@limiter.limit("10/minute")
+async def create_unit(request: Request, req: UnitRequest):
     """Generate a unit plan."""
     from eduagent.planner import plan_unit
 
@@ -86,9 +91,10 @@ async def create_unit(req: UnitRequest):
             persona=persona,
             standards=req.standards or None,
         )
-    except Exception as e:
+    except Exception:
+        logger.error("Unit generation failed", exc_info=True)
         return JSONResponse(
-            {"error": f"Unit generation failed: {e}"}, status_code=500
+            {"error": "Unit generation failed. Please try again."}, status_code=500
         )
 
     unit_id = db.insert_unit(
@@ -104,7 +110,8 @@ async def create_unit(req: UnitRequest):
 
 
 @router.post("/lesson")
-async def create_lesson(req: LessonRequest):
+@limiter.limit("10/minute")
+async def create_lesson(request: Request, req: LessonRequest):
     """Generate a single lesson plan for a unit."""
     from eduagent.lesson import generate_lesson
 
@@ -129,9 +136,10 @@ async def create_lesson(req: LessonRequest):
             unit=unit,
             persona=persona,
         )
-    except Exception as e:
+    except Exception:
+        logger.error("Lesson generation failed", exc_info=True)
         return JSONResponse(
-            {"error": f"Lesson generation failed: {e}"}, status_code=500
+            {"error": "Lesson generation failed. Please try again."}, status_code=500
         )
 
     lesson_id = db.insert_lesson(
@@ -145,7 +153,8 @@ async def create_lesson(req: LessonRequest):
 
 
 @router.post("/materials")
-async def create_materials(req: MaterialsRequest):
+@limiter.limit("10/minute")
+async def create_materials(request: Request, req: MaterialsRequest):
     """Generate materials for a lesson."""
     from eduagent.materials import generate_all_materials
 
@@ -166,9 +175,10 @@ async def create_materials(req: MaterialsRequest):
 
     try:
         materials = await generate_all_materials(lesson, persona)
-    except Exception as e:
+    except Exception:
+        logger.error("Materials generation failed", exc_info=True)
         return JSONResponse(
-            {"error": f"Materials generation failed: {e}"},
+            {"error": "Materials generation failed. Please try again."},
             status_code=500,
         )
 
@@ -181,7 +191,8 @@ async def create_materials(req: MaterialsRequest):
 
 
 @router.post("/full")
-async def full_pipeline(req: FullRequest):
+@limiter.limit("10/minute")
+async def full_pipeline(request: Request, req: FullRequest):
     """End-to-end: generate unit + all lessons + materials. Returns SSE progress events."""
     from eduagent.lesson import generate_lesson
     from eduagent.materials import generate_all_materials
@@ -209,9 +220,10 @@ async def full_pipeline(req: FullRequest):
                 persona=persona,
                 standards=req.standards or None,
             )
-        except Exception as e:
+        except Exception:
+            logger.error("Unit generation failed in SSE stream", exc_info=True)
             yield _sse(
-                "error", error=f"Unit generation failed: {e}"
+                "error", error="Unit generation failed. Please try again."
             )
             return
 
@@ -249,11 +261,12 @@ async def full_pipeline(req: FullRequest):
                     persona=persona,
                     include_homework=req.include_homework,
                 )
-            except Exception as e:
+            except Exception:
+                logger.error("Lesson %d generation failed", brief.lesson_number, exc_info=True)
                 yield _sse(
                     "progress", step="lesson", status="error",
                     lesson_number=brief.lesson_number,
-                    error=str(e),
+                    error="Lesson generation failed.",
                 )
                 continue
 
@@ -310,7 +323,9 @@ async def full_pipeline(req: FullRequest):
 
 
 @router.get("/stream/unit")
+@limiter.limit("10/minute")
 async def stream_unit(
+    request: Request,
     topic: str,
     grade_level: str = "8",
     subject: str = "Science",
@@ -340,8 +355,9 @@ async def stream_unit(
                 duration_weeks=duration_weeks,
                 persona=persona,
             )
-        except Exception as e:
-            yield _sse("error", error=str(e))
+        except Exception:
+            logger.error("Stream unit generation failed", exc_info=True)
+            yield _sse("error", error="Unit generation failed. Please try again.")
             return
 
         unit_id = db.insert_unit(
@@ -364,7 +380,8 @@ async def stream_unit(
 
 
 @router.get("/stream/lesson")
-async def stream_lesson(unit_id: str, lesson_number: int = 1):
+@limiter.limit("10/minute")
+async def stream_lesson(request: Request, unit_id: str, lesson_number: int = 1):
     """Stream single lesson generation via SSE (GET for EventSource)."""
     from eduagent.lesson import generate_lesson
 
@@ -397,8 +414,9 @@ async def stream_lesson(unit_id: str, lesson_number: int = 1):
                 unit=unit,
                 persona=persona,
             )
-        except Exception as e:
-            yield _sse("error", error=str(e))
+        except Exception:
+            logger.error("Stream lesson generation failed", exc_info=True)
+            yield _sse("error", error="Lesson generation failed. Please try again.")
             return
 
         lid = db.insert_lesson(
@@ -418,7 +436,8 @@ async def stream_lesson(unit_id: str, lesson_number: int = 1):
 
 
 @router.post("/course")
-async def create_course(req: CourseRequest):
+@limiter.limit("10/minute")
+async def create_course(request: Request, req: CourseRequest):
     """Generate a full course structure — year plan from a list of topics."""
     from eduagent.planner import plan_unit
 
@@ -449,13 +468,14 @@ async def create_course(req: CourseRequest):
                     duration_weeks=req.weeks_per_topic,
                     persona=persona,
                 )
-            except Exception as e:
+            except Exception:
+                logger.error("Failed to plan topic '%s'", topic, exc_info=True)
                 yield _sse(
                     "progress", status="error",
-                    message=f"Failed to plan '{topic}': {e}",
+                    message=f"Failed to plan '{topic}'. Skipping.",
                 )
                 course_units.append(
-                    {"topic": topic, "error": str(e)}
+                    {"topic": topic, "error": "Generation failed."}
                 )
                 continue
 
@@ -496,7 +516,8 @@ async def create_course(req: CourseRequest):
 
 
 @router.get("/score/{lesson_id}")
-async def score_lesson(lesson_id: str):
+@limiter.limit("60/minute")
+async def score_lesson(request: Request, lesson_id: str):
     """Score a lesson on quality dimensions."""
     from eduagent.quality import LessonQualityScore
 
@@ -526,7 +547,8 @@ async def score_lesson(lesson_id: str):
 
 
 @router.post("/suggest/{lesson_id}")
-async def suggest_improvements_endpoint(lesson_id: str):
+@limiter.limit("10/minute")
+async def suggest_improvements_endpoint(request: Request, lesson_id: str):
     """Generate improvement suggestions for a lesson."""
     from eduagent.improver import suggest_improvements
 
@@ -552,7 +574,8 @@ async def suggest_improvements_endpoint(lesson_id: str):
 
 
 @router.get("/templates")
-async def list_templates_endpoint():
+@limiter.limit("60/minute")
+async def list_templates_endpoint(request: Request):
     """List all available lesson structure templates."""
     from eduagent.templates_lib import list_templates
 
@@ -571,7 +594,8 @@ async def list_templates_endpoint():
 
 
 @router.get("/units")
-async def list_units():
+@limiter.limit("60/minute")
+async def list_units(request: Request):
     """List all generated units."""
     db = get_db()
     units = db.list_units()
@@ -581,7 +605,8 @@ async def list_units():
 
 
 @router.get("/lessons/{unit_id}")
-async def list_lessons(unit_id: str):
+@limiter.limit("60/minute")
+async def list_lessons(request: Request, unit_id: str):
     """List all lessons for a unit."""
     db = get_db()
     lessons = db.list_lessons(unit_id)

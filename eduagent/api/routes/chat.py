@@ -5,11 +5,11 @@ from __future__ import annotations
 import json
 import logging
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from eduagent.api.server import get_db
+from eduagent.api.server import get_db, limiter
 from eduagent.chat import student_chat
 from eduagent.models import TeacherPersona
 
@@ -25,7 +25,8 @@ class ChatRequest(BaseModel):
 
 
 @router.post("/chat")
-async def chat_endpoint(req: ChatRequest):
+@limiter.limit("30/minute")
+async def chat_endpoint(request: Request, req: ChatRequest):
     """Student asks a question about a lesson; bot answers in teacher's voice."""
     db = get_db()
 
@@ -57,8 +58,9 @@ async def chat_endpoint(req: ChatRequest):
             persona=persona,
             chat_history=history,
         )
-    except Exception as e:
-        return JSONResponse({"error": f"Chat failed: {e}"}, status_code=500)
+    except Exception:
+        logger.error("Chat failed", exc_info=True)
+        return JSONResponse({"error": "Chat failed. Please try again."}, status_code=500)
 
     db.insert_chat_message(req.lesson_id, "user", req.question)
     db.insert_chat_message(req.lesson_id, "assistant", response)
