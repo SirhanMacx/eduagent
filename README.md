@@ -200,15 +200,45 @@ pip install 'eduagent[all]'             # Everything
 
 ## 🔧 Which AI should I use?
 
-EDUagent works with several AI providers. **You keep your own API key** — nothing goes through our servers.
+EDUagent is just the tool — it needs an AI brain to do the actual thinking. Think of it like a car: EDUagent is the car, and the AI provider is the engine. **You pick the engine.**
 
-| Provider | Cost | How to get a key |
-|----------|------|-----------------|
-| **Anthropic (Claude)** — recommended | $5 free, then pay-as-you-go | [console.anthropic.com](https://console.anthropic.com) → API Keys |
-| **OpenAI (GPT-4o)** | Pay-as-you-go | [platform.openai.com](https://platform.openai.com) → API Keys |
-| **Ollama** — 100% free | Free (runs on your computer) | [ollama.com](https://ollama.com) — download and install |
+Your API key stays on your computer. Nothing goes through our servers.
 
-For most teachers, **Anthropic Claude** is the best balance of quality and cost. A typical month of daily use costs $2–5.
+---
+
+**Option 1 — OpenAI GPT-4.5 (recommended for most teachers)**
+
+The same company that makes ChatGPT. GPT-4.5 is fast, smart, and reasonably priced.
+
+- Go to [platform.openai.com](https://platform.openai.com), create an account, add a payment method
+- Click **API Keys** → **Create new secret key** → copy it
+- Typical cost: **$5–10/month** for daily lesson planning
+
+> ⚠️ Avoid GPT-4o and older models — they're more expensive for similar quality.
+
+---
+
+**Option 2 — Ollama cloud with MiniMax M2.7 (~$20/month, best quality)**
+
+Ollama is a service that lets you use powerful AI models. MiniMax M2.7 is an excellent model for teaching tasks — smart, fast, and great at following your style.
+
+- Go to [ollama.com](https://ollama.com) and create an account
+- There is some free usage to try it out before paying
+- The $20/month plan gives you plenty for daily classroom use
+- Run: `eduagent config set-model ollama`
+
+---
+
+**Option 3 — Run a local model on your own computer (free, but limited)**
+
+Ollama can also run a small AI model entirely on your computer — no internet, no cost, no account needed. The catch: these local models are significantly less intelligent than the cloud options. They may struggle to capture your teaching voice, write convincingly, or follow complex instructions. The quality depends heavily on how powerful your computer is. Most teachers will find this frustrating.
+
+- Only recommended if you have a modern Mac with 16GB+ RAM or a gaming PC
+- Run: `ollama pull llama3` then `eduagent config set-model ollama`
+
+---
+
+**Bottom line:** Start with OpenAI GPT-4.5. It's the easiest setup and the cost is less than a cup of coffee per week.
 
 ## 📋 Commands
 
