@@ -5,7 +5,9 @@ from __future__ import annotations
 from datetime import datetime
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+import json
+
+from pydantic import BaseModel, Field, field_validator
 
 from eduagent.llm import LLMClient
 
@@ -41,6 +43,13 @@ class SubPacket(BaseModel):
     emergency_info: str = ""
     closing_notes: str = ""
     generated_at: datetime = Field(default_factory=datetime.now)
+
+    @field_validator("emergency_info", mode="before")
+    @classmethod
+    def coerce_emergency_info(cls, v):
+        if isinstance(v, dict):
+            return json.dumps(v)
+        return str(v) if v else ""
 
 
 _SYSTEM_PROMPT = (
@@ -198,8 +207,10 @@ def save_sub_packet(packet: SubPacket, output_dir: Path | None = None) -> Path:
         output_dir = Path.home() / ".eduagent" / "sub_packets"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    safe_date = packet.date.replace("/", "-").replace(" ", "_")
-    safe_class = packet.class_name.replace(" ", "_")[:30]
+    from eduagent import _safe_filename
+
+    safe_date = _safe_filename(packet.date)
+    safe_class = _safe_filename(packet.class_name)
     stem = f"sub_packet_{safe_date}_{safe_class}"
 
     json_path = output_dir / f"{stem}.json"

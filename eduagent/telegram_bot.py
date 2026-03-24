@@ -299,7 +299,19 @@ class EduAgentBot:
                 write_timeout=30.0,
                 pool_timeout=30.0,
             )
-            app = Application.builder().token(self.token).request(request).build()
+            get_updates_request = HTTPXRequest(
+                connect_timeout=30.0,
+                read_timeout=30.0,
+            )
+            app = (
+                Application.builder()
+                .token(self.token)
+                .request(request)
+                .get_updates_request(get_updates_request)
+                .connect_timeout(30.0)
+                .read_timeout(30.0)
+                .build()
+            )
         except (ImportError, TypeError):
             # Older python-telegram-bot versions may not have HTTPXRequest
             app = Application.builder().token(self.token).build()

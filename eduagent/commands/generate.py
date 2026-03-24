@@ -16,6 +16,7 @@ from rich.progress import (
 )
 from rich.table import Table
 
+from eduagent import _safe_filename
 from eduagent.commands._helpers import _safe_progress, console, load_persona_or_exit
 from eduagent.commands._helpers import output_dir as _output_dir
 from eduagent.commands._helpers import run_async as _run_async
@@ -467,6 +468,8 @@ def lesson(
             title=f"{topic} Lesson",
             subject=subject,
             grade_level=grade,
+            topic=topic,
+            duration_weeks=1,
             overview=f"A standalone lesson on {topic} for grade {grade} {subject}.",
             essential_questions=[f"What are the key concepts of {topic}?"],
             daily_lessons=[
@@ -885,7 +888,7 @@ def differentiate(
                 (
                     p
                     for p in paths
-                    if name.lower().replace(" ", "_")[:50] in str(p)
+                    if _safe_filename(name) in str(p)
                 ),
                 paths[0],
             )

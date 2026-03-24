@@ -447,6 +447,14 @@ SUBJECT_ALIASES: dict[str, str] = {
     "apush": "history",
     "government": "history",
     "ap government": "history",
+    "ap bio": "science",
+    "ap chem": "science",
+    "ap world": "history",
+    "ap euro": "history",
+    "ap gov": "history",
+    "ap lang": "ela",
+    "ap lit": "ela",
+    "ib history": "history",
 }
 
 

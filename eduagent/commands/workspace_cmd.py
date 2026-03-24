@@ -213,7 +213,9 @@ def workspace_students() -> None:
     table.add_column("File", style="cyan")
 
     for i, name in enumerate(profiles, 1):
-        filename = name.lower().replace(" ", "_") + ".md"
+        from eduagent import _safe_filename
+
+        filename = _safe_filename(name) + ".md"
         table.add_row(str(i), name, str(STUDENTS_DIR / filename))
 
     console.print(table)

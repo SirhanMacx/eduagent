@@ -182,8 +182,10 @@ def save_modified_lessons(
     """Save each student's modified lesson to a separate JSON file."""
     output_dir.mkdir(parents=True, exist_ok=True)
     paths: list[Path] = []
+    from eduagent import _safe_filename
+
     for student_name, lesson in modifications.items():
-        safe_name = student_name.lower().replace(" ", "_")[:50]
+        safe_name = _safe_filename(student_name)
         path = output_dir / f"iep_modified_{safe_name}.json"
         path.write_text(lesson.model_dump_json(indent=2), encoding="utf-8")
         paths.append(path)
@@ -197,7 +199,9 @@ def save_tiered_assignments(
 ) -> Path:
     """Save tiered assignment items to a JSON file."""
     output_dir.mkdir(parents=True, exist_ok=True)
-    safe_topic = topic.lower().replace(" ", "_")[:50]
+    from eduagent import _safe_filename
+
+    safe_topic = _safe_filename(topic)
     path = output_dir / f"tiered_{safe_topic}.json"
     data = [item.model_dump() for item in items]
     path.write_text(json.dumps(data, indent=2), encoding="utf-8")

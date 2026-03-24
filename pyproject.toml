@@ -71,6 +71,9 @@ Homepage = "https://github.com/SirhanMacx/eduagent"
 Documentation = "https://github.com/SirhanMacx/eduagent#readme"
 Issues = "https://github.com/SirhanMacx/eduagent/issues"
 
+[tool.setuptools.package-data]
+eduagent = ["prompts/*.txt", "demo/*.json"]
+
 [tool.ruff]
 line-length = 120
 target-version = "py310"

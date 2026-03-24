@@ -512,8 +512,10 @@ def _markdown_to_docx(markdown_text: str, output_path: Path) -> Path:
 
 def export_unit(unit: UnitPlan, output_dir: Path, fmt: str = "markdown") -> Path:
     """Export a unit plan to the specified format."""
+    from eduagent import _safe_filename
+
     output_dir.mkdir(parents=True, exist_ok=True)
-    safe_name = unit.title.lower().replace(" ", "_")[:50]
+    safe_name = _safe_filename(unit.title)
     md_text = unit_to_markdown(unit)
 
     if fmt == "markdown":
@@ -552,8 +554,10 @@ def export_lesson(lesson: DailyLesson, output_dir: Path, fmt: str = "markdown") 
 
 def export_materials(materials: LessonMaterials, output_dir: Path, fmt: str = "markdown") -> Path:
     """Export lesson materials to the specified format."""
+    from eduagent import _safe_filename
+
     output_dir.mkdir(parents=True, exist_ok=True)
-    safe_name = materials.lesson_title.lower().replace(" ", "_")[:50]
+    safe_name = _safe_filename(materials.lesson_title)
     md_text = materials_to_markdown(materials)
 
     if fmt == "markdown":
@@ -658,8 +662,10 @@ def pacing_guide_to_markdown(guide: PacingGuide) -> str:
 
 def export_year_map(year_map: YearMap, output_dir: Path, fmt: str = "markdown") -> Path:
     """Export a year map to the specified format."""
+    from eduagent import _safe_filename
+
     output_dir.mkdir(parents=True, exist_ok=True)
-    safe_name = f"year_map_{year_map.subject.lower().replace(' ', '_')}_{year_map.grade_level}"
+    safe_name = f"year_map_{_safe_filename(year_map.subject)}_{year_map.grade_level}"
     md_text = year_map_to_markdown(year_map)
 
     if fmt == "markdown":
@@ -678,8 +684,10 @@ def export_year_map(year_map: YearMap, output_dir: Path, fmt: str = "markdown") 
 
 def export_pacing_guide(guide: PacingGuide, output_dir: Path, fmt: str = "markdown") -> Path:
     """Export a pacing guide to the specified format."""
+    from eduagent import _safe_filename
+
     output_dir.mkdir(parents=True, exist_ok=True)
-    safe_name = f"pacing_{guide.subject.lower().replace(' ', '_')}_{guide.grade_level}"
+    safe_name = f"pacing_{_safe_filename(guide.subject)}_{guide.grade_level}"
     md_text = pacing_guide_to_markdown(guide)
 
     if fmt == "markdown":

@@ -69,7 +69,9 @@ async def generate_progress_update(
 def save_progress_update(update: ProgressUpdate, output_dir: Path) -> Path:
     """Save a progress update as JSON and return the path."""
     output_dir.mkdir(parents=True, exist_ok=True)
-    safe_name = update.student_name.lower().replace(" ", "_")
+    from eduagent import _safe_filename
+
+    safe_name = _safe_filename(update.student_name)
     filename = f"progress_update_{safe_name}.json"
     path = output_dir / filename
     path.write_text(update.model_dump_json(indent=2), encoding="utf-8")

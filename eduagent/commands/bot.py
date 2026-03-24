@@ -365,6 +365,31 @@ def _serve_gateway_headless(
     config: Optional[AppConfig] = None,
 ) -> None:
     """Run gateway + web server without TUI (VPS mode)."""
+    # Check for existing standalone bot instance
+    from eduagent.telegram_bot import _BOT_LOCK
+    import os
+    import signal
+
+    if _BOT_LOCK.exists():
+        try:
+            pid = int(_BOT_LOCK.read_text(encoding="utf-8").strip())
+            if pid != os.getpid():
+                try:
+                    os.kill(pid, 0)
+                    console.print(
+                        f"[yellow]A standalone Telegram bot is already running (PID {pid}).[/yellow]\n"
+                        "[yellow]Starting web server only. Stop the bot first if you want serve to manage it.[/yellow]"
+                    )
+                    # Fall back to web-only mode
+                    import uvicorn
+
+                    uvicorn.run("eduagent.api.server:app", host=host, port=port)
+                    return
+                except OSError:
+                    pass  # Process is dead, stale lock — proceed normally
+        except (ValueError, OSError):
+            pass  # Invalid lock file — proceed normally
+
     from eduagent.gateway import EduAgentGateway
 
     gateway = EduAgentGateway(token=token, config=config)

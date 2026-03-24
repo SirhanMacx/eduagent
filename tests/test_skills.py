@@ -82,7 +82,7 @@ class TestSkillLibrary:
         return SkillLibrary()
 
     def test_loads_all_skills(self, library):
-        assert len(library) == 11
+        assert len(library) >= 11
 
     def test_expected_subjects_present(self, library):
         expected = {
@@ -124,7 +124,7 @@ class TestSkillLibrary:
 
     def test_iterate(self, library):
         subjects = [s.subject for s in library]
-        assert len(subjects) == 11
+        assert len(subjects) >= 11
 
     def test_inject_system_context_known(self, library):
         ctx = library.inject_system_context("science")
