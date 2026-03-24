@@ -110,15 +110,21 @@ EDUagent: Planning your unit... 🌿
   ...
 ```
 
-### Telegram bot (best for daily use)
+### Telegram bots (best for daily use)
 
 ```bash
 pip install 'eduagent[telegram]'
-# Get a bot token from @BotFather on Telegram
-eduagent bot --token YOUR_BOT_TOKEN
+
+# Teacher bot — generate lessons, units, assessments
+eduagent bot --token YOUR_TEACHER_BOT_TOKEN
+
+# Student bot — students ask questions in your teacher voice
+eduagent student-bot --token YOUR_STUDENT_BOT_TOKEN
 ```
 
-Then message your bot on Telegram — same experience, always in your pocket.
+**How they work together:** The teacher creates a class code, shares it with students.
+Students use `/join CODE` in the student bot to connect, then ask questions about the lesson.
+The student bot answers in the teacher's voice using the active lesson context.
 
 ### Web dashboard
 

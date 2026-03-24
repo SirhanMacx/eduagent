@@ -412,6 +412,44 @@ def _serve_gateway_headless(
         console.print("\n[yellow]Gateway stopped.[/yellow]")
 
 
+# ── Student bot command ──────────────────────────────────────────────
+
+
+@bot_app.command(name="student-bot")
+def student_bot_cmd(
+    token: Optional[str] = typer.Option(
+        None,
+        "--token",
+        "-t",
+        envvar="STUDENT_BOT_TOKEN",
+        help="Student bot token from @BotFather",
+    ),
+) -> None:
+    """Run the student-facing Telegram bot (separate from the teacher bot)."""
+    from eduagent.student_telegram_bot import StudentTelegramBot
+
+    if not token:
+        console.print(
+            "[red]Error: provide --token or set"
+            " STUDENT_BOT_TOKEN[/red]"
+        )
+        raise typer.Exit(1)
+
+    console.print("[green]Starting student bot...[/green]")
+    try:
+        asyncio.run(StudentTelegramBot(token).start())
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Student bot stopped.[/yellow]")
+    except ImportError as e:
+        console.print(f"[red]Missing dependency:[/red] {e}")
+        console.print(
+            "\nInstall Telegram support with:"
+            "\n  [cyan]pip install"
+            " 'python-telegram-bot>=20.0'[/cyan]"
+        )
+        raise typer.Exit(1)
+
+
 # ── Bot command ──────────────────────────────────────────────────────
 
 
