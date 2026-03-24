@@ -76,8 +76,9 @@ async def plan_unit(
     if task_type and config:
         config = route_model(task_type, config)
     client = LLMClient(config)
-    data = await client.generate_json(
+    return await client.safe_generate_json(
         prompt=prompt,
+        model_class=UnitPlan,
         system=(
             "You are an expert curriculum designer. "
             "Respond only with valid JSON matching the specified format."
@@ -86,17 +87,15 @@ async def plan_unit(
         max_tokens=6000,
     )
 
-    return UnitPlan.model_validate(data)
-
 
 def save_unit(unit: UnitPlan, output_dir: Path) -> Path:
     """Save a unit plan to disk as JSON."""
-    from eduagent import _safe_filename
+    from eduagent.io import safe_filename, write_text
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    safe_title = _safe_filename(unit.title)
+    safe_title = safe_filename(unit.title, max_len=50)
     path = output_dir / f"unit_{safe_title}.json"
-    path.write_text(unit.model_dump_json(indent=2), encoding="utf-8")
+    write_text(path, unit.model_dump_json(indent=2))
     return path
 
 

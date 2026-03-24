@@ -198,10 +198,10 @@ async def generate_all_materials(
 
 def save_materials(materials: LessonMaterials, output_dir: Path) -> Path:
     """Save materials to disk as JSON."""
-    from eduagent import _safe_filename
+    from eduagent.io import safe_filename, write_text
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    safe_title = _safe_filename(materials.lesson_title)
+    safe_title = safe_filename(materials.lesson_title, max_len=50)
     path = output_dir / f"materials_{safe_title}.json"
-    path.write_text(materials.model_dump_json(indent=2), encoding="utf-8")
+    write_text(path, materials.model_dump_json(indent=2))
     return path

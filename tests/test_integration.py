@@ -40,6 +40,22 @@ def _run(coro):
     return asyncio.run(coro)
 
 
+def _mock_llm_client(mock_cls, mock_json, model_class=None):
+    """Set up a mocked LLMClient with both generate_json and safe_generate_json.
+
+    This is needed because safe_generate_json is the preferred call path but
+    tests traditionally mock generate_json. Setting both ensures tests pass
+    regardless of which path the production code uses.
+    """
+    inst = mock_cls.return_value
+    inst.generate_json = AsyncMock(return_value=mock_json)
+    if model_class is not None:
+        inst.safe_generate_json = AsyncMock(
+            return_value=model_class.model_validate(mock_json),
+        )
+    return inst
+
+
 # ── Fixtures ────────────────────────────────────────────────────────────────
 
 
@@ -264,8 +280,7 @@ class TestFullUnitGenerationFlow:
         mock_json = _mock_unit_json()
 
         with patch("eduagent.planner.LLMClient") as mock_cls:
-            inst = mock_cls.return_value
-            inst.generate_json = AsyncMock(return_value=mock_json)
+            _mock_llm_client(mock_cls, mock_json, model_class=UnitPlan)
 
             unit = _run(plan_unit(
                 topic="Causes of WWI",
@@ -288,8 +303,7 @@ class TestFullUnitGenerationFlow:
         mock_json = _mock_unit_json()
 
         with patch("eduagent.planner.LLMClient") as mock_cls:
-            inst = mock_cls.return_value
-            inst.generate_json = AsyncMock(return_value=mock_json)
+            _mock_llm_client(mock_cls, mock_json, model_class=UnitPlan)
 
             unit = _run(plan_unit(
                 topic="Causes of WWI",
@@ -309,8 +323,7 @@ class TestFullUnitGenerationFlow:
         mock_json = _mock_unit_json()
 
         with patch("eduagent.planner.LLMClient") as mock_cls:
-            inst = mock_cls.return_value
-            inst.generate_json = AsyncMock(return_value=mock_json)
+            _mock_llm_client(mock_cls, mock_json, model_class=UnitPlan)
 
             unit = _run(plan_unit(
                 topic="Causes of WWI",
@@ -329,8 +342,7 @@ class TestFullUnitGenerationFlow:
         mock_json = _mock_unit_json()
 
         with patch("eduagent.planner.LLMClient") as mock_cls:
-            inst = mock_cls.return_value
-            inst.generate_json = AsyncMock(return_value=mock_json)
+            inst = _mock_llm_client(mock_cls, mock_json, model_class=UnitPlan)
 
             _run(plan_unit(
                 topic="Causes of WWI",
@@ -341,7 +353,7 @@ class TestFullUnitGenerationFlow:
                 config=config,
             ))
 
-            call_args = inst.generate_json.call_args
+            call_args = inst.safe_generate_json.call_args
             prompt_text = call_args.kwargs.get(
                 "prompt", call_args.args[0] if call_args.args else "",
             )
@@ -366,8 +378,7 @@ class TestLessonGenerationFromUnit:
         mock_json = _mock_lesson_json(lesson_number=1)
 
         with patch("eduagent.lesson.LLMClient") as mock_cls:
-            inst = mock_cls.return_value
-            inst.generate_json = AsyncMock(return_value=mock_json)
+            _mock_llm_client(mock_cls, mock_json, model_class=DailyLesson)
 
             lesson = _run(generate_lesson(
                 lesson_number=1,
@@ -389,8 +400,7 @@ class TestLessonGenerationFromUnit:
         mock_json = _mock_lesson_json()
 
         with patch("eduagent.lesson.LLMClient") as mock_cls:
-            inst = mock_cls.return_value
-            inst.generate_json = AsyncMock(return_value=mock_json)
+            _mock_llm_client(mock_cls, mock_json, model_class=DailyLesson)
 
             lesson = _run(generate_lesson(
                 lesson_number=1,
@@ -411,8 +421,7 @@ class TestLessonGenerationFromUnit:
         mock_json = _mock_lesson_json()
 
         with patch("eduagent.lesson.LLMClient") as mock_cls:
-            inst = mock_cls.return_value
-            inst.generate_json = AsyncMock(return_value=mock_json)
+            _mock_llm_client(mock_cls, mock_json, model_class=DailyLesson)
 
             lesson = _run(generate_lesson(
                 lesson_number=1,
@@ -447,8 +456,7 @@ class TestLessonGenerationFromUnit:
         mock_json = _mock_lesson_json()
 
         with patch("eduagent.lesson.LLMClient") as mock_cls:
-            inst = mock_cls.return_value
-            inst.generate_json = AsyncMock(return_value=mock_json)
+            _mock_llm_client(mock_cls, mock_json, model_class=DailyLesson)
 
             lesson = _run(generate_lesson(
                 lesson_number=1,

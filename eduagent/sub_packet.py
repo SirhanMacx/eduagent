@@ -202,20 +202,20 @@ def sub_packet_to_markdown(packet: SubPacket) -> str:
 
 def save_sub_packet(packet: SubPacket, output_dir: Path | None = None) -> Path:
     """Save sub packet JSON and markdown to ~/.eduagent/sub_packets/."""
+    from eduagent.io import safe_filename, write_text
+
     if output_dir is None:
         output_dir = Path.home() / ".eduagent" / "sub_packets"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    from eduagent import _safe_filename
-
-    safe_date = _safe_filename(packet.date)
-    safe_class = _safe_filename(packet.class_name)
+    safe_date = safe_filename(packet.date, max_len=50)
+    safe_class = safe_filename(packet.class_name, max_len=50)
     stem = f"sub_packet_{safe_date}_{safe_class}"
 
     json_path = output_dir / f"{stem}.json"
-    json_path.write_text(packet.model_dump_json(indent=2), encoding="utf-8")
+    write_text(json_path, packet.model_dump_json(indent=2))
 
     md_path = output_dir / f"{stem}.md"
-    md_path.write_text(sub_packet_to_markdown(packet), encoding="utf-8")
+    write_text(md_path, sub_packet_to_markdown(packet))
 
     return md_path

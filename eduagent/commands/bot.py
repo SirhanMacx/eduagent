@@ -368,7 +368,7 @@ def _serve_gateway_headless(
     # Check for existing standalone bot instance
     import os
 
-    from eduagent.telegram_bot import _BOT_LOCK
+    from eduagent.tg import _BOT_LOCK
 
     if _BOT_LOCK.exists():
         try:
@@ -526,6 +526,11 @@ def bot(
         "--force",
         help="Force start even if another instance appears to be running",
     ),
+    legacy: bool = typer.Option(
+        False,
+        "--legacy",
+        help="Use the legacy python-telegram-bot backend instead of the new httpx bot",
+    ),
 ):
     """Start the EDUagent Telegram bot.
 
@@ -536,34 +541,21 @@ def bot(
         eduagent bot --token YOUR_TOKEN
         export TELEGRAM_BOT_TOKEN=YOUR_TOKEN && eduagent bot
 
-        # Webhook mode — for VPS/server deployments with a public HTTPS URL:
-        eduagent bot --token YOUR_TOKEN --webhook-url https://myserver.com/telegram
+        # Webhook mode (legacy only) — for VPS/server deployments:
+        eduagent bot --token YOUR_TOKEN --webhook-url https://myserver.com/telegram --legacy
 
-        # With live dashboard:
-        eduagent bot --token YOUR_TOKEN --live
+        # With live dashboard (legacy only):
+        eduagent bot --token YOUR_TOKEN --live --legacy
 
     Save the token permanently (so you don't have to pass it every time):
         eduagent config set-token YOUR_TOKEN
         eduagent bot
     """
-    try:
-        import telegram  # noqa: F401
-    except ImportError:
-        console.print(
-            "[red]Telegram support requires python-telegram-bot.[/red]\n"
-            "Install it with: [bold]pip install 'eduagent[telegram]'[/bold]"
-        )
-        raise typer.Exit(1)
-
-
     from eduagent.onboarding import check_first_run
 
     check_first_run()
 
-    from eduagent.telegram_bot import run_bot
-
-    # Resolve token: --token flag > TELEGRAM_BOT_TOKEN env (handled by typer envvar)
-    # > saved config
+    # Resolve token: --token flag > TELEGRAM_BOT_TOKEN env > saved config
     if not token:
         cfg = AppConfig.load()
         token = cfg.telegram_bot_token
@@ -584,49 +576,92 @@ def bot(
         Path(data_dir).expanduser().resolve() if data_dir else None
     )
 
-    if live:
-        _bot_with_live_display(token=token, data_path=data_path)
-    else:
-        mode_line = (
-            f"Webhook: [cyan]{webhook_url}[/cyan] (port {webhook_port})"
-            if webhook_url
-            else "Mode: polling"
-        )
-        console.print(
-            Panel(
-                f"[bold green]EDUagent Telegram Bot[/bold green]\n\n"
-                f"Starting bot...\n"
-                f"Data directory:"
-                f" {data_path or Path.home() / '.eduagent'}\n"
-                f"{mode_line}\n\n"
-                f"[dim]Press Ctrl+C to stop[/dim]",
-                title="EDUagent",
-                border_style="green",
-            )
-        )
-
+    # Legacy mode: use python-telegram-bot (supports webhooks, live display)
+    if legacy or live or webhook_url:
         try:
-            run_bot(
-                token=token,
-                data_dir=data_path,
-                webhook_url=webhook_url,
-                webhook_port=webhook_port,
-                webhook_secret=webhook_secret or None,
-                force=force,
-            )
-        except RuntimeError as e:
-            console.print(f"[red]{e}[/red]")
-            raise typer.Exit(1)
-        except KeyboardInterrupt:
-            console.print("\n[yellow]Bot stopped.[/yellow]")
-        except ImportError as e:
-            console.print(f"[red]Missing dependency:[/red] {e}")
-            console.print("\nInstall Telegram support with:")
+            import telegram  # noqa: F401
+        except ImportError:
             console.print(
-                "  [cyan]pip install"
-                " 'python-telegram-bot>=20.0'[/cyan]"
+                "[red]Legacy bot mode requires python-telegram-bot.[/red]\n"
+                "Install it with: [bold]pip install 'eduagent[telegram-legacy]'[/bold]\n"
+                "Or use the default bot (no --legacy flag) which needs no extra deps."
             )
             raise typer.Exit(1)
+
+        from eduagent.telegram_bot import run_bot as run_legacy_bot
+
+        if live:
+            _bot_with_live_display(token=token, data_path=data_path)
+        else:
+            mode_line = (
+                f"Webhook: [cyan]{webhook_url}[/cyan] (port {webhook_port})"
+                if webhook_url
+                else "Mode: polling (legacy)"
+            )
+            console.print(
+                Panel(
+                    f"[bold green]EDUagent Telegram Bot (legacy)[/bold green]\n\n"
+                    f"Starting bot...\n"
+                    f"Data directory:"
+                    f" {data_path or Path.home() / '.eduagent'}\n"
+                    f"{mode_line}\n\n"
+                    f"[dim]Press Ctrl+C to stop[/dim]",
+                    title="EDUagent",
+                    border_style="green",
+                )
+            )
+
+            try:
+                run_legacy_bot(
+                    token=token,
+                    data_dir=data_path,
+                    webhook_url=webhook_url,
+                    webhook_port=webhook_port,
+                    webhook_secret=webhook_secret or None,
+                    force=force,
+                )
+            except RuntimeError as e:
+                console.print(f"[red]{e}[/red]")
+                raise typer.Exit(1)
+            except KeyboardInterrupt:
+                console.print("\n[yellow]Bot stopped.[/yellow]")
+            except ImportError as e:
+                console.print(f"[red]Missing dependency:[/red] {e}")
+                console.print("\nInstall legacy Telegram support with:")
+                console.print(
+                    "  [cyan]pip install"
+                    " 'eduagent[telegram-legacy]'[/cyan]"
+                )
+                raise typer.Exit(1)
+        return
+
+    # Default mode: new lightweight httpx bot (no extra deps needed)
+    from eduagent.tg import run_bot as run_new_bot
+
+    console.print(
+        Panel(
+            f"[bold green]EDUagent Telegram Bot[/bold green]\n\n"
+            f"Starting bot...\n"
+            f"Data directory:"
+            f" {data_path or Path.home() / '.eduagent'}\n"
+            f"Mode: polling (httpx)\n\n"
+            f"[dim]Press Ctrl+C to stop[/dim]",
+            title="EDUagent",
+            border_style="green",
+        )
+    )
+
+    try:
+        run_new_bot(
+            token=token,
+            data_dir=data_path,
+            force=force,
+        )
+    except RuntimeError as e:
+        console.print(f"[red]{e}[/red]")
+        raise typer.Exit(1)
+    except KeyboardInterrupt:
+        console.print("\n[yellow]Bot stopped.[/yellow]")
 
 
 def _bot_with_live_display(

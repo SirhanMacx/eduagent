@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Any, Optional
+from typing import Any, Optional, Type
 
 import httpx
+from pydantic import BaseModel, ValidationError
 
 from eduagent.models import AppConfig, LLMProvider
 
@@ -121,6 +122,34 @@ class LLMClient:
         raise ValueError(
             f"LLM returned unparseable JSON. Raw output:\n{preview}"
         )
+
+    async def safe_generate_json(
+        self,
+        prompt: str,
+        model_class: Type[BaseModel],
+        max_retries: int = 1,
+        **kwargs: Any,
+    ) -> BaseModel:
+        """Generate JSON and parse into a Pydantic model with automatic retry.
+
+        On validation failure, retries once with the error appended to the prompt.
+        On second failure, raises a clear RuntimeError (not a traceback).
+        """
+        for attempt in range(max_retries + 1):
+            raw = await self.generate_json(prompt, **kwargs)
+            try:
+                return model_class.model_validate(raw)
+            except ValidationError as e:
+                if attempt < max_retries:
+                    # Retry with error context
+                    error_msg = str(e)
+                    prompt = prompt + f"\n\nPREVIOUS ATTEMPT FAILED. Fix these errors:\n{error_msg}"
+                    continue
+                raise RuntimeError(
+                    f"Generation failed after {max_retries + 1} attempts. "
+                    f"The AI returned data that doesn't match the expected format. "
+                    f"Try again or use a different AI model."
+                ) from e
 
     # ── Anthropic ────────────────────────────────────────────────────────
 

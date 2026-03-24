@@ -10,12 +10,27 @@ The actual command implementations live in:
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
 from typing import Optional
 
 import typer
+from rich.panel import Panel
 
 from eduagent import __version__
 from eduagent.commands._helpers import console
+
+# Ensure UTF-8 encoding on all platforms at CLI startup
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+if hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
 from eduagent.commands.bot import bot_app
 from eduagent.commands.config import (
     class_app,
@@ -55,8 +70,9 @@ def _version_callback(value: bool) -> None:
         raise typer.Exit()
 
 
-@app.callback()
+@app.callback(invoke_without_command=True)
 def main(
+    ctx: typer.Context,
     version: Optional[bool] = typer.Option(
         None,
         "--version",
@@ -67,6 +83,25 @@ def main(
     ),
 ) -> None:
     """Your teaching files, your AI co-teacher."""
+    if ctx.invoked_subcommand is None:
+        # No command specified
+        config_path = Path.home() / ".eduagent" / "config.json"
+        if not config_path.exists():
+            # First run -- show welcome
+            console.print(Panel(
+                "[bold]Welcome to EDUagent![/bold]\n\n"
+                "Get started in 3 steps:\n"
+                "  1. [cyan]eduagent config set-model ollama[/cyan]\n"
+                "  2. [cyan]eduagent ingest ~/my-lessons/[/cyan]\n"
+                "  3. [cyan]eduagent lesson \"Your Topic\" --grade 8 --subject \"Math\"[/cyan]\n\n"
+                "Or see sample output first: [cyan]eduagent demo[/cyan]",
+                title="EDUagent",
+                border_style="blue",
+            ))
+        else:
+            # Returning user, show help
+            ctx.get_help()
+        raise typer.Exit()
 
 
 # ── Register named sub-app groups ───────────────────────────────────────

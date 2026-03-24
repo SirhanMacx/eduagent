@@ -326,9 +326,9 @@ def save_assessment(
         name = assessment.task_description
     else:
         name = "output"
-    from eduagent import _safe_filename
+    from eduagent.io import safe_filename, write_text
 
-    safe_name = _safe_filename(name)
+    safe_name = safe_filename(name, max_len=50)
     path = output_dir / f"{label}_{safe_name}.json"
-    path.write_text(assessment.model_dump_json(indent=2), encoding="utf-8")
+    write_text(path, assessment.model_dump_json(indent=2))
     return path

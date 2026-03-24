@@ -173,7 +173,9 @@ class TestAppConfigDefaults:
         assert config.include_homework is True
         assert config.export_format == "markdown"
 
-    def test_config_path_is_in_home_dir(self):
+    def test_config_path_is_in_home_dir(self, monkeypatch):
+        # Remove EDUAGENT_DATA_DIR to test the default path
+        monkeypatch.delenv("EDUAGENT_DATA_DIR", raising=False)
         path = AppConfig.config_path()
         assert ".eduagent" in str(path)
         assert "config.json" in str(path)
@@ -332,7 +334,7 @@ class TestVersion:
     def test_version_string(self):
         from eduagent import __version__
 
-        assert __version__ == "0.1.3"
+        assert __version__ == "0.2.0"
 
 
 # ── Standards module ───────────────────────────────────────────────

@@ -512,15 +512,15 @@ def _markdown_to_docx(markdown_text: str, output_path: Path) -> Path:
 
 def export_unit(unit: UnitPlan, output_dir: Path, fmt: str = "markdown") -> Path:
     """Export a unit plan to the specified format."""
-    from eduagent import _safe_filename
+    from eduagent.io import safe_filename as _safe_fn, write_text as _wt
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    safe_name = _safe_filename(unit.title)
+    safe_name = _safe_fn(unit.title)
     md_text = unit_to_markdown(unit)
 
     if fmt == "markdown":
         path = output_dir / f"{safe_name}.md"
-        path.write_text(md_text, encoding="utf-8")
+        _wt(path, md_text)
     elif fmt == "pdf":
         path = output_dir / f"{safe_name}.pdf"
         _markdown_to_pdf(md_text, path)
@@ -528,19 +528,27 @@ def export_unit(unit: UnitPlan, output_dir: Path, fmt: str = "markdown") -> Path
         path = output_dir / f"{safe_name}.docx"
         _markdown_to_docx(md_text, path)
     else:
-        raise ValueError(f"Unsupported format: {fmt}")
+        # Graceful fallback — return markdown instead of crashing
+        path = output_dir / f"{safe_name}.md"
+        _wt(path, md_text)
     return path
 
 
 def export_lesson(lesson: DailyLesson, output_dir: Path, fmt: str = "markdown") -> Path:
-    """Export a lesson plan to the specified format."""
+    """Export a lesson plan to the specified format.
+
+    For pptx/docx/pdf, callers should use doc_export.py instead.
+    Unknown formats gracefully fall back to markdown.
+    """
+    from eduagent.io import write_text as _wt
+
     output_dir.mkdir(parents=True, exist_ok=True)
     safe_name = f"lesson_{lesson.lesson_number:02d}"
     md_text = lesson_to_markdown(lesson)
 
     if fmt == "markdown":
         path = output_dir / f"{safe_name}.md"
-        path.write_text(md_text, encoding="utf-8")
+        _wt(path, md_text)
     elif fmt == "pdf":
         path = output_dir / f"{safe_name}.pdf"
         _markdown_to_pdf(md_text, path)
@@ -548,21 +556,23 @@ def export_lesson(lesson: DailyLesson, output_dir: Path, fmt: str = "markdown") 
         path = output_dir / f"{safe_name}.docx"
         _markdown_to_docx(md_text, path)
     else:
-        raise ValueError(f"Unsupported format: {fmt}")
+        # Graceful fallback — return markdown instead of crashing
+        path = output_dir / f"{safe_name}.md"
+        _wt(path, md_text)
     return path
 
 
 def export_materials(materials: LessonMaterials, output_dir: Path, fmt: str = "markdown") -> Path:
     """Export lesson materials to the specified format."""
-    from eduagent import _safe_filename
+    from eduagent.io import safe_filename as _safe_fn, write_text as _wt
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    safe_name = _safe_filename(materials.lesson_title)
+    safe_name = _safe_fn(materials.lesson_title)
     md_text = materials_to_markdown(materials)
 
     if fmt == "markdown":
         path = output_dir / f"materials_{safe_name}.md"
-        path.write_text(md_text, encoding="utf-8")
+        _wt(path, md_text)
     elif fmt == "pdf":
         path = output_dir / f"materials_{safe_name}.pdf"
         _markdown_to_pdf(md_text, path)
@@ -570,7 +580,9 @@ def export_materials(materials: LessonMaterials, output_dir: Path, fmt: str = "m
         path = output_dir / f"materials_{safe_name}.docx"
         _markdown_to_docx(md_text, path)
     else:
-        raise ValueError(f"Unsupported format: {fmt}")
+        # Graceful fallback — return markdown instead of crashing
+        path = output_dir / f"materials_{safe_name}.md"
+        _wt(path, md_text)
     return path
 
 
@@ -662,15 +674,15 @@ def pacing_guide_to_markdown(guide: PacingGuide) -> str:
 
 def export_year_map(year_map: YearMap, output_dir: Path, fmt: str = "markdown") -> Path:
     """Export a year map to the specified format."""
-    from eduagent import _safe_filename
+    from eduagent.io import safe_filename as _safe_fn, write_text as _wt
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    safe_name = f"year_map_{_safe_filename(year_map.subject)}_{year_map.grade_level}"
+    safe_name = f"year_map_{_safe_fn(year_map.subject)}_{year_map.grade_level}"
     md_text = year_map_to_markdown(year_map)
 
     if fmt == "markdown":
         path = output_dir / f"{safe_name}.md"
-        path.write_text(md_text, encoding="utf-8")
+        _wt(path, md_text)
     elif fmt == "pdf":
         path = output_dir / f"{safe_name}.pdf"
         _markdown_to_pdf(md_text, path)
@@ -678,21 +690,22 @@ def export_year_map(year_map: YearMap, output_dir: Path, fmt: str = "markdown") 
         path = output_dir / f"{safe_name}.docx"
         _markdown_to_docx(md_text, path)
     else:
-        raise ValueError(f"Unsupported format: {fmt}")
+        path = output_dir / f"{safe_name}.md"
+        _wt(path, md_text)
     return path
 
 
 def export_pacing_guide(guide: PacingGuide, output_dir: Path, fmt: str = "markdown") -> Path:
     """Export a pacing guide to the specified format."""
-    from eduagent import _safe_filename
+    from eduagent.io import safe_filename as _safe_fn, write_text as _wt
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    safe_name = f"pacing_{_safe_filename(guide.subject)}_{guide.grade_level}"
+    safe_name = f"pacing_{_safe_fn(guide.subject)}_{guide.grade_level}"
     md_text = pacing_guide_to_markdown(guide)
 
     if fmt == "markdown":
         path = output_dir / f"{safe_name}.md"
-        path.write_text(md_text, encoding="utf-8")
+        _wt(path, md_text)
     elif fmt == "pdf":
         path = output_dir / f"{safe_name}.pdf"
         _markdown_to_pdf(md_text, path)
@@ -700,5 +713,6 @@ def export_pacing_guide(guide: PacingGuide, output_dir: Path, fmt: str = "markdo
         path = output_dir / f"{safe_name}.docx"
         _markdown_to_docx(md_text, path)
     else:
-        raise ValueError(f"Unsupported format: {fmt}")
+        path = output_dir / f"{safe_name}.md"
+        _wt(path, md_text)
     return path

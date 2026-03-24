@@ -10,7 +10,7 @@ import typer
 from rich.panel import Panel
 from rich.table import Table
 
-from eduagent import _safe_filename
+from eduagent.io import safe_filename as _safe_filename
 from eduagent.commands._helpers import _safe_progress, console, load_persona_or_exit
 from eduagent.commands._helpers import output_dir as _output_dir
 from eduagent.commands._helpers import run_async as _run_async

@@ -12,6 +12,9 @@ def _isolate_state_db(tmp_path, monkeypatch):
     """
     monkeypatch.setattr("eduagent.state.DEFAULT_DATA_DIR", tmp_path, raising=False)
 
+    # Isolate the central I/O layer so tests don't write to real ~/.eduagent/
+    monkeypatch.setenv("EDUAGENT_DATA_DIR", str(tmp_path))
+
     # Also isolate workspace to prevent tests writing to real ~/.eduagent/
     monkeypatch.setattr(
         "eduagent.workspace.WORKSPACE_DIR", tmp_path / "workspace", raising=False,

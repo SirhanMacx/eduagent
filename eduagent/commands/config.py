@@ -246,6 +246,42 @@ def config_set_model(
         )
     )
 
+    # Ping the provider to verify connectivity
+    import httpx as _httpx
+
+    if llm_provider == LLMProvider.OLLAMA:
+        try:
+            resp = _httpx.get(
+                f"{cfg.ollama_base_url.rstrip('/')}/api/version", timeout=5,
+            )
+            version = resp.json().get("version", "unknown")
+            console.print(f"[green]Connected to Ollama v{version}[/green]")
+        except Exception:
+            console.print(
+                "[yellow]Warning: Can't reach Ollama at "
+                f"{cfg.ollama_base_url}. Is it running?[/yellow]"
+            )
+    elif llm_provider == LLMProvider.ANTHROPIC:
+        import os as _os
+        key = _os.environ.get("ANTHROPIC_API_KEY", "")
+        if key and key.startswith("sk-"):
+            console.print("[green]API key format looks valid.[/green]")
+        elif not key:
+            console.print(
+                "[yellow]Warning: ANTHROPIC_API_KEY not set. "
+                "Export it before generating.[/yellow]"
+            )
+    elif llm_provider == LLMProvider.OPENAI:
+        import os as _os
+        key = _os.environ.get("OPENAI_API_KEY", "")
+        if key and key.startswith("sk-"):
+            console.print("[green]API key format looks valid.[/green]")
+        elif not key:
+            console.print(
+                "[yellow]Warning: OPENAI_API_KEY not set. "
+                "Export it before generating.[/yellow]"
+            )
+
 
 @config_app.command("set-token")
 def config_set_token(

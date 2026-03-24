@@ -1,4 +1,4 @@
-"""Tests for v0.1.3 features — class codes, Telegram polish, onboarding wizard, dashboard v2.
+"""Tests for v0.2.0 features — class codes, Telegram polish, onboarding wizard, dashboard v2.
 
 Covers all 4 feature waves with 55+ new tests:
   Wave 1: Class code system edge cases and DB operations
@@ -570,9 +570,9 @@ class TestVersion:
     def test_version_string(self):
         from eduagent import __version__
 
-        assert __version__ == "0.1.3"
+        assert __version__ == "0.2.0"
 
     def test_version_in_health_endpoint(self, client):
         resp = client.get("/api/health")
         data = resp.json()
-        assert data["version"] == "0.1.3"
+        assert data["version"] == "0.2.0"

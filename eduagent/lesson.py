@@ -88,8 +88,9 @@ async def generate_lesson(
     if task_type and config:
         config = route_model(task_type, config)
     client = LLMClient(config)
-    data = await client.generate_json(
+    return await client.safe_generate_json(
         prompt=prompt,
+        model_class=DailyLesson,
         system=(
             "You are an expert lesson plan writer. "
             "Respond only with valid JSON matching the specified format."
@@ -97,8 +98,6 @@ async def generate_lesson(
         temperature=0.6,
         max_tokens=12000,
     )
-
-    return DailyLesson.model_validate(data)
 
 
 async def generate_all_lessons(
@@ -123,9 +122,11 @@ async def generate_all_lessons(
 
 def save_lesson(lesson: DailyLesson, output_dir: Path) -> Path:
     """Save a lesson plan to disk as JSON."""
+    from eduagent.io import write_text
+
     output_dir.mkdir(parents=True, exist_ok=True)
     path = output_dir / f"lesson_{lesson.lesson_number:02d}.json"
-    path.write_text(lesson.model_dump_json(indent=2), encoding="utf-8")
+    write_text(path, lesson.model_dump_json(indent=2))
     return path
 
 
