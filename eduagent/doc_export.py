@@ -222,6 +222,69 @@ def _try_fetch_images(topics: list[tuple[str, str]], subject: str) -> dict[str, 
     return results
 
 
+def _try_fetch_content_images(
+    items: list[tuple[str, str, str]],
+    subject: str,
+    max_images: int = 4,
+) -> dict[str, Optional[Path]]:
+    """Fetch images based on slide *content* text, not just the lesson title.
+
+    Each item is ``(content_text, fallback_topic, key)``.  Stops after
+    ``max_images`` successful fetches to avoid slowing down generation.
+
+    Returns a dict mapping key -> Path | None.
+    """
+    from eduagent.slide_images import fetch_content_image, fetch_slide_image
+
+    results: dict[str, Optional[Path]] = {}
+
+    async def _fetch_all():
+        found = 0
+        for content_text, fallback_topic, key in items:
+            if found >= max_images:
+                results[key] = None
+                continue
+            try:
+                if content_text:
+                    path = await asyncio.wait_for(
+                        fetch_content_image(
+                            content_text,
+                            subject=subject,
+                            fallback_topic=fallback_topic,
+                        ),
+                        timeout=5.0,
+                    )
+                else:
+                    # Title slide: use topic-based search
+                    path = await asyncio.wait_for(
+                        fetch_slide_image(fallback_topic, subject=subject),
+                        timeout=5.0,
+                    )
+                results[key] = path
+                if path:
+                    found += 1
+            except Exception:
+                results[key] = None
+
+    try:
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+
+        if loop and loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                future = pool.submit(asyncio.run, _fetch_all())
+                future.result(timeout=30)
+        else:
+            asyncio.run(_fetch_all())
+    except Exception as e:
+        logger.debug("Content image fetching failed: %s", e)
+
+    return results
+
+
 def export_lesson_pptx(
     lesson: "DailyLesson",
     persona: "TeacherPersona",
@@ -253,19 +316,23 @@ def export_lesson_pptx(
     slide_w = prs.slide_width
     slide_h = prs.slide_height
 
-    # ── Try to fetch images asynchronously ────────────────────────────
-    image_topics: list[tuple[str, str]] = [(lesson.title, "title")]
-    content_sections = [
-        ("do_now", "Do Now", lesson.do_now),
-        ("instruction", "Direct Instruction", lesson.direct_instruction),
-        ("practice", "Guided Practice", lesson.guided_practice),
-        ("independent", "Independent Work", lesson.independent_work),
+    # ── Try to fetch images asynchronously (per-slide content queries) ─
+    # Each slide gets its OWN image query based on that slide's content.
+    # Max 3-4 images per deck to avoid slow generation.
+    # Images on: Title (bg), Do Now (accent), Direct Instruction (sidebar)
+    # No images on: Objectives, Guided Practice, Exit Ticket, Closing
+    image_items: list[tuple[str, str, str]] = [
+        # (content_text, fallback_topic, key)
+        ("", lesson.title, "title"),  # title slide: topic-based
     ]
-    for key, _label, content in content_sections:
-        if content:
-            image_topics.append((_label + " " + lesson.title, key))
+    if lesson.do_now:
+        image_items.append((lesson.do_now, lesson.title, "do_now"))
+    if lesson.direct_instruction:
+        image_items.append(
+            (lesson.direct_instruction, lesson.title, "instruction"),
+        )
 
-    images = _try_fetch_images(image_topics, subject)
+    images = _try_fetch_content_images(image_items, subject, max_images=3)
 
     # ── Shared layout helpers ─────────────────────────────────────────
     slide_num = [0]
@@ -350,15 +417,50 @@ def export_lesson_pptx(
                 alpha = etree.SubElement(srgb, qn("a:alpha"))
                 alpha.set("val", overlay_alpha)
 
-    def _add_sidebar_image(slide, image_path: Path):
+    def _add_sidebar_image(slide, image_path: Path, caption: str = ""):
         img_left = int(slide_w * 0.65)
         img_width = int(slide_w * 0.33)
         img_top = Inches(1.4)
-        img_height = int(slide_h - Inches(2.0))
+        img_height = int(slide_h - Inches(2.4))
         try:
             slide.shapes.add_picture(
                 str(image_path), img_left, img_top, img_width, img_height,
             )
+            if caption:
+                cap_tb = slide.shapes.add_textbox(
+                    img_left, img_top + img_height + Inches(0.05),
+                    img_width, Inches(0.35),
+                )
+                cap_p = cap_tb.text_frame.paragraphs[0]
+                cap_p.alignment = PP_ALIGN.CENTER
+                cap_run = cap_p.add_run()
+                cap_run.text = caption
+                _set_text_props(cap_run, 9, "888888")
+                cap_run.font.italic = True
+        except Exception:
+            pass
+
+    def _add_accent_image(slide, image_path: Path, caption: str = ""):
+        """Add a smaller accent image in the bottom-right area."""
+        img_left = slide_w - Inches(4.0)
+        img_top = slide_h - Inches(3.2)
+        img_width = Inches(3.5)
+        img_height = Inches(2.2)
+        try:
+            slide.shapes.add_picture(
+                str(image_path), img_left, img_top, img_width, img_height,
+            )
+            if caption:
+                cap_tb = slide.shapes.add_textbox(
+                    img_left, img_top + img_height + Inches(0.05),
+                    img_width, Inches(0.3),
+                )
+                cap_p = cap_tb.text_frame.paragraphs[0]
+                cap_p.alignment = PP_ALIGN.CENTER
+                cap_run = cap_p.add_run()
+                cap_run.text = caption
+                _set_text_props(cap_run, 9, "888888")
+                cap_run.font.italic = True
         except Exception:
             pass
 
@@ -490,14 +592,11 @@ def export_lesson_pptx(
         _set_text_props(run, 22, theme["text_light"], bold=True)
 
         # Question / prompt text -- 28pt, dark, good line spacing
+        # Do Now uses accent image (small, bottom-right) not sidebar
         do_now_img = images.get("do_now")
-        text_width = slide_w - Inches(2.0)
-        if do_now_img:
-            text_width = int(slide_w * 0.60)
-            _add_sidebar_image(slide, do_now_img)
 
         tb = slide.shapes.add_textbox(
-            Inches(0.8), Inches(1.8), text_width, Inches(4.5),
+            Inches(0.8), Inches(1.8), slide_w - Inches(2.0), Inches(3.2),
         )
         tf = tb.text_frame
         tf.word_wrap = True
@@ -506,6 +605,12 @@ def export_lesson_pptx(
         run = p.add_run()
         run.text = lesson.do_now
         _set_text_props(run, 28, theme["text_dark"])
+
+        if do_now_img:
+            from eduagent.slide_images import _extract_key_concepts
+            concepts = _extract_key_concepts(lesson.do_now)
+            caption = ", ".join(concepts[:2]) if concepts else ""
+            _add_accent_image(slide, do_now_img, caption=caption)
 
         # Timer indicator
         minutes = lesson.time_estimates.get("do_now", 5)
@@ -560,12 +665,15 @@ def export_lesson_pptx(
             # Side accent bar
             _bar(slide, Inches(0.6), Inches(1.7), Inches(0.06), Inches(5.0), theme["secondary"])
 
-            # Sidebar image (right 35%) on first chunk
+            # Sidebar image (right 35%) on first chunk, with caption
             img_path = images.get("instruction") if i == 1 else None
             text_width = slide_w - Inches(2.0)
             if img_path:
                 text_width = int(slide_w * 0.60)
-                _add_sidebar_image(slide, img_path)
+                from eduagent.slide_images import _extract_key_concepts
+                concepts = _extract_key_concepts(chunk)
+                caption = ", ".join(concepts[:2]) if concepts else ""
+                _add_sidebar_image(slide, img_path, caption=caption)
 
             # Body text -- 20pt with 1.5x line spacing
             tb = slide.shapes.add_textbox(
@@ -601,16 +709,11 @@ def export_lesson_pptx(
         run.text = "Your Turn"
         _set_text_props(run, 22, theme["text_light"], bold=True)
 
-        # Sidebar image
-        img_path = images.get("practice")
-        text_width = slide_w - Inches(2.0)
-        if img_path:
-            text_width = int(slide_w * 0.60)
-            _add_sidebar_image(slide, img_path)
+        # No image on Guided Practice -- keep clean for readability
 
         # Activity instructions -- 24pt
         tb = slide.shapes.add_textbox(
-            Inches(0.8), Inches(1.8), text_width, Inches(4.5),
+            Inches(0.8), Inches(1.8), slide_w - Inches(2.0), Inches(4.5),
         )
         tf = tb.text_frame
         tf.word_wrap = True
@@ -657,16 +760,11 @@ def export_lesson_pptx(
         # Left accent bar
         _bar(slide, Inches(0.6), Inches(1.7), Inches(0.06), Inches(5.0), theme["secondary"])
 
-        # Sidebar image
-        img_path = images.get("independent")
-        text_width = slide_w - Inches(2.0)
-        if img_path:
-            text_width = int(slide_w * 0.60)
-            _add_sidebar_image(slide, img_path)
+        # No image on Independent Work -- keep clean for readability
 
         # Task description -- 24pt
         tb = slide.shapes.add_textbox(
-            Inches(1.0), Inches(1.8), text_width, Inches(4.5),
+            Inches(1.0), Inches(1.8), slide_w - Inches(2.0), Inches(4.5),
         )
         tf = tb.text_frame
         tf.word_wrap = True
@@ -874,8 +972,14 @@ def export_lesson_docx(
         f"{date.today().strftime('%B %d, %Y')}"
     )
 
-    # Try to add a header image relevant to the lesson topic
-    _docx_add_image(doc, lesson.title, subject, width_inches=5.5)
+    # Try to add a header image relevant to the lesson content
+    _docx_add_content_image(
+        doc,
+        content_text=lesson.title + " " + lesson.objective,
+        fallback_topic=lesson.title,
+        subject=subject,
+        width_inches=5.5,
+    )
 
     # Standards table
     if lesson.standards:
@@ -912,10 +1016,14 @@ def export_lesson_docx(
             time_label = f" ({minutes} min)" if minutes else ""
             doc.add_heading(f"{heading}{time_label}", level=2)
             doc.add_paragraph(content)
-            # Add an image to the direct instruction section
+            # Add a content-specific image to the direct instruction section
             if add_img:
-                _docx_add_image(
-                    doc, f"{lesson.title} {heading}", subject, width_inches=4.0,
+                _docx_add_content_image(
+                    doc,
+                    content_text=content,
+                    fallback_topic=lesson.title,
+                    subject=subject,
+                    width_inches=4.0,
                 )
 
     # Exit Ticket
@@ -955,15 +1063,17 @@ def _docx_add_image(
     topic: str,
     subject: str,
     width_inches: float = 5.0,
-) -> None:
+    caption: str = "",
+) -> bool:
     """Try to fetch and embed an academic image into the DOCX.
 
-    Fails silently — handout works fine without images.
+    Fails silently -- handout works fine without images.
+    Returns True if an image was successfully added.
     """
     try:
         import asyncio
 
-        from docx.shared import Inches
+        from docx.shared import Inches, Pt
 
         from eduagent.slide_images import fetch_slide_image
 
@@ -974,8 +1084,69 @@ def _docx_add_image(
             last_para = doc.paragraphs[-1]
             from docx.enum.text import WD_ALIGN_PARAGRAPH
             last_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            # Add caption if provided
+            if caption:
+                cap_para = doc.add_paragraph()
+                cap_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                cap_run = cap_para.add_run(caption)
+                cap_run.font.size = Pt(9)
+                cap_run.font.italic = True
+                cap_run.font.name = "Calibri"
+                from docx.shared import RGBColor
+                cap_run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
+            return True
     except Exception:
         pass  # Images are a bonus, not a requirement
+    return False
+
+
+def _docx_add_content_image(
+    doc: "Any",  # docx.Document
+    content_text: str,
+    fallback_topic: str,
+    subject: str,
+    width_inches: float = 3.0,
+) -> bool:
+    """Fetch and embed an image based on content text, with auto-caption.
+
+    Uses ``_extract_key_concepts`` to find the best search query, then
+    adds a captioned image.  Returns True if an image was added.
+    """
+    try:
+        import asyncio
+
+        from docx.shared import Inches, Pt
+
+        from eduagent.slide_images import _extract_key_concepts, fetch_content_image
+
+        img_path = asyncio.run(
+            fetch_content_image(
+                content_text,
+                subject=subject,
+                fallback_topic=fallback_topic,
+            )
+        )
+        if img_path and img_path.exists():
+            doc.add_picture(str(img_path), width=Inches(width_inches))
+            last_para = doc.paragraphs[-1]
+            from docx.enum.text import WD_ALIGN_PARAGRAPH
+            last_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            # Build caption from key concepts
+            concepts = _extract_key_concepts(content_text)
+            caption = ", ".join(concepts[:2]) if concepts else ""
+            if caption:
+                cap_para = doc.add_paragraph()
+                cap_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                cap_run = cap_para.add_run(caption)
+                cap_run.font.size = Pt(9)
+                cap_run.font.italic = True
+                cap_run.font.name = "Calibri"
+                from docx.shared import RGBColor
+                cap_run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
+            return True
+    except Exception:
+        pass
+    return False
 
 
 # ── PDF export ─────────────────────────────────────────────────────────
@@ -1153,6 +1324,19 @@ def export_student_handout(
     meta_run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
     meta_run.font.name = "Calibri"
 
+    # ── Header image (below title, max 2 images total) ───────────────
+    subject = persona.subject_area or ""
+    _handout_image_count = 0
+    if _handout_image_count < 2:
+        if _docx_add_content_image(
+            doc,
+            content_text=lesson.title + " " + lesson.objective,
+            fallback_topic=lesson.title,
+            subject=subject,
+            width_inches=3.0,
+        ):
+            _handout_image_count += 1
+
     # ── Do Now box ────────────────────────────────────────────────────
     if lesson.do_now:
         _handout_section_heading(doc, "Do Now")
@@ -1181,7 +1365,7 @@ def export_student_handout(
     # ── Core Content ──────────────────────────────────────────────────
     if lesson.direct_instruction:
         _handout_section_heading(doc, "Key Content")
-        # Include a condensed version — long DI sections get trimmed
+        # Include a condensed version -- long DI sections get trimmed
         content_text = lesson.direct_instruction
         if len(content_text) > 1200:
             # Take first ~1200 chars at a sentence boundary
@@ -1193,6 +1377,17 @@ def export_student_handout(
         for run in content_para.runs:
             run.font.size = Pt(11)
             run.font.name = "Calibri"
+
+        # Add content image next to direct instruction (max 2 total)
+        if _handout_image_count < 2:
+            if _docx_add_content_image(
+                doc,
+                content_text=lesson.direct_instruction,
+                fallback_topic=lesson.title,
+                subject=subject,
+                width_inches=3.0,
+            ):
+                _handout_image_count += 1
 
     # ── Activity Section (Guided Practice) ────────────────────────────
     if lesson.guided_practice:

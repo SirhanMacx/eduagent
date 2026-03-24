@@ -54,8 +54,69 @@ _SUBJECT_KEYWORDS: dict[str, list[str]] = {
 }
 
 
+def _extract_key_concepts(text: str, max_concepts: int = 3) -> list[str]:
+    """Extract key nouns/concepts from text for targeted image search.
+
+    Uses simple heuristics -- capitalized proper nouns, quoted terms,
+    and subject-specific keywords.
+    """
+    concepts: list[str] = []
+
+    # Extract proper nouns (capitalized multi-word phrases)
+    proper_nouns = re.findall(r'[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+', text)
+    concepts.extend(proper_nouns[:2])
+
+    # Extract quoted terms
+    quoted = re.findall(r'"([^"]+)"', text) + re.findall(r"'([^']+)'", text)
+    concepts.extend(quoted[:2])
+
+    # Extract terms after "about", "of", "on" (topic indicators)
+    topic_phrases = re.findall(
+        r'(?:about|of|on|regarding|concerning)\s+(?:the\s+)?([A-Z][\w\s]{3,30})',
+        text,
+    )
+    concepts.extend(topic_phrases[:1])
+
+    # Deduplicate and limit
+    seen: set[str] = set()
+    unique: list[str] = []
+    for c in concepts:
+        c_lower = c.lower().strip()
+        if c_lower not in seen and len(c_lower) > 3:
+            seen.add(c_lower)
+            unique.append(c)
+    return unique[:max_concepts]
+
+
+# ── Subject-specific query refinement ────────────────────────────────
+
+_SUBJECT_QUERY_STYLE: dict[str, str] = {
+    "history": "event_person_document",
+    "social studies": "event_person_document",
+    "civics": "event_person_document",
+    "government": "event_person_document",
+    "science": "process_organism_diagram",
+    "biology": "process_organism_diagram",
+    "chemistry": "process_organism_diagram",
+    "physics": "process_organism_diagram",
+    "math": "visual_representation",
+    "mathematics": "visual_representation",
+    "algebra": "visual_representation",
+    "geometry": "visual_representation",
+    "ela": "author_literary_period",
+    "english": "author_literary_period",
+    "language arts": "author_literary_period",
+}
+
+
 def _build_search_query(topic: str, subject: str = "") -> str:
     """Convert a lesson topic into a good image search query.
+
+    Builds subject-aware queries that target specific visual content:
+    - History: the specific event, person, or document mentioned
+    - Science: the specific process or organism
+    - Math: the specific visual representation
+    - ELA: the author or literary period
 
     Examples::
 
@@ -76,7 +137,22 @@ def _build_search_query(topic: str, subject: str = "") -> str:
 
     # Append subject-specific keywords
     subject_lower = subject.strip().lower()
+    style = _SUBJECT_QUERY_STYLE.get(subject_lower, "")
     extra = _SUBJECT_KEYWORDS.get(subject_lower, ["education"])
+
+    # Subject-style refinements: add specific qualifiers
+    if style == "event_person_document":
+        # History: look for dates, specific events
+        date_match = re.search(r'\b(1[0-9]{3}|20[0-2][0-9])\b', topic)
+        if date_match:
+            extra = [date_match.group()] + extra[:1]
+    elif style == "process_organism_diagram":
+        extra = ["diagram"] + extra[:1]
+    elif style == "visual_representation":
+        extra = ["graph", "diagram"] + extra[:1]
+    elif style == "author_literary_period":
+        extra = ["portrait", "literature"] + extra[:1]
+
     # Avoid duplicating words already in the query
     existing = set(query_base.split())
     suffix = " ".join(w for w in extra if w not in existing)
@@ -358,4 +434,65 @@ async def fetch_slide_image(
             continue
 
     logger.debug("No image found from any source for '%s'", query)
+    return None
+
+
+async def fetch_content_image(
+    content_text: str,
+    subject: str = "",
+    fallback_topic: str = "",
+    cache_dir: Optional[Path] = None,
+) -> Optional[Path]:
+    """Fetch an image based on the *content* of a slide, not just the title.
+
+    Extracts key concepts from ``content_text`` and searches for each one
+    individually, returning the first good result.  Falls back to
+    ``fallback_topic`` (typically the lesson title) if no concept-specific
+    image is found.
+
+    Parameters
+    ----------
+    content_text:
+        The slide body text to extract search concepts from.
+    subject:
+        Subject area for source routing and query enrichment.
+    fallback_topic:
+        Lesson title used as a last resort if concept extraction
+        yields no results.
+    cache_dir:
+        Override cache directory (useful for tests).
+    """
+    concepts = _extract_key_concepts(content_text)
+
+    for concept in concepts:
+        query = _build_search_query(concept, subject)
+        sources = _select_sources(subject, concept)
+
+        for source_name in sources:
+            fetcher = _SOURCE_FETCHERS.get(source_name)
+            if not fetcher:
+                continue
+            try:
+                path = await fetcher(query, cache_dir)
+                if path:
+                    logger.info(
+                        "Content image found via concept '%s' -> %s",
+                        concept, path,
+                    )
+                    return path
+            except Exception as e:
+                logger.debug(
+                    "Source %s failed for concept '%s': %s",
+                    source_name, concept, e,
+                )
+                continue
+
+    # Fallback to lesson title
+    if fallback_topic:
+        logger.debug(
+            "No concept-specific image found, falling back to topic: %s",
+            fallback_topic,
+        )
+        return await fetch_slide_image(fallback_topic, subject, cache_dir)
+
     return None
