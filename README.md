@@ -158,19 +158,47 @@ EDUagent: Here's your Do Now...
 
 ### 📱 Want it on your phone? (Telegram bot)
 
-Once EDUagent is working on your computer, you can set up a Telegram bot so you can generate lessons from your phone during your commute or prep period.
+Once EDUagent is set up, you can connect it to Telegram so you can generate lessons from your phone — during your commute, in the copy room, wherever.
 
-1. Open Telegram and search for **@BotFather**
-2. Send `/newbot` — follow the prompts to name your bot
-3. BotFather gives you a token (looks like `123456:ABC-DEF...`) — copy it
-4. In Terminal:
-   ```
-   pip install 'eduagent[telegram]'
-   eduagent bot --token PASTE-YOUR-TOKEN-HERE
-   ```
-5. Find your new bot in Telegram and start chatting
+**What is Telegram?** It's a free messaging app (like iMessage or WhatsApp). You need the app on your phone and an account. Download it at [telegram.org](https://telegram.org) if you don't have it yet.
 
-> **Student bot:** Your students can also have their own bot that answers questions in your voice. See [FEATURES.md](FEATURES.md) for setup.
+**Step 1 — Create your teacher bot**
+
+1. Open Telegram on your phone
+2. In the search bar, type **@BotFather** and tap the result (it has a blue checkmark)
+3. Tap **Start**, then send this message: `/newbot`
+4. It will ask for a name — type something like `My Lesson Planner`
+5. It will ask for a username — type something like `mrsmith_lessons_bot` (must end in `bot`)
+6. BotFather will send you a **token** — a long string like `7412836591:AAHdqTqFEe...`
+7. Copy that token (hold down on it, select Copy)
+
+**Step 2 — Connect it to EDUagent**
+
+In Terminal on your computer:
+```
+pip install 'eduagent[telegram]'
+eduagent bot --token PASTE-YOUR-TOKEN-HERE
+```
+
+Leave that Terminal window open (the bot runs as long as the window is open). Now open Telegram, find your new bot, and send it a message — it should respond!
+
+> **Keep it running:** For the bot to work when your computer is closed, you'll need to run it on a server. For most teachers, just running it during school hours is fine.
+
+---
+
+**Bonus: Student bot (your students ask questions, get your answers)**
+
+You can create a *second* bot for your students. They join with a class code you create — then they can ask questions about the lesson and get answers in your teaching voice, any time of day.
+
+1. Repeat Step 1 above to create a second bot (e.g., `mrsmith_students_bot`)
+2. Copy the new token
+3. In Terminal:
+   ```
+   eduagent student-bot --token PASTE-STUDENT-BOT-TOKEN-HERE
+   ```
+4. In your teacher bot, type: `/create-class` to get a class code
+5. Share the code and your student bot username with your students
+6. Students open Telegram, find your student bot, send `/join YOUR-CODE` and start asking questions
 
 ---
 
@@ -200,45 +228,75 @@ pip install 'eduagent[all]'             # Everything
 
 ## 🔧 Which AI should I use?
 
-EDUagent is just the tool — it needs an AI brain to do the actual thinking. Think of it like a car: EDUagent is the car, and the AI provider is the engine. **You pick the engine.**
-
-Your API key stays on your computer. Nothing goes through our servers.
+EDUagent is the tool — it needs an AI brain to do the thinking. Think of it like a car: EDUagent is the car, and the AI is the engine. **You pick the engine and pay for it directly.** Nothing goes through our servers.
 
 ---
 
-**Option 1 — OpenAI GPT-4.5 (recommended for most teachers)**
+**Option 1 — Anthropic Claude (best quality, pay per use)**
 
-The same company that makes ChatGPT. GPT-4.5 is fast, smart, and reasonably priced.
+Claude is widely considered the best AI for writing and nuanced instruction. Two models to choose from:
 
-- Go to [platform.openai.com](https://platform.openai.com), create an account, add a payment method
-- Click **API Keys** → **Create new secret key** → copy it
-- Typical cost: **$5–10/month** for daily lesson planning
+- **Claude Sonnet 4.6** — excellent quality, more affordable. Great for daily lesson planning.
+- **Claude Opus 4.6** — the smartest available. Noticeably better output, noticeably more expensive.
 
-> ⚠️ Avoid GPT-4o and older models — they're more expensive for similar quality.
+Setup:
+1. Go to [console.anthropic.com](https://console.anthropic.com) and create an account
+2. Add a credit card (you only pay for what you use — no subscription)
+3. Click **API Keys** in the left sidebar → **Create Key** → copy it
+4. In Terminal: `export ANTHROPIC_API_KEY=sk-ant-your-key-here`
 
----
-
-**Option 2 — Ollama cloud with MiniMax M2.7 (~$20/month, best quality)**
-
-Ollama is a service that lets you use powerful AI models. MiniMax M2.7 is an excellent model for teaching tasks — smart, fast, and great at following your style.
-
-- Go to [ollama.com](https://ollama.com) and create an account
-- There is some free usage to try it out before paying
-- The $20/month plan gives you plenty for daily classroom use
-- Run: `eduagent config set-model ollama`
+> Sonnet 4.6 runs about **$1–5/month** for a typical teacher. Opus 4.6 is ~5× more expensive — worth it if you want the absolute best.
 
 ---
 
-**Option 3 — Run a local model on your own computer (free, but limited)**
+**Option 2 — OpenAI GPT-5.4 (professional grade, pay per use)**
 
-Ollama can also run a small AI model entirely on your computer — no internet, no cost, no account needed. The catch: these local models are significantly less intelligent than the cloud options. They may struggle to capture your teaching voice, write convincingly, or follow complex instructions. The quality depends heavily on how powerful your computer is. Most teachers will find this frustrating.
+The company behind ChatGPT. GPT-5.4 is highly capable and produces professional-quality output.
 
-- Only recommended if you have a modern Mac with 16GB+ RAM or a gaming PC
-- Run: `ollama pull llama3` then `eduagent config set-model ollama`
+Setup:
+1. Go to [platform.openai.com](https://platform.openai.com) and create an account
+2. Add a credit card under **Billing**
+3. Click **API Keys** → **Create new secret key** → copy it
+4. In Terminal: `export OPENAI_API_KEY=sk-your-key-here`
+
+> GPT-5.4 is powerful but expensive. Expect **$5–15/month** with regular use.
 
 ---
 
-**Bottom line:** Start with OpenAI GPT-4.5. It's the easiest setup and the cost is less than a cup of coffee per week.
+**Option 3 — Ollama Cloud with MiniMax M2.7 (~$20/month flat rate)**
+
+Ollama is a platform that gives you access to powerful AI for a flat monthly fee — no surprise bills. MiniMax M2.7 is an excellent model for education: smart, fast, and great at learning your teaching voice.
+
+Setup:
+1. Go to [ollama.com](https://ollama.com) and create a free account
+2. There is some free usage to try it before committing
+3. Upgrade to the **$20/month** plan for unlimited use
+4. Find your API key: log in → click your profile icon (top right) → **Settings** → **API Keys** → **Generate**
+5. In Terminal: `export OLLAMA_API_KEY=your-key-here` then `eduagent config set-model ollama`
+
+> **Best value for most teachers.** Flat rate, no surprises, and MiniMax M2.7 is excellent at capturing your specific teaching style.
+
+---
+
+**Option 4 — Local model on your own computer (⚠️ not recommended)**
+
+You can run a small AI model entirely on your computer — free, no internet needed. The catch: local models are significantly less intelligent than cloud options. They often struggle to capture your teaching voice or write naturally. Most teachers will be disappointed with the results.
+
+If you want to try anyway, we recommend the **Qwen 3.5 series**:
+
+| Your computer | Recommended model | Command to install |
+|--------------|-------------------|--------------------|
+| Basic laptop (8GB RAM) | Qwen 3.5 4B | `ollama pull qwen3.5:4b` |
+| Modern Mac or PC (16GB RAM) | Qwen 3.5 9B | `ollama pull qwen3.5:9b` |
+| High-end workstation (32GB+ RAM) | Qwen 3.5 32B | `ollama pull qwen3.5:32b` |
+
+Then run: `eduagent config set-model ollama`
+
+> Start with Option 3 if cost is your concern — $20/month for cloud is far better than a free local model.
+
+---
+
+**Bottom line:** Most teachers should start with **Option 3 (Ollama cloud, $20/month)**. Flat rate, great quality, no surprises. If you want the best possible output regardless of cost, use **Option 1 with Claude Sonnet 4.6**.
 
 ## 📋 Commands
 
