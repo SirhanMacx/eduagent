@@ -17,6 +17,7 @@ import logging
 import os
 import signal
 import tempfile
+import threading
 import time
 from pathlib import Path
 from typing import Any, Callable
@@ -164,6 +165,31 @@ class TelegramAPI:
             reply_markup=reply_markup,
         )
 
+    def send_document(
+        self,
+        chat_id: int,
+        file_path: Path,
+        caption: str | None = None,
+    ) -> dict:
+        """Send a document file to a chat."""
+        url = f"{self._base}/sendDocument"
+        try:
+            with open(file_path, "rb") as f:
+                files = {"document": (file_path.name, f)}
+                data: dict[str, Any] = {"chat_id": chat_id}
+                if caption:
+                    data["caption"] = caption
+                resp = self._client.post(url, data=data, files=files)
+                result = resp.json()
+                if result.get("ok"):
+                    return result.get("result", {})
+                logger.warning("Telegram API error: %s", result.get("description", ""))
+                return {}
+        except Exception as e:
+            logger.error("Error sending document: %s", e)
+            _log_error(e)
+            return {}
+
     def send_chat_action(self, chat_id: int, action: str = "typing") -> dict:
         return self._call("sendChatAction", chat_id=chat_id, action=action)
 
@@ -222,15 +248,84 @@ def _rating_keyboard(lesson_id: str) -> dict:
 
 
 def _post_generation_keyboard(lesson_id: str) -> dict:
-    """Quick action buttons after generation."""
+    """Quick action buttons after lesson generation — includes export options."""
     return {
         "inline_keyboard": [
             [
-                {"text": "Rate this", "callback_data": f"rate:{lesson_id}:0_prompt"},
-                {"text": "Generate worksheet", "callback_data": f"action:worksheet:{lesson_id}"},
+                {"text": "Slides", "callback_data": f"action:export_slides:{lesson_id}"},
+                {"text": "Handout", "callback_data": f"action:export_handout:{lesson_id}"},
+                {"text": "Word Doc", "callback_data": f"action:export_doc:{lesson_id}"},
+            ],
+            [
+                {"text": "Rate this lesson", "callback_data": f"rate:{lesson_id}:0_prompt"},
+                {"text": "Worksheet", "callback_data": f"action:worksheet:{lesson_id}"},
             ],
         ]
     }
+
+
+def _detect_intent(text: str) -> tuple[str | None, str]:
+    """Fast keyword-based intent detection.
+
+    Returns (command, args) or (None, text) to fall through to LLM.
+    """
+    lower = text.lower()
+
+    # Lesson generation
+    if any(phrase in lower for phrase in [
+        "make a lesson", "create a lesson", "generate a lesson",
+        "lesson on ", "lesson about ", "lesson for ",
+        "build a lesson", "write a lesson",
+    ]):
+        return "lesson", text
+
+    # Unit generation
+    if any(phrase in lower for phrase in [
+        "make a unit", "create a unit", "unit on ",
+        "unit about ", "plan a unit", "build a unit",
+    ]):
+        return "unit", text
+
+    # Export requests
+    if any(phrase in lower for phrase in [
+        "export slides", "make slides", "create slides",
+        "powerpoint", "pptx", "slide deck",
+        "can i see the slides", "give me slides",
+    ]):
+        return "export_slides", text
+    if any(phrase in lower for phrase in [
+        "export handout", "make a handout", "create a handout",
+        "student handout", "student worksheet", "print",
+        "make a handout for this", "handout for this",
+    ]):
+        return "export_handout", text
+    if any(phrase in lower for phrase in [
+        "export doc", "word doc", "docx", "export word",
+    ]):
+        return "export_doc", text
+
+    # Standards
+    if any(phrase in lower for phrase in [
+        "what standards", "which standards",
+        "standards for", "standards cover",
+    ]):
+        return "standards", text
+
+    # Demo
+    if any(phrase in lower for phrase in [
+        "show me what you", "demo", "example lesson",
+        "sample lesson", "what can you do",
+    ]):
+        return "demo", ""
+
+    # Help/getting started
+    if any(phrase in lower for phrase in [
+        "how do i", "get started", "help me set up",
+        "what do i do first", "how does this work",
+    ]):
+        return "help", ""
+
+    return None, text  # Fall through to LLM
 
 
 class EduAgentTelegramBot:
@@ -253,7 +348,7 @@ class EduAgentTelegramBot:
         {"command": "settings", "description": "Show current config"},
         {"command": "demo", "description": "Show demo lesson output"},
         {"command": "progress", "description": "Student progress report"},
-        {"command": "export", "description": "Re-export last lesson"},
+        {"command": "export", "description": "Export last lesson (slides/handout/doc)"},
         {"command": "feedback", "description": "Recent ratings summary"},
         {"command": "standards", "description": "Look up standards"},
     ]
@@ -269,6 +364,7 @@ class EduAgentTelegramBot:
         self.api = TelegramAPI(token)
         self._running = False
         self._last_lesson_id: dict[int, str] = {}
+        self._last_lesson_data: dict[int, Any] = {}
 
     @classmethod
     def from_env(cls, data_dir: Path | None = None) -> "EduAgentTelegramBot":
@@ -385,13 +481,19 @@ class EduAgentTelegramBot:
     def _cmd_start(self, chat_id: int, msg: dict, args: str) -> None:
         self.api.send_message(
             chat_id,
-            "Welcome to EDUagent!\n\n"
-            "I'm your AI teaching assistant. I learn from your lesson plans "
-            "and generate lessons, units, and materials in your exact teaching voice.\n\n"
-            "Quick setup:\n"
-            "1. Send me a lesson file (PDF, DOCX, PPTX) so I can learn your style\n"
-            "2. Then use /lesson to generate a lesson on any topic\n\n"
-            "Type /help to see everything I can do.",
+            "Hey! I'm EDUagent -- think of me as that colleague down the hall "
+            "who always has a lesson idea ready.\n\n"
+            "Here's how I work: share some of your teaching materials (just drag "
+            "files into this chat), and I'll learn your style. After that, I can "
+            "generate lessons, units, handouts, and slides that sound like YOU "
+            "wrote them.\n\n"
+            "Quick commands:\n"
+            "/lesson [topic] -- Generate a lesson\n"
+            "/unit [topic] -- Plan a full unit\n"
+            "/demo -- See what I can do (no setup needed)\n"
+            "/help -- All commands\n\n"
+            "Or just tell me what you need in plain English. "
+            "I'm pretty good at figuring it out.",
         )
 
     def _cmd_help(self, chat_id: int, msg: dict, args: str) -> None:
@@ -399,19 +501,22 @@ class EduAgentTelegramBot:
             chat_id,
             "EDUagent Commands\n\n"
             "Generate content:\n"
-            "  /lesson <topic> - Generate a daily lesson\n"
-            "  /unit <topic> - Plan a unit\n"
-            "  /demo - Show sample lesson output\n\n"
+            "  /lesson <topic> -- Generate a daily lesson\n"
+            "  /unit <topic> -- Plan a full unit\n"
+            "  /demo -- See sample lesson output\n\n"
+            "Export formats:\n"
+            "  /export slides -- PowerPoint presentation\n"
+            "  /export handout -- Student worksheet (DOCX)\n"
+            "  /export doc -- Full lesson plan (Word)\n\n"
             "Setup:\n"
-            "  /ingest - How to send teaching materials\n"
-            "  /persona - Show current teaching persona\n"
-            "  /settings - Show current config\n"
-            "  /standards <subject> <grade> - Look up standards\n\n"
+            "  /ingest -- How to send teaching materials\n"
+            "  /persona -- Show current teaching persona\n"
+            "  /settings -- Show current config\n"
+            "  /standards <subject> <grade> -- Look up standards\n\n"
             "Reports:\n"
-            "  /progress - Student progress report\n"
-            "  /feedback - Recent ratings summary\n"
-            "  /export - Re-export last lesson\n\n"
-            "Tip: just send me a file to ingest your teaching materials!",
+            "  /progress -- Student progress report\n"
+            "  /feedback -- Recent ratings summary\n\n"
+            "Or just type what you need -- I understand plain English too!",
         )
 
     def _cmd_lesson(self, chat_id: int, msg: dict, args: str) -> None:
@@ -423,20 +528,8 @@ class EduAgentTelegramBot:
             )
             return
 
-        self.api.send_chat_action(chat_id, "typing")
         teacher_id = str(msg["from"]["id"])
-        try:
-            response = self._llm_call(args, teacher_id)
-            self.api.send_message(chat_id, response)
-            # Offer rating
-            self._try_offer_rating(chat_id, teacher_id)
-        except Exception as e:
-            logger.error("Error generating lesson: %s", e)
-            _log_error(e)
-            self.api.send_message(
-                chat_id,
-                "Couldn't generate right now. Try /lesson again in a minute.",
-            )
+        self._generate_with_progress(chat_id, teacher_id, args)
 
     def _cmd_unit(self, chat_id: int, msg: dict, args: str) -> None:
         if not args:
@@ -559,6 +652,7 @@ class EduAgentTelegramBot:
             self.api.send_message(chat_id, "Could not generate progress report.")
 
     def _cmd_export(self, chat_id: int, msg: dict, args: str) -> None:
+        """Handle /export command with format argument."""
         lesson_id = self._last_lesson_id.get(chat_id)
         if not lesson_id:
             self.api.send_message(
@@ -566,11 +660,27 @@ class EduAgentTelegramBot:
                 "No recent lesson to export. Generate one with /lesson first.",
             )
             return
-        self.api.send_message(
-            chat_id,
-            f"To export as PPTX/DOCX/PDF, use the CLI:\n"
-            f"  eduagent export --lesson-id {lesson_id} --format pptx",
-        )
+
+        fmt = args.strip().lower() if args else ""
+
+        if fmt in ("slides", "pptx"):
+            self._do_export(chat_id, lesson_id, "pptx")
+        elif fmt in ("handout", "worksheet"):
+            self._do_export(chat_id, lesson_id, "handout")
+        elif fmt in ("doc", "docx", "word"):
+            self._do_export(chat_id, lesson_id, "docx")
+        elif fmt in ("pdf",):
+            self._do_export(chat_id, lesson_id, "pdf")
+        else:
+            # No format specified — show options
+            self.api.send_message(
+                chat_id,
+                "What format would you like?\n\n"
+                "/export slides -- PowerPoint presentation\n"
+                "/export handout -- Student worksheet\n"
+                "/export doc -- Full lesson plan (Word)\n"
+                "/export pdf -- PDF document",
+            )
 
     def _cmd_feedback(self, chat_id: int, msg: dict, args: str) -> None:
         teacher_id = str(msg["from"]["id"])
@@ -630,7 +740,7 @@ class EduAgentTelegramBot:
     # ── Message handler ───────────────────────────────────────────────
 
     def _handle_message(self, msg: dict) -> None:
-        """Route free-text messages through the LLM.
+        """Route free-text messages through intent detection, then LLM fallback.
 
         If the message looks like a local folder path we hand it off to
         ``_handle_connect_local`` in the background so the bot stays
@@ -648,6 +758,53 @@ class EduAgentTelegramBot:
             self._handle_path_ingestion(chat_id, teacher_id, text)
             return
 
+        # Try fast keyword-based intent detection before falling back to LLM
+        intent, intent_args = _detect_intent(text)
+
+        if intent == "lesson":
+            self._generate_with_progress(chat_id, teacher_id, intent_args)
+            return
+        elif intent == "unit":
+            self.api.send_chat_action(chat_id, "typing")
+            try:
+                response = self._llm_call(f"plan a unit on {intent_args}", teacher_id)
+                self.api.send_message(chat_id, response)
+            except Exception as e:
+                _log_error(e)
+                self.api.send_message(chat_id, "Couldn't generate right now. Try again in a minute.")
+            return
+        elif intent == "standards":
+            self.api.send_chat_action(chat_id, "typing")
+            try:
+                response = self._llm_call(intent_args, teacher_id)
+                self.api.send_message(chat_id, response)
+            except Exception as e:
+                _log_error(e)
+                self.api.send_message(chat_id, "Couldn't look that up right now.")
+            return
+        elif intent == "demo":
+            self._cmd_demo(chat_id, msg, "")
+            return
+        elif intent == "help":
+            self._cmd_help(chat_id, msg, "")
+            return
+        elif intent in ("export_slides", "export_handout", "export_doc"):
+            lesson_id = self._last_lesson_id.get(chat_id)
+            if not lesson_id:
+                self.api.send_message(
+                    chat_id,
+                    "No recent lesson to export. Generate one first with /lesson.",
+                )
+                return
+            fmt_map = {
+                "export_slides": "pptx",
+                "export_handout": "handout",
+                "export_doc": "docx",
+            }
+            self._do_export(chat_id, lesson_id, fmt_map[intent])
+            return
+
+        # Fall through to LLM for anything else
         self.api.send_chat_action(chat_id, "typing")
 
         try:
@@ -679,8 +836,6 @@ class EduAgentTelegramBot:
         self, chat_id: int, teacher_id: str, text: str,
     ) -> None:
         """Spawn a background thread that ingests files from *text* path."""
-        import threading
-
         resolved = Path(text.strip().strip("'\"")).expanduser().resolve()
         self.api.send_message(
             chat_id,
@@ -913,6 +1068,130 @@ class EduAgentTelegramBot:
                     chat_id,
                     "Couldn't generate the worksheet right now. Try /lesson.",
                 )
+        elif action in ("export_slides", "export_handout", "export_doc"):
+            fmt_map = {
+                "export_slides": "pptx",
+                "export_handout": "handout",
+                "export_doc": "docx",
+            }
+            self.api.edit_message_text(
+                chat_id, message_id, f"Exporting {action.replace('export_', '')}...",
+            )
+            self._do_export(chat_id, lesson_id, fmt_map[action])
+
+    # ── Export helper ─────────────────────────────────────────────────
+
+    def _do_export(self, chat_id: int, lesson_id: str, fmt: str) -> None:
+        """Export a lesson to the given format and send the file."""
+        self.api.send_chat_action(chat_id, "upload_document")
+
+        try:
+            from eduagent.models import DailyLesson, TeacherPersona
+            from eduagent.state import _get_conn, init_db
+
+            init_db()
+
+            # Load lesson from DB
+            lesson_data = self._last_lesson_data.get(chat_id)
+            if not lesson_data:
+                with _get_conn() as conn:
+                    row = conn.execute(
+                        "SELECT lesson_json FROM generated_lessons WHERE id = ?",
+                        (lesson_id,),
+                    ).fetchone()
+                if row and row["lesson_json"]:
+                    lesson_data = DailyLesson.model_validate_json(row["lesson_json"])
+                else:
+                    self.api.send_message(
+                        chat_id,
+                        "Could not find the lesson data. Try generating a new lesson first.",
+                    )
+                    return
+
+            # Load persona
+            try:
+                from eduagent.commands._helpers import load_persona_or_exit
+                persona = load_persona_or_exit()
+            except (SystemExit, Exception):
+                persona = TeacherPersona()
+
+            # Do the export
+            with tempfile.TemporaryDirectory() as tmpdir:
+                out_dir = Path(tmpdir)
+                if fmt == "pptx":
+                    from eduagent.doc_export import export_lesson_pptx
+                    path = export_lesson_pptx(lesson_data, persona, out_dir)
+                elif fmt == "handout":
+                    from eduagent.doc_export import export_student_handout
+                    path = export_student_handout(lesson_data, persona, out_dir)
+                elif fmt == "docx":
+                    from eduagent.doc_export import export_lesson_docx
+                    path = export_lesson_docx(lesson_data, persona, out_dir)
+                elif fmt == "pdf":
+                    from eduagent.doc_export import export_lesson_pdf
+                    path = export_lesson_pdf(lesson_data, persona, out_dir)
+                else:
+                    self.api.send_message(chat_id, f"Unknown format: {fmt}")
+                    return
+
+                fmt_labels = {
+                    "pptx": "Slides",
+                    "handout": "Student Handout",
+                    "docx": "Word Document",
+                    "pdf": "PDF",
+                }
+                self.api.send_document(
+                    chat_id, path,
+                    caption=f"{fmt_labels.get(fmt, fmt)} for: {lesson_data.title}",
+                )
+        except Exception as e:
+            logger.error("Error exporting lesson: %s", e)
+            _log_error(e)
+            self.api.send_message(
+                chat_id,
+                f"Had trouble exporting. You can also export from the CLI:\n"
+                f"  eduagent lesson \"topic\" --format {fmt}",
+            )
+
+    # ── Generation with progress feedback ─────────────────────────────
+
+    def _generate_with_progress(
+        self, chat_id: int, teacher_id: str, topic: str,
+    ) -> None:
+        """Generate a lesson with periodic typing indicators and a rich response."""
+        # Send initial progress message
+        self.api.send_chat_action(chat_id, "typing")
+
+        # Start a background thread that sends typing actions periodically
+        stop_typing = threading.Event()
+
+        def _typing_loop():
+            while not stop_typing.is_set():
+                self.api.send_chat_action(chat_id, "typing")
+                stop_typing.wait(timeout=4.0)
+
+        typing_thread = threading.Thread(target=_typing_loop, daemon=True)
+        typing_thread.start()
+
+        try:
+            response = self._llm_call(topic, teacher_id)
+            stop_typing.set()
+            typing_thread.join(timeout=2)
+
+            self.api.send_message(chat_id, response)
+
+            # Try to build a rich follow-up with export options
+            self._try_offer_rating(chat_id, teacher_id)
+
+        except Exception as e:
+            stop_typing.set()
+            typing_thread.join(timeout=2)
+            logger.error("Error generating lesson: %s", e)
+            _log_error(e)
+            self.api.send_message(
+                chat_id,
+                "Couldn't generate right now. Try /lesson again in a minute.",
+            )
 
     # ── LLM call helper ───────────────────────────────────────────────
 
@@ -942,22 +1221,39 @@ class EduAgentTelegramBot:
                 return future.result(timeout=120)
             except FutureTimeout:
                 raise RuntimeError(
-                    "That's taking too long — try a smaller request "
+                    "That's taking too long -- try a smaller request "
                     "or a more specific topic."
                 )
             except Exception:
                 raise
 
     def _try_offer_rating(self, chat_id: int, teacher_id: str) -> None:
-        """Try to offer rating buttons if a lesson was just generated."""
+        """Try to offer export + rating buttons if a lesson was just generated."""
         try:
             from eduagent.openclaw_plugin import get_last_lesson_id
             lesson_id = get_last_lesson_id(teacher_id)
             if lesson_id:
                 self._last_lesson_id[chat_id] = lesson_id
+                # Try to cache the lesson data for export
+                try:
+                    from eduagent.models import DailyLesson
+                    from eduagent.state import _get_conn, init_db
+                    init_db()
+                    with _get_conn() as conn:
+                        row = conn.execute(
+                            "SELECT lesson_json FROM generated_lessons WHERE id = ?",
+                            (lesson_id,),
+                        ).fetchone()
+                    if row and row["lesson_json"]:
+                        self._last_lesson_data[chat_id] = (
+                            DailyLesson.model_validate_json(row["lesson_json"])
+                        )
+                except Exception:
+                    pass  # Caching is best-effort
                 self.api.send_message(
                     chat_id,
-                    "What would you like to do next?",
+                    "Download as:  Slides | Handout | Word Doc\n"
+                    "Rate this lesson to help me improve:",
                     reply_markup=_post_generation_keyboard(lesson_id),
                 )
         except Exception:

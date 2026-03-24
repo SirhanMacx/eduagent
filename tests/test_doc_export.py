@@ -696,3 +696,104 @@ class TestSlideCountMatchesContent:
         prs = Presentation(str(path))
         # Title + Objectives + DoNow + DI + GP + IW + Closing = 7
         assert len(prs.slides) == 7
+
+
+# ── Student handout export ─────────────────────────────────────────
+
+
+class TestStudentHandoutExport:
+    def test_generates_handout_file(self, sample_lesson, sample_persona, tmp_path):
+        from eduagent.doc_export import export_student_handout
+
+        path = export_student_handout(sample_lesson, sample_persona, output_dir=tmp_path)
+        assert path.exists()
+        assert path.suffix == ".docx"
+        assert "_handout" in path.name
+
+    def test_handout_is_nonempty(self, sample_lesson, sample_persona, tmp_path):
+        from eduagent.doc_export import export_student_handout
+
+        path = export_student_handout(sample_lesson, sample_persona, output_dir=tmp_path)
+        assert path.stat().st_size > 0
+
+    def test_handout_contains_lesson_title(self, sample_lesson, sample_persona, tmp_path):
+        from docx import Document
+
+        from eduagent.doc_export import export_student_handout
+
+        path = export_student_handout(sample_lesson, sample_persona, output_dir=tmp_path)
+        doc = Document(str(path))
+        full_text = "\n".join(p.text for p in doc.paragraphs)
+        assert "Causes of World War I" in full_text
+
+    def test_handout_contains_objective(self, sample_lesson, sample_persona, tmp_path):
+        from docx import Document
+
+        from eduagent.doc_export import export_student_handout
+
+        path = export_student_handout(sample_lesson, sample_persona, output_dir=tmp_path)
+        doc = Document(str(path))
+        full_text = "\n".join(p.text for p in doc.paragraphs)
+        assert "MAIN" in full_text
+
+    def test_handout_contains_do_now(self, sample_lesson, sample_persona, tmp_path):
+        from docx import Document
+
+        from eduagent.doc_export import export_student_handout
+
+        path = export_student_handout(sample_lesson, sample_persona, output_dir=tmp_path)
+        doc = Document(str(path))
+        # Do now should be in a table cell
+        all_text = ""
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    all_text += cell.text + "\n"
+        assert "World War I" in all_text or "already know" in all_text
+
+    def test_handout_contains_exit_ticket(self, sample_lesson, sample_persona, tmp_path):
+        from docx import Document
+
+        from eduagent.doc_export import export_student_handout
+
+        path = export_student_handout(sample_lesson, sample_persona, output_dir=tmp_path)
+        doc = Document(str(path))
+        all_text = ""
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    all_text += cell.text + "\n"
+        assert "MAIN factor" in all_text
+
+    def test_handout_contains_footer_fields(self, sample_lesson, sample_persona, tmp_path):
+        from docx import Document
+
+        from eduagent.doc_export import export_student_handout
+
+        path = export_student_handout(sample_lesson, sample_persona, output_dir=tmp_path)
+        doc = Document(str(path))
+        all_text = ""
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    all_text += cell.text + "\n"
+        assert "Name:" in all_text
+        assert "Date:" in all_text
+        assert "Period:" in all_text
+
+    def test_handout_minimal_lesson(self, minimal_lesson, sample_persona, tmp_path):
+        from eduagent.doc_export import export_student_handout
+
+        path = export_student_handout(minimal_lesson, sample_persona, output_dir=tmp_path)
+        assert path.exists()
+        assert path.stat().st_size > 0
+
+    def test_handout_teacher_name_in_header(self, sample_lesson, sample_persona, tmp_path):
+        from docx import Document
+
+        from eduagent.doc_export import export_student_handout
+
+        path = export_student_handout(sample_lesson, sample_persona, output_dir=tmp_path)
+        doc = Document(str(path))
+        full_text = "\n".join(p.text for p in doc.paragraphs)
+        assert "Ms. Rivera" in full_text

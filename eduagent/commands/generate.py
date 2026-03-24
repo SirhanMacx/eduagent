@@ -436,7 +436,7 @@ def lesson(
     homework: bool = typer.Option(
         True, "--homework/--no-homework", help="Include homework"
     ),
-    fmt: str = typer.Option("markdown", "--format", "-f", help="Export format: markdown, pptx, docx, pdf"),
+    fmt: str = typer.Option("markdown", "--format", "-f", help="Export format: markdown, pptx, docx, pdf, handout"),
 ):
     """Generate a detailed daily lesson plan.
 
@@ -494,16 +494,23 @@ def lesson(
     out_dir = _output_dir()
     json_path = save_lesson(daily, out_dir)
 
-    # For doc formats (pptx/docx/pdf), use doc_export directly;
+    # For doc formats (pptx/docx/pdf/handout), use doc_export directly;
     # export_lesson only handles markdown/pdf/docx natively.
     export_path = None
-    if fmt in ("pptx", "docx", "pdf"):
+    if fmt in ("pptx", "docx", "pdf", "handout"):
         try:
-            from eduagent.doc_export import export_lesson_docx, export_lesson_pdf, export_lesson_pptx
+            from eduagent.doc_export import (
+                export_lesson_docx,
+                export_lesson_pdf,
+                export_lesson_pptx,
+                export_student_handout,
+            )
             if fmt == "pptx":
                 doc_path = export_lesson_pptx(daily, persona, out_dir)
             elif fmt == "docx":
                 doc_path = export_lesson_docx(daily, persona, out_dir)
+            elif fmt == "handout":
+                doc_path = export_student_handout(daily, persona, out_dir)
             else:
                 doc_path = export_lesson_pdf(daily, persona, out_dir)
             export_path = doc_path

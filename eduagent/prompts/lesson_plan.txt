@@ -27,48 +27,83 @@ The generated lesson MUST include a "Standards Addressed" section with specific 
 
 ## Requirements
 
-Create a COMPLETE lesson plan with these sections:
+Create a COMPLETE, OBSERVATION-QUALITY lesson plan. This means every section is detailed enough that an administrator walking in could see exactly what is happening, why, and what students are producing. Follow these principles:
 
-1. **Objective** — Written in SWBAT format ("Students will be able to..."). Be specific and measurable.
+### Principle 1: Embedded Real Content
+Include the ACTUAL content students will work with — not descriptions of content.
+- For history/social studies: include the actual primary source text, document excerpt, or data.
+- For science: include the actual data table, equation, observation prompt, or phenomenon description.
+- For math: include the actual problem set with specific numbers, not "students will solve equations."
+- For ELA: include the actual passage, poem excerpt, or mentor sentence — not "students will read a text."
+- If you reference a document, image, or resource, include the relevant content directly in the lesson. Do NOT say "see page X" or "open your textbook" — the lesson must be self-contained.
+
+### Principle 2: Specific, Not Vague
+Replace vague instructions with precise, timed, actionable directions.
+- BAD: "Students will discuss the reading."
+- GOOD: "Turn to your partner. Person A has 90 seconds to explain why Lincoln chose to frame the war as a fight for equality rather than union. Person B listens silently, then asks one probing question. Switch roles. (3 minutes total)"
+- BAD: "Teacher will model a problem."
+- GOOD: "Write on the board: 3(x + 4) = 27. Say: 'Watch what I do first, then tell me if you agree with each step.' Distribute: 3x + 12 = 27. Ask: 'What did I just do? Why?' Subtract 12: 3x = 15. Ask: 'What operation undoes multiplication?' Divide: x = 5. Ask: 'How can we check this?'"
+
+### Principle 3: Scaffolded Complexity
+Questions and activities MUST build through increasing complexity.
+- Start with accessible entry points that every student can engage with.
+- Build toward analysis, evaluation, or transfer.
+- Do NOT front-load difficulty. Do NOT make all questions the same level.
+- Exit ticket questions should progress: recall -> application -> analysis.
+
+### Principle 4: Rich Vocabulary in Context
+Do NOT list vocabulary words separately for memorization. Instead, weave key terms into the activities where students encounter and use them naturally.
+- Introduce terms at the moment they become necessary for understanding.
+- Have students use the terms in their own explanations and writing.
+- Provide brief, clear definitions in context, not as a standalone list.
+
+---
+
+Create each section following these specifications:
+
+1. **Objective** — Written in SWBAT format ("Students will be able to..."). Be specific and measurable. The verb must name an observable action (analyze, calculate, compare, construct, evaluate, identify, explain) — not "understand" or "learn about."
 
 2. **Standards** — List applicable standards (use the standards from the unit plan).
 
-3. **Do-Now / Warm-Up** (5 minutes) — A brief, engaging opener that:
-   - Activates prior knowledge or previews today's topic
-   - Students can begin independently as soon as they sit down
-   - Include the actual questions/prompts students will see
+3. **Do-Now / Warm-Up** (3-5 minutes) — Create a Do Now that hooks students through analogy, scenario, or provocative question — NOT a content recall question. It should make students discover or think about the concept before you name it. Include specific timing.
+   - BAD: "What do you know about the causes of WWI?"
+   - GOOD: "Imagine five roommates who all secretly hate each other, each has a weapon, and one of them just got shoved. What happens next? Write your prediction in 2-3 sentences. (3 minutes)" [Then the lesson reveals this is a metaphor for pre-WWI Europe.]
+   - Students must be able to begin independently the moment they sit down.
+   - Include the exact prompt students will see.
 
-4. **Direct Instruction** (15-20 minutes) — A detailed teacher guide including:
-   - Key vocabulary to introduce
-   - Main concepts to cover with explanations
-   - Examples to model on the board
-   - Questions to pose to the class
-   - Write this as if scripting what the teacher will say and do
+4. **Direct Instruction** (15-20 minutes) — A detailed teacher script including:
+   - The actual content being taught — not a summary of it. Include the source text, data, equation, passage, or example IN FULL.
+   - Scripted teacher language: write what the teacher says, including key questions to pose at specific moments.
+   - Built-in checks for understanding every 3-5 minutes (specific questions, not just "check for understanding").
+   - Key terms introduced in context as they arise — not front-loaded as a vocabulary list.
+   - Model examples worked through step-by-step with think-aloud annotations.
 
 5. **Guided Practice** (15-20 minutes) — A structured activity where:
-   - Teacher and students work together
-   - Include specific problems, questions, or tasks
-   - Note where to check for understanding
-   - Include actual content (not just "students will practice")
+   - Teacher and students work together with gradual release of responsibility.
+   - Include the ACTUAL problems, questions, source texts, or tasks — with specific content, numbers, quotes, or data.
+   - Provide explicit turn-and-talk or collaboration structures with timing ("Person A explains for 60 seconds, Person B paraphrases, then switch").
+   - Note specific moments to circulate and check, and what to look/listen for.
+   - Scaffold from supported to semi-independent.
 
 6. **Independent Work / Partner Activity** (10 minutes) — Include:
-   - Clear instructions for the activity
-   - The actual tasks/problems/questions
-   - How students should record their work
+   - Clear, step-by-step instructions a student could follow without asking the teacher.
+   - The ACTUAL tasks, problems, or questions — not "students will complete the worksheet."
+   - How students should record and submit their work.
+   - An extension task for early finishers that deepens rather than adds busywork.
 
 7. **Exit Ticket** — Exactly 3 questions that:
-   - Assess whether the objective was met
-   - Range from recall to application
-   - Include expected responses for the teacher
+   - Progress in complexity: Question 1 = recall/identification, Question 2 = application, Question 3 = analysis or transfer to a new context.
+   - Directly assess whether the objective was met.
+   - Include expected responses for the teacher (what a proficient answer looks like).
 
-8. **Homework** (if enabled) — A meaningful extension activity, not busywork
+8. **Homework** (if enabled) — A meaningful extension activity that connects today's learning to something outside school or previews tomorrow's content. Not busywork. Not a repeat of classwork.
 
 9. **Differentiation Notes**:
-   - **Struggling learners:** 2-3 specific accommodations
-   - **Advanced learners:** 2-3 enrichment extensions
-   - **ELL students:** 2-3 language supports
+   - **Struggling learners:** 2-3 specific, actionable accommodations (sentence starters, graphic organizers, reduced question count — not just "provide extra support").
+   - **Advanced learners:** 2-3 genuine enrichment extensions that deepen rather than add more of the same.
+   - **ELL students:** 2-3 language supports (visual aids, native language cognates, simplified sentence frames with academic vocabulary).
 
-10. **Materials Needed** — Everything required for this specific lesson
+10. **Materials Needed** — Everything required for this specific lesson. The lesson must be fully teachable with only these materials — nothing assumed.
 
 ## Output Format
 
