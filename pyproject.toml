@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "eduagent"
-version = "0.1.2"
+version = "0.1.3"
 description = "Your teaching files, your AI co-teacher. Upload curriculum materials, get a digital co-teacher that generates lessons in your voice."
 readme = "README.md"
 license = "MIT"

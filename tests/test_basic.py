@@ -332,7 +332,7 @@ class TestVersion:
     def test_version_string(self):
         from eduagent import __version__
 
-        assert __version__ == "0.1.2"
+        assert __version__ == "0.1.3"
 
 
 # ── Standards module ───────────────────────────────────────────────

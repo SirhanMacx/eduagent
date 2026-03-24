@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.3] - 2026-03-24
+
+### Added
+- **Student Class Code System** — teachers create class codes with `eduagent class create`, students join via Telegram `/join`, teacher revokes with `eduagent class revoke`
+  - Database tables: `class_codes`, `student_enrollments`, `student_questions` with full CRUD
+  - CLI: `eduagent class create/list/stats/revoke/qr/report`
+  - Web: `GET /student/{class_code}` with QR code, class info, and Telegram link
+  - Weekly progress reports with anonymized student activity and topic analysis
+- **Telegram Bot Polish** — production-ready Telegram bot with full state machine
+  - `/health` command: model, persona, lesson count, corpus size
+  - `setMyCommands` on startup for BotFather menu registration
+  - Conversation state machine: IDLE → COLLECTING → GENERATING → DONE
+  - Error recovery: retry with backoff, friendly fallback messages, error logging
+  - Busy state handling: "Still working on your lesson" during generation
+  - Post-generation quick actions: [Rate this] [Generate worksheet]
+- **Onboarding Flow Polish** — smooth first-run experience
+  - Persona preview with confirmation: "I learned that you teach... Is this right?"
+  - Model auto-detection: Anthropic API key → OpenAI API key → Ollama (with preferred model)
+  - Auto-generate sample lesson on first setup
+  - Rich progress bars during file ingestion
+- **Web Dashboard v2** — key missing pages filled
+  - Lesson list page (`/lessons`) with subject and grade filters
+  - Persona/settings page (`/settings`) with class codes management
+  - Student chatbot embed snippet on lesson pages with copy button
+  - Profile page (`/profile`) with standards framework info
+  - Analytics page with daily lesson/question charts
+- 55+ new tests covering all 4 feature waves
+
 ## [0.1.2] - 2026-03-24
 
 ### Added
