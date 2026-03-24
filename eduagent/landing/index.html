@@ -587,6 +587,79 @@ a:hover { color: var(--text-bright); }
     gap: 1rem;
   }
 }
+
+/* ── Install Steps ───────────────────────────────── */
+.install-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 1.5rem 0;
+  text-align: left;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.install-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  padding: 1rem 1.25rem;
+}
+.step-badge {
+  background: var(--accent);
+  color: #000;
+  font-weight: 800;
+  font-size: 0.85rem;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.step-content { line-height: 1.6; font-size: 0.95rem; }
+.step-content a { color: var(--accent); }
+.install-code {
+  display: block;
+  background: #0d0d0d;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-family: 'Fira Code', monospace;
+  font-size: 0.9rem;
+  margin-top: 0.4rem;
+  color: #27c93f;
+}
+kbd {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.85rem;
+  font-family: monospace;
+}
+.cta-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+}
+.cta-secondary {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  border: 1.5px solid var(--accent);
+  color: var(--accent);
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+.cta-secondary:hover { background: rgba(110,207,130,0.1); }
 </style>
 </head>
 <body>
@@ -614,7 +687,7 @@ a:hover { color: var(--text-bright); }
       </div>
     </div>
 
-    <a class="hero-cta" href="#early-access">Get Early Access</a>
+    <a class="hero-cta" href="#try-now">Try It Now — Free</a>
   </div>
 </section>
 
@@ -631,7 +704,7 @@ a:hover { color: var(--text-bright); }
         <h3>Trained on YOUR materials</h3>
         <p>
           Not generic AI. EDUagent ingests your actual lesson plans, worksheets,
-          and assessments &mdash; learning from your 9 years of lessons to understand
+          and assessments &mdash; learning from your existing materials to understand
           exactly how you teach.
         </p>
       </div>
@@ -688,35 +761,95 @@ a:hover { color: var(--text-bright); }
   </div>
 </section>
 
-<!-- ── Early Access CTA ─────────────────────────────── -->
-<section class="early-access" id="early-access">
+<!-- ── Try Now ──────────────────────────────────────── -->
+<section class="early-access" id="try-now">
   <div class="container">
     <div class="cta-box">
-      <h2>Get early access</h2>
-      <p class="cta-sub">Be the first to try EDUagent when we launch.</p>
-      <div class="waitlist-counter" id="waitlist-counter" style="display:none;">
-        Join <span id="counter-number">0</span> teachers on the early access list
+      <h2>Try it now — free &amp; open source</h2>
+      <p class="cta-sub">No account required. Install in minutes on any Mac, PC, or Linux computer.</p>
+
+      <div class="install-steps">
+        <div class="install-step">
+          <div class="step-badge">1</div>
+          <div class="step-content">
+            <strong>Install Python</strong> (if you don't have it) &mdash;
+            <a href="https://python.org/downloads" target="_blank" rel="noopener">python.org/downloads</a>.
+            Click the big button and run the installer.
+          </div>
+        </div>
+        <div class="install-step">
+          <div class="step-badge">2</div>
+          <div class="step-content">
+            <strong>Open Terminal</strong> &mdash; On Mac: press <kbd>Cmd + Space</kbd>, type <kbd>Terminal</kbd>, hit Enter.
+            On Windows: press the Windows key, type <kbd>cmd</kbd>, hit Enter.
+          </div>
+        </div>
+        <div class="install-step">
+          <div class="step-badge">3</div>
+          <div class="step-content">
+            <strong>Install EDUagent</strong> &mdash; paste this and press Enter:
+            <code class="install-code">pip install eduagent</code>
+          </div>
+        </div>
+        <div class="install-step">
+          <div class="step-badge">4</div>
+          <div class="step-content">
+            <strong>Start it up:</strong>
+            <code class="install-code">eduagent chat</code>
+            EDUagent will walk you through the rest.
+          </div>
+        </div>
       </div>
-      <form class="waitlist-form" id="waitlist-form" name="eduagent-waitlist" netlify netlify-honeypot="bot-field" action="/success">
-        <input type="hidden" name="form-name" value="eduagent-waitlist">
-        <input type="hidden" name="bot-field">
-        <input
-          type="email"
-          name="email"
-          placeholder="you@school.edu"
-          required
-          autocomplete="email"
-          aria-label="Email address"
-        >
-        <select name="role" required aria-label="Your role">
-          <option value="" disabled selected>Your role</option>
-          <option value="teacher">Teacher</option>
-          <option value="admin">Admin</option>
-          <option value="other">Other</option>
-        </select>
-        <button type="submit">Join Waitlist</button>
-      </form>
-      <div class="form-message" id="form-message"></div>
+
+      <div class="cta-buttons">
+        <a class="hero-cta" href="https://github.com/SirhanMacx/eduagent" target="_blank" rel="noopener">
+          View on GitHub
+        </a>
+        <a class="cta-secondary" href="https://github.com/SirhanMacx/eduagent#-getting-started" target="_blank" rel="noopener">
+          Full Setup Guide &rarr;
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Open Source + Collaboration ──────────────────── -->
+<section class="section" id="contribute">
+  <div class="container">
+    <div class="section-header">
+      <h2>Open source &amp; built with teachers</h2>
+      <p>EDUagent is MIT licensed. Use it, fork it, build on it.</p>
+      <span class="accent-line"></span>
+    </div>
+    <div class="value-props">
+      <div class="value-card">
+        <div class="card-icon">&#x1F4AC;</div>
+        <h3>Give feedback</h3>
+        <p>
+          Found a bug? Have an idea? Something not working for your classroom?
+          <a href="https://github.com/SirhanMacx/eduagent/issues" target="_blank" rel="noopener">Open an issue on GitHub</a>
+          &mdash; we read every one.
+        </p>
+      </div>
+      <div class="value-card">
+        <div class="card-icon">&#x1F91D;</div>
+        <h3>Contribute</h3>
+        <p>
+          Teachers with domain expertise are especially welcome. Know how great lessons
+          are structured in your subject? 
+          <a href="https://github.com/SirhanMacx/eduagent/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">Read the contributing guide</a>
+          and open a PR.
+        </p>
+      </div>
+      <div class="value-card">
+        <div class="card-icon">&#x2B50;</div>
+        <h3>Star the repo</h3>
+        <p>
+          If EDUagent saves you time, 
+          <a href="https://github.com/SirhanMacx/eduagent" target="_blank" rel="noopener">star it on GitHub</a>
+          so other teachers can find it. That's how open-source projects grow.
+        </p>
+      </div>
     </div>
   </div>
 </section>
@@ -731,7 +864,7 @@ a:hover { color: var(--text-bright); }
     <span class="oss-badge">Open Source</span>
   </div>
   <p class="footer-copy">
-    Built by teachers, for teachers. MIT License. &copy; 2026 EDUagent.
+    Built by teachers, for teachers. MIT License. &copy; 2026 EDUagent &mdash; <a href="https://github.com/SirhanMacx/eduagent" style="color:var(--accent)">github.com/SirhanMacx/eduagent</a>
   </p>
 </footer>
 
@@ -789,47 +922,7 @@ a:hover { color: var(--text-bright); }
 
   tick();
 
-  // ── Waitlist Form (Netlify Forms) ──
-  var form = document.getElementById('waitlist-form');
-  var msg = document.getElementById('form-message');
-
-  form.addEventListener('submit', function(e) {
-    e.preventDefault();
-
-    var email = form.email.value.trim();
-    var role = form.role.value;
-    var btn = form.querySelector('button');
-
-    if (!email || !role) {
-      msg.textContent = 'Please fill in all fields.';
-      msg.className = 'form-message error';
-      return;
-    }
-
-    btn.disabled = true;
-    btn.textContent = 'Joining...';
-    msg.textContent = '';
-
-    var formData = new FormData(form);
-    fetch('/', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams(formData).toString()
-    })
-    .then(function(r) {
-      if (!r.ok) throw new Error('Request failed');
-      msg.textContent = "You're on the list! We'll be in touch soon.";
-      msg.className = 'form-message success';
-      form.reset();
-      btn.textContent = 'Joined! ✓';
-    })
-    .catch(function() {
-      msg.textContent = 'Something went wrong. Please try again.';
-      msg.className = 'form-message error';
-      btn.disabled = false;
-      btn.textContent = 'Join Waitlist';
-    });
-  });
+  // No waitlist form — open install, try now
 })();
 </script>
 

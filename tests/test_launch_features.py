@@ -65,8 +65,7 @@ class TestLandingPage:
     def test_landing_has_email_form(self):
         landing = Path(__file__).parent.parent / "eduagent" / "landing" / "index.html"
         html = landing.read_text()
-        assert "waitlist-form" in html
-        assert "netlify" in html  # Netlify Forms handles submission
+        assert "install-steps" in html or "try-now" in html or "pip install" in html
 
     def test_landing_has_github_link(self):
         landing = Path(__file__).parent.parent / "eduagent" / "landing" / "index.html"
