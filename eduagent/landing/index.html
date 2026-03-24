@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>EDUagent — Your AI co-teacher that sounds like you</title>
-<meta name="description" content="EDUagent learns from your curriculum files and generates lessons, worksheets, and assessments in your exact teaching voice.">
+<meta name="description" content="EDUagent learns from your curriculum files and generates lessons, unit plans, worksheets, assessments, slides, PDFs, and more — all in your exact teaching voice. Free and open source.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -670,7 +670,7 @@ kbd {
     <h1>Your AI co-teacher that sounds like you</h1>
     <p class="subhead">
       EDUagent learns from your curriculum files and generates lessons,
-      worksheets, and assessments in your exact teaching voice.
+      worksheets, slides, PDFs, and assessments in your exact teaching voice.
     </p>
 
     <!-- Terminal Demo -->
@@ -712,9 +712,7 @@ kbd {
         <div class="card-icon">&#x270D;&#xFE0F;</div>
         <h3>Generates in your voice</h3>
         <p>
-          Do-nows, exit tickets, DBQs &mdash; the way you write them.
-          Your students won't know the difference because the output
-          sounds like it came from you.
+          Lessons, unit plans, DBQs, worksheets, slides, PDF handouts, assessments, sub packets &mdash; all in your voice. Your students won't know the difference.
         </p>
       </div>
       <div class="value-card">
@@ -754,8 +752,8 @@ kbd {
       <div class="step">
         <div class="step-number">3</div>
         <h3>Generate</h3>
-        <p>Create full units, single lessons, worksheets, or assessments on demand.</p>
-        <code>eduagent generate "WW2"</code>
+        <p>Generate full units, lessons, worksheets, PDF handouts, slides, or assessments on demand.</p>
+        <code>eduagent lesson "WW2" --export pdf</code>
       </div>
     </div>
   </div>
@@ -765,8 +763,8 @@ kbd {
 <section class="early-access" id="try-now">
   <div class="container">
     <div class="cta-box">
-      <h2>Try it now — free &amp; open source</h2>
-      <p class="cta-sub">No account required. Install in minutes on any Mac, PC, or Linux computer.</p>
+      <h2>Try it now — completely free</h2>
+      <p class="cta-sub">100% open source. No account, no subscription, no credit card. Install in minutes on any Mac, PC, or Linux computer.</p>
 
       <div class="install-steps">
         <div class="install-step">
@@ -864,7 +862,8 @@ kbd {
     <span class="oss-badge">Open Source</span>
   </div>
   <p class="footer-copy">
-    Built by teachers, for teachers. MIT License. &copy; 2026 EDUagent &mdash; <a href="https://github.com/SirhanMacx/eduagent" style="color:var(--accent)">github.com/SirhanMacx/eduagent</a>
+    Built by teachers, for teachers. MIT License. &copy; 2026 EDUagent &mdash; <a href="https://github.com/SirhanMacx/eduagent" style="color:var(--accent)">github.com/SirhanMacx/eduagent</a><br>
+    Questions? <a href="mailto:crustymacx@proton.me" style="color:var(--accent)">crustymacx@proton.me</a>
   </p>
 </footer>
 
@@ -877,7 +876,7 @@ kbd {
     'eduagent ingest ./my-lessons/',
     'eduagent generate "The Civil War" --grade 8',
     'eduagent chatbot start --port 3000',
-    'eduagent export --format pdf --unit "WW2"'
+    'eduagent lesson "WW2" --export pdf',
   ];
 
   var el = document.getElementById('typewriter');
