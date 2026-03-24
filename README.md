@@ -288,9 +288,9 @@ MIT. Build on it, sell it, use it in your classroom. Just don't be evil.
 
 ## 👨‍🏫 Built by a teacher
 
-EDUagent was created by **Jon Maccarello** — 9 years teaching Social Studies at Great Neck South Middle School. This isn't a startup's idea of what teachers need. It's a tool built by someone who writes lesson plans every week, knows what a good Do Now looks like, and got tired of starting from scratch.
+EDUagent was created by **Mr. Mac** — 9 years teaching Social Studies in Long Island, NY school districts. This isn't a startup's idea of what teachers need. It's a tool built by someone who writes lesson plans every week, knows what a good Do Now looks like, and got tired of starting from scratch.
 
-Jon is the primary user and the reason this exists. Every feature was built because he needed it.
+Mr. Mac is the primary user and the reason this exists. Every feature was built because he needed it.
 
 ---
 
