@@ -1,18 +1,22 @@
-"""Export, share, demo, and landing page commands."""
+"""Export, share, demo, import, and landing page commands."""
 
 from __future__ import annotations
 
 import json
+import platform
 import re
+import subprocess
 import webbrowser
 from pathlib import Path
 from typing import Optional
+from urllib.parse import urlparse
 
 import typer
 from rich.panel import Panel
 from rich.table import Table
 
 from eduagent.commands._helpers import console
+from eduagent.database import Database
 
 export_app = typer.Typer()
 
@@ -361,6 +365,16 @@ def share(
         "--host",
         help="Server URL for shareable link",
     ),
+    embed: bool = typer.Option(
+        False,
+        "--embed",
+        help="Print an HTML embed snippet for the student chat widget",
+    ),
+    copy: bool = typer.Option(
+        False,
+        "--copy",
+        help="Copy the share URL to the clipboard (macOS)",
+    ),
 ):
     """Generate a shareable link or HTML file from a lesson.
 
@@ -368,8 +382,6 @@ def share(
     or --lesson-file to generate a self-contained HTML file.
     """
     if lesson_id:
-        from eduagent.database import Database
-
         db = Database()
         lesson = db.get_lesson(lesson_id)
         if not lesson:
@@ -384,7 +396,42 @@ def share(
             db.close()
             raise typer.Exit(1)
         share_url = f"{host}/shared/{token}"
-        console.print(f"[green]Shareable URL:[/green] {share_url}")
+
+        # Build Rich panel content
+        panel_lines = [f"[bold green]Share URL:[/bold green] {share_url}"]
+
+        embed_snippet = (
+            f'<script src="{host}/widget.js"'
+            f' data-token="{token}" async></script>'
+        )
+        if embed:
+            panel_lines.append(
+                f"\n[bold cyan]Embed snippet:[/bold cyan]\n{embed_snippet}"
+            )
+
+        panel_lines.append(
+            "\n[dim]Hint: Anyone with this link can view the lesson.[/dim]"
+        )
+
+        console.print(
+            Panel(
+                "\n".join(panel_lines),
+                title="Lesson Share",
+                border_style="green",
+            )
+        )
+
+        if copy and platform.system() == "Darwin":
+            try:
+                subprocess.run(
+                    ["pbcopy"],
+                    input=share_url.encode(),
+                    check=True,
+                )
+                console.print("[green]URL copied to clipboard.[/green]")
+            except (FileNotFoundError, subprocess.CalledProcessError):
+                pass
+
         db.close()
         return
 
@@ -409,6 +456,85 @@ def share(
 
     html_path.write_text(_lesson_to_html(data), encoding="utf-8")
     console.print(f"[green]Shareable lesson saved:[/green] {html_path}")
+
+
+# ── Import command ──────────────────────────────────────────────────────
+
+
+def _extract_token(value: str) -> str:
+    """Extract a share token from a URL or return the value as-is."""
+    parsed = urlparse(value)
+    if parsed.scheme and parsed.netloc:
+        # It's a URL — take the last path segment as the token
+        return parsed.path.rstrip("/").rsplit("/", 1)[-1]
+    return value
+
+
+@export_app.command("import")
+def import_lesson(
+    source: str = typer.Argument(
+        ..., help="Share URL or token to import"
+    ),
+    server: str = typer.Option(
+        "http://localhost:8000",
+        "--server",
+        help="Server URL to fetch the lesson from",
+    ),
+):
+    """Import a shared lesson by URL or token."""
+    import httpx
+
+    token = _extract_token(source)
+    if not token:
+        console.print("[red]Could not extract token from input.[/red]")
+        raise typer.Exit(1)
+
+    # Build fetch URL: if the source was a full URL, use its host
+    parsed = urlparse(source)
+    if parsed.scheme and parsed.netloc:
+        fetch_url = f"{parsed.scheme}://{parsed.netloc}/share/{token}"
+    else:
+        fetch_url = f"{server.rstrip('/')}/share/{token}"
+
+    try:
+        resp = httpx.get(fetch_url, timeout=15)
+    except httpx.HTTPError as exc:
+        console.print(f"[red]Network error:[/red] {exc}")
+        raise typer.Exit(1)
+
+    if resp.status_code == 404:
+        console.print(
+            f"[red]Lesson not found for token:[/red] {token}"
+        )
+        raise typer.Exit(1)
+
+    if resp.status_code != 200:
+        console.print(
+            f"[red]Server returned status {resp.status_code}[/red]"
+        )
+        raise typer.Exit(1)
+
+    try:
+        data = resp.json()
+    except (json.JSONDecodeError, ValueError):
+        console.print("[red]Invalid JSON response from server.[/red]")
+        raise typer.Exit(1)
+
+    lesson_data = data.get("lesson", data)
+    original_title = data.get("title", lesson_data.get("title", "Untitled"))
+    title = f"[Imported] {original_title}"
+
+    db = Database()
+    new_id = db.insert_lesson(
+        unit_id="imported",
+        lesson_number=0,
+        title=title,
+        lesson_json=json.dumps(lesson_data),
+        materials_json=None,
+    )
+    db.close()
+
+    console.print(f"[green]✓ Imported lesson {new_id}: {title}[/green]")
 
 
 # ── Demo command ─────────────────────────────────────────────────────────

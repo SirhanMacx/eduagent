@@ -1,18 +1,29 @@
-"""Export routes — PDF, DOCX, Markdown downloads and share links."""
+"""Export routes — PDF, DOCX, Markdown downloads, share links, and import."""
 
 from __future__ import annotations
 
 import json
 import tempfile
 from pathlib import Path
+from typing import Optional
+from urllib.parse import urlparse
 
+import httpx
 from fastapi import APIRouter
 from fastapi.responses import FileResponse, JSONResponse
+from pydantic import BaseModel
 
 from eduagent.api.server import get_db
+from eduagent.database import Database
 from eduagent.models import DailyLesson
 
 router = APIRouter(tags=["export"])
+
+
+class ImportRequest(BaseModel):
+    url: Optional[str] = None
+    token: Optional[str] = None
+    server: str = "http://localhost:8000"
 
 
 @router.get("/export/{lesson_id}")
@@ -104,3 +115,63 @@ async def share_lesson_api(token: str):
         "share_token": token,
         "lesson": lesson_data,
     }
+
+
+@router.post("/import")
+async def import_lesson(req: ImportRequest):
+    """Import a lesson from a share URL or token."""
+    token = req.token
+    fetch_server = req.server.rstrip("/")
+
+    if req.url:
+        parsed = urlparse(req.url)
+        if parsed.scheme and parsed.netloc:
+            token = parsed.path.rstrip("/").rsplit("/", 1)[-1]
+            fetch_server = f"{parsed.scheme}://{parsed.netloc}"
+
+    if not token:
+        return JSONResponse(
+            {"error": "Provide a url or token."}, status_code=400
+        )
+
+    fetch_url = f"{fetch_server}/share/{token}"
+
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.get(fetch_url)
+    except httpx.HTTPError as exc:
+        return JSONResponse(
+            {"error": f"Network error: {exc}"}, status_code=502
+        )
+
+    if resp.status_code == 404:
+        return JSONResponse(
+            {"error": "Lesson not found."}, status_code=404
+        )
+    if resp.status_code != 200:
+        return JSONResponse(
+            {"error": f"Upstream returned {resp.status_code}"},
+            status_code=502,
+        )
+
+    try:
+        data = resp.json()
+    except (json.JSONDecodeError, ValueError):
+        return JSONResponse(
+            {"error": "Invalid JSON from upstream."}, status_code=502
+        )
+
+    lesson_data = data.get("lesson", data)
+    original_title = data.get("title", lesson_data.get("title", "Untitled"))
+    title = f"[Imported] {original_title}"
+
+    db = get_db()
+    new_id = db.insert_lesson(
+        unit_id=Database._new_id(),
+        lesson_number=0,
+        title=title,
+        lesson_json=json.dumps(lesson_data),
+        materials_json=None,
+    )
+
+    return {"lesson_id": new_id, "title": title}
