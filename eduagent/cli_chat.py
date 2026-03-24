@@ -11,7 +11,7 @@ from rich.prompt import Prompt
 from rich.spinner import Spinner
 
 from eduagent.commands._helpers import console
-from eduagent.openclaw_plugin import get_last_lesson_id, handle_message
+from eduagent.gateway import Gateway
 from eduagent.state import TeacherSession
 
 _WELCOME = """\
@@ -41,6 +41,8 @@ async def run_chat(teacher_id: str = "local-teacher") -> None:
             padding=(1, 2),
         )
     )
+
+    gateway = Gateway()
 
     session = TeacherSession.load(teacher_id)
     if not session.is_new:
@@ -79,14 +81,17 @@ async def run_chat(teacher_id: str = "local-teacher") -> None:
             transient=True,
         ):
             try:
-                response = await handle_message(text, teacher_id)
+                result = await gateway.handle(text, teacher_id)
             except Exception as e:
-                response = f"Error: {e}"
+                result = None
+                response_text = f"Error: {e}"
+            else:
+                response_text = result.text
 
         console.print()
         console.print(
             Panel(
-                response,
+                response_text,
                 title="[bold green]EDUagent[/bold green]",
                 border_style="green",
                 padding=(0, 1),
@@ -94,28 +99,17 @@ async def run_chat(teacher_id: str = "local-teacher") -> None:
         )
         console.print()
 
-        # Check if a lesson was just generated — offer rating
-        lesson_id = get_last_lesson_id(teacher_id)
-        if lesson_id:
-            try:
-                rating_input = Prompt.ask(
-                    "[dim]Rate this lesson (1-5, Enter to skip)[/dim]",
-                    default="",
-                )
-                if rating_input.strip() and rating_input.strip().isdigit():
-                    rating = int(rating_input.strip())
-                    if 1 <= rating <= 5:
-                        from eduagent.analytics import rate_lesson
+        # Send any files the gateway produced
+        if result and result.files:
+            for f in result.files:
+                console.print(f"[green]File: {f}[/green]")
+            console.print()
 
-                        rate_lesson(teacher_id, lesson_id, rating)
-                        stars = "★" * rating + "☆" * (5 - rating)
-                        console.print(f"[green]Thanks! Rated {stars} ({rating}/5)[/green]\n")
-                    else:
-                        console.print("[dim]Rating must be 1-5. Skipped.[/dim]\n")
-                else:
-                    console.print("[dim]Skipped.[/dim]\n")
-            except (KeyboardInterrupt, EOFError):
-                console.print("[dim]Skipped.[/dim]\n")
+        # Show buttons as text options in CLI
+        if result and (result.button_rows or result.buttons):
+            rows = result.button_rows or [result.buttons]
+            options = [b.label for row in rows for b in row]
+            console.print(f"[dim]Options: {' | '.join(options)}[/dim]\n")
 
 
 def main(teacher_id: str = "local-teacher") -> None:
