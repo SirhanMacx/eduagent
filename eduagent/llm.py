@@ -34,7 +34,7 @@ class LLMClient:
         """
         from eduagent.demo import is_demo_mode
 
-        if is_demo_mode():
+        if is_demo_mode(config=self.config):
             return self._demo_response(prompt)
 
         # Inject workspace context into system prompt

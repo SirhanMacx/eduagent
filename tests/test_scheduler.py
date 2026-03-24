@@ -3,14 +3,11 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
-from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from eduagent.scheduler import (
     DEFAULT_TASKS,
-    SCHEDULE_CONFIG_PATH,
     EduScheduler,
     _parse_cron_expr,
     disable_task,

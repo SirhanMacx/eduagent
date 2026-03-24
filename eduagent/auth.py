@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Optional
 
@@ -20,7 +21,8 @@ from starlette.responses import JSONResponse, Response
 
 logger = logging.getLogger(__name__)
 
-_KEYS_PATH = Path.home() / ".eduagent" / "api_keys.json"
+_BASE_DIR = Path(os.environ.get("EDUAGENT_DATA_DIR", str(Path.home() / ".eduagent")))
+_KEYS_PATH = _BASE_DIR / "api_keys.json"
 
 # In-memory cache of api_key -> teacher_id
 _api_keys: dict[str, str] = {}

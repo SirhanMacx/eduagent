@@ -175,6 +175,6 @@ async def get_teacher_standards(
     return context if context else json.dumps({"message": f"No standards data for state={state}"})
 
 
-def run_server(host: str = "localhost", port: int = 8100) -> None:
-    """Run the MCP server. Uses stdio transport by default (standard MCP)."""
+def run_server() -> None:
+    """Run the MCP server using stdio transport (the standard MCP transport)."""
     mcp.run(transport="stdio")

@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import tempfile
 from pathlib import Path
 
 import pytest
 
-from eduagent.task_queue import Task, TaskQueue, TaskStatus, TaskType, run_worker
+from eduagent.task_queue import Task, TaskQueue, TaskStatus, TaskType
 
 
 @pytest.fixture()
@@ -127,7 +126,7 @@ class TestNextQueued:
         assert queue.next_queued() is None
 
     def test_next_queued_skips_running(self, queue: TaskQueue) -> None:
-        id1 = queue.submit(TaskType.GENERATE_LESSON, {"n": 1})
+        queue.submit(TaskType.GENERATE_LESSON, {"n": 1})  # id1 — consumed below
         id2 = queue.submit(TaskType.GENERATE_LESSON, {"n": 2})
         queue.next_queued()  # pops id1
         task = queue.next_queued()  # should pop id2

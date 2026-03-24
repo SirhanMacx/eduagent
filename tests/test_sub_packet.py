@@ -14,7 +14,6 @@ from eduagent.sub_packet import (
     sub_packet_to_markdown,
 )
 
-
 # ── Request model tests ──────────────────────────────────────────────
 
 
@@ -300,7 +299,11 @@ class TestSubCLI:
         runner = CliRunner()
         result = runner.invoke(app, ["sub", "--help"])
         assert result.exit_code == 0
-        assert "substitute" in result.output.lower() or "sub packet" in result.output.lower() or "--class" in result.output
+        assert (
+            "substitute" in result.output.lower()
+            or "sub packet" in result.output.lower()
+            or "--class" in result.output
+        )
 
     def test_parent_comm_command_registered(self):
         from typer.testing import CliRunner

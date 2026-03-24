@@ -2,7 +2,6 @@
 
 from pathlib import Path
 
-
 _PH_DIR = Path(__file__).parent.parent / "output" / "producthunt"
 
 

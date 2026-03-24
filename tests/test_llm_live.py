@@ -25,7 +25,7 @@ class TestPersonaExtraction:
 
     @pytest.mark.asyncio
     async def test_extract_persona_from_sample_document(self):
-        from eduagent.models import Document, DocType, TeacherPersona
+        from eduagent.models import DocType, Document, TeacherPersona
         from eduagent.persona import extract_persona
 
         sample_doc = Document(

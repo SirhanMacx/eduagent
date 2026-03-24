@@ -436,18 +436,26 @@ def demo(
         webbrowser.open(html_path.as_uri())
         return
 
+    from eduagent.demo import load_demo
+
+    unit_data = load_demo("unit_plan")
+    lesson_data = load_demo("lesson_social_studies_g8")
+
     console.print(
         Panel(
             "[bold green]EDUagent Demo[/bold green]"
             " — no API key needed\n"
-            "This is example output for:"
-            " 8th Grade Science / Photosynthesis / 2 weeks",
+            f"This is example output for:"
+            f" Grade {unit_data.get('grade_level', '8')}"
+            f" {unit_data.get('subject', 'Social Studies')}"
+            f" / {unit_data.get('topic', '')}"
+            f" / {unit_data.get('duration_weeks', 2)} weeks",
             title="EDUagent",
             border_style="green",
         )
     )
 
-    # Sample unit plan
+    # Unit plan from packaged demo JSON
     unit_table = Table(
         title="Sample Unit Plan",
         show_header=True,
@@ -455,81 +463,71 @@ def demo(
     )
     unit_table.add_column("Field", style="bold")
     unit_table.add_column("Value")
+    unit_table.add_row("Title", unit_data.get("title", ""))
     unit_table.add_row(
-        "Title", "Life From Light: Understanding Photosynthesis"
+        "Grade",
+        f"Grade {unit_data.get('grade_level', '')} {unit_data.get('subject', '')}",
     )
-    unit_table.add_row("Grade", "8th Grade Science")
-    unit_table.add_row("Duration", "2 weeks / 10 lessons")
+    unit_table.add_row(
+        "Duration",
+        f"{unit_data.get('duration_weeks', '')} weeks"
+        f" / {len(unit_data.get('daily_lessons', []))} lessons",
+    )
     unit_table.add_row(
         "Essential Questions",
-        "How do plants convert light into food?\n"
-        "Why does photosynthesis matter for all life on Earth?\n"
-        "How do plants and animals depend on each other?",
+        "\n".join(unit_data.get("essential_questions", [])),
     )
     unit_table.add_row(
         "Enduring Understandings",
-        "Energy flows through ecosystems starting with photosynthesis.\n"
-        "Matter and energy transformations obey conservation laws.",
+        "\n".join(unit_data.get("enduring_understandings", [])),
     )
-    unit_table.add_row(
-        "Lesson Sequence (sample)",
-        "L1: What is Photosynthesis? The Big Picture\n"
-        "L2: Light Energy and Chlorophyll\n"
-        "L3: The Light-Dependent Reactions\n"
-        "L4: The Calvin Cycle\n"
-        "L5: Lab — Leaf Disk Assay\n"
-        "L6-10: Factors, Applications & Assessment",
+    lessons_summary = "\n".join(
+        f"L{lesson['lesson_number']}: {lesson['topic']}"
+        for lesson in unit_data.get("daily_lessons", [])
     )
+    unit_table.add_row("Lesson Sequence", lessons_summary)
     console.print(unit_table)
 
     console.print()
 
-    # Sample lesson plan
+    # Lesson plan from packaged demo JSON
     lesson_table = Table(
-        title="Sample Lesson Plan — Lesson 1",
+        title=f"Sample Lesson Plan — {lesson_data.get('title', 'Lesson 1')}",
         show_header=True,
         header_style="bold magenta",
     )
     lesson_table.add_column("Component", style="bold")
     lesson_table.add_column("Content", max_width=70)
     lesson_table.add_row(
-        "Objective (SWBAT)",
-        "Students will be able to write the overall equation"
-        " for photosynthesis\n"
-        "and explain what enters and exits the leaf.",
+        "Objective (SWBAT)", lesson_data.get("objective", "")
     )
     lesson_table.add_row(
-        "Do-Now (5 min)",
-        "Look at the photo on the board. Where does a plant"
-        " get its food?\n"
-        "Write your hypothesis in 2 sentences.",
+        "Do-Now", lesson_data.get("do_now", "")
     )
     lesson_table.add_row(
-        "Direct Instruction (20 min)",
-        "Walk through the big-picture equation:"
-        " sunlight = power,\n"
-        "CO2 + H2O = raw materials, glucose = product.\n"
-        "Use the chloroplast diagram on p. 34.",
+        "Direct Instruction", lesson_data.get("direct_instruction", "")
     )
     lesson_table.add_row(
-        "Guided Practice (15 min)",
-        "Leaf observation: each pair gets a leaf, hand lens,"
-        " and recording sheet.\n"
-        "Students sketch the leaf structure and label"
-        " where photosynthesis occurs.",
+        "Guided Practice", lesson_data.get("guided_practice", "")
     )
-    lesson_table.add_row(
-        "Exit Ticket (5 min)",
-        "1. Write the word equation for photosynthesis.\n"
-        "2. Name ONE thing a plant needs"
-        " from the environment.\n"
-        "3. Name ONE thing a plant releases.",
-    )
-    lesson_table.add_row(
-        "Differentiation",
-        "Struggling: sentence frames for exit ticket.\n"
-        "Advanced: research C4 vs C3 photosynthesis.",
-    )
+    exit_tickets = lesson_data.get("exit_ticket", [])
+    if isinstance(exit_tickets, list):
+        et_text = "\n".join(
+            f"{i + 1}. {t['question']}" if isinstance(t, dict) else str(t)
+            for i, t in enumerate(exit_tickets)
+        )
+    else:
+        et_text = str(exit_tickets)
+    lesson_table.add_row("Exit Ticket", et_text)
+    diff = lesson_data.get("differentiation", {})
+    if isinstance(diff, dict):
+        diff_text = "\n".join(
+            f"{k.title()}: {', '.join(v) if isinstance(v, list) else v}"
+            for k, v in diff.items()
+        )
+    else:
+        diff_text = str(diff)
+    lesson_table.add_row("Differentiation", diff_text)
     console.print(lesson_table)
 
     console.print()

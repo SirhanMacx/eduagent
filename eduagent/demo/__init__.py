@@ -31,8 +31,14 @@ def load_all_demos() -> dict[str, dict[str, Any]]:
     return demos
 
 
-def is_demo_mode() -> bool:
-    """Check whether the app should run in demo mode (no API key configured)."""
+def is_demo_mode(config: Any = None) -> bool:
+    """Check whether the app should run in demo mode (no API key configured).
+
+    Args:
+        config: Optional AppConfig instance. When provided, the check uses
+            this config instead of loading global state. This allows
+            LLMClient to pass its own injected config.
+    """
     import os
     has_anthropic = bool(os.environ.get("ANTHROPIC_API_KEY"))
     has_openai = bool(os.environ.get("OPENAI_API_KEY"))
@@ -41,7 +47,7 @@ def is_demo_mode() -> bool:
     # Check config for ollama (always available locally)
     try:
         from eduagent.models import AppConfig, LLMProvider
-        cfg = AppConfig.load()
+        cfg = config if config is not None else AppConfig.load()
         if cfg.provider == LLMProvider.OLLAMA:
             return False
     except Exception:

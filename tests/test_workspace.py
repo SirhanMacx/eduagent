@@ -2,21 +2,10 @@
 
 from __future__ import annotations
 
-import textwrap
-from pathlib import Path
-from unittest.mock import patch
-
 import pytest
 
 from eduagent.models import AppConfig, TeacherPersona, TeacherProfile, TeachingStyle, VocabularyLevel
 from eduagent.workspace import (
-    HEARTBEAT_PATH,
-    IDENTITY_PATH,
-    MEMORY_PATH,
-    NOTES_DIR,
-    SOUL_PATH,
-    STUDENTS_DIR,
-    WORKSPACE_DIR,
     _sanitize_filename,
     append_daily_note,
     generate_identity,

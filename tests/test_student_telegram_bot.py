@@ -7,9 +7,8 @@ free-text question routing, error recovery, and no-class guard.
 from __future__ import annotations
 
 import asyncio
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
-
-import pytest
 
 from eduagent.student_telegram_bot import (
     STUDENT_BOT_COMMANDS,
@@ -19,7 +18,6 @@ from eduagent.student_telegram_bot import (
     _send_response,
     _student_sessions,
 )
-
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -211,11 +209,11 @@ class TestErrorRecovery:
             if code:
                 await update.message.chat.send_action("typing")
                 try:
-                    answer = await mock_bot.handle_message(update.message.text, student_id, code)
+                    await mock_bot.handle_message(update.message.text, student_id, code)
                 except Exception:
                     await asyncio.sleep(0)  # simulate backoff
                     try:
-                        answer = await mock_bot.handle_message(update.message.text, student_id, code)
+                        await mock_bot.handle_message(update.message.text, student_id, code)
                     except Exception:
                         await update.message.reply_text(
                             "Hmm, I'm having trouble right now. Try asking again in a moment!"

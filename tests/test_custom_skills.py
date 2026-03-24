@@ -4,12 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
 import yaml
 
-from eduagent.skills.base import SubjectSkill
 from eduagent.skills.library import SkillLibrary, _parse_yaml_skill, generate_skill_template
-
 
 # ── YAML parsing ─────────────────────────────────────────────────────
 

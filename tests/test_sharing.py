@@ -1,6 +1,5 @@
 """Tests for shareable lesson URLs."""
 
-import json
 
 import pytest
 from fastapi.testclient import TestClient

@@ -415,20 +415,30 @@ student_questions
 
 ## Configuration & Secrets
 
+All storage defaults to `~/.eduagent/` but can be relocated by setting the
+**`EDUAGENT_DATA_DIR`** environment variable. Every module that touches disk
+(`auth.py`, `config.py`, `workspace.py`, `task_queue.py`, `corpus.py`,
+`bot_state.py`) reads this variable at import time and falls back to
+`~/.eduagent` when it is unset.
+
 ```
-~/.eduagent/
-├── config.json          # User preferences (provider, model, output dir, teacher profile)
-├── secrets.json         # API keys (0600 permissions) — fallback if keyring unavailable
-├── state.db             # Teacher sessions (SQLite)
+$EDUAGENT_DATA_DIR/          # default: ~/.eduagent/
+├── config.json              # User preferences (provider, model, output dir, teacher profile)
+├── secrets.json             # API keys (0600 permissions) — fallback if keyring unavailable
+├── api_keys.json            # Hosted-mode API key → teacher_id mapping
+├── state.db                 # Teacher sessions (SQLite)
+├── task_queue.db            # Background task queue (SQLite)
+├── bot_state.db             # Telegram bot conversation state (SQLite)
+├── workspace/               # Teacher workspace (identity, soul, memory, notes)
 └── corpus/
-    └── corpus.db        # Few-shot examples (SQLite)
+    └── corpus.db            # Few-shot examples (SQLite)
 ```
 
 **API key resolution order:**
 
 1. Environment variables (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `TAVILY_API_KEY`)
 2. OS keyring (macOS Keychain, Linux Secret Service, Windows Credential Manager)
-3. `~/.eduagent/secrets.json`
+3. `$EDUAGENT_DATA_DIR/secrets.json`
 
 ---
 

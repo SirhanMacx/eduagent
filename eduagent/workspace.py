@@ -14,6 +14,7 @@ Mirrors the OpenClaw agent workspace pattern, adapted for teachers:
 
 from __future__ import annotations
 
+import os
 import re
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -23,7 +24,8 @@ from eduagent.models import AppConfig, TeacherPersona
 
 # ── Paths ──────────────────────────────────────────────────────────────
 
-WORKSPACE_DIR = Path.home() / ".eduagent" / "workspace"
+_BASE_DIR = Path(os.environ.get("EDUAGENT_DATA_DIR", str(Path.home() / ".eduagent")))
+WORKSPACE_DIR = _BASE_DIR / "workspace"
 IDENTITY_PATH = WORKSPACE_DIR / "identity.md"
 SOUL_PATH = WORKSPACE_DIR / "soul.md"
 MEMORY_PATH = WORKSPACE_DIR / "memory.md"

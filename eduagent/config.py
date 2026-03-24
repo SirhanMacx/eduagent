@@ -15,7 +15,8 @@ from typing import Optional
 
 from eduagent.models import AppConfig
 
-_SECRETS_DIR = Path.home() / ".eduagent"
+_BASE_DIR = Path(os.environ.get("EDUAGENT_DATA_DIR", str(Path.home() / ".eduagent")))
+_SECRETS_DIR = _BASE_DIR
 _SECRETS_FILE = _SECRETS_DIR / "secrets.json"
 _SERVICE_NAME = "eduagent"
 

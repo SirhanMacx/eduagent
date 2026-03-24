@@ -17,6 +17,7 @@ Or via the Dockerfile:
 from __future__ import annotations
 
 import logging
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -47,10 +48,12 @@ def create_hosted_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # CORS — allow all origins for web client access
+    # CORS — configurable via EDUAGENT_CORS_ORIGINS env var.
+    # Default is "*" (all origins) for development; restrict in production.
+    origins = os.environ.get("EDUAGENT_CORS_ORIGINS", "*").split(",")
     hosted.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

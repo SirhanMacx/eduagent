@@ -4,10 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import json
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from unittest.mock import MagicMock
 
 from eduagent.models import TeacherPersona
 from eduagent.state import init_db

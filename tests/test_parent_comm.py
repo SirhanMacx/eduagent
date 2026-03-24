@@ -15,7 +15,6 @@ from eduagent.parent_comm import (
     parent_comm_to_text,
 )
 
-
 # ── CommType enum tests ──────────────────────────────────────────────
 
 

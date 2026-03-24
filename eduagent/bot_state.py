@@ -6,17 +6,20 @@ Used by both telegram_bot.py (teacher bot) and student_telegram_bot.py.
 
 from __future__ import annotations
 
+import os
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
+_BASE_DIR = Path(os.environ.get("EDUAGENT_DATA_DIR", str(Path.home() / ".eduagent")))
+
 
 class BotStateStore:
-    """Read/write ChatState rows to ~/.eduagent/bot_state.db."""
+    """Read/write ChatState rows to the data directory's bot_state.db."""
 
     def __init__(self, db_path: Optional[Path] = None) -> None:
-        self._db_path = db_path or (Path.home() / ".eduagent" / "bot_state.db")
+        self._db_path = db_path or (_BASE_DIR / "bot_state.db")
         self._db_path.parent.mkdir(parents=True, exist_ok=True)
         self._conn: Optional[sqlite3.Connection] = None
         self._ensure_table()

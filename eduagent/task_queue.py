@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import sqlite3
 import uuid
 from datetime import datetime, timezone
@@ -67,8 +68,8 @@ CREATE TABLE IF NOT EXISTS tasks (
 
 
 def _default_db_path() -> Path:
-    """Return the default database path inside ~/.eduagent/."""
-    db_dir = Path.home() / ".eduagent"
+    """Return the default database path inside the data directory."""
+    db_dir = Path(os.environ.get("EDUAGENT_DATA_DIR", str(Path.home() / ".eduagent")))
     db_dir.mkdir(parents=True, exist_ok=True)
     return db_dir / "task_queue.db"
 

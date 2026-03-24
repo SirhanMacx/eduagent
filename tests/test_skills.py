@@ -78,8 +78,9 @@ class TestSubjectSkill:
 
 class TestSkillLibrary:
     @pytest.fixture
-    def library(self):
-        return SkillLibrary()
+    def library(self, tmp_path):
+        # Use an empty custom_dir so user-installed YAML skills don't interfere
+        return SkillLibrary(custom_dir=tmp_path)
 
     def test_loads_all_skills(self, library):
         assert len(library) >= 11
@@ -88,7 +89,7 @@ class TestSkillLibrary:
         expected = {
             "ela", "history", "math", "science", "social_studies",
             "foreign_language", "art", "music", "physical_education",
-            "computer_science", "special_education", "ap_psychology",
+            "computer_science", "special_education",
         }
         assert set(library.subjects()) == expected
 

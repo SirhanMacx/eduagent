@@ -135,18 +135,17 @@ def student_chat(
 
 
 @bot_app.command(name="mcp-server")
-def mcp_server(
-    host: str = typer.Option(
-        "localhost", "--host", help="Host to bind to"
-    ),
-    port: int = typer.Option(8100, "--port", help="Port to bind to"),
-) -> None:
-    """Start the EDUagent MCP server for tool integration."""
+def mcp_server() -> None:
+    """Start the EDUagent MCP server for tool integration.
+
+    Uses stdio transport (the standard MCP transport). Connect to this
+    server by launching the process and communicating over stdin/stdout.
+    """
     from eduagent.mcp_server import run_server
 
     console.print(
         Panel(
-            f"Starting MCP server on {host}:{port}\n"
+            "Starting MCP server (stdio transport)\n"
             "Tools: generate_lesson, generate_unit,"
             " ingest_materials, student_question,"
             " get_teacher_standards",
@@ -154,7 +153,7 @@ def mcp_server(
             border_style="blue",
         )
     )
-    run_server(host=host, port=port)
+    run_server()
 
 
 # ── First-run setup ──────────────────────────────────────────────────

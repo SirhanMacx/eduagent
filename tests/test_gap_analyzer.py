@@ -3,16 +3,13 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 from typer.testing import CliRunner
 
 from eduagent.cli import app
 from eduagent.curriculum_map import CurriculumMapper
 from eduagent.models import CurriculumGap, TeacherPersona
-
 
 # ── CurriculumGap model tests ────────────────────────────────────────
 
@@ -109,8 +106,8 @@ class TestCurriculumMapper:
 
         with patch(
             "eduagent.curriculum_map.LLMClient"
-        ) as MockLLM:
-            instance = MockLLM.return_value
+        ) as mock_llm:
+            instance = mock_llm.return_value
             instance.generate_json = AsyncMock(return_value=mock_gaps)
 
             mapper = CurriculumMapper()
@@ -142,8 +139,8 @@ class TestCurriculumMapper:
             ]
         }
 
-        with patch("eduagent.curriculum_map.LLMClient") as MockLLM:
-            instance = MockLLM.return_value
+        with patch("eduagent.curriculum_map.LLMClient") as mock_llm:
+            instance = mock_llm.return_value
             instance.generate_json = AsyncMock(return_value=mock_wrapped)
 
             mapper = CurriculumMapper()
@@ -161,8 +158,8 @@ class TestCurriculumMapper:
 
     def test_mapper_handles_empty_response(self):
         """Empty list from LLM = no gaps."""
-        with patch("eduagent.curriculum_map.LLMClient") as MockLLM:
-            instance = MockLLM.return_value
+        with patch("eduagent.curriculum_map.LLMClient") as mock_llm:
+            instance = mock_llm.return_value
             instance.generate_json = AsyncMock(return_value=[])
 
             mapper = CurriculumMapper()
@@ -179,8 +176,8 @@ class TestCurriculumMapper:
 
     def test_mapper_passes_persona_to_prompt(self):
         """Persona is forwarded to the LLM prompt."""
-        with patch("eduagent.curriculum_map.LLMClient") as MockLLM:
-            instance = MockLLM.return_value
+        with patch("eduagent.curriculum_map.LLMClient") as mock_llm:
+            instance = mock_llm.return_value
             instance.generate_json = AsyncMock(return_value=[])
 
             persona = TeacherPersona(
@@ -213,8 +210,8 @@ class TestCurriculumMapper:
             }
         ]
 
-        with patch("eduagent.curriculum_map.LLMClient") as MockLLM:
-            instance = MockLLM.return_value
+        with patch("eduagent.curriculum_map.LLMClient") as mock_llm:
+            instance = mock_llm.return_value
             instance.generate_json = AsyncMock(return_value=mock_gaps)
 
             mapper = CurriculumMapper()
@@ -233,8 +230,8 @@ class TestCurriculumMapper:
         """Very large materials lists should still function."""
         large_list = [f"file_{i}.md" for i in range(300)]
 
-        with patch("eduagent.curriculum_map.LLMClient") as MockLLM:
-            instance = MockLLM.return_value
+        with patch("eduagent.curriculum_map.LLMClient") as mock_llm:
+            instance = mock_llm.return_value
             instance.generate_json = AsyncMock(return_value=[])
 
             mapper = CurriculumMapper()
@@ -452,13 +449,13 @@ class TestGapAnalyzeCLI:
         """Full CLI run with mocked LLM — should produce output."""
         with (
             patch("eduagent.commands.generate.load_persona_or_exit") as mock_p,
-            patch("eduagent.curriculum_map.CurriculumMapper") as MockMapper,
+            patch("eduagent.curriculum_map.CurriculumMapper") as mock_mapper,
             patch("eduagent.commands.generate._output_dir", return_value=tmp_path),
-            patch("eduagent.models.AppConfig.load") as MockConfig,
+            patch("eduagent.models.AppConfig.load") as mock_config,
         ):
             mock_p.return_value = self._mock_persona()
-            MockConfig.load.return_value = MagicMock(active_teacher_id=None)
-            mapper_instance = MockMapper.return_value
+            mock_config.load.return_value = MagicMock(active_teacher_id=None)
+            mapper_instance = mock_mapper.return_value
             mapper_instance.identify_curriculum_gaps = AsyncMock(
                 return_value=self._mock_gaps()
             )
@@ -480,13 +477,13 @@ class TestGapAnalyzeCLI:
         """When LLM returns no gaps, show success message."""
         with (
             patch("eduagent.commands.generate.load_persona_or_exit") as mock_p,
-            patch("eduagent.curriculum_map.CurriculumMapper") as MockMapper,
+            patch("eduagent.curriculum_map.CurriculumMapper") as mock_mapper,
             patch("eduagent.commands.generate._output_dir", return_value=tmp_path),
-            patch("eduagent.models.AppConfig.load") as MockConfig,
+            patch("eduagent.models.AppConfig.load") as mock_config,
         ):
             mock_p.return_value = self._mock_persona()
-            MockConfig.load.return_value = MagicMock(active_teacher_id=None)
-            mapper_instance = MockMapper.return_value
+            mock_config.load.return_value = MagicMock(active_teacher_id=None)
+            mapper_instance = mock_mapper.return_value
             mapper_instance.identify_curriculum_gaps = AsyncMock(return_value=[])
 
             result = runner.invoke(
@@ -509,13 +506,13 @@ class TestGapAnalyzeCLI:
 
         with (
             patch("eduagent.commands.generate.load_persona_or_exit") as mock_p,
-            patch("eduagent.curriculum_map.CurriculumMapper") as MockMapper,
+            patch("eduagent.curriculum_map.CurriculumMapper") as mock_mapper,
             patch("eduagent.commands.generate._output_dir", return_value=tmp_path),
-            patch("eduagent.models.AppConfig.load") as MockConfig,
+            patch("eduagent.models.AppConfig.load") as mock_config,
         ):
             mock_p.return_value = self._mock_persona()
-            MockConfig.load.return_value = MagicMock(active_teacher_id=None)
-            mapper_instance = MockMapper.return_value
+            mock_config.load.return_value = MagicMock(active_teacher_id=None)
+            mapper_instance = mock_mapper.return_value
             mapper_instance.identify_curriculum_gaps = AsyncMock(return_value=[])
 
             result = runner.invoke(
@@ -544,13 +541,13 @@ class TestGapAnalyzeCLI:
 
         with (
             patch("eduagent.commands.generate.load_persona_or_exit") as mock_p,
-            patch("eduagent.curriculum_map.CurriculumMapper") as MockMapper,
+            patch("eduagent.curriculum_map.CurriculumMapper") as mock_mapper,
             patch("eduagent.commands.generate._output_dir", return_value=tmp_path),
-            patch("eduagent.models.AppConfig.load") as MockConfig,
+            patch("eduagent.models.AppConfig.load") as mock_config,
         ):
             mock_p.return_value = self._mock_persona()
-            MockConfig.load.return_value = MagicMock(active_teacher_id=None)
-            mapper_instance = MockMapper.return_value
+            mock_config.load.return_value = MagicMock(active_teacher_id=None)
+            mapper_instance = mock_mapper.return_value
             mapper_instance.identify_curriculum_gaps = AsyncMock(return_value=[])
 
             result = runner.invoke(
@@ -572,13 +569,13 @@ class TestGapAnalyzeCLI:
         """--format markdown produces a .md file."""
         with (
             patch("eduagent.commands.generate.load_persona_or_exit") as mock_p,
-            patch("eduagent.curriculum_map.CurriculumMapper") as MockMapper,
+            patch("eduagent.curriculum_map.CurriculumMapper") as mock_mapper,
             patch("eduagent.commands.generate._output_dir", return_value=tmp_path),
-            patch("eduagent.models.AppConfig.load") as MockConfig,
+            patch("eduagent.models.AppConfig.load") as mock_config,
         ):
             mock_p.return_value = self._mock_persona()
-            MockConfig.load.return_value = MagicMock(active_teacher_id=None)
-            mapper_instance = MockMapper.return_value
+            mock_config.load.return_value = MagicMock(active_teacher_id=None)
+            mapper_instance = mock_mapper.return_value
             mapper_instance.identify_curriculum_gaps = AsyncMock(
                 return_value=self._mock_gaps()
             )
@@ -604,13 +601,13 @@ class TestGapAnalyzeCLI:
         """Default format is html — should produce .html file."""
         with (
             patch("eduagent.commands.generate.load_persona_or_exit") as mock_p,
-            patch("eduagent.curriculum_map.CurriculumMapper") as MockMapper,
+            patch("eduagent.curriculum_map.CurriculumMapper") as mock_mapper,
             patch("eduagent.commands.generate._output_dir", return_value=tmp_path),
-            patch("eduagent.models.AppConfig.load") as MockConfig,
+            patch("eduagent.models.AppConfig.load") as mock_config,
         ):
             mock_p.return_value = self._mock_persona()
-            MockConfig.load.return_value = MagicMock(active_teacher_id=None)
-            mapper_instance = MockMapper.return_value
+            mock_config.load.return_value = MagicMock(active_teacher_id=None)
+            mapper_instance = mock_mapper.return_value
             mapper_instance.identify_curriculum_gaps = AsyncMock(
                 return_value=self._mock_gaps()
             )
@@ -641,13 +638,13 @@ class TestGapAnalyzeCLI:
 
         with (
             patch("eduagent.commands.generate.load_persona_or_exit") as mock_p,
-            patch("eduagent.curriculum_map.CurriculumMapper") as MockMapper,
+            patch("eduagent.curriculum_map.CurriculumMapper") as mock_mapper,
             patch("eduagent.commands.generate._output_dir", return_value=tmp_path),
-            patch("eduagent.models.AppConfig.load") as MockConfig,
+            patch("eduagent.models.AppConfig.load") as mock_config,
         ):
             mock_p.return_value = self._mock_persona()
-            MockConfig.load.return_value = MagicMock(active_teacher_id=None)
-            mapper_instance = MockMapper.return_value
+            mock_config.load.return_value = MagicMock(active_teacher_id=None)
+            mapper_instance = mock_mapper.return_value
             mapper_instance.identify_curriculum_gaps = AsyncMock(return_value=multi_gaps)
 
             result = runner.invoke(

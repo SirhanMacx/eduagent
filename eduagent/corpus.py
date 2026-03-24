@@ -19,12 +19,14 @@ The corpus is:
 from __future__ import annotations
 
 import json
+import os
 import sqlite3
 import uuid
 from pathlib import Path
 from typing import Optional
 
-CORPUS_DIR = Path.home() / ".eduagent" / "corpus"
+_BASE_DIR = Path(os.environ.get("EDUAGENT_DATA_DIR", str(Path.home() / ".eduagent")))
+CORPUS_DIR = _BASE_DIR / "corpus"
 CORPUS_DB = CORPUS_DIR / "corpus.db"
 
 
