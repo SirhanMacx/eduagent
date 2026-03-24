@@ -697,7 +697,9 @@ a:hover { color: var(--text-bright); }
       <div class="waitlist-counter" id="waitlist-counter" style="display:none;">
         Join <span id="counter-number">0</span> teachers on the early access list
       </div>
-      <form class="waitlist-form" id="waitlist-form">
+      <form class="waitlist-form" id="waitlist-form" name="eduagent-waitlist" netlify netlify-honeypot="bot-field" action="/success">
+        <input type="hidden" name="form-name" value="eduagent-waitlist">
+        <input type="hidden" name="bot-field">
         <input
           type="email"
           name="email"
@@ -787,21 +789,7 @@ a:hover { color: var(--text-bright); }
 
   tick();
 
-  // ── Waitlist Counter ──
-  fetch('/api/waitlist/count')
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      var count = data.count || data.total || 0;
-      if (count > 0) {
-        document.getElementById('counter-number').textContent = count;
-        document.getElementById('waitlist-counter').style.display = 'inline-block';
-      }
-    })
-    .catch(function() {
-      // silently fail — counter stays hidden
-    });
-
-  // ── Waitlist Form ──
+  // ── Waitlist Form (Netlify Forms) ──
   var form = document.getElementById('waitlist-form');
   var msg = document.getElementById('form-message');
 
@@ -822,26 +810,18 @@ a:hover { color: var(--text-bright); }
     btn.textContent = 'Joining...';
     msg.textContent = '';
 
-    fetch('/api/waitlist', {
+    var formData = new FormData(form);
+    fetch('/', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: email, role: role })
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams(formData).toString()
     })
     .then(function(r) {
       if (!r.ok) throw new Error('Request failed');
-      return r.json();
-    })
-    .then(function() {
       msg.textContent = "You're on the list! We'll be in touch soon.";
       msg.className = 'form-message success';
       form.reset();
-      btn.textContent = 'Joined!';
-
-      // Update counter
-      var counterEl = document.getElementById('counter-number');
-      var current = parseInt(counterEl.textContent, 10) || 0;
-      counterEl.textContent = current + 1;
-      document.getElementById('waitlist-counter').style.display = 'inline-block';
+      btn.textContent = 'Joined! ✓';
     })
     .catch(function() {
       msg.textContent = 'Something went wrong. Please try again.';
