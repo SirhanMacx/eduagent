@@ -45,11 +45,16 @@ def _make_console() -> Console:
                 sys.stderr.buffer, encoding="utf-8", errors="replace"
             )
 
-    return Console(
-        highlight=False,
-        safe_box=force_ascii,
-        force_terminal=None,  # Let Rich auto-detect
-    )
+    kwargs: dict = {
+        "highlight": False,
+        "safe_box": force_ascii,
+    }
+
+    # On Windows with a rewrapped stdout, tell Rich to use it explicitly
+    if force_ascii and hasattr(sys.stdout, "buffer"):
+        kwargs["file"] = sys.stdout
+
+    return Console(**kwargs)
 
 
 console = _make_console()

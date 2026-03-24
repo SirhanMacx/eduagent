@@ -499,9 +499,10 @@ def lesson(
 
     out_dir = _output_dir()
     json_path = save_lesson(daily, out_dir)
-    export_path = export_lesson(daily, out_dir, fmt=fmt)
 
-    # If a document format was requested, also export via doc_export
+    # For doc formats (pptx/docx/pdf), use doc_export directly;
+    # export_lesson only handles markdown/pdf/docx natively.
+    export_path = None
     if fmt in ("pptx", "docx", "pdf"):
         try:
             from eduagent.doc_export import export_lesson_docx, export_lesson_pdf, export_lesson_pptx
@@ -511,12 +512,18 @@ def lesson(
                 doc_path = export_lesson_docx(daily, persona, out_dir)
             else:
                 doc_path = export_lesson_pdf(daily, persona, out_dir)
+            export_path = doc_path
             console.print(f"[green]Document exported:[/green] {doc_path}")
         except Exception as e:
             console.print(f"[yellow]Document export failed: {e}[/yellow]")
+            # Fall back to markdown
+            export_path = export_lesson(daily, out_dir, fmt="markdown")
+    else:
+        export_path = export_lesson(daily, out_dir, fmt=fmt)
 
     console.print(f"\n[green]Lesson saved:[/green] {json_path}")
-    console.print(f"[green]Exported:[/green] {export_path}")
+    if export_path:
+        console.print(f"[green]Exported:[/green] {export_path}")
     console.print(
         Panel(
             f"[bold]Objective:[/bold] {daily.objective}\n"
