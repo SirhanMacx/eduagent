@@ -37,6 +37,7 @@ from eduagent.commands.export import (
 from eduagent.commands.generate import generate_app
 from eduagent.commands.queue import queue_app
 from eduagent.commands.schedule_cmd import schedule_app
+from eduagent.commands.sub import sub_app
 from eduagent.commands.workspace_cmd import workspace_app
 
 # ── Build the main app ──────────────────────────────────────────────────
@@ -94,6 +95,9 @@ for _cmd_info in export_app.registered_commands:
     app.registered_commands.append(_cmd_info)
 
 for _cmd_info in bot_app.registered_commands:
+    app.registered_commands.append(_cmd_info)
+
+for _cmd_info in sub_app.registered_commands:
     app.registered_commands.append(_cmd_info)
 
 # Register stats and status as top-level commands via helper functions

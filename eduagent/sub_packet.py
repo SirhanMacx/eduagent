@@ -1,192 +1,211 @@
-"""Substitute teacher packet generator.
-
-Generates a complete packet that a substitute teacher can pick up and run
-with zero prior knowledge of the class, subject, or school.
-"""
+"""Sub packet generator — creates complete substitute teacher packets."""
 
 from __future__ import annotations
 
+from datetime import datetime
 from pathlib import Path
-from typing import Optional
+
+from pydantic import BaseModel, Field
 
 from eduagent.llm import LLMClient
-from eduagent.models import AppConfig, SubPacket, TeacherPersona
-from eduagent.state import TeacherSession
 
-PROMPT_PATH = Path(__file__).parent / "prompts" / "sub_packet.txt"
+
+class SubPacketRequest(BaseModel):
+    """Everything the generator needs to create a sub packet."""
+
+    teacher_name: str
+    school: str
+    class_name: str
+    grade: str
+    subject: str
+    date: str
+    period_or_time: str
+    lesson_topic: str = ""
+    lesson_context: str = ""
+
+
+class SubPacket(BaseModel):
+    """A complete substitute teacher packet ready for printing."""
+
+    teacher_name: str
+    class_name: str
+    grade: str
+    subject: str
+    date: str
+    period_or_time: str
+    overview: str
+    daily_schedule: list[str] = Field(default_factory=list)
+    lesson_instructions: list[str] = Field(default_factory=list)
+    student_notes: str = ""
+    materials_needed: list[str] = Field(default_factory=list)
+    emergency_info: str = ""
+    closing_notes: str = ""
+    generated_at: datetime = Field(default_factory=datetime.now)
+
+
+_SYSTEM_PROMPT = (
+    "You are writing a sub packet as if you are the teacher. "
+    "Write explicit, step-by-step instructions that any substitute could follow. "
+    "Be encouraging and professional."
+)
+
+_USER_PROMPT_TEMPLATE = """\
+Generate a complete substitute teacher packet as JSON.
+
+Teacher: {teacher_name}
+School: {school}
+Class: {class_name}
+Grade: {grade}
+Subject: {subject}
+Date: {date}
+Period/Time: {period_or_time}
+{topic_line}{context_line}
+
+Return a JSON object with these exact keys:
+- "overview": A 2-3 sentence class overview for the substitute.
+- "daily_schedule": A list of strings, each describing one block of the period \
+(e.g. "0:00-5:00 — Attendance and warm-up").
+- "lesson_instructions": A numbered list of strings — explicit, step-by-step \
+instructions the substitute should follow. Be very detailed.
+- "student_notes": General behavior/seating tips (no real student names). \
+Example: "The class is generally well-behaved. The front row tends to finish \
+early — have extension work ready."
+- "materials_needed": A list of materials/handouts the sub will need.
+- "emergency_info": Emergency contacts, nurse extension, office number, \
+fire drill procedure — everything a sub needs in an emergency.
+- "closing_notes": A friendly closing note from the teacher to the sub.
+
+Return ONLY the JSON object, no markdown fences."""
 
 
 async def generate_sub_packet(
-    teacher_id: str,
-    date: str,
-    lesson_id: Optional[str] = None,
-    config: Optional[AppConfig] = None,
+    request: SubPacketRequest,
+    llm: LLMClient,
 ) -> SubPacket:
-    """Generate a complete substitute teacher packet.
-
-    Args:
-        teacher_id: The teacher's session ID (used to load persona and lessons).
-        date: The date the sub will be covering (e.g. "2026-03-24").
-        lesson_id: Optional specific lesson ID to base instructions on.
-        config: Optional app config override.
-
-    Returns:
-        A fully populated SubPacket ready for printing.
-    """
-    config = config or AppConfig.load()
-    session = TeacherSession.load(teacher_id)
-
-    # Build persona context
-    persona = session.persona or TeacherPersona()
-    persona_context = persona.to_prompt_context()
-
-    # Build school context from teacher profile
-    school = config.teacher_profile.school or "School name not configured"
-
-    # Build lesson context if we have a current lesson or specific lesson_id
-    lesson_context = _build_lesson_context(session, lesson_id)
-
-    prompt_template = PROMPT_PATH.read_text()
-    prompt = (
-        prompt_template
-        .replace("{persona}", persona_context)
-        .replace("{school}", school)
-        .replace("{date}", date)
-        .replace("{lesson_context}", lesson_context)
+    """Generate a complete substitute teacher packet via LLM."""
+    topic_line = (
+        f"Lesson Topic: {request.lesson_topic}\n" if request.lesson_topic else ""
+    )
+    context_line = (
+        f"Unit/Context: {request.lesson_context}\n" if request.lesson_context else ""
     )
 
-    client = LLMClient(config)
-    data = await client.generate_json(
+    prompt = _USER_PROMPT_TEMPLATE.format(
+        teacher_name=request.teacher_name,
+        school=request.school,
+        class_name=request.class_name,
+        grade=request.grade,
+        subject=request.subject,
+        date=request.date,
+        period_or_time=request.period_or_time,
+        topic_line=topic_line,
+        context_line=context_line,
+    )
+
+    data = await llm.generate_json(
         prompt=prompt,
-        system=(
-            "You are an experienced substitute teacher coordinator. "
-            "Generate a detailed, practical substitute teacher packet as JSON. "
-            "Be extremely specific — the sub knows nothing about this class."
-        ),
+        system=_SYSTEM_PROMPT,
         temperature=0.5,
-        max_tokens=8192,
+        max_tokens=4096,
     )
 
-    return SubPacket.model_validate(data)
+    return SubPacket(
+        teacher_name=request.teacher_name,
+        class_name=request.class_name,
+        grade=request.grade,
+        subject=request.subject,
+        date=request.date,
+        period_or_time=request.period_or_time,
+        overview=data.get("overview", ""),
+        daily_schedule=data.get("daily_schedule", []),
+        lesson_instructions=data.get("lesson_instructions", []),
+        student_notes=data.get("student_notes", ""),
+        materials_needed=data.get("materials_needed", []),
+        emergency_info=data.get("emergency_info", ""),
+        closing_notes=data.get("closing_notes", ""),
+    )
 
 
-def _build_lesson_context(session: TeacherSession, lesson_id: Optional[str] = None) -> str:
-    """Build lesson context string from session state."""
-    parts = []
-
-    if lesson_id:
-        # Try to load specific lesson from DB
-        from eduagent.state import _get_conn, init_db
-
-        init_db()
-        with _get_conn() as conn:
-            row = conn.execute(
-                "SELECT lesson_json, title FROM generated_lessons WHERE id = ? AND teacher_id = ?",
-                (lesson_id, session.teacher_id),
-            ).fetchone()
-        if row and row["lesson_json"]:
-            parts.append(f"Lesson to teach today:\n{row['lesson_json']}")
-    elif session.current_lesson:
-        parts.append(f"Lesson to teach today:\n{session.current_lesson.model_dump_json()}")
-
-    if session.current_unit:
-        parts.append(f"Current unit context:\nTitle: {session.current_unit.title}")
-        parts.append(f"Subject: {session.current_unit.subject}")
-        parts.append(f"Grade: {session.current_unit.grade_level}")
-
-    if not parts:
-        return "No specific lesson loaded — generate a reasonable review/practice day for the teacher's subject area."
-
-    return "\n".join(parts)
-
-
-def save_sub_packet(packet: SubPacket, output_dir: Path) -> Path:
-    """Save the sub packet as JSON and return the path."""
-    output_dir.mkdir(parents=True, exist_ok=True)
-    filename = f"sub_packet_{packet.date}.json"
-    path = output_dir / filename
-    path.write_text(packet.model_dump_json(indent=2))
-    return path
-
-
-def format_sub_packet_text(packet: SubPacket) -> str:
-    """Format a SubPacket as a human-readable text document."""
-    lines = []
-    lines.append("SUBSTITUTE TEACHER PACKET")
-    lines.append(f"{'=' * 50}")
-    lines.append(f"Teacher: {packet.teacher_name}")
-    lines.append(f"Date: {packet.date}")
-    if packet.school:
-        lines.append(f"School: {packet.school}")
+def sub_packet_to_markdown(packet: SubPacket) -> str:
+    """Render a SubPacket as printable markdown with clear sections."""
+    lines: list[str] = []
+    lines.append(f"# Substitute Teacher Packet — {packet.class_name}")
+    lines.append("")
+    lines.append(f"**Teacher:** {packet.teacher_name}  ")
+    lines.append(f"**Date:** {packet.date}  ")
+    lines.append(f"**Class:** {packet.class_name}  ")
+    lines.append(f"**Grade:** {packet.grade}  ")
+    lines.append(f"**Subject:** {packet.subject}  ")
+    lines.append(f"**Period/Time:** {packet.period_or_time}  ")
     lines.append("")
 
-    # Schedule
-    lines.append("DAILY SCHEDULE")
-    lines.append("-" * 40)
-    for block in packet.schedule:
-        line = f"  {block.time}  |  {block.period}  |  {block.class_name}"
-        if block.notes:
-            line += f"  ({block.notes})"
-        lines.append(line)
+    lines.append("## Overview")
+    lines.append("")
+    lines.append(packet.overview)
     lines.append("")
 
-    # Behavioral notes
-    lines.append("CLASSROOM NOTES")
-    lines.append("-" * 40)
-    for note in packet.behavioral_notes:
-        lines.append(f"\n  {note.period}:")
-        lines.append(f"    Dynamics: {note.class_dynamics}")
-        lines.append(f"    Seating: {note.seating_chart}")
-        if note.accommodations:
-            lines.append("    Accommodations:")
-            for acc in note.accommodations:
-                lines.append(f"      - {acc}")
-        if note.key_students:
-            lines.append("    Key Students:")
-            for ks in note.key_students:
-                lines.append(f"      - {ks}")
-    lines.append("")
-
-    # Lesson instructions
-    lines.append("LESSON INSTRUCTIONS")
-    lines.append("-" * 40)
-    for instr in packet.lesson_instructions:
-        lines.append(f"\n  {instr.period}: {instr.lesson_title}")
-        lines.append(f"  Objective: {instr.objective}")
-        lines.append("  Steps:")
-        for step in instr.step_by_step:
-            lines.append(f"    {step}")
-        if instr.materials_needed:
-            lines.append(f"  Materials: {', '.join(instr.materials_needed)}")
-        if instr.backup_activity:
-            lines.append(f"  BACKUP PLAN: {instr.backup_activity}")
-        if instr.answer_key_location:
-            lines.append(f"  Answer Key: {instr.answer_key_location}")
-    lines.append("")
-
-    # Emergency info
-    lines.append("EMERGENCY CONTACTS")
-    lines.append("-" * 40)
-    for contact in packet.emergency_contacts:
-        lines.append(f"  {contact}")
-    lines.append("")
-    lines.append("EMERGENCY PROCEDURES")
-    lines.append("-" * 40)
-    lines.append(f"  {packet.emergency_procedures}")
-    lines.append("")
-
-    # Materials checklist
-    if packet.materials_checklist:
-        lines.append("MATERIALS CHECKLIST")
-        lines.append("-" * 40)
-        for item in packet.materials_checklist:
-            lines.append(f"  [ ] {item}")
+    if packet.daily_schedule:
+        lines.append("## Daily Schedule")
+        lines.append("")
+        for item in packet.daily_schedule:
+            lines.append(f"- {item}")
         lines.append("")
 
-    # General notes
-    if packet.general_notes:
-        lines.append("GENERAL NOTES")
-        lines.append("-" * 40)
-        lines.append(f"  {packet.general_notes}")
+    if packet.lesson_instructions:
+        lines.append("## Lesson Instructions")
+        lines.append("")
+        for i, step in enumerate(packet.lesson_instructions, 1):
+            # Strip any existing numbering the LLM may have added
+            cleaned = step.lstrip("0123456789.) ").strip()
+            lines.append(f"{i}. {cleaned if cleaned else step}")
+        lines.append("")
 
+    if packet.student_notes:
+        lines.append("## Student & Classroom Notes")
+        lines.append("")
+        lines.append(packet.student_notes)
+        lines.append("")
+
+    if packet.materials_needed:
+        lines.append("## Materials Needed")
+        lines.append("")
+        for item in packet.materials_needed:
+            lines.append(f"- [ ] {item}")
+        lines.append("")
+
+    if packet.emergency_info:
+        lines.append("## Emergency Information")
+        lines.append("")
+        lines.append(packet.emergency_info)
+        lines.append("")
+
+    if packet.closing_notes:
+        lines.append("## Notes from the Teacher")
+        lines.append("")
+        lines.append(packet.closing_notes)
+        lines.append("")
+
+    lines.append("---")
+    lines.append(
+        f"*Generated by EDUagent on {packet.generated_at.strftime('%Y-%m-%d %H:%M')}*"
+    )
     return "\n".join(lines)
+
+
+def save_sub_packet(packet: SubPacket, output_dir: Path | None = None) -> Path:
+    """Save sub packet JSON and markdown to ~/.eduagent/sub_packets/."""
+    if output_dir is None:
+        output_dir = Path.home() / ".eduagent" / "sub_packets"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    safe_date = packet.date.replace("/", "-").replace(" ", "_")
+    safe_class = packet.class_name.replace(" ", "_")[:30]
+    stem = f"sub_packet_{safe_date}_{safe_class}"
+
+    json_path = output_dir / f"{stem}.json"
+    json_path.write_text(packet.model_dump_json(indent=2))
+
+    md_path = output_dir / f"{stem}.md"
+    md_path.write_text(sub_packet_to_markdown(packet))
+
+    return md_path

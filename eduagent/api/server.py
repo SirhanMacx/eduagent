@@ -92,6 +92,7 @@ def create_app() -> FastAPI:
     from eduagent.api.routes.lessons import router as lessons_router
     from eduagent.api.routes.school import router as school_router
     from eduagent.api.routes.settings import router as settings_router
+    from eduagent.api.routes.tools import router as tools_router
     from eduagent.api.routes.waitlist import router as waitlist_router
 
     app.include_router(ingest_router, prefix="/api")
@@ -102,6 +103,7 @@ def create_app() -> FastAPI:
     app.include_router(settings_router, prefix="/api")
     app.include_router(school_router, prefix="/api")
     app.include_router(lessons_router, prefix="/api")
+    app.include_router(tools_router, prefix="/api")
     app.include_router(waitlist_router, prefix="/api")
 
     # ── Page routes (server-side rendered) ───────────────────────────

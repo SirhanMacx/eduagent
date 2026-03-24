@@ -1136,11 +1136,13 @@ def sub_packet(
         "-d",
         help="Date for the sub packet (e.g. '2026-03-24' or 'tomorrow')",
     ),
-    teacher_id: str = typer.Option(
-        "local-teacher", "--id", help="Teacher session ID"
+    class_name: str = typer.Option(
+        "My Class", "--class", "-c", help="Class name"
     ),
-    lesson_id: Optional[str] = typer.Option(
-        None, "--lesson-id", "-l", help="Specific lesson ID"
+    grade: str = typer.Option("8", "--grade", "-g", help="Grade level"),
+    subject: str = typer.Option("General", "--subject", "-s", help="Subject"),
+    topic: Optional[str] = typer.Option(
+        None, "--topic", "-t", help="Lesson topic"
     ),
     fmt: str = typer.Option(
         "text", "--format", "-f", help="Output format: text, json"
@@ -1149,10 +1151,12 @@ def sub_packet(
     """Generate a complete substitute teacher packet."""
     from datetime import datetime, timedelta
 
+    from eduagent.llm import LLMClient
     from eduagent.sub_packet import (
-        format_sub_packet_text,
+        SubPacketRequest,
         generate_sub_packet,
         save_sub_packet,
+        sub_packet_to_markdown,
     )
 
     resolved_date = date.strip().lower()
@@ -1162,6 +1166,21 @@ def sub_packet(
         )
     elif resolved_date == "today":
         resolved_date = datetime.now().strftime("%Y-%m-%d")
+
+    cfg = AppConfig.load()
+    teacher_name = cfg.teacher_profile.name or "Teacher"
+    school_name = cfg.teacher_profile.school or ""
+
+    request = SubPacketRequest(
+        teacher_name=teacher_name,
+        school=school_name,
+        class_name=class_name,
+        grade=grade,
+        subject=subject,
+        date=resolved_date,
+        period_or_time=class_name,
+        lesson_topic=topic or "",
+    )
 
     console.print(
         Panel(
@@ -1177,24 +1196,15 @@ def sub_packet(
         console=console,
     ) as progress:
         task = progress.add_task("Generating sub packet...", total=None)
-        packet = _run_async(
-            generate_sub_packet(
-                teacher_id=teacher_id,
-                date=resolved_date,
-                lesson_id=lesson_id,
-            )
-        )
+        llm = LLMClient(cfg)
+        packet = _run_async(generate_sub_packet(request, llm))
         progress.update(task, description="Sub packet complete!")
 
-    out_dir = _output_dir()
-    json_path = save_sub_packet(packet, out_dir)
-    console.print(f"[green]Saved:[/green] {json_path}")
+    md_path = save_sub_packet(packet, _output_dir())
+    console.print(f"[green]Saved:[/green] {md_path}")
 
     if fmt == "text":
-        text = format_sub_packet_text(packet)
-        text_path = out_dir / f"sub_packet_{resolved_date}.txt"
-        text_path.write_text(text)
-        console.print(f"[green]Text version:[/green] {text_path}")
+        text = sub_packet_to_markdown(packet)
         console.print()
         console.print(
             Panel(text, title="Sub Packet Preview", border_style="blue")
@@ -1204,10 +1214,10 @@ def sub_packet(
             Panel(
                 f"[bold]Teacher:[/bold] {packet.teacher_name}\n"
                 f"[bold]Date:[/bold] {packet.date}\n"
-                f"[bold]Periods:[/bold] {len(packet.schedule)}\n"
-                f"[bold]Lessons:[/bold] {len(packet.lesson_instructions)}\n"
+                f"[bold]Class:[/bold] {packet.class_name}\n"
+                f"[bold]Instructions:[/bold] {len(packet.lesson_instructions)}\n"
                 f"[bold]Materials:[/bold]"
-                f" {len(packet.materials_checklist)} items",
+                f" {len(packet.materials_needed)} items",
                 title="Sub Packet Summary",
             )
         )

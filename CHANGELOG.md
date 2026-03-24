@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.2] - 2026-03-24
+
+### Added
+- **Sub Packet Generator** (`eduagent/sub_packet.py`) — complete substitute teacher packets with class overview, schedule, step-by-step lesson instructions, student notes, materials checklist, and emergency info
+  - CLI: `eduagent sub --class "Period 3 Global Studies" --grade 8 --subject "Social Studies" --topic "WWI Document Analysis" --date "March 25, 2026"`
+  - API: `POST /api/sub-packet`
+  - Markdown rendering with printable formatting
+- **Parent Communication Generator** (`eduagent/parent_comm.py`) — professional parent emails for 6 communication types: progress updates, behavior concerns, positive notes, upcoming units, permission requests, general updates
+  - CLI: `eduagent parent-comm --type progress --student-desc "a student struggling with document analysis" --context "Unit 4 WWI"`
+  - API: `POST /api/parent-comm`
+- Dashboard "Teacher Tools" row with Generate Sub Packet and Parent Communication buttons
+- 33 new tests (test_sub_packet.py, test_parent_comm.py) — total: 910 passing
+
 ## [0.1.1] - 2026-03-24
 
 ### Added
