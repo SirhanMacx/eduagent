@@ -634,6 +634,10 @@ class AppConfig(BaseModel):
 
     @staticmethod
     def config_path() -> Path:
+        import os
+        env_dir = os.environ.get("EDUAGENT_DATA_DIR")
+        if env_dir:
+            return Path(env_dir) / "config.json"
         return Path.home() / ".eduagent" / "config.json"
 
     # Fields that contain secrets and must never be written to the JSON
@@ -657,6 +661,12 @@ class AppConfig(BaseModel):
             cfg = cls.model_validate_json(path.read_text(encoding="utf-8"))
         else:
             cfg = cls()
+
+        # Honor OLLAMA_URL env var as an alias for ollama_base_url
+        import os
+        ollama_url_env = os.environ.get("OLLAMA_URL")
+        if ollama_url_env and cfg.ollama_base_url == "http://localhost:11434":
+            cfg.ollama_base_url = ollama_url_env
 
         # Hydrate secrets from secure storage
         from eduagent.config import get_api_key

@@ -40,7 +40,6 @@ def _check_bot_lock(force: bool = False) -> None:
         RuntimeError: If another instance is alive and force is False.
     """
     import os
-    import signal
 
     if _BOT_LOCK.exists():
         try:
@@ -634,7 +633,8 @@ class EduAgentBot:
                 bot = StudentBot()
 
                 # Find teacher's active classes
-                from eduagent.state import _get_conn as _get_main_conn, init_db
+                from eduagent.state import _get_conn as _get_main_conn
+                from eduagent.state import init_db
                 init_db()
                 with _get_main_conn() as conn:
                     rows = conn.execute(
@@ -741,11 +741,11 @@ class EduAgentBot:
                         return
 
                     # Build/update persona from the documents
-                    from eduagent.persona import extract_persona, save_persona
                     from eduagent.commands._helpers import output_dir
+                    from eduagent.persona import extract_persona, save_persona
 
                     persona = await extract_persona(documents)
-                    out = save_persona(persona, output_dir())
+                    save_persona(persona, output_dir())
 
                     await update.message.reply_text(
                         f"Learned from {file_name}!\n\n"

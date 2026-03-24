@@ -618,7 +618,6 @@ def get_standards_for_lesson(
         or framework alignment notes for non-CCSS states.
     """
     from eduagent.state_standards import (
-        FRAMEWORK_DESCRIPTIONS,
         STATE_STANDARDS_CONFIG,
         get_framework_description,
         get_state_framework,

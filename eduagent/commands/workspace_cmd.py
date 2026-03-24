@@ -41,6 +41,7 @@ def workspace_regenerate(
     force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation"),
 ) -> None:
     """Regenerate identity.md and soul.md from the current persona. Overwrites existing files."""
+    from eduagent.models import AppConfig, TeacherPersona
     from eduagent.workspace import (
         IDENTITY_PATH,
         SOUL_PATH,
@@ -48,7 +49,6 @@ def workspace_regenerate(
         generate_identity,
         generate_soul,
     )
-    from eduagent.models import AppConfig, TeacherPersona
 
     if not force:
         confirm = typer.confirm(

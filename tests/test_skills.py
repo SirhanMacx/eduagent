@@ -88,7 +88,7 @@ class TestSkillLibrary:
         expected = {
             "ela", "history", "math", "science", "social_studies",
             "foreign_language", "art", "music", "physical_education",
-            "computer_science", "special_education",
+            "computer_science", "special_education", "ap_psychology",
         }
         assert set(library.subjects()) == expected
 

@@ -1,0 +1,25 @@
+{
+  "title": "Introduction to the Water Cycle",
+  "lesson_number": 1,
+  "grade_level": "6",
+  "subject": "Science",
+  "duration_minutes": 45,
+  "objective": "Students will be able to diagram and explain the four main stages of the water cycle (evaporation, condensation, precipitation, collection) using scientific vocabulary.",
+  "standards": ["NGSS MS-ESS2-4", "CCSS.ELA-LITERACY.RST.6-8.7"],
+  "materials_needed": ["Water cycle diagram handout", "Colored pencils", "Mini water cycle lab materials (plastic bag, water, tape)", "Exit ticket slips"],
+  "do_now": "Good morning, scientists! Here's your warm-up: Look out the window (or picture a rainy day). Where does the rain come from? Where does it go after it hits the ground? Write your best hypothesis in 2-3 sentences. There are no wrong answers — I just want to see your thinking.",
+  "direct_instruction": "Today we're going to trace a single water molecule on the wildest road trip on Earth — and it never ends! Water is constantly moving through our environment in a process called the water cycle.\n\nLet's walk through the four stages together:\n1. **Evaporation** — liquid water heats up and becomes water vapor (gas). Think of a puddle disappearing on a hot day.\n2. **Condensation** — water vapor cools and forms tiny droplets on dust particles. This is how clouds form!\n3. **Precipitation** — when droplets get heavy enough, they fall as rain, snow, sleet, or hail.\n4. **Collection** — water gathers in oceans, rivers, lakes, and underground.\n\nKey vocabulary: evaporation, condensation, precipitation, collection, water vapor.",
+  "guided_practice": "Mini-lab time! With your lab partner:\n1. Pour a small amount of warm water into your plastic bag\n2. Seal it tightly and tape it to the window (sunny side)\n3. Predict what will happen over the next 20 minutes\n4. Label your prediction on the recording sheet using our four vocabulary words\n\nWhile we wait, let's label our water cycle diagrams together. I'll do the first stage, you do the rest with your partner.",
+  "independent_work": "Check your plastic bag — what do you observe? On your recording sheet:\n1. Draw what you see inside the bag\n2. Label which stages of the water cycle you can identify\n3. Write 2-3 sentences explaining how your mini water cycle connects to Earth's real water cycle",
+  "exit_ticket": [
+    {"question": "List the four stages of the water cycle in order.", "expected_response": "Evaporation, condensation, precipitation, collection"},
+    {"question": "Explain what happens during condensation.", "expected_response": "Water vapor cools and forms tiny droplets on dust particles, which is how clouds form."},
+    {"question": "Where in your mini-lab did you observe evaporation?", "expected_response": "The warm water at the bottom of the plastic bag turned into water vapor that rose to the top."}
+  ],
+  "differentiation": {
+    "struggling": ["Pre-labeled diagram with word bank", "Sentence frames: 'During evaporation, water ___.'", "Work with teacher during independent time"],
+    "advanced": ["Research and add two additional processes to the water cycle (transpiration, infiltration)", "Explain why the water cycle is called a 'cycle' and not a 'line'"],
+    "ell": ["Visual vocabulary cards with diagrams", "Water cycle terms in student's home language", "Paired with bilingual buddy"]
+  },
+  "homework": "Draw and label a complete water cycle diagram from memory. Include all four stages and at least one real-world example for each stage (e.g., evaporation = puddle drying up)."
+}

@@ -1,0 +1,25 @@
+{
+  "title": "The Causes of the American Revolution",
+  "lesson_number": 1,
+  "grade_level": "8",
+  "subject": "Social Studies",
+  "duration_minutes": 50,
+  "objective": "Students will be able to identify and analyze three major causes of the American Revolution by examining primary source excerpts and connecting colonial grievances to Enlightenment ideals.",
+  "standards": ["C3 D2.His.1.6-8", "CCSS.ELA-LITERACY.RH.6-8.2"],
+  "materials_needed": ["Primary source packet", "Graphic organizer", "Exit ticket slips"],
+  "do_now": "Alright friends, as you settle in — imagine the government told you that you had to pay a tax on every text message you send, but you had zero say in the decision. How would you feel? Write 3 sentences explaining your reaction.",
+  "direct_instruction": "We're kicking off one of my absolute favorite units today. How did ordinary colonists — farmers, merchants, teachers — decide they'd had enough? We'll trace the path from the Stamp Act through the Boston Tea Party and see how ideas about natural rights gave people the language to push back against a king.\n\nKey vocabulary: taxation without representation, tyranny, natural rights, boycott.\n\nI'll model how to annotate a primary source using a short excerpt from Thomas Paine's Common Sense. Watch how I underline the claim, circle loaded words, and jot a margin note connecting it to our essential question.",
+  "guided_practice": "With your table partner, read Document B (a colonial broadside against the Tea Act). Use the annotation strategy I just modeled:\n1. Underline the main claim\n2. Circle emotionally charged words\n3. Write one margin note connecting the document to 'taxation without representation'\n\nI'll circulate — if you're stuck, raise a hand and I'll nudge you in the right direction.",
+  "independent_work": "Complete the graphic organizer: for each of the three causes we discussed (Stamp Act, Townshend Acts, Tea Act), write the colonial grievance, the British justification, and your analysis of who had the stronger argument. Use evidence from at least one document.",
+  "exit_ticket": [
+    {"question": "Name one cause of the American Revolution and explain why it angered colonists.", "expected_response": "The Stamp Act angered colonists because they were taxed without having representation in Parliament."},
+    {"question": "What does 'taxation without representation' mean in your own words?", "expected_response": "It means being forced to pay taxes to a government that you have no voice or vote in."},
+    {"question": "How did Enlightenment ideas influence colonial resistance?", "expected_response": "Enlightenment thinkers like Locke argued people have natural rights, which gave colonists the philosophical basis to challenge British authority."}
+  ],
+  "differentiation": {
+    "struggling": ["Sentence starters provided for graphic organizer", "Simplified primary source excerpts with vocabulary glossary"],
+    "advanced": ["Compare colonial grievances to a modern example of citizens protesting government policy", "Write a one-paragraph argument"],
+    "ell": ["Bilingual vocabulary cards", "Partner with a proficient English speaker for document analysis"]
+  },
+  "homework": "Read the Declaration of Independence preamble (provided handout). Highlight three phrases that connect to today's lesson. Be ready to share tomorrow."
+}

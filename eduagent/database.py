@@ -1,7 +1,17 @@
-"""SQLite database layer for EDUagent web platform."""
+"""SQLite database layer for EDUagent web platform.
+
+Storage locations (consolidation planned for v0.2):
+- eduagent_data/eduagent.db: web app data (lessons, units, feedback)
+- ~/.eduagent/state.db: conversation state, classes, student questions
+- ~/.eduagent/bot_state.db: Telegram bot session persistence
+- ~/.eduagent/config.json: app configuration
+- ~/.eduagent/workspace/: teacher identity, memory, notes
+- ~/.eduagent/corpus/: ingested teaching materials
+"""
 
 from __future__ import annotations
 
+import os
 import sqlite3
 import uuid
 from contextlib import contextmanager
@@ -10,6 +20,9 @@ from typing import Any, Optional
 
 
 def _default_db_path() -> Path:
+    data_dir = os.environ.get("EDUAGENT_DATA_DIR")
+    if data_dir:
+        return Path(data_dir) / "eduagent.db"
     return Path("eduagent_data") / "eduagent.db"
 
 

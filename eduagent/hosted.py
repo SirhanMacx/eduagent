@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
@@ -36,12 +36,14 @@ def create_hosted_app() -> FastAPI:
     - Health check endpoint at /health
     - All existing API routes from the core server
     """
-    from eduagent.api.server import app as base_app, lifespan
+    from eduagent import __version__
+    from eduagent.api.server import app as base_app
+    from eduagent.api.server import lifespan
 
     hosted = FastAPI(
         title="EDUagent Hosted API",
         description="Multi-tenant hosted version of EDUagent",
-        version="0.1.3",
+        version=__version__,
         lifespan=lifespan,
     )
 
@@ -54,10 +56,13 @@ def create_hosted_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # API key auth — exempt health check and docs
+    # API key auth — exempt health check, docs, and web UI pages
     hosted.add_middleware(
         APIKeyAuthMiddleware,
-        exempt_paths=["/health", "/docs", "/openapi.json", "/redoc"],
+        exempt_paths=[
+            "/health", "/docs", "/openapi.json", "/redoc",
+            "/", "/dashboard", "/api/health",
+        ],
     )
 
     # Health check endpoint (no auth required)
@@ -68,7 +73,7 @@ def create_hosted_app() -> FastAPI:
             content={
                 "status": "healthy",
                 "service": "eduagent",
-                "version": "0.1.3",
+                "version": __version__,
             }
         )
 

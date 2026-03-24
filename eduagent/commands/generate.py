@@ -8,12 +8,6 @@ from typing import Optional
 
 import typer
 from rich.panel import Panel
-from rich.progress import (
-    BarColumn,
-    MofNCompleteColumn,
-    Progress,
-    TextColumn,
-)
 from rich.table import Table
 
 from eduagent import _safe_filename
@@ -1748,7 +1742,8 @@ def gap_analyze(
 <meta charset="UTF-8">
 <title>Curriculum Gap Report — {subject} Grade {grade}</title>
 <style>
-  body {{ font-family: system-ui, sans-serif; max-width: 1100px; margin: 2rem auto; padding: 0 1.5rem; color: #1f2937; }}
+  body {{ font-family: system-ui, sans-serif; max-width: 1100px;
+    margin: 2rem auto; padding: 0 1.5rem; color: #1f2937; }}
   h1 {{ font-size: 1.75rem; margin-bottom: .25rem; }}
   .meta {{ color: #6b7280; font-size: .9rem; margin-bottom: 2rem; }}
   .summary-bar {{ display: flex; gap: 1rem; margin-bottom: 2rem; }}
@@ -1758,7 +1753,8 @@ def gap_analyze(
   th {{ text-align: left; padding: .6rem .8rem; background: #f3f4f6; border-bottom: 2px solid #e5e7eb; }}
   td {{ padding: .6rem .8rem; border-bottom: 1px solid #e5e7eb; vertical-align: top; }}
   tr:hover td {{ background: #f9fafb; }}
-  .badge {{ display: inline-block; padding: .2rem .6rem; border-radius: .3rem; color: #fff; font-size: .75rem; font-weight: 700; }}
+  .badge {{ display: inline-block; padding: .2rem .6rem; border-radius: .3rem;
+    color: #fff; font-size: .75rem; font-weight: 700; }}
   .standard {{ font-family: monospace; white-space: nowrap; color: #4b5563; }}
   .suggestion {{ font-style: italic; color: #374151; }}
   @media print {{ body {{ max-width: 100%; }} .summary-bar {{ break-inside: avoid; }} }}

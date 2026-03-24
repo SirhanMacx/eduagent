@@ -13,8 +13,6 @@ import logging
 import os
 from pathlib import Path
 
-logger = logging.getLogger(__name__)
-
 from rich.panel import Panel
 from rich.prompt import Prompt
 from rich.table import Table
@@ -23,6 +21,8 @@ from eduagent.commands._helpers import _safe_progress, console
 from eduagent.config import has_config, set_api_key, test_llm_connection
 from eduagent.models import AppConfig, LLMProvider, TeacherProfile
 from eduagent.state_standards import STATE_STANDARDS_CONFIG
+
+logger = logging.getLogger(__name__)
 
 # Full state names for autocomplete / fuzzy matching
 US_STATES: list[str] = sorted(

@@ -793,7 +793,6 @@ def _help_text() -> str:
 
 def _extract_subject_from_text(text: str) -> str:
     """Try to extract the subject from freeform text like 'I teach 8th grade science'."""
-    import re
 
     subjects = [
         "math", "mathematics", "algebra", "geometry", "calculus", "statistics",

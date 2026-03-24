@@ -16,7 +16,9 @@ build/
 # EDUagent runtime
 *.json
 !examples/**/*.json
+!eduagent/demo/*.json
 eduagent_output/
+eduagent_data/
 
 # IDE
 .vscode/

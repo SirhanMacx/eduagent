@@ -14,9 +14,9 @@ import logging
 from pathlib import Path
 from typing import Optional
 
-from fastapi import HTTPException, Request
+from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
-from starlette.responses import Response
+from starlette.responses import JSONResponse, Response
 
 logger = logging.getLogger(__name__)
 
@@ -89,18 +89,18 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
 
         auth_header = request.headers.get("Authorization", "")
         if not auth_header.startswith("Bearer "):
-            raise HTTPException(
+            return JSONResponse(
                 status_code=401,
-                detail="Missing or invalid Authorization header. Use: Bearer <api_key>",
+                content={"error": "Missing or invalid Authorization header. Use: Bearer <api_key>"},
             )
 
         api_key = auth_header[len("Bearer "):].strip()
         teacher_id = resolve_teacher_id(api_key)
 
         if teacher_id is None:
-            raise HTTPException(
+            return JSONResponse(
                 status_code=403,
-                detail="Invalid API key.",
+                content={"error": "Invalid API key."},
             )
 
         # Attach teacher_id to request state for downstream handlers

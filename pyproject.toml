@@ -67,7 +67,7 @@ all = [
 hosted = ["uvicorn[standard]>=0.27.0", "gunicorn>=21.0.0"]
 pdf = ["weasyprint>=60.0"]
 keyring = ["keyring>=24.0.0"]
-dev = ["pytest>=7.0.0", "pytest-asyncio>=0.21.0", "ruff>=0.1.0", "apscheduler>=3.10.0,<4.0"]
+dev = ["pytest>=7.0.0", "pytest-asyncio>=0.21.0", "ruff>=0.1.0", "apscheduler>=3.10.0,<4.0", "faster-whisper>=0.10.0"]
 
 [project.scripts]
 eduagent = "eduagent.cli:app"

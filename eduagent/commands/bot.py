@@ -8,6 +8,7 @@ from typing import Optional
 
 import typer
 from rich.panel import Panel
+
 from eduagent.commands._helpers import _safe_progress, console
 from eduagent.commands._helpers import run_async as _run_async
 from eduagent.models import AppConfig, LLMProvider
@@ -366,9 +367,9 @@ def _serve_gateway_headless(
 ) -> None:
     """Run gateway + web server without TUI (VPS mode)."""
     # Check for existing standalone bot instance
-    from eduagent.telegram_bot import _BOT_LOCK
     import os
-    import signal
+
+    from eduagent.telegram_bot import _BOT_LOCK
 
     if _BOT_LOCK.exists():
         try:
@@ -555,7 +556,6 @@ def bot(
         )
         raise typer.Exit(1)
 
-    import asyncio
 
     from eduagent.onboarding import check_first_run
 

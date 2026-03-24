@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 import sqlite3
 import uuid
@@ -36,9 +37,10 @@ DEFAULT_DATA_DIR = Path.home() / ".eduagent"
 
 
 def _db_path() -> Path:
-    data_dir = DEFAULT_DATA_DIR
+    env_dir = os.environ.get("EDUAGENT_DATA_DIR")
+    data_dir = Path(env_dir) if env_dir else DEFAULT_DATA_DIR
     data_dir.mkdir(parents=True, exist_ok=True)
-    return data_dir / "eduagent.db"
+    return data_dir / "state.db"
 
 
 @contextmanager

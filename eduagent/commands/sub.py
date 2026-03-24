@@ -6,6 +6,7 @@ from typing import Optional
 
 import typer
 from rich.panel import Panel
+
 from eduagent.commands._helpers import _safe_progress, console
 from eduagent.commands._helpers import run_async as _run_async
 

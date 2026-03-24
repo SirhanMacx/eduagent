@@ -232,8 +232,8 @@ def export_lesson_pptx(
     prs.slide_width = Inches(13.333)
     prs.slide_height = Inches(7.5)
 
-    SLIDE_W = prs.slide_width
-    SLIDE_H = prs.slide_height
+    slide_w = prs.slide_width
+    slide_h = prs.slide_height
 
     # ── Try to fetch images asynchronously ────────────────────────────
     image_topics: list[tuple[str, str]] = [(lesson.title, "title")]
@@ -260,8 +260,8 @@ def export_lesson_pptx(
 
     def _add_footer(slide, num: int):
         """Add slide number footer."""
-        left = SLIDE_W - Inches(1.5)
-        top = SLIDE_H - Inches(0.45)
+        left = slide_w - Inches(1.5)
+        top = slide_h - Inches(0.45)
         tb = slide.shapes.add_textbox(left, top, Inches(1.2), Inches(0.3))
         tf = tb.text_frame
         p = tf.paragraphs[0]
@@ -283,7 +283,7 @@ def export_lesson_pptx(
     def _add_bg_image(slide, image_path: Path):
         """Add a full-slide background image with semi-transparent overlay."""
         pic = slide.shapes.add_picture(
-            str(image_path), Emu(0), Emu(0), SLIDE_W, SLIDE_H,
+            str(image_path), Emu(0), Emu(0), slide_w, slide_h,
         )
         # Move picture to back of shape tree
         sp = pic._element
@@ -294,7 +294,7 @@ def export_lesson_pptx(
         from pptx.oxml.ns import qn
 
         overlay = slide.shapes.add_shape(
-            1, Emu(0), Emu(0), SLIDE_W, SLIDE_H,
+            1, Emu(0), Emu(0), slide_w, slide_h,
         )
         overlay.line.fill.background()
         fill_obj = overlay.fill
@@ -313,10 +313,10 @@ def export_lesson_pptx(
 
     def _add_sidebar_image(slide, image_path: Path):
         """Add an image in the right 30% of the slide as a sidebar."""
-        img_left = int(SLIDE_W * 0.70)
-        img_width = int(SLIDE_W * 0.28)
+        img_left = int(slide_w * 0.70)
+        img_width = int(slide_w * 0.28)
         img_top = Inches(1.2)
-        img_height = int(SLIDE_H - Inches(1.8))
+        img_height = int(slide_h - Inches(1.8))
         try:
             slide.shapes.add_picture(
                 str(image_path), img_left, img_top, img_width, img_height,
@@ -342,7 +342,7 @@ def export_lesson_pptx(
 
     # Title text
     tb = slide.shapes.add_textbox(
-        Inches(1.0), Inches(2.0), SLIDE_W - Inches(2.0), Inches(2.5),
+        Inches(1.0), Inches(2.0), slide_w - Inches(2.0), Inches(2.5),
     )
     tf = tb.text_frame
     tf.word_wrap = True
@@ -354,7 +354,7 @@ def export_lesson_pptx(
 
     # Subtitle
     tb2 = slide.shapes.add_textbox(
-        Inches(1.0), Inches(4.8), SLIDE_W - Inches(2.0), Inches(1.5),
+        Inches(1.0), Inches(4.8), slide_w - Inches(2.0), Inches(1.5),
     )
     tf2 = tb2.text_frame
     tf2.word_wrap = True
@@ -386,10 +386,10 @@ def export_lesson_pptx(
 
     # Title bar
     _add_accent_bar(
-        slide, Emu(0), Emu(0), SLIDE_W, Inches(1.1), theme["primary"],
+        slide, Emu(0), Emu(0), slide_w, Inches(1.1), theme["primary"],
     )
     tb = slide.shapes.add_textbox(
-        Inches(0.8), Inches(0.15), SLIDE_W - Inches(1.6), Inches(0.8),
+        Inches(0.8), Inches(0.15), slide_w - Inches(1.6), Inches(0.8),
     )
     tf = tb.text_frame
     p = tf.paragraphs[0]
@@ -400,7 +400,7 @@ def export_lesson_pptx(
     # Objective with checkmark
     obj_top = Inches(1.5)
     tb = slide.shapes.add_textbox(
-        Inches(1.0), obj_top, SLIDE_W - Inches(2.0), Inches(1.5),
+        Inches(1.0), obj_top, slide_w - Inches(2.0), Inches(1.5),
     )
     tf = tb.text_frame
     tf.word_wrap = True
@@ -414,7 +414,7 @@ def export_lesson_pptx(
     if lesson.standards:
         stds_top = Inches(3.5)
         tb = slide.shapes.add_textbox(
-            Inches(1.0), stds_top, SLIDE_W - Inches(2.0), Inches(3.0),
+            Inches(1.0), stds_top, slide_w - Inches(2.0), Inches(3.0),
         )
         tf = tb.text_frame
         tf.word_wrap = True
@@ -445,12 +445,12 @@ def export_lesson_pptx(
 
         # Top accent bar
         _add_accent_bar(
-            slide, Emu(0), Emu(0), SLIDE_W, Inches(1.1), theme["primary"],
+            slide, Emu(0), Emu(0), slide_w, Inches(1.1), theme["primary"],
         )
 
         # Title
         tb = slide.shapes.add_textbox(
-            Inches(0.8), Inches(0.15), SLIDE_W - Inches(1.6), Inches(0.8),
+            Inches(0.8), Inches(0.15), slide_w - Inches(1.6), Inches(0.8),
         )
         tf = tb.text_frame
         p = tf.paragraphs[0]
@@ -466,9 +466,9 @@ def export_lesson_pptx(
 
         # Check if image is available for sidebar
         img_path = images.get(image_key) if image_key else None
-        text_width = SLIDE_W - Inches(2.0)
+        text_width = slide_w - Inches(2.0)
         if img_path:
-            text_width = int(SLIDE_W * 0.63)
+            text_width = int(slide_w * 0.63)
             _add_sidebar_image(slide, img_path)
 
         # Body text
@@ -525,10 +525,10 @@ def export_lesson_pptx(
         fill.fore_color.rgb = _hex_to_rgb("FFFFFF")
 
         _add_accent_bar(
-            slide, Emu(0), Emu(0), SLIDE_W, Inches(1.1), theme["primary"],
+            slide, Emu(0), Emu(0), slide_w, Inches(1.1), theme["primary"],
         )
         tb = slide.shapes.add_textbox(
-            Inches(0.8), Inches(0.15), SLIDE_W - Inches(1.6), Inches(0.8),
+            Inches(0.8), Inches(0.15), slide_w - Inches(1.6), Inches(0.8),
         )
         tf = tb.text_frame
         p = tf.paragraphs[0]
@@ -541,7 +541,7 @@ def export_lesson_pptx(
         for i, q in enumerate(lesson.exit_ticket, 1):
             card = slide.shapes.add_shape(
                 1,
-                Inches(1.0), q_top, SLIDE_W - Inches(2.0), Inches(1.0),
+                Inches(1.0), q_top, slide_w - Inches(2.0), Inches(1.0),
             )
             card.line.fill.background()
             _add_shape_fill(card, theme["bg_light"])
@@ -560,7 +560,7 @@ def export_lesson_pptx(
 
             tb = slide.shapes.add_textbox(
                 Inches(2.3), q_top + Inches(0.15),
-                SLIDE_W - Inches(3.5), Inches(0.7),
+                slide_w - Inches(3.5), Inches(0.7),
             )
             tf = tb.text_frame
             tf.word_wrap = True
@@ -582,7 +582,7 @@ def export_lesson_pptx(
 
     if lesson.homework:
         tb = slide.shapes.add_textbox(
-            Inches(1.0), Inches(1.5), SLIDE_W - Inches(2.0), Inches(1.5),
+            Inches(1.0), Inches(1.5), slide_w - Inches(2.0), Inches(1.5),
         )
         tf = tb.text_frame
         tf.word_wrap = True
@@ -598,7 +598,7 @@ def export_lesson_pptx(
         )
 
         tb = slide.shapes.add_textbox(
-            Inches(1.0), Inches(3.3), SLIDE_W - Inches(2.0), Inches(3.0),
+            Inches(1.0), Inches(3.3), slide_w - Inches(2.0), Inches(3.0),
         )
         tf = tb.text_frame
         tf.word_wrap = True
@@ -607,7 +607,7 @@ def export_lesson_pptx(
         _set_text_props(run, 22, "DDDDDD")
     else:
         tb = slide.shapes.add_textbox(
-            Inches(1.0), Inches(2.5), SLIDE_W - Inches(2.0), Inches(2.0),
+            Inches(1.0), Inches(2.5), slide_w - Inches(2.0), Inches(2.0),
         )
         tf = tb.text_frame
         tf.word_wrap = True
@@ -619,8 +619,8 @@ def export_lesson_pptx(
 
     # Footer with teacher name
     tb = slide.shapes.add_textbox(
-        Inches(1.0), SLIDE_H - Inches(1.0),
-        SLIDE_W - Inches(2.0), Inches(0.5),
+        Inches(1.0), slide_h - Inches(1.0),
+        slide_w - Inches(2.0), Inches(0.5),
     )
     tf = tb.text_frame
     p = tf.paragraphs[0]
@@ -650,12 +650,12 @@ def export_lesson_docx(
     Returns the path to the saved .docx file.
     """
     from docx import Document
-    from docx.shared import Inches, Pt
+    from docx.shared import Pt
 
     doc = Document()
 
     # Title
-    title_para = doc.add_heading(lesson.title, level=0)
+    doc.add_heading(lesson.title, level=0)
     doc.add_paragraph(
         f"Teacher: {persona.name or 'Teacher'}  |  "
         f"Lesson {lesson.lesson_number}  |  "

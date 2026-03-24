@@ -229,20 +229,13 @@ if [[ "$TELEGRAM_OK" == true ]]; then
     TELEGRAM_TOKEN_JSON="\"$BOT_TOKEN\""
 fi
 
-OLLAMA_URL_JSON="null"
-if [[ "$MODEL_PROVIDER" == "ollama" ]]; then
-    OLLAMA_URL_JSON="\"http://localhost:11434\""
-fi
+OLLAMA_BASE_URL_JSON="\"http://localhost:11434\""
 
 cat > "$CONFIG_FILE" <<JSONEOF
 {
-  "model_provider": "$MODEL_PROVIDER",
-  "ollama_url": $OLLAMA_URL_JSON,
-  "telegram_bot_token": $TELEGRAM_TOKEN_JSON,
-  "data_dir": "$HOME/.eduagent/data",
-  "default_grade": null,
-  "default_subject": null,
-  "state": null
+  "provider": "$MODEL_PROVIDER",
+  "ollama_base_url": $OLLAMA_BASE_URL_JSON,
+  "output_dir": "./eduagent_output"
 }
 JSONEOF
 

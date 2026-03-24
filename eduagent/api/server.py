@@ -54,10 +54,12 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     """Create and configure the FastAPI application."""
+    from eduagent import __version__
+
     app = FastAPI(
         title="EDUagent",
         description="Your teaching files, your AI co-teacher.",
-        version="0.1.0",
+        version=__version__,
         lifespan=lifespan,
     )
 

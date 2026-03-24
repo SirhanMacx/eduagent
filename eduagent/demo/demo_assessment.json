@@ -1,0 +1,70 @@
+{
+  "title": "Foundations of Democracy — DBQ Assessment",
+  "assessment_type": "dbq",
+  "subject": "Social Studies",
+  "grade_level": "8",
+  "topic": "Civic Participation and Democratic Government",
+  "duration_minutes": 50,
+  "essential_question": "Is civic participation a right, a duty, or both? Use evidence from the documents and your knowledge of democratic principles to support your argument.",
+  "instructions": "Read each document carefully. Answer the scaffolding questions for each document. Then write a well-organized essay responding to the essential question. Your essay must reference at least 4 of the 5 documents and include outside information from our unit.",
+  "documents": [
+    {
+      "doc_number": 1,
+      "title": "Pericles' Funeral Oration (431 BCE, adapted)",
+      "source": "Thucydides, History of the Peloponnesian War",
+      "excerpt": "We do not say that a man who takes no interest in politics minds his own business; we say that he has no business here at all. We Athenians decide public questions for ourselves — we regard the citizen who holds aloof from public affairs not as harmless, but as useless.",
+      "scaffolding_question": "According to Pericles, what is the duty of an Athenian citizen? How does Athens view citizens who do not participate?"
+    },
+    {
+      "doc_number": 2,
+      "title": "John Locke, Second Treatise of Government (1689, adapted)",
+      "source": "John Locke",
+      "excerpt": "The people shall be judge; for who shall be judge whether his trustee or deputy acts well and according to the trust reposed in him, but he who deputes him?",
+      "scaffolding_question": "What role does Locke believe the people should play in government? How does this connect to the idea of 'consent of the governed'?"
+    },
+    {
+      "doc_number": 3,
+      "title": "U.S. Voter Turnout Data, 1960-2024",
+      "source": "United States Elections Project",
+      "excerpt": "Presidential election voter turnout: 1960: 63.1%, 1980: 52.6%, 2000: 54.2%, 2016: 59.2%, 2020: 66.8%, 2024: 65.5%. Midterm election turnout has averaged 40% since 1970.",
+      "scaffolding_question": "What trend do you notice in voter turnout? What might explain why midterm turnout is consistently lower than presidential election turnout?"
+    },
+    {
+      "doc_number": 4,
+      "title": "Letter from a High School Student to the Editor (2024)",
+      "source": "Student newspaper editorial",
+      "excerpt": "People say voting is our most important right, but what about volunteering, attending town halls, or just staying informed? I can't vote yet, but I organized a food drive that fed 200 families. Isn't that civic participation too?",
+      "scaffolding_question": "What forms of civic participation does the student describe beyond voting? Do you agree that these count as meaningful civic engagement?"
+    },
+    {
+      "doc_number": 5,
+      "title": "Australian Compulsory Voting Law (1924, adapted summary)",
+      "source": "Australian Electoral Commission",
+      "excerpt": "In Australia, all eligible citizens are required by law to vote in federal, state, and local elections. Failure to vote without a valid excuse results in a fine of $20-$50 AUD. Since compulsory voting began, turnout has consistently exceeded 90%.",
+      "scaffolding_question": "What is the argument for making voting mandatory? What might be an argument against it?"
+    }
+  ],
+  "rubric": {
+    "thesis": {
+      "description": "Clear, arguable thesis that directly addresses the essential question",
+      "points": 4
+    },
+    "document_analysis": {
+      "description": "References at least 4 documents with accurate analysis (not just summary)",
+      "points": 8
+    },
+    "outside_information": {
+      "description": "Includes relevant outside information from class discussions and readings",
+      "points": 4
+    },
+    "organization": {
+      "description": "Logical structure with introduction, body paragraphs, and conclusion",
+      "points": 2
+    },
+    "writing_quality": {
+      "description": "Clear writing with appropriate academic vocabulary and minimal errors",
+      "points": 2
+    }
+  },
+  "total_points": 20
+}

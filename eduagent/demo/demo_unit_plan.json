@@ -1,0 +1,75 @@
+{
+  "title": "Foundations of Democracy: From Athens to America",
+  "subject": "Social Studies",
+  "grade_level": "8",
+  "topic": "Democracy and Government",
+  "duration_weeks": 2,
+  "overview": "Students trace the development of democratic ideals from ancient Athens through the Enlightenment to the founding of the United States, examining how these ideas continue to shape civic life today.",
+  "essential_questions": [
+    "What makes a government legitimate?",
+    "How did ancient ideas about democracy shape the founding of the United States?",
+    "Why do citizens have both rights and responsibilities in a democracy?"
+  ],
+  "enduring_understandings": [
+    "Democratic principles originated in ancient civilizations and evolved through centuries of political thought.",
+    "The U.S. Constitution reflects a deliberate effort to balance individual liberty with collective governance.",
+    "Active civic participation is essential for a functioning democracy."
+  ],
+  "standards": ["C3 D2.Civ.1.6-8", "C3 D2.Civ.2.6-8", "C3 D2.His.1.6-8"],
+  "daily_lessons": [
+    {
+      "lesson_number": 1,
+      "topic": "What Is Democracy? Athenian Roots",
+      "description": "Introduce the concept of democracy through ancient Athens. Students compare Athenian direct democracy to modern representative democracy.",
+      "lesson_type": "instruction"
+    },
+    {
+      "lesson_number": 2,
+      "topic": "Enlightenment Thinkers and Natural Rights",
+      "description": "Explore Locke, Montesquieu, and Rousseau. Students analyze how Enlightenment ideas challenged the divine right of kings.",
+      "lesson_type": "instruction"
+    },
+    {
+      "lesson_number": 3,
+      "topic": "The Declaration of Independence — Close Read",
+      "description": "Primary source analysis of the Declaration. Students identify Enlightenment influence and evaluate Jefferson's arguments.",
+      "lesson_type": "instruction"
+    },
+    {
+      "lesson_number": 4,
+      "topic": "Designing a Government — The Constitutional Convention",
+      "description": "Simulate the Great Compromise. Students debate representation and practice the art of political compromise.",
+      "lesson_type": "activity"
+    },
+    {
+      "lesson_number": 5,
+      "topic": "The Bill of Rights — Why Amendments Matter",
+      "description": "Students examine the first 10 amendments and connect them to real-world scenarios using case study cards.",
+      "lesson_type": "instruction"
+    },
+    {
+      "lesson_number": 6,
+      "topic": "Civic Responsibility Today — DBQ Assessment",
+      "description": "Document-Based Question assessment: students analyze primary and secondary sources to argue whether civic participation is a right, a duty, or both.",
+      "lesson_type": "assessment"
+    }
+  ],
+  "assessment_plan": {
+    "formative": [
+      "Daily exit tickets",
+      "Think-pair-share discussions",
+      "Graphic organizer check-ins"
+    ],
+    "summative": [
+      "DBQ essay: 'Is civic participation a right, a duty, or both?'",
+      "Unit vocabulary assessment"
+    ]
+  },
+  "required_materials": [
+    "Primary source packet (Declaration excerpts, Federalist Papers selections)",
+    "Graphic organizers for each lesson",
+    "Constitutional Convention simulation role cards",
+    "Bill of Rights case study cards",
+    "DBQ document packet"
+  ]
+}
