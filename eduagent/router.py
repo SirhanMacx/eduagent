@@ -53,6 +53,19 @@ class Intent(str, Enum):
     STUDENT_QUIZ = "student_quiz"
     STUDENT_HINT = "student_hint"
 
+    # Additional intents (from tg.py _detect_intent)
+    DEMO = "demo"
+    GAP_ANALYSIS = "gap_analysis"
+    SWITCH_MODEL = "switch_model"
+    SCHEDULE = "schedule"
+    SHOW_PERSONA = "show_persona"
+    SHOW_SETTINGS = "show_settings"
+    SHOW_PROGRESS = "show_progress"
+    SHOW_FEEDBACK = "show_feedback"
+    EXPORT_SLIDES = "export_slides"
+    EXPORT_HANDOUT = "export_handout"
+    EXPORT_DOC = "export_doc"
+
     # Conversation
     HELP = "help"
     CLARIFY = "clarify"  # We need more info
@@ -218,6 +231,83 @@ HELP_PATTERNS = [
     r"/help",
 ]
 
+DEMO_PATTERNS = [
+    r"demo",
+    r"example lesson",
+    r"sample lesson",
+    r"what can you do",
+    r"show me what you",
+]
+
+GAP_ANALYSIS_PATTERNS = [
+    r"curriculum gaps?",
+    r"gap analysis",
+    r"what am i missing",
+    r"what haven't i covered",
+    r"what haven.t i covered",
+]
+
+SWITCH_MODEL_PATTERNS = [
+    r"switch to ollama",
+    r"use anthropic",
+    r"change model",
+    r"switch to openai",
+]
+
+SCHEDULE_PATTERNS = [
+    r"remind me",
+    r"send me a digest",
+    r"morning reminder",
+    r"stop reminder",
+    r"what's scheduled",
+    r"what.s scheduled",
+    r"my schedule",
+]
+
+EXPORT_SLIDES_PATTERNS = [
+    r"export slides",
+    r"make slides",
+    r"powerpoint",
+    r"pptx",
+    r"slide deck",
+]
+
+EXPORT_HANDOUT_PATTERNS = [
+    r"export handout",
+    r"make a handout",
+    r"student handout",
+    r"student worksheet",
+]
+
+EXPORT_DOC_PATTERNS = [
+    r"export doc",
+    r"word doc",
+    r"docx",
+]
+
+SHOW_PERSONA_PATTERNS = [
+    r"my persona",
+    r"my teaching style",
+    r"show persona",
+]
+
+SHOW_SETTINGS_PATTERNS = [
+    r"my settings",
+    r"show settings",
+    r"show config",
+]
+
+SHOW_PROGRESS_PATTERNS = [
+    r"my progress",
+    r"show progress",
+]
+
+SHOW_FEEDBACK_PATTERNS = [
+    r"my feedback",
+    r"feedback summary",
+    r"my ratings",
+]
+
 
 def _any_match(text: str, patterns: list[str]) -> bool:
     """Return True if text matches any pattern (case-insensitive)."""
@@ -304,6 +394,40 @@ def parse_intent(message: str) -> ParsedIntent:
 
     if _any_match(text, HELP_PATTERNS):
         return ParsedIntent(intent=Intent.HELP, raw=text)
+
+    # New intents from tg.py _detect_intent (check before generic patterns)
+    if _any_match(text, DEMO_PATTERNS):
+        return ParsedIntent(intent=Intent.DEMO, raw=text)
+
+    if _any_match(text, GAP_ANALYSIS_PATTERNS):
+        return ParsedIntent(intent=Intent.GAP_ANALYSIS, raw=text)
+
+    if _any_match(text, SWITCH_MODEL_PATTERNS):
+        return ParsedIntent(intent=Intent.SWITCH_MODEL, raw=text)
+
+    if _any_match(text, SCHEDULE_PATTERNS):
+        return ParsedIntent(intent=Intent.SCHEDULE, raw=text)
+
+    if _any_match(text, SHOW_PERSONA_PATTERNS):
+        return ParsedIntent(intent=Intent.SHOW_PERSONA, raw=text)
+
+    if _any_match(text, SHOW_SETTINGS_PATTERNS):
+        return ParsedIntent(intent=Intent.SHOW_SETTINGS, raw=text)
+
+    if _any_match(text, SHOW_PROGRESS_PATTERNS):
+        return ParsedIntent(intent=Intent.SHOW_PROGRESS, raw=text)
+
+    if _any_match(text, SHOW_FEEDBACK_PATTERNS):
+        return ParsedIntent(intent=Intent.SHOW_FEEDBACK, raw=text)
+
+    if _any_match(text, EXPORT_SLIDES_PATTERNS):
+        return ParsedIntent(intent=Intent.EXPORT_SLIDES, format="slides", raw=text)
+
+    if _any_match(text, EXPORT_HANDOUT_PATTERNS):
+        return ParsedIntent(intent=Intent.EXPORT_HANDOUT, format="handout", raw=text)
+
+    if _any_match(text, EXPORT_DOC_PATTERNS):
+        return ParsedIntent(intent=Intent.EXPORT_DOC, format="doc", raw=text)
 
     # Student bot management (check before general patterns)
     if _any_match(text, STUDENT_BOT_PATTERNS):

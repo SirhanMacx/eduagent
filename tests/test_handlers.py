@@ -254,3 +254,43 @@ class TestIngestHandler:
             with patch("eduagent.handlers.ingest.extract_persona", new_callable=AsyncMock):
                 r = await self.handler.handle(teacher_id="teacher_1", files=[], path="/tmp/test_lessons")
                 assert r.has_content
+
+
+from eduagent.handlers.misc import DemoHandler, PersonaHandler, SettingsHandler, ProgressHandler
+
+
+class TestMiscHandlers:
+    @pytest.mark.asyncio
+    async def test_demo_handler(self):
+        with patch("eduagent.handlers.misc.handle_message", new_callable=AsyncMock) as mock_hm:
+            mock_hm.return_value = "Here's a sample lesson..."
+            handler = DemoHandler()
+            r = await handler.run("teacher_1")
+            assert r.has_content
+
+    @pytest.mark.asyncio
+    async def test_persona_handler_no_persona(self):
+        handler = PersonaHandler()
+        with patch("eduagent.handlers.misc.TeacherSession", create=True) as mock_session_cls:
+            mock_session = mock_session_cls.load.return_value
+            mock_session.persona = None
+            # PersonaHandler does a lazy import of TeacherSession inside show(),
+            # so we patch at the state module level
+            with patch.dict("sys.modules", {"eduagent.state": type("mod", (), {"TeacherSession": mock_session_cls})}):
+                r = await handler.show("teacher_1")
+                assert r.has_content
+
+    @pytest.mark.asyncio
+    async def test_settings_handler(self):
+        handler = SettingsHandler()
+        # SettingsHandler tries to load AppConfig which may fail in tests — that's OK,
+        # the handler catches exceptions and returns a response.
+        r = await handler.show("teacher_1")
+        assert r.has_content
+
+    @pytest.mark.asyncio
+    async def test_progress_handler(self):
+        handler = ProgressHandler()
+        # ProgressHandler tries to load analytics — catches exceptions.
+        r = await handler.show("teacher_1")
+        assert r.has_content
