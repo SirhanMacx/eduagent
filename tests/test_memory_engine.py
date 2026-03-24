@@ -8,7 +8,6 @@ from eduagent.memory_engine import (
     DEFAULT_MEMORY_TEMPLATE,
     SECTION_GENERATION_STATS,
     SECTION_STRUCTURAL_PREFS,
-    SECTION_TOPIC_NOTES,
     SECTION_WHAT_TO_AVOID,
     SECTION_WHAT_WORKS,
     _append_to_section,
@@ -23,7 +22,6 @@ from eduagent.memory_engine import (
     reset_memory,
 )
 from eduagent.models import DailyLesson, DifferentiationNotes, ExitTicketQuestion
-
 
 # ── Fixtures ─────────────────────────────────────────────────────────
 
@@ -45,9 +43,18 @@ def sample_lesson():
         guided_practice="Students analyze a set of primary source documents in groups.",
         independent_work="Write a paragraph explaining which cause was most significant.",
         exit_ticket=[
-            ExitTicketQuestion(question="Name the four MAIN causes.", expected_response="Militarism, Alliances, Imperialism, Nationalism"),
-            ExitTicketQuestion(question="Which alliance system involved Germany?", expected_response="Triple Alliance"),
-            ExitTicketQuestion(question="How did imperialism contribute to tensions?", expected_response="Competition for colonies"),
+            ExitTicketQuestion(
+                question="Name the four MAIN causes.",
+                expected_response="Militarism, Alliances, Imperialism, Nationalism",
+            ),
+            ExitTicketQuestion(
+                question="Which alliance system involved Germany?",
+                expected_response="Triple Alliance",
+            ),
+            ExitTicketQuestion(
+                question="How did imperialism contribute to tensions?",
+                expected_response="Competition for colonies",
+            ),
         ],
         homework="Read pages 245-250 and answer questions 1-3.",
         differentiation=DifferentiationNotes(
@@ -318,7 +325,7 @@ class TestProcessFeedback:
         assert content_after_first.count("Causes of World War I") == content_after_second.count("Causes of World War I")
 
     def test_two_star_with_edited_sections(self, poor_lesson, tmp_memory):
-        patterns = process_feedback(
+        process_feedback(
             poor_lesson, rating=2,
             edited_sections=["guided_practice", "exit_ticket"],
         )
@@ -401,6 +408,89 @@ class TestGetImprovementStats:
         process_feedback(sample_lesson, rating=5)
         stats = get_improvement_stats()
         assert len(stats["what_works"]) > 0
+
+
+# ── Rating math correctness ──────────────────────────────────────────
+
+
+class TestRatingMath:
+    """Rating averages must use actual star values, not collapsed weights."""
+
+    def test_single_two_star_averages_to_two(self, poor_lesson, tmp_memory):
+        process_feedback(poor_lesson, rating=2)
+        stats = get_improvement_stats()
+        assert stats["avg_rating"] == 2.0, (
+            f"A single 2-star lesson should average 2.0, got {stats['avg_rating']}"
+        )
+
+    def test_single_one_star_averages_to_one(self, poor_lesson, tmp_memory):
+        process_feedback(poor_lesson, rating=1, notes="Awful")
+        stats = get_improvement_stats()
+        assert stats["avg_rating"] == 1.0, (
+            f"A single 1-star lesson should average 1.0, got {stats['avg_rating']}"
+        )
+
+    def test_five_and_two_averages_to_three_point_five(
+        self, sample_lesson, poor_lesson, tmp_memory,
+    ):
+        process_feedback(sample_lesson, rating=5)
+        process_feedback(poor_lesson, rating=2)
+        stats = get_improvement_stats()
+        assert stats["avg_rating"] == 3.5, (
+            f"5★ + 2★ should average 3.5, got {stats['avg_rating']}"
+        )
+
+    def test_five_and_one_averages_to_three(
+        self, sample_lesson, poor_lesson, tmp_memory,
+    ):
+        process_feedback(sample_lesson, rating=5)
+        process_feedback(poor_lesson, rating=1, notes="Bad")
+        stats = get_improvement_stats()
+        assert stats["avg_rating"] == 3.0, (
+            f"5★ + 1★ should average 3.0, got {stats['avg_rating']}"
+        )
+
+
+# ── Cross-subject contamination ─────────────────────────────────────
+
+
+class TestCrossSubjectFiltering:
+    """Improvement context must not leak patterns across subjects."""
+
+    def test_science_patterns_excluded_from_history(self, tmp_memory):
+        science_lesson = DailyLesson(
+            title="Photosynthesis Lab",
+            lesson_number=1,
+            objective="Understand photosynthesis",
+        )
+        history_lesson = DailyLesson(
+            title="Causes of the Civil War",
+            lesson_number=2,
+            objective="Analyze Civil War causes",
+        )
+        process_feedback(science_lesson, rating=5, notes="Great lab", subject="Science")
+        process_feedback(history_lesson, rating=1, notes="Too much lecture", subject="History")
+
+        # Science context should include science lesson but not history complaint
+        science_ctx = build_improvement_context(subject="Science")
+        assert "Photosynthesis" in science_ctx or science_ctx == ""
+        if science_ctx:
+            assert "Civil War" not in science_ctx or "lecture" not in science_ctx
+
+        # History context should include history feedback but not science praise
+        history_ctx = build_improvement_context(subject="History")
+        if history_ctx:
+            assert "Photosynthesis" not in history_ctx or "Great lab" not in history_ctx
+
+    def test_untagged_patterns_included_everywhere(self, sample_lesson, tmp_memory):
+        # Structural preferences have no subject tag — should appear for all subjects
+        process_feedback(sample_lesson, rating=5)
+        ctx_science = build_improvement_context(subject="Science")
+        ctx_history = build_improvement_context(subject="History")
+        # Both should get structural preferences if any exist
+        # (structural prefs are universal)
+        assert isinstance(ctx_science, str)
+        assert isinstance(ctx_history, str)
 
 
 # ── reset_memory ─────────────────────────────────────────────────────

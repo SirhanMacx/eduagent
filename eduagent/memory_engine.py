@@ -13,11 +13,12 @@ This is prompt-level RLHF: no model fine-tuning required, transparent
 
 from __future__ import annotations
 
-import json
 import logging
 import re
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
+
+from eduagent.models import AppConfig
 
 if TYPE_CHECKING:
     from eduagent.models import DailyLesson
@@ -73,21 +74,30 @@ def extract_lesson_patterns(
     rating: int,
     notes: str = "",
     edited_sections: list[str] | None = None,
+    subject: str = "",
 ) -> list[dict[str, str]]:
     """Extract patterns from a rated lesson using rule-based heuristics.
 
     Returns a list of pattern dicts: {"type": ..., "pattern": ..., "section": ...}
     Each pattern is a short sentence describing what worked or what to avoid.
+
+    Args:
+        subject: The subject area (e.g. "Science", "History"). Used to tag
+            patterns so they can be filtered during prompt injection, preventing
+            cross-subject contamination.
     """
     patterns: list[dict[str, str]] = []
     edited = edited_sections or []
     timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
+    # Tag patterns with subject for cross-subject filtering
+    subject_tag = f" [{subject}]" if subject else ""
+
     if rating == 5:
         # Extract what made it excellent
         patterns.append({
             "type": "positive",
-            "pattern": f"Lesson '{lesson.title}' rated 5-star ({timestamp})",
+            "pattern": f"Lesson '{lesson.title}' rated 5-star{subject_tag} ({timestamp})",
             "section": SECTION_WHAT_WORKS,
         })
 
@@ -111,7 +121,7 @@ def extract_lesson_patterns(
         # Extract what went wrong
         patterns.append({
             "type": "negative",
-            "pattern": f"Lesson '{lesson.title}' rated {rating}-star ({timestamp})",
+            "pattern": f"Lesson '{lesson.title}' rated {rating}-star{subject_tag} ({timestamp})",
             "section": SECTION_WHAT_TO_AVOID,
         })
 
@@ -309,6 +319,7 @@ def process_feedback(
     rating: int,
     notes: str = "",
     edited_sections: list[str] | None = None,
+    subject: str = "",
 ) -> list[dict[str, str]]:
     """Process teacher feedback and update memory.md with learned patterns.
 
@@ -320,6 +331,7 @@ def process_feedback(
         rating: 1-5 star rating.
         notes: Optional free-text feedback from the teacher.
         edited_sections: Optional list of section names the teacher edited.
+        subject: The subject area (for cross-subject filtering in prompts).
 
     Returns:
         List of patterns that were extracted and stored.
@@ -331,8 +343,17 @@ def process_feedback(
         logger.debug("Rating 3 (neutral) for '%s' -- skipping pattern extraction", lesson.title)
         return []
 
+    # Resolve subject: from parameter, persona config, or empty
+    if not subject:
+        try:
+            cfg = AppConfig.load()
+            if cfg.teacher_profile and cfg.teacher_profile.subjects:
+                subject = cfg.teacher_profile.subjects[0]
+        except Exception:
+            pass
+
     # Extract patterns from the rated lesson
-    patterns = extract_lesson_patterns(lesson, rating, notes, edited_sections)
+    patterns = extract_lesson_patterns(lesson, rating, notes, edited_sections, subject=subject)
 
     if not patterns:
         return []
@@ -398,22 +419,47 @@ def build_improvement_context(
 
     parts: list[str] = []
 
-    # Extract "What Works" entries
+    def _filter_by_subject(entries: list[str], subj: str) -> list[str]:
+        """Filter entries to those relevant to the given subject.
+
+        Entries tagged with [Subject] are only included if they match.
+        Entries without a tag are always included (they're universal).
+        """
+        if not subj:
+            return entries
+        subj_lower = subj.lower()
+        result = []
+        for e in entries:
+            # Check if entry has a subject tag like [Science] or [History]
+            tag_match = re.search(r"\[([^\]]+)\]", e)
+            if tag_match:
+                tag = tag_match.group(1).lower()
+                if subj_lower in tag or tag in subj_lower:
+                    result.append(e)
+                # Skip entries tagged for other subjects
+            else:
+                # No tag — universal pattern, always include
+                result.append(e)
+        return result
+
+    # Extract "What Works" entries, filtered by subject
     works = _extract_section_entries(content, SECTION_WHAT_WORKS)
+    works = _filter_by_subject(works, subject)
     if works:
         parts.append("What works well for this teacher:")
-        for entry in works[-10:]:  # Last 10 entries (most recent)
+        for entry in works[-10:]:
             parts.append(f"  - {entry}")
 
-    # Extract "What to Avoid" entries
+    # Extract "What to Avoid" entries, filtered by subject
     avoid = _extract_section_entries(content, SECTION_WHAT_TO_AVOID)
+    avoid = _filter_by_subject(avoid, subject)
     if avoid:
         parts.append("")
         parts.append("What to avoid:")
         for entry in avoid[-10:]:
             parts.append(f"  - {entry}")
 
-    # Extract structural preferences
+    # Extract structural preferences (these are universal, no subject filter)
     structural = _extract_section_entries(content, SECTION_STRUCTURAL_PREFS)
     if structural:
         parts.append("")
@@ -541,8 +587,15 @@ def _compute_stats(content: str) -> dict[str, Any]:
     if total_rated == 0:
         return {"total_rated": 0, "avg_rating": 0.0, "trend": "--"}
 
-    # Weighted average
-    total_score = (five_star * 5) + (four_star * 4) + (one_two_star * 1.5)
+    # Count 1-star and 2-star separately for accurate average
+    one_star = len(re.findall(r"rated 1-star", content))
+    two_star = len(re.findall(r"rated 2-star", content))
+    # If we can't distinguish (old format), split evenly
+    if one_star + two_star == 0 and one_two_star > 0:
+        one_star = one_two_star // 2
+        two_star = one_two_star - one_star
+
+    total_score = (five_star * 5) + (four_star * 4) + (two_star * 2) + (one_star * 1)
     avg_rating = total_score / total_rated if total_rated else 0.0
 
     # Simple trend: if more 5-star than low, trending up

@@ -469,8 +469,8 @@ class EduAgentBot:
                     # Feed the memory engine for prompt-level improvement
                     try:
                         from eduagent.memory_engine import process_feedback as memory_process
-                        from eduagent.state import _get_conn, init_db
                         from eduagent.models import DailyLesson
+                        from eduagent.state import _get_conn, init_db
                         init_db()
                         with _get_conn() as _fb_conn:
                             _fb_row = _fb_conn.execute(

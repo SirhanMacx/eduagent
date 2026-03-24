@@ -13,15 +13,13 @@ Usage:
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import os
 import signal
-import sys
 import tempfile
 import time
 from pathlib import Path
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 import httpx
 
@@ -561,7 +559,6 @@ class EduAgentTelegramBot:
             self.api.send_message(chat_id, "Could not generate progress report.")
 
     def _cmd_export(self, chat_id: int, msg: dict, args: str) -> None:
-        teacher_id = str(msg["from"]["id"])
         lesson_id = self._last_lesson_id.get(chat_id)
         if not lesson_id:
             self.api.send_message(
@@ -780,8 +777,8 @@ class EduAgentTelegramBot:
                 # Feed the memory engine for prompt-level improvement
                 try:
                     from eduagent.memory_engine import process_feedback as memory_process
-                    from eduagent.state import _get_conn, init_db
                     from eduagent.models import DailyLesson
+                    from eduagent.state import _get_conn, init_db
                     init_db()
                     with _get_conn() as _fb_conn:
                         _fb_row = _fb_conn.execute(

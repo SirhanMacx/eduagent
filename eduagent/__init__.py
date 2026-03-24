@@ -1,13 +1,15 @@
 """EDUagent — Your teaching files, your AI co-teacher."""
 
-import re
-
 __version__ = "0.2.0"
 __author__ = "Jon Maccarello & EDUagent Contributors"
 __description__ = "Your teaching files, your AI co-teacher"
 
-# Central I/O — the canonical way to handle files across all modules
-from eduagent.io import output_dir, read_text, safe_filename, save_output, write_text
+# Central I/O — re-exported for convenience
+from eduagent.io import output_dir as output_dir  # noqa: F401
+from eduagent.io import read_text as read_text  # noqa: F401
+from eduagent.io import safe_filename as safe_filename  # noqa: F401
+from eduagent.io import save_output as save_output  # noqa: F401
+from eduagent.io import write_text as write_text  # noqa: F401
 
 
 def _safe_filename(title: str) -> str:

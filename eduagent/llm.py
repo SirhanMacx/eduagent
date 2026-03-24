@@ -65,8 +65,7 @@ class LLMClient:
             data = load_demo("lesson_social_studies_g8")
         return json.dumps(data, indent=2)
 
-    @staticmethod
-    def _enrich_system_prompt(system: str) -> str:
+    def _enrich_system_prompt(self, system: str) -> str:
         """Append workspace context and improvement context to the system prompt.
 
         This injects teacher identity, teaching philosophy, memory, and
@@ -84,11 +83,16 @@ class LLMClient:
         except Exception:
             pass  # Workspace not available -- that's fine
 
-        # Inject improvement context from the memory engine (feedback loop)
+        # Inject improvement context from the memory engine (feedback loop).
+        # Extract subject/topic from persona config to filter cross-subject patterns.
         try:
             from eduagent.memory_engine import build_improvement_context
 
-            improvement_ctx = build_improvement_context()
+            subject = ""
+            if hasattr(self.config, "teacher_profile") and self.config.teacher_profile:
+                subjects = getattr(self.config.teacher_profile, "subjects", [])
+                subject = subjects[0] if subjects else ""
+            improvement_ctx = build_improvement_context(subject=subject)
             if improvement_ctx:
                 system = (system + "\n" + improvement_ctx) if system else improvement_ctx
         except Exception:

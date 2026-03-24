@@ -512,7 +512,8 @@ def _markdown_to_docx(markdown_text: str, output_path: Path) -> Path:
 
 def export_unit(unit: UnitPlan, output_dir: Path, fmt: str = "markdown") -> Path:
     """Export a unit plan to the specified format."""
-    from eduagent.io import safe_filename as _safe_fn, write_text as _wt
+    from eduagent.io import safe_filename as _safe_fn
+    from eduagent.io import write_text as _wt
 
     output_dir.mkdir(parents=True, exist_ok=True)
     safe_name = _safe_fn(unit.title)
@@ -564,7 +565,8 @@ def export_lesson(lesson: DailyLesson, output_dir: Path, fmt: str = "markdown") 
 
 def export_materials(materials: LessonMaterials, output_dir: Path, fmt: str = "markdown") -> Path:
     """Export lesson materials to the specified format."""
-    from eduagent.io import safe_filename as _safe_fn, write_text as _wt
+    from eduagent.io import safe_filename as _safe_fn
+    from eduagent.io import write_text as _wt
 
     output_dir.mkdir(parents=True, exist_ok=True)
     safe_name = _safe_fn(materials.lesson_title)
@@ -674,7 +676,8 @@ def pacing_guide_to_markdown(guide: PacingGuide) -> str:
 
 def export_year_map(year_map: YearMap, output_dir: Path, fmt: str = "markdown") -> Path:
     """Export a year map to the specified format."""
-    from eduagent.io import safe_filename as _safe_fn, write_text as _wt
+    from eduagent.io import safe_filename as _safe_fn
+    from eduagent.io import write_text as _wt
 
     output_dir.mkdir(parents=True, exist_ok=True)
     safe_name = f"year_map_{_safe_fn(year_map.subject)}_{year_map.grade_level}"
@@ -697,7 +700,8 @@ def export_year_map(year_map: YearMap, output_dir: Path, fmt: str = "markdown") 
 
 def export_pacing_guide(guide: PacingGuide, output_dir: Path, fmt: str = "markdown") -> Path:
     """Export a pacing guide to the specified format."""
-    from eduagent.io import safe_filename as _safe_fn, write_text as _wt
+    from eduagent.io import safe_filename as _safe_fn
+    from eduagent.io import write_text as _wt
 
     output_dir.mkdir(parents=True, exist_ok=True)
     safe_name = f"pacing_{_safe_fn(guide.subject)}_{guide.grade_level}"
