@@ -140,3 +140,40 @@ class TestExportHandler:
         assert "slides" in ExportHandler.SUPPORTED_FORMATS
         assert "handout" in ExportHandler.SUPPORTED_FORMATS
         assert "doc" in ExportHandler.SUPPORTED_FORMATS
+
+
+from eduagent.handlers.feedback import FeedbackHandler
+
+
+class TestFeedbackHandler:
+    def setup_method(self):
+        self.handler = FeedbackHandler()
+
+    @pytest.mark.asyncio
+    async def test_rate_lesson_valid(self):
+        with patch("eduagent.handlers.feedback.rate_lesson") as mock_rate:
+            with patch("eduagent.handlers.feedback.memory_process"):
+                r = await self.handler.rate("lesson_abc", "teacher_1", 5)
+                assert r.has_content
+                assert "5" in r.text or "star" in r.text.lower() or "thank" in r.text.lower()
+                mock_rate.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_rate_lesson_skip(self):
+        r = await self.handler.rate("lesson_abc", "teacher_1", 0)
+        assert "skip" in r.text.lower() or r.text == ""
+
+    @pytest.mark.asyncio
+    async def test_rate_prompt_returns_buttons(self):
+        r = self.handler.rating_prompt("lesson_abc")
+        assert len(r.buttons) > 0 or len(r.button_rows) > 0
+
+    @pytest.mark.asyncio
+    async def test_feedback_summary(self):
+        with patch("eduagent.handlers.feedback.get_teacher_stats", return_value={
+            "overall_avg_rating": 4.2, "rated_lessons": 10, "streak": 3,
+            "total_lessons": 15, "total_units": 3, "total_feedback": 8,
+            "rating_distribution": {1: 0, 2: 1, 3: 2, 4: 4, 5: 3},
+        }):
+            r = await self.handler.summary("teacher_1")
+            assert "4.2" in r.text or "rating" in r.text.lower()
