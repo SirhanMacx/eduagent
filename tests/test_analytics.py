@@ -287,15 +287,12 @@ class TestTelegramRating:
 
     def test_bot_registers_callback_handler(self):
         """Verify the bot registers the CallbackQueryHandler for ratings."""
-        import asyncio
-        from unittest.mock import AsyncMock
-
         from eduagent.telegram_bot import EduAgentBot
 
         bot = EduAgentBot(token="fake:token")
 
         mock_app_instance = MagicMock()
-        mock_app_instance.run_polling = AsyncMock()
+        mock_app_instance.run_polling = MagicMock()
         mock_builder = MagicMock()
         mock_builder.token.return_value = mock_builder
         mock_builder.build.return_value = mock_app_instance
@@ -311,7 +308,7 @@ class TestTelegramRating:
             "telegram": mock_telegram,
             "telegram.ext": mock_telegram_ext,
         }):
-            asyncio.run(bot.start())
+            bot.start()
 
             # Handlers: start, help, status, join, class, callback(s), message, etc.
             assert mock_app_instance.add_handler.call_count >= 5

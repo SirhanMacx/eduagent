@@ -199,21 +199,61 @@ class StudentBot:
                     (lesson_id, lesson_json, teacher_id, class_code),
                 )
 
-    def set_hint_mode(self, class_code: str, enabled: bool) -> None:
-        """Toggle hint mode for a class.
+    def set_hint_mode(
+        self, class_code: str, enabled: bool, student_name: Optional[str] = None
+    ) -> None:
+        """Toggle hint mode for a class or a specific student.
 
         When hint mode is ON: Socratic questioning only, NEVER give direct
         answers to homework/assessment questions.
         When hint mode is OFF (answer mode): full explanations allowed.
-        """
-        with _get_conn() as conn:
-            conn.execute(
-                "UPDATE classes SET hint_mode = ? WHERE class_code = ?",
-                (1 if enabled else 0, class_code),
-            )
 
-    def get_mode(self, class_code: str) -> str:
-        """Return 'hint' or 'answer' based on current class mode."""
+        Args:
+            class_code: The class code.
+            enabled: True for hint mode, False for answer mode.
+            student_name: If provided, only set hint mode for this student.
+                When None, sets it for the entire class.
+        """
+        if student_name:
+            # Per-student hint mode stored in student_hint_modes table
+            with _get_conn() as conn:
+                conn.execute(
+                    """CREATE TABLE IF NOT EXISTS student_hint_modes (
+                        id TEXT PRIMARY KEY,
+                        class_code TEXT NOT NULL,
+                        student_name TEXT NOT NULL,
+                        hint_mode INTEGER NOT NULL DEFAULT 0
+                    )"""
+                )
+                row_id = f"{class_code}:{student_name}"
+                conn.execute(
+                    """INSERT OR REPLACE INTO student_hint_modes (id, class_code, student_name, hint_mode)
+                    VALUES (?, ?, ?, ?)""",
+                    (row_id, class_code, student_name, 1 if enabled else 0),
+                )
+        else:
+            with _get_conn() as conn:
+                conn.execute(
+                    "UPDATE classes SET hint_mode = ? WHERE class_code = ?",
+                    (1 if enabled else 0, class_code),
+                )
+
+    def get_mode(self, class_code: str, student_id: str = "") -> str:
+        """Return 'hint' or 'answer' based on current mode.
+
+        Checks per-student override first, then falls back to class-level setting.
+        """
+        if student_id:
+            with _get_conn() as conn:
+                try:
+                    row = conn.execute(
+                        "SELECT hint_mode FROM student_hint_modes WHERE class_code = ? AND student_name = ?",
+                        (class_code, student_id),
+                    ).fetchone()
+                    if row is not None:
+                        return "hint" if row["hint_mode"] else "answer"
+                except Exception:
+                    pass  # Table may not exist yet
         info = self.get_class(class_code)
         if info and info.hint_mode:
             return "hint"
@@ -361,9 +401,10 @@ class StudentBot:
         # Build the response using the existing chat engine
         from eduagent.chat import student_chat
 
-        # Build hint mode / answer mode instruction
+        # Build hint mode / answer mode instruction (per-student override)
         hint_instruction = ""
-        if class_info.hint_mode:
+        effective_mode = self.get_mode(class_code, student_id=student_id)
+        if effective_mode == "hint":
             hint_instruction = (
                 "\n\nIMPORTANT — HINT MODE IS ON (Socratic questioning only):\n"
                 "- NEVER give direct answers to homework, assessment, or exit ticket questions.\n"
@@ -400,13 +441,17 @@ class StudentBot:
         )
 
         # Log the question and answer
+        lesson_topic = lesson_json.get("title", "")
         self._log_question(
             student_id=student_id,
             class_code=class_code,
             question=message,
             answer=answer,
-            lesson_topic=lesson_json.get("title", ""),
+            lesson_topic=lesson_topic,
         )
+
+        # Update per-student progress tracking
+        self._update_student_progress(student_id, class_code, lesson_topic)
 
         return answer
 
@@ -578,3 +623,47 @@ class StudentBot:
             history.append({"role": "user", "content": row["question"]})
             history.append({"role": "assistant", "content": row["answer"]})
         return history
+
+    def _update_student_progress(
+        self, student_id: str, class_code: str, topic: str
+    ) -> None:
+        """Update per-student progress tracking after a question."""
+        try:
+            from eduagent.bot_state import StudentProgressStore
+            from eduagent.models import StudentProgress
+
+            store = StudentProgressStore()
+            existing = store.get(student_id, class_code)
+            if existing:
+                progress = StudentProgress(**existing)
+            else:
+                progress = StudentProgress(
+                    student_id=student_id,
+                    class_code=class_code,
+                )
+            progress.record_question(topic)
+            store.save(
+                student_id=student_id,
+                class_code=class_code,
+                student_name=progress.student_name,
+                topics_asked=progress.topics_asked,
+                total_questions=progress.total_questions,
+                last_active=progress.last_active,
+                struggle_topics=progress.struggle_topics,
+            )
+        except Exception:
+            pass  # Progress tracking is best-effort
+
+    def get_student_progress(self, class_code: str) -> list[dict]:
+        """Get progress data for all students in a class.
+
+        Returns a list of dicts with student activity, topic counts,
+        and struggle indicators — intended for the teacher /progress command.
+        """
+        try:
+            from eduagent.bot_state import StudentProgressStore
+
+            store = StudentProgressStore()
+            return store.get_class_progress(class_code)
+        except Exception:
+            return []

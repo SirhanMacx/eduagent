@@ -21,6 +21,10 @@ Generate a detailed, classroom-ready daily lesson plan for:
 - **Class Period Length:** 50 minutes
 - **Include Homework:** {include_homework}
 
+## Standards Alignment
+{standards}
+The generated lesson MUST include a "Standards Addressed" section with specific standard codes from above.
+
 ## Requirements
 
 Create a COMPLETE lesson plan with these sections:

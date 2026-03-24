@@ -1507,3 +1507,131 @@ def course(
         table.add_row(str(i), u.title, str(len(u.daily_lessons)))
     console.print(table)
     console.print(f"\n[green]Course saved:[/green] {out_dir}")
+
+
+# ── Evaluate command ──────────────────────────────────────────────────────
+
+
+@generate_app.command()
+def evaluate(
+    lessons: int = typer.Option(
+        5, "--lessons", "-n", help="Number of lessons to generate and evaluate"
+    ),
+    topic: str = typer.Option(
+        "", "--topic", "-t", help="Topic for generated lessons (default: from persona)"
+    ),
+    grade: str = typer.Option(
+        "", "--grade", "-g", help="Grade level (default: from persona)"
+    ),
+) -> None:
+    """Generate lessons and evaluate voice consistency against your persona.
+
+    This is the voice quality test harness. It generates N lessons using your
+    persona, then uses the LLM to score each one on voice consistency,
+    vocabulary match, and structure match.
+    """
+    from eduagent.evaluation import evaluate_voice_consistency
+    from eduagent.lesson import generate_lesson
+    from eduagent.models import DailyLesson, LessonBrief, UnitPlan
+
+    persona = load_persona_or_exit()
+    config = AppConfig.load()
+
+    eval_topic = topic or persona.subject_area or "General Topics"
+    eval_grade = grade or (persona.grade_levels[0] if persona.grade_levels else "8")
+
+    console.print(
+        Panel(
+            f"Evaluating voice consistency\n"
+            f"Persona: {persona.name}\n"
+            f"Topic: {eval_topic} | Grade: {eval_grade}\n"
+            f"Generating {lessons} lessons...",
+            title="Voice Evaluation",
+            border_style="blue",
+        )
+    )
+
+    # Generate lessons
+    generated: list[DailyLesson] = []
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        MofNCompleteColumn(),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Generating lessons...", total=lessons)
+
+        for i in range(1, lessons + 1):
+            unit = UnitPlan(
+                title=f"{eval_topic} Unit",
+                subject=persona.subject_area or "General",
+                grade_level=eval_grade,
+                topic=eval_topic,
+                duration_weeks=1,
+                overview=f"A unit on {eval_topic}.",
+                daily_lessons=[
+                    LessonBrief(
+                        lesson_number=1,
+                        topic=f"{eval_topic} - Part {i}",
+                        description=f"Lesson {i} on {eval_topic}",
+                    )
+                ],
+            )
+            try:
+                lesson = _run_async(
+                    generate_lesson(
+                        lesson_number=1,
+                        unit=unit,
+                        persona=persona,
+                        config=config,
+                    )
+                )
+                lesson.lesson_number = i
+                generated.append(lesson)
+            except Exception as e:
+                console.print(f"[yellow]Lesson {i} failed: {e}[/yellow]")
+            progress.advance(task)
+
+    if not generated:
+        console.print("[red]No lessons generated. Check your LLM configuration.[/red]")
+        raise typer.Exit(1)
+
+    # Evaluate
+    console.print("\nEvaluating voice consistency...")
+    report = _run_async(evaluate_voice_consistency(persona, generated, config))
+
+    # Display results
+    eval_table = Table(title="Voice Evaluation Results")
+    eval_table.add_column("Lesson", style="dim")
+    eval_table.add_column("Voice", justify="center")
+    eval_table.add_column("Vocab", justify="center")
+    eval_table.add_column("Structure", justify="center")
+    eval_table.add_column("Notes")
+
+    for score in report.lesson_scores:
+        eval_table.add_row(
+            f"L{score.lesson_number}: {score.lesson_title[:30]}",
+            f"{score.voice_consistency}/5",
+            f"{score.vocabulary_match}/5",
+            f"{score.structure_match}/5",
+            score.notes[:50] if score.notes else "",
+        )
+
+    console.print(eval_table)
+
+    console.print(
+        Panel(
+            f"Voice Consistency:  {report.avg_voice_consistency:.1f}/5\n"
+            f"Vocabulary Match:   {report.avg_vocabulary_match:.1f}/5\n"
+            f"Structure Match:    {report.avg_structure_match:.1f}/5\n"
+            f"Overall Score:      {report.overall_score:.1f}/5\n\n"
+            + (
+                "Recommendations:\n" + "\n".join(f"  - {r}" for r in report.recommendations)
+                if report.recommendations
+                else "No recommendations."
+            ),
+            title="Summary",
+            border_style="green" if report.overall_score >= 3.5 else "yellow",
+        )
+    )

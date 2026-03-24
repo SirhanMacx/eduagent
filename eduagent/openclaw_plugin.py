@@ -189,9 +189,12 @@ async def _dispatch(parsed: ParsedIntent, session: TeacherSession) -> str:
     """Route to the appropriate handler based on intent."""
 
     # ── New teacher onboarding ────────────────────────────────────────────────
-    if session.is_new and parsed.intent not in (
+    # Show the welcome message only ONCE. After that, let all intents through.
+    if session.is_new and not session.config.get("welcomed") and parsed.intent not in (
         Intent.SETUP, Intent.CONNECT_DRIVE, Intent.CONNECT_LOCAL, Intent.HELP
     ):
+        session.config["welcomed"] = True
+        session.save()
         return (
             "Hey there! Welcome — I'm so glad you're here. 🎓\n\n"
             "I'm EDUagent, and I'm basically going to become your lesson-planning "
@@ -208,6 +211,14 @@ async def _dispatch(parsed: ParsedIntent, session: TeacherSession) -> str:
             "So — what do you teach? I'd love to hear about your classroom."
         )
 
+    # If the teacher has no persona yet but is trying to generate content,
+    # create a default persona so they aren't blocked forever.
+    if session.is_new and parsed.intent not in (
+        Intent.SETUP, Intent.CONNECT_DRIVE, Intent.CONNECT_LOCAL,
+        Intent.HELP, Intent.SHOW_STATUS,
+    ):
+        _create_default_persona(parsed, session)
+
     # ── Intent dispatch ───────────────────────────────────────────────────────
 
     if parsed.intent == Intent.HELP:
@@ -223,7 +234,7 @@ async def _dispatch(parsed: ParsedIntent, session: TeacherSession) -> str:
         return await _handle_connect_local(parsed, session)
 
     if parsed.intent == Intent.SETUP:
-        return _setup_guide()
+        return _handle_setup(parsed, session)
 
     if parsed.intent == Intent.GENERATE_UNIT:
         return await _handle_generate_unit(parsed, session)
@@ -405,6 +416,14 @@ async def _handle_generate_lesson(parsed: ParsedIntent, session: TeacherSession)
 
     persona = session.persona or TeacherPersona()
 
+    # Resolve teacher's state for standards alignment
+    teacher_state = ""
+    try:
+        cfg = AppConfig.load()
+        teacher_state = cfg.teacher_profile.state or ""
+    except Exception:
+        pass
+
     try:
         config = route_model("lesson_plan", AppConfig.load())
         lesson = await generate_lesson(
@@ -412,6 +431,7 @@ async def _handle_generate_lesson(parsed: ParsedIntent, session: TeacherSession)
             unit=unit,
             persona=persona,
             config=config,
+            state=teacher_state,
         )
         lesson_id = session.save_lesson(lesson)
         session.config["last_lesson_id"] = lesson_id
@@ -769,6 +789,72 @@ def _help_text() -> str:
         "• Or just describe your teaching style and we'll start fresh\n\n"
         "Reply `/status` to see your current setup."
     )
+
+
+def _extract_subject_from_text(text: str) -> str:
+    """Try to extract the subject from freeform text like 'I teach 8th grade science'."""
+    import re
+
+    subjects = [
+        "math", "mathematics", "algebra", "geometry", "calculus", "statistics",
+        "science", "biology", "chemistry", "physics", "earth science",
+        "english", "ela", "language arts", "reading", "writing", "literature",
+        "history", "social studies", "civics", "government", "geography", "economics",
+        "art", "music", "drama", "theater", "theatre",
+        "spanish", "french", "german", "chinese", "latin",
+        "computer science", "coding", "programming",
+        "pe", "physical education", "health",
+    ]
+    lower = text.lower()
+    for subj in subjects:
+        if subj in lower:
+            return subj.title()
+    return ""
+
+
+def _create_default_persona(parsed: ParsedIntent, session: TeacherSession) -> None:
+    """Create a minimal default persona from whatever info we have."""
+    from eduagent.router import _extract_grade
+
+    grade = parsed.grade or _extract_grade(parsed.raw) or ""
+    subject = parsed.subject or _extract_subject_from_text(parsed.raw) or ""
+
+    session.persona = TeacherPersona(
+        name="My Teaching Persona",
+        subject_area=subject,
+        grade_levels=[grade] if grade else [],
+    )
+    session.save()
+
+
+def _handle_setup(parsed: ParsedIntent, session: TeacherSession) -> str:
+    """Handle SETUP intent — create a persona from the teacher's self-description."""
+    from eduagent.router import _extract_grade
+
+    grade = parsed.grade or _extract_grade(parsed.raw) or ""
+    subject = parsed.subject or _extract_subject_from_text(parsed.raw) or ""
+
+    if subject or grade:
+        # Create persona from what we know
+        grade_str = f"Grade {grade} " if grade else ""
+        subject_str = subject if subject else "General"
+        session.persona = TeacherPersona(
+            name="My Teaching Persona",
+            subject_area=subject,
+            grade_levels=[grade] if grade else [],
+        )
+        session.save()
+        return (
+            f"Got it — {grade_str}{subject_str}! I've set up your teaching profile. 🎓\n\n"
+            f"You can personalize further anytime by sharing your lesson plans "
+            f"(just give me a folder path or Google Drive link).\n\n"
+            f"Ready to go! Try:\n"
+            f"• 'Generate a lesson on [topic]'\n"
+            f"• 'Plan a unit on [topic]'\n"
+            f"• 'Create a worksheet on [topic]'"
+        )
+
+    return _setup_guide()
 
 
 def _setup_guide() -> str:

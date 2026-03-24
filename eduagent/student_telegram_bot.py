@@ -79,7 +79,7 @@ def _log_error(error: Exception) -> None:
         with open(_ERROR_LOG, "a") as f:
             import datetime
 
-            f.write(f"[{datetime.datetime.now(datetime.UTC).isoformat()}] {type(error).__name__}: {error}\n")
+            f.write(f"[{datetime.datetime.now(datetime.timezone.utc).isoformat()}] {type(error).__name__}: {error}\n")
     except Exception:
         pass
 
@@ -103,7 +103,7 @@ class StudentTelegramBot:
     def __init__(self, token: str) -> None:
         self.token = token
 
-    async def start(self) -> None:
+    def start(self) -> None:
         """Build the Telegram application, register handlers, and start polling."""
         try:
             from telegram import BotCommand
@@ -295,4 +295,4 @@ class StudentTelegramBot:
         logger.info("Student bot starting...")
         print("EDUagent student bot is running. Press Ctrl+C to stop.")
 
-        await app.run_polling(drop_pending_updates=True)
+        app.run_polling(drop_pending_updates=True)

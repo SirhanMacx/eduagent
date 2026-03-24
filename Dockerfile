@@ -13,10 +13,10 @@ RUN apt-get update && \
         libffi-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install the package with telegram support
+# Install the package with hosted + telegram support
 COPY pyproject.toml README.md ./
 COPY eduagent/ eduagent/
-RUN pip install --no-cache-dir '.[telegram]'
+RUN pip install --no-cache-dir -e '.[hosted,telegram]'
 
 # Teacher data volume
 VOLUME /data
@@ -24,5 +24,5 @@ ENV EDUAGENT_DATA_DIR=/data
 
 EXPOSE 8000
 
-# Default: run the web dashboard
-CMD ["eduagent", "serve", "--host", "0.0.0.0", "--port", "8000"]
+# Default: run the hosted multi-tenant API
+CMD ["uvicorn", "eduagent.hosted:app", "--host", "0.0.0.0", "--port", "8000"]

@@ -84,6 +84,117 @@ class BotStateStore:
             self._conn = None
 
 
+class StudentProgressStore:
+    """Read/write student progress rows to ~/.eduagent/bot_state.db."""
+
+    def __init__(self, db_path: Optional[Path] = None) -> None:
+        self._db_path = db_path or (Path.home() / ".eduagent" / "bot_state.db")
+        self._db_path.parent.mkdir(parents=True, exist_ok=True)
+        self._conn: Optional[sqlite3.Connection] = None
+        self._ensure_table()
+
+    def _get_conn(self) -> sqlite3.Connection:
+        if self._conn is None:
+            self._conn = sqlite3.connect(str(self._db_path))
+            self._conn.row_factory = sqlite3.Row
+        return self._conn
+
+    def _ensure_table(self) -> None:
+        conn = self._get_conn()
+        conn.execute(
+            """CREATE TABLE IF NOT EXISTS student_progress (
+                id TEXT PRIMARY KEY,
+                student_id TEXT NOT NULL,
+                class_code TEXT NOT NULL,
+                student_name TEXT NOT NULL DEFAULT '',
+                topics_asked_json TEXT NOT NULL DEFAULT '{}',
+                total_questions INTEGER NOT NULL DEFAULT 0,
+                last_active TEXT NOT NULL DEFAULT '',
+                struggle_topics_json TEXT NOT NULL DEFAULT '[]'
+            )"""
+        )
+        conn.execute(
+            "CREATE INDEX IF NOT EXISTS idx_sp_class ON student_progress(class_code)"
+        )
+        conn.commit()
+
+    def get(self, student_id: str, class_code: str) -> Optional[dict]:
+        """Load a student progress row."""
+        import json
+        row_id = f"{student_id}:{class_code}"
+        row = self._get_conn().execute(
+            "SELECT * FROM student_progress WHERE id = ?", (row_id,)
+        ).fetchone()
+        if row is None:
+            return None
+        return {
+            "student_id": row["student_id"],
+            "class_code": row["class_code"],
+            "student_name": row["student_name"],
+            "topics_asked": json.loads(row["topics_asked_json"]),
+            "total_questions": row["total_questions"],
+            "last_active": row["last_active"],
+            "struggle_topics": json.loads(row["struggle_topics_json"]),
+        }
+
+    def save(
+        self,
+        student_id: str,
+        class_code: str,
+        *,
+        student_name: str = "",
+        topics_asked: Optional[dict] = None,
+        total_questions: int = 0,
+        last_active: str = "",
+        struggle_topics: Optional[list] = None,
+    ) -> None:
+        """Upsert a student progress row."""
+        import json
+        row_id = f"{student_id}:{class_code}"
+        topics_json = json.dumps(topics_asked or {})
+        struggle_json = json.dumps(struggle_topics or [])
+        self._get_conn().execute(
+            """INSERT INTO student_progress
+            (id, student_id, class_code, student_name, topics_asked_json,
+             total_questions, last_active, struggle_topics_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(id) DO UPDATE SET
+                student_name = excluded.student_name,
+                topics_asked_json = excluded.topics_asked_json,
+                total_questions = excluded.total_questions,
+                last_active = excluded.last_active,
+                struggle_topics_json = excluded.struggle_topics_json""",
+            (row_id, student_id, class_code, student_name,
+             topics_json, total_questions, last_active, struggle_json),
+        )
+        self._get_conn().commit()
+
+    def get_class_progress(self, class_code: str) -> list[dict]:
+        """Get all student progress entries for a class."""
+        import json
+        rows = self._get_conn().execute(
+            "SELECT * FROM student_progress WHERE class_code = ? ORDER BY total_questions DESC",
+            (class_code,),
+        ).fetchall()
+        return [
+            {
+                "student_id": r["student_id"],
+                "class_code": r["class_code"],
+                "student_name": r["student_name"],
+                "topics_asked": json.loads(r["topics_asked_json"]),
+                "total_questions": r["total_questions"],
+                "last_active": r["last_active"],
+                "struggle_topics": json.loads(r["struggle_topics_json"]),
+            }
+            for r in rows
+        ]
+
+    def close(self) -> None:
+        if self._conn is not None:
+            self._conn.close()
+            self._conn = None
+
+
 class StudentBotStateStore:
     """Read/write student session rows to ~/.eduagent/bot_state.db."""
 

@@ -49,7 +49,7 @@ def _extract_handlers(bot: EduAgentBot) -> dict:
     handlers: dict = {}
 
     mock_app = MagicMock()
-    mock_app.run_polling = AsyncMock()
+    mock_app.run_polling = MagicMock()
     mock_builder = MagicMock()
     mock_builder.token.return_value = mock_builder
     mock_builder.build.return_value = mock_app
@@ -87,7 +87,7 @@ def _extract_handlers(bot: EduAgentBot) -> dict:
         "telegram": MagicMock(),
         "telegram.ext": mock_ext,
     }):
-        asyncio.run(bot.start())
+        bot.start()
 
     return handlers
 
@@ -672,8 +672,8 @@ class TestWebhookSupport:
     def test_run_webhook_called_in_webhook_mode(self, tmp_path, monkeypatch):
         """When webhook_url is set, app.run_webhook should be called instead of run_polling."""
         mock_app = MagicMock()
-        mock_app.run_polling = AsyncMock()
-        mock_app.run_webhook = AsyncMock()
+        mock_app.run_polling = MagicMock()
+        mock_app.run_webhook = MagicMock()
         mock_builder = MagicMock()
         mock_builder.token.return_value = mock_builder
         mock_builder.build.return_value = mock_app
@@ -697,7 +697,7 @@ class TestWebhookSupport:
             "telegram": MagicMock(),
             "telegram.ext": mock_ext,
         }):
-            asyncio.run(bot.start())
+            bot.start()
 
         mock_app.run_webhook.assert_called_once()
         mock_app.run_polling.assert_not_called()
@@ -708,8 +708,8 @@ class TestWebhookSupport:
     def test_run_polling_called_in_polling_mode(self, tmp_path):
         """Without webhook_url, app.run_polling should be called."""
         mock_app = MagicMock()
-        mock_app.run_polling = AsyncMock()
-        mock_app.run_webhook = AsyncMock()
+        mock_app.run_polling = MagicMock()
+        mock_app.run_webhook = MagicMock()
         mock_builder = MagicMock()
         mock_builder.token.return_value = mock_builder
         mock_builder.build.return_value = mock_app
@@ -729,7 +729,7 @@ class TestWebhookSupport:
             "telegram": MagicMock(),
             "telegram.ext": mock_ext,
         }):
-            asyncio.run(bot.start())
+            bot.start()
 
         mock_app.run_polling.assert_called_once()
         mock_app.run_webhook.assert_not_called()
@@ -737,7 +737,7 @@ class TestWebhookSupport:
     def test_webhook_secret_passed_to_run_webhook(self, tmp_path):
         """Webhook secret token should be passed to run_webhook."""
         mock_app = MagicMock()
-        mock_app.run_webhook = AsyncMock()
+        mock_app.run_webhook = MagicMock()
         mock_builder = MagicMock()
         mock_builder.token.return_value = mock_builder
         mock_builder.build.return_value = mock_app
@@ -762,7 +762,7 @@ class TestWebhookSupport:
             "telegram": MagicMock(),
             "telegram.ext": mock_ext,
         }):
-            asyncio.run(bot.start())
+            bot.start()
 
         call_kwargs = mock_app.run_webhook.call_args.kwargs
         assert call_kwargs.get("secret_token") == "super-secret"

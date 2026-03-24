@@ -46,6 +46,20 @@ async def plan_unit(
         grade_level=grade_level,
     )
 
+    # Auto-resolve standards if none were provided
+    if not standards:
+        from eduagent.standards import get_standards_for_lesson
+
+        effective_state = ""
+        if config:
+            effective_state = getattr(config, "teacher_profile", None) and config.teacher_profile.state or ""
+        standards = get_standards_for_lesson(
+            subject=subject,
+            grade=grade_level,
+            state=effective_state,
+            topic=topic,
+        )
+
     prompt_template = PROMPT_PATH.read_text()
     prompt = (
         prompt_template
@@ -55,7 +69,7 @@ async def plan_unit(
         .replace("{topic}", topic)
         .replace("{duration_weeks}", str(duration_weeks))
         .replace("{total_lessons}", str(total_lessons))
-        .replace("{standards}", ", ".join(standards) if standards else "Use appropriate grade-level standards")
+        .replace("{standards}", "\n".join(f"  - {s}" for s in standards))
         .replace("{few_shot_context}", few_shot_context)
     )
 

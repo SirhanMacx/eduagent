@@ -71,23 +71,35 @@ class TeacherPersona(BaseModel):
     subject_area: str = ""
     grade_levels: list[str] = Field(default_factory=list)
     voice_sample: str = ""
+    voice_examples: list[str] = Field(default_factory=list)
 
     def to_prompt_context(self) -> str:
         """Serialize persona into a string for LLM prompt injection."""
-        return (
-            f"Teacher Persona:\n"
-            f"- Name: {self.name}\n"
-            f"- Teaching Style: {self.teaching_style.value.replace('_', ' ').title()}\n"
-            f"- Vocabulary Level: {self.vocabulary_level.value.replace('_', ' ').title()}\n"
-            f"- Tone: {self.tone}\n"
-            f"- Structural Preferences: {', '.join(self.structural_preferences)}\n"
-            f"- Assessment Style: {self.assessment_style.value.replace('_', ' ').title()}\n"
-            f"- Preferred Lesson Format: {self.preferred_lesson_format}\n"
-            f"- Favorite Strategies: {', '.join(self.favorite_strategies) or 'None specified'}\n"
-            f"- Subject Area: {self.subject_area or 'General'}\n"
-            f"- Grade Levels: {', '.join(self.grade_levels) or 'Not specified'}\n"
-            f"- Voice Sample: {self.voice_sample[:500] if self.voice_sample else 'None'}\n"
-        )
+        lines = [
+            "Teacher Persona:",
+            f"- Name: {self.name}",
+            f"- Teaching Style: {self.teaching_style.value.replace('_', ' ').title()}",
+            f"- Vocabulary Level: {self.vocabulary_level.value.replace('_', ' ').title()}",
+            f"- Tone: {self.tone}",
+            f"- Structural Preferences: {', '.join(self.structural_preferences)}",
+            f"- Assessment Style: {self.assessment_style.value.replace('_', ' ').title()}",
+            f"- Preferred Lesson Format: {self.preferred_lesson_format}",
+            f"- Favorite Strategies: {', '.join(self.favorite_strategies) or 'None specified'}",
+            f"- Subject Area: {self.subject_area or 'General'}",
+            f"- Grade Levels: {', '.join(self.grade_levels) or 'Not specified'}",
+            f"- Voice Sample: {self.voice_sample[:500] if self.voice_sample else 'None'}",
+        ]
+        if self.voice_examples:
+            lines.append("")
+            lines.append("=== Voice Examples (write like this) ===")
+            for i, example in enumerate(self.voice_examples[:5], 1):
+                lines.append(f'Example {i}: "{example}"')
+            lines.append("")
+            lines.append(
+                "Your writing MUST match the voice and style shown in the Voice Examples above. "
+                "Use the same vocabulary, sentence structure, and tone."
+            )
+        return "\n".join(lines) + "\n"
 
 
 class LessonBrief(BaseModel):
@@ -696,3 +708,27 @@ class AppConfig(BaseModel):
         path = self.config_path()
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(data, indent=2, default=str))
+
+
+class StudentProgress(BaseModel):
+    """Per-student progress tracking model."""
+
+    student_name: str = ""
+    student_id: str = ""
+    class_code: str = ""
+    topics_asked: dict[str, int] = Field(default_factory=dict)
+    total_questions: int = 0
+    last_active: str = ""  # ISO datetime string
+    struggle_topics: list[str] = Field(default_factory=list)
+
+    def record_question(self, topic: str) -> None:
+        """Record a question about a topic, updating counts and struggle detection."""
+        from datetime import datetime, timezone
+
+        self.total_questions += 1
+        self.last_active = datetime.now(timezone.utc).isoformat()
+        topic_key = topic.strip().lower() if topic else "general"
+        self.topics_asked[topic_key] = self.topics_asked.get(topic_key, 0) + 1
+        # Mark as struggle topic if asked 3+ times
+        if self.topics_asked[topic_key] >= 3 and topic_key not in self.struggle_topics:
+            self.struggle_topics.append(topic_key)

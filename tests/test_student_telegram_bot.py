@@ -291,7 +291,7 @@ class TestHandlerRegistration:
         sbot = StudentTelegramBot(token="fake:student-token")
 
         mock_app_instance = MagicMock()
-        mock_app_instance.run_polling = AsyncMock()
+        mock_app_instance.run_polling = MagicMock()
         mock_builder = MagicMock()
         mock_builder.token.return_value = mock_builder
         mock_builder.build.return_value = mock_app_instance
@@ -307,7 +307,7 @@ class TestHandlerRegistration:
             "telegram": mock_telegram,
             "telegram.ext": mock_telegram_ext,
         }):
-            asyncio.run(sbot.start())
+            sbot.start()
 
             # 5 CommandHandlers: start, help, join, topic, quit
             # 1 MessageHandler: free-text
@@ -323,4 +323,4 @@ class TestHandlerRegistration:
             assert "quit" in cmd_names
 
             assert mock_app_instance.post_init is not None
-            mock_app_instance.run_polling.assert_awaited_once()
+            mock_app_instance.run_polling.assert_called_once()

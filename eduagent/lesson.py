@@ -19,6 +19,7 @@ async def generate_lesson(
     include_homework: bool = True,
     config: AppConfig | None = None,
     task_type: str = "lesson_plan",
+    state: str = "",
 ) -> DailyLesson:
     """Generate a complete daily lesson plan for a specific lesson in a unit.
 
@@ -52,6 +53,20 @@ async def generate_lesson(
         grade_level=unit.grade_level,
     )
 
+    # Look up applicable standards for this lesson
+    from eduagent.standards import format_standards_for_prompt, get_standards_for_lesson
+
+    effective_state = state
+    if not effective_state and config:
+        effective_state = getattr(config, "teacher_profile", None) and config.teacher_profile.state or ""
+    standards_list = get_standards_for_lesson(
+        subject=unit.subject,
+        grade=unit.grade_level,
+        state=effective_state,
+        topic=lesson_brief.topic,
+    )
+    standards_text = format_standards_for_prompt(standards_list)
+
     prompt_template = PROMPT_PATH.read_text()
     prompt = (
         prompt_template
@@ -67,6 +82,7 @@ async def generate_lesson(
         .replace("{subject}", unit.subject)
         .replace("{include_homework}", "Yes" if include_homework else "No — do not include homework")
         .replace("{few_shot_context}", few_shot_context)
+        .replace("{standards}", standards_text)
     )
 
     if task_type and config:

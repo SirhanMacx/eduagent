@@ -60,7 +60,7 @@ class TestHandlerRegistration:
         bot = EduAgentBot(token="fake:token")
 
         mock_app_instance = MagicMock()
-        mock_app_instance.run_polling = AsyncMock()
+        mock_app_instance.run_polling = MagicMock()
         mock_builder = MagicMock()
         mock_builder.token.return_value = mock_builder
         mock_builder.build.return_value = mock_app_instance
@@ -76,7 +76,7 @@ class TestHandlerRegistration:
             "telegram": MagicMock(),
             "telegram.ext": mock_telegram_ext,
         }):
-            asyncio.run(bot.start())
+            bot.start()
 
             # Handlers: start, help, status, join, class, callbacks, message, etc.
             assert mock_app_instance.add_handler.call_count >= 5
@@ -93,7 +93,7 @@ class TestHandlerRegistration:
             assert "help" in cmd_names
             assert "status" in cmd_names
 
-            mock_app_instance.run_polling.assert_awaited_once()
+            mock_app_instance.run_polling.assert_called_once()
 
 
 # ── Message routing ──────────────────────────────────────────────────────
@@ -201,7 +201,7 @@ class TestErrorHandling:
         with patch.dict("sys.modules", {"telegram": None, "telegram.ext": None}):
             with pytest.raises(ImportError, match="python-telegram-bot"):
                 # Force a fresh import attempt inside start()
-                asyncio.run(bot.start())
+                bot.start()
 
 
 # ── Command handler content ──────────────────────────────────────────────

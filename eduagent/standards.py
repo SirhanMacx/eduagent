@@ -565,3 +565,104 @@ def get_ny_ss_standards(grade: str) -> list[dict]:
         for s in NY_SOCIAL_STUDIES["social_studies"]
         if s[2] == grade or s[2].startswith(grade)
     ]
+
+
+def get_standards_for_lesson(
+    subject: str,
+    grade: str,
+    state: str = "",
+    topic: str = "",
+) -> list[str]:
+    """Return formatted standard codes and descriptions for a lesson.
+
+    For CCSS states: returns matching standards from the built-in database.
+    For non-CCSS states: returns a framework alignment note with the
+    actual framework name from state_standards.py.
+
+    Args:
+        subject: Subject name (e.g. "Math", "Science", "ELA").
+        grade: Grade level (e.g. "8", "K", "9-12").
+        state: Two-letter US state abbreviation (e.g. "NY", "TX").
+        topic: Lesson topic for context (currently unused but reserved
+               for future keyword-based filtering).
+
+    Returns:
+        List of formatted strings like "CCSS.MATH.8.EE.1: Know and apply..."
+        or framework alignment notes for non-CCSS states.
+    """
+    from eduagent.state_standards import (
+        FRAMEWORK_DESCRIPTIONS,
+        STATE_STANDARDS_CONFIG,
+        get_framework_description,
+        get_state_framework,
+    )
+
+    results: list[str] = []
+
+    # Normalize subject for the state config lookup
+    subject_key = subject.lower().strip().replace(" ", "_")
+    # Map common names to state_standards keys
+    _subject_map = {
+        "math": "math", "mathematics": "math",
+        "ela": "ela", "english": "ela", "language_arts": "ela",
+        "reading": "ela", "writing": "ela",
+        "science": "science", "biology": "science",
+        "chemistry": "science", "physics": "science",
+        "history": "social_studies", "social_studies": "social_studies",
+        "civics": "social_studies", "economics": "social_studies",
+        "geography": "social_studies",
+    }
+    config_subject = _subject_map.get(subject_key, subject_key)
+
+    # Determine framework
+    framework = ""
+    if state:
+        framework = get_state_framework(state, config_subject)
+
+    # Check if this is a CCSS/NGSS/C3 framework where we have actual standards
+    ccss_frameworks = {
+        "CCSS", "NGSS", "C3",
+        # CCSS-aligned state variants still use CCSS standards
+        "CCSS_AZ", "CCSS_CA", "CCSS_LA", "CCSS_MS", "CCSS_NC",
+        "CCSS_NJ", "CCSS_NM", "CCSS_UT", "MA_CCSS", "PA_CCSS",
+        "KY_ACAS", "SC_CCRS", "WV_CSO",
+    }
+
+    is_ccss_like = framework in ccss_frameworks or not framework
+
+    if is_ccss_like:
+        # Look up actual standards from our database
+        matches = get_standards(subject, grade)
+        for code, desc, _band in matches:
+            results.append(f"{code}: {desc}")
+
+    if not results and framework and framework not in ccss_frameworks:
+        # Non-CCSS state — provide framework alignment note
+        desc = get_framework_description(framework)
+        state_cfg = STATE_STANDARDS_CONFIG.get(state.upper(), {})
+        state_name = state_cfg.get("name", state)
+        results.append(
+            f"Align to {state_name} {desc} ({framework}): "
+            f"{subject.title()} Grade {grade}"
+        )
+
+    if not results:
+        results.append(
+            f"Use appropriate grade-level standards for {subject.title()} Grade {grade}"
+        )
+
+    return results
+
+
+def format_standards_for_prompt(standards: list[str]) -> str:
+    """Format a list of standards into a prompt-friendly block.
+
+    Returns a string suitable for injection into LLM prompts,
+    including a 'Standards Addressed' header.
+    """
+    if not standards:
+        return "Standards: Use appropriate grade-level standards."
+    lines = ["Standards Addressed:"]
+    for s in standards:
+        lines.append(f"  - {s}")
+    return "\n".join(lines)

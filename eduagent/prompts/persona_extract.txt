@@ -50,6 +50,13 @@ Carefully read ALL provided documents and identify:
 
 10. **Voice Sample** — Copy a 2-3 sentence excerpt from the materials that best represents this teacher's natural writing voice. Choose something that captures their personality.
 
+11. **Voice Examples** — Select 3-5 of the BEST, most voice-representative passages from the input documents. These should be actual direct quotes that demonstrate the teacher's unique writing/speaking style. Pick passages that show:
+   - How they address students
+   - How they explain concepts
+   - How they give instructions
+   - Their characteristic phrases or sentence structures
+   Each example should be 1-3 sentences, taken verbatim from the documents.
+
 ## Output Format
 
 Respond with ONLY a JSON object (no markdown fencing, no explanation):
@@ -65,7 +72,12 @@ Respond with ONLY a JSON object (no markdown fencing, no explanation):
     "favorite_strategies": ["think-pair-share", "Cornell notes"],
     "subject_area": "8th Grade Science",
     "grade_levels": ["8"],
-    "voice_sample": "Alright scientists, today we're going to explore something really cool..."
+    "voice_sample": "Alright scientists, today we're going to explore something really cool...",
+    "voice_examples": [
+        "Alright friends, let's dig into this...",
+        "Your job today is to become a detective...",
+        "Before we move on, turn and tell your partner what you noticed."
+    ]
 }
 
 ## Documents to Analyze

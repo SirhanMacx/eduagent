@@ -98,7 +98,7 @@ def _log_error(error: Exception) -> None:
         _ERROR_LOG.parent.mkdir(parents=True, exist_ok=True)
         with open(_ERROR_LOG, "a") as f:
             import datetime
-            f.write(f"[{datetime.datetime.now(datetime.UTC).isoformat()}] {type(error).__name__}: {error}\n")
+            f.write(f"[{datetime.datetime.now(datetime.timezone.utc).isoformat()}] {type(error).__name__}: {error}\n")
     except Exception:
         pass
 
@@ -110,6 +110,7 @@ BOT_COMMANDS = [
     ("unit", "Plan a unit"),
     ("assess", "Create an assessment"),
     ("worksheet", "Generate a worksheet"),
+    ("progress", "Student progress report"),
     ("help", "Show all commands"),
     ("health", "System status"),
 ]
@@ -187,7 +188,7 @@ class EduAgentBot:
             webhook_secret=webhook_secret,
         )
 
-    async def start(
+    def start(
         self,
         *,
         webhook_url: Optional[str] = None,
@@ -539,6 +540,71 @@ class EduAgentBot:
                 "(e.g. 'fractions practice for 5th grade')"
             )
 
+        async def cmd_progress(update: Any, context: Any) -> None:
+            """Show student progress report for the teacher's classes."""
+            teacher_id = str(update.message.from_user.id)
+            try:
+                from eduagent.student_bot import StudentBot
+                bot = StudentBot()
+
+                # Find teacher's active classes
+                from eduagent.state import _get_conn as _get_main_conn, init_db
+                init_db()
+                with _get_main_conn() as conn:
+                    rows = conn.execute(
+                        "SELECT class_code, name, topic FROM classes WHERE teacher_id = ?",
+                        (teacher_id,),
+                    ).fetchall()
+
+                if not rows:
+                    await update.message.reply_text(
+                        "No active classes found. Start one with 'start student bot for [lesson]'."
+                    )
+                    return
+
+                report_parts = ["Student Progress Report\n"]
+                for row in rows:
+                    code = row["class_code"]
+                    class_name = row["name"] or code
+                    report_parts.append(f"\nClass: {class_name} ({code})")
+                    progress_list = bot.get_student_progress(code)
+                    if not progress_list:
+                        report_parts.append("  No student activity yet.")
+                        continue
+
+                    # Sort by most active
+                    for p in progress_list:
+                        name = p.get("student_name") or f"Student {p['student_id'][:8]}"
+                        total = p.get("total_questions", 0)
+                        struggles = p.get("struggle_topics", [])
+                        last = p.get("last_active", "")[:16]
+                        line = f"  {name}: {total} questions"
+                        if last:
+                            line += f" (last: {last})"
+                        report_parts.append(line)
+                        if struggles:
+                            report_parts.append(f"    Struggling: {', '.join(struggles)}")
+
+                    # Topic summary
+                    all_topics: dict[str, int] = {}
+                    for p in progress_list:
+                        for topic, count in p.get("topics_asked", {}).items():
+                            all_topics[topic] = all_topics.get(topic, 0) + count
+                    if all_topics:
+                        sorted_topics = sorted(all_topics.items(), key=lambda x: x[1], reverse=True)[:5]
+                        report_parts.append("  Top topics asked about:")
+                        for topic, count in sorted_topics:
+                            report_parts.append(f"    {topic}: {count}x")
+
+                await _send_response(update, "\n".join(report_parts))
+
+            except Exception as e:
+                logger.error(f"Error in /progress: {e}")
+                _log_error(e)
+                await update.message.reply_text(
+                    "Couldn't generate progress report right now. Try again later."
+                )
+
         # Register command menu with BotFather API
         async def _post_init(application: Any) -> None:
             """Called after the application is initialized — registers commands."""
@@ -561,6 +627,7 @@ class EduAgentBot:
         app.add_handler(CommandHandler("unit", cmd_unit))
         app.add_handler(CommandHandler("assess", cmd_assess))
         app.add_handler(CommandHandler("worksheet", cmd_worksheet))
+        app.add_handler(CommandHandler("progress", cmd_progress))
         app.add_handler(CallbackQueryHandler(handle_rating_callback, pattern=f"^{RATING_CALLBACK_PREFIX}"))
         app.add_handler(CallbackQueryHandler(handle_action_callback, pattern=f"^{ACTION_CALLBACK_PREFIX}"))
         app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
@@ -585,17 +652,17 @@ class EduAgentBot:
             if effective_secret:
                 run_kwargs["secret_token"] = effective_secret
 
-            await app.run_webhook(**run_kwargs)
+            app.run_webhook(**run_kwargs)
         else:
             # Polling mode: the bot polls Telegram for new updates.
             # Works everywhere without any public URL — perfect for local dev
             # and teacher laptops behind NAT/firewalls.
             print("   Mode: polling")
             logger.info("Starting in polling mode")
-            await app.run_polling(drop_pending_updates=True)
+            app.run_polling(drop_pending_updates=True)
 
 
-async def run_bot(
+def run_bot(
     token: str,
     data_dir: Optional[Path] = None,
     *,
@@ -621,4 +688,4 @@ async def run_bot(
         webhook_port=webhook_port,
         webhook_secret=webhook_secret,
     )
-    await bot.start()
+    bot.start()

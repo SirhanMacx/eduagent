@@ -437,7 +437,7 @@ def student_bot_cmd(
 
     console.print("[green]Starting student bot...[/green]")
     try:
-        asyncio.run(StudentTelegramBot(token).start())
+        StudentTelegramBot(token).start()
     except KeyboardInterrupt:
         console.print("\n[yellow]Student bot stopped.[/yellow]")
     except ImportError as e:
@@ -565,14 +565,12 @@ def bot(
         )
 
         try:
-            asyncio.run(
-                run_bot(
-                    token=token,
-                    data_dir=data_path,
-                    webhook_url=webhook_url,
-                    webhook_port=webhook_port,
-                    webhook_secret=webhook_secret or None,
-                )
+            run_bot(
+                token=token,
+                data_dir=data_path,
+                webhook_url=webhook_url,
+                webhook_port=webhook_port,
+                webhook_secret=webhook_secret or None,
             )
         except KeyboardInterrupt:
             console.print("\n[yellow]Bot stopped.[/yellow]")

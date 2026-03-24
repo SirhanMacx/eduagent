@@ -237,8 +237,8 @@ class TestConversationStateMachineExtended:
 class TestBotCommandContents:
     """Test the contents of bot commands and help text."""
 
-    def test_commands_list_has_six_entries(self):
-        assert len(BOT_COMMANDS) == 6
+    def test_commands_list_has_seven_entries(self):
+        assert len(BOT_COMMANDS) == 7
 
     def test_all_commands_have_lowercase_names(self):
         for cmd, _ in BOT_COMMANDS:
