@@ -40,32 +40,32 @@ async def run_agent(
     messages.append({"role": "user", "content": message})
 
     for _iteration in range(_MAX_TOOL_ITERATIONS):
-        # Try native tool calling first
         if config.provider in (LLMProvider.ANTHROPIC, LLMProvider.OPENAI):
             response = await _call_with_native_tools(messages, system, config)
         else:
-            # Ollama -- try native tools, fall back to prompt-based
             response = await _call_with_ollama_tools(messages, system, config)
 
-        # If the response is plain text (no tool calls), we're done
         if response["type"] == "text":
             return response["content"]
 
-        # Execute tool calls
         if response["type"] == "tool_calls":
-            for tool_call in response["tool_calls"]:
+            tool_calls = response["tool_calls"]
+
+            # Add ONE assistant message containing ALL tool calls
+            messages.append({
+                "role": "assistant",
+                "content": None,
+                "tool_calls": tool_calls,
+            })
+
+            # Execute each tool and add its result
+            for tool_call in tool_calls:
                 tool_name = tool_call["name"]
                 tool_args = tool_call.get("arguments", {})
                 logger.info("Agent calling tool: %s(%s)", tool_name, tool_args)
 
                 result = await execute_tool(tool_name, tool_args, teacher_id)
 
-                # Add the assistant's tool call and the result to the conversation
-                messages.append({
-                    "role": "assistant",
-                    "content": None,
-                    "tool_calls": [tool_call],
-                })
                 messages.append({
                     "role": "tool",
                     "tool_call_id": tool_call.get("id", tool_name),
@@ -73,7 +73,6 @@ async def run_agent(
                 })
             continue
 
-    # Exhausted iterations -- return a fallback
     return "I tried to help but hit my iteration limit. Could you rephrase your request?"
 
 
@@ -122,16 +121,16 @@ async def _anthropic_with_tools(
                 }],
             })
         elif m["role"] == "assistant" and m.get("tool_calls"):
-            tc = m["tool_calls"][0]
-            anthropic_messages.append({
-                "role": "assistant",
-                "content": [{
+            # Single assistant message with ALL tool_use blocks
+            content_blocks = []
+            for tc in m["tool_calls"]:
+                content_blocks.append({
                     "type": "tool_use",
                     "id": tc.get("id", tc["name"]),
                     "name": tc["name"],
                     "input": tc.get("arguments", {}),
-                }],
-            })
+                })
+            anthropic_messages.append({"role": "assistant", "content": content_blocks})
         elif m.get("content"):
             anthropic_messages.append({"role": m["role"], "content": m["content"]})
 
@@ -154,21 +153,24 @@ async def _anthropic_with_tools(
         resp.raise_for_status()
         data = resp.json()
 
-    # Check if the response contains tool use
+    # Collect ALL tool_use blocks and any text
+    tool_calls = []
+    text_parts = []
     for block in data.get("content", []):
         if block.get("type") == "tool_use":
-            return {
-                "type": "tool_calls",
-                "tool_calls": [{
-                    "id": block["id"],
-                    "name": block["name"],
-                    "arguments": block.get("input", {}),
-                }],
-            }
-        if block.get("type") == "text":
-            return {"type": "text", "content": block["text"]}
+            tool_calls.append({
+                "id": block["id"],
+                "name": block["name"],
+                "arguments": block.get("input", {}),
+            })
+        elif block.get("type") == "text" and block.get("text"):
+            text_parts.append(block["text"])
 
-    return {"type": "text", "content": data.get("content", [{}])[0].get("text", "")}
+    if tool_calls:
+        return {"type": "tool_calls", "tool_calls": tool_calls}
+    if text_parts:
+        return {"type": "text", "content": "\n".join(text_parts)}
+    return {"type": "text", "content": ""}
 
 
 async def _openai_with_tools(
@@ -183,7 +185,6 @@ async def _openai_with_tools(
     if not api_key:
         raise ValueError("No OpenAI API key configured")
 
-    # Build messages with system
     oai_messages: list[dict[str, Any]] = [{"role": "system", "content": system}]
     for m in messages:
         if m["role"] == "tool":
@@ -193,18 +194,18 @@ async def _openai_with_tools(
                 "content": m["content"],
             })
         elif m["role"] == "assistant" and m.get("tool_calls"):
-            tc = m["tool_calls"][0]
-            oai_messages.append({
-                "role": "assistant",
-                "tool_calls": [{
+            # Single assistant message with ALL tool calls
+            oai_tool_calls = []
+            for tc in m["tool_calls"]:
+                oai_tool_calls.append({
                     "id": tc.get("id", tc["name"]),
                     "type": "function",
                     "function": {
                         "name": tc["name"],
                         "arguments": json.dumps(tc.get("arguments", {})),
                     },
-                }],
-            })
+                })
+            oai_messages.append({"role": "assistant", "tool_calls": oai_tool_calls})
         elif m.get("content"):
             oai_messages.append({"role": m["role"], "content": m["content"]})
 
@@ -229,15 +230,15 @@ async def _openai_with_tools(
     msg = choice["message"]
 
     if msg.get("tool_calls"):
-        tc = msg["tool_calls"][0]
-        return {
-            "type": "tool_calls",
-            "tool_calls": [{
+        # Collect ALL tool calls
+        tool_calls = []
+        for tc in msg["tool_calls"]:
+            tool_calls.append({
                 "id": tc["id"],
                 "name": tc["function"]["name"],
                 "arguments": json.loads(tc["function"]["arguments"]),
-            }],
-        }
+            })
+        return {"type": "tool_calls", "tool_calls": tool_calls}
 
     return {"type": "text", "content": msg.get("content", "")}
 
@@ -253,12 +254,10 @@ async def _call_with_ollama_tools(
     base_url = config.ollama_base_url.rstrip("/")
     api_key = get_api_key("ollama")
 
-    # Use OpenAI-compatible endpoint which supports tools
     headers: dict[str, str] = {"Content-Type": "application/json"}
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
 
-    # Determine endpoint
     if "api.ollama.com" in base_url or "ollama.com" in base_url:
         url = f"{base_url}/chat/completions"
     else:
@@ -273,18 +272,17 @@ async def _call_with_ollama_tools(
                 "content": m["content"],
             })
         elif m["role"] == "assistant" and m.get("tool_calls"):
-            tc = m["tool_calls"][0]
-            oai_messages.append({
-                "role": "assistant",
-                "tool_calls": [{
+            oai_tool_calls = []
+            for tc in m["tool_calls"]:
+                oai_tool_calls.append({
                     "id": tc.get("id", tc["name"]),
                     "type": "function",
                     "function": {
                         "name": tc["name"],
                         "arguments": json.dumps(tc.get("arguments", {})),
                     },
-                }],
-            })
+                })
+            oai_messages.append({"role": "assistant", "tool_calls": oai_tool_calls})
         elif m.get("content"):
             oai_messages.append({"role": m["role"], "content": m["content"]})
 
@@ -307,21 +305,19 @@ async def _call_with_ollama_tools(
         msg = choice["message"]
 
         if msg.get("tool_calls"):
-            tc = msg["tool_calls"][0]
-            fn_args = tc["function"]["arguments"]
-            return {
-                "type": "tool_calls",
-                "tool_calls": [{
+            tool_calls = []
+            for tc in msg["tool_calls"]:
+                fn_args = tc["function"]["arguments"]
+                tool_calls.append({
                     "id": tc.get("id", tc["function"]["name"]),
                     "name": tc["function"]["name"],
                     "arguments": json.loads(fn_args) if isinstance(fn_args, str) else fn_args,
-                }],
-            }
+                })
+            return {"type": "tool_calls", "tool_calls": tool_calls}
 
         return {"type": "text", "content": msg.get("content", "")}
 
     except Exception as e:
-        # Fallback: no tool support, just chat without tools
         logger.debug("Ollama tool call failed (%s), falling back to plain chat", e)
         return await _ollama_plain_chat(messages, system, config)
 
@@ -336,7 +332,6 @@ async def _ollama_plain_chat(
     routed_config = route("quick_answer", config)
     client = LLMClient(routed_config)
 
-    # Flatten messages to a prompt
     prompt = "\n".join(
         f"{m['role'].upper()}: {m['content']}" for m in messages if m.get("content")
     )

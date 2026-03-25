@@ -139,6 +139,31 @@ TOOL_DEFINITIONS = [
 ]
 
 
+# -- Shared helpers -------------------------------------------------------
+
+
+def _load_persona_for_tool(teacher_id: str = ""):
+    """Load persona from session first, then file path fallback."""
+    from clawed.models import TeacherPersona
+
+    # Try session first (set by Telegram bot, web dashboard, etc.)
+    if teacher_id:
+        try:
+            from clawed.state import TeacherSession
+            session = TeacherSession.load(teacher_id)
+            if session.persona:
+                return session.persona
+        except Exception:
+            pass
+
+    # Fallback to file on disk
+    try:
+        from clawed.persona import load_persona
+        return load_persona(Path.home() / ".eduagent" / "persona.json")
+    except Exception:
+        return TeacherPersona()
+
+
 # -- Tool implementations -------------------------------------------------
 
 
@@ -146,9 +171,9 @@ async def execute_tool(name: str, arguments: dict[str, Any], teacher_id: str = "
     """Execute a tool by name and return the result as a string."""
     try:
         if name == "generate_lesson":
-            return await _tool_generate_lesson(**arguments)
+            return await _tool_generate_lesson(teacher_id=teacher_id, **arguments)
         elif name == "generate_unit":
-            return await _tool_generate_unit(**arguments)
+            return await _tool_generate_unit(teacher_id=teacher_id, **arguments)
         elif name == "generate_quiz":
             return await _tool_generate_quiz(**arguments)
         elif name == "search_standards":
@@ -168,18 +193,15 @@ async def execute_tool(name: str, arguments: dict[str, Any], teacher_id: str = "
         return json.dumps({"error": str(e)})
 
 
-async def _tool_generate_lesson(topic: str, grade: str = "8", subject: str = "General") -> str:
+async def _tool_generate_lesson(
+    topic: str, grade: str = "8", subject: str = "General", teacher_id: str = ""
+) -> str:
     """Generate a lesson -- reuses existing lesson generation."""
     from clawed.lesson import generate_lesson
     from clawed.models import AppConfig, LessonBrief, TeacherPersona, UnitPlan
 
     config = AppConfig.load()
-    persona = TeacherPersona()
-    try:
-        from clawed.persona import load_persona
-        persona = load_persona(Path.home() / ".eduagent" / "persona.json")
-    except Exception:
-        pass
+    persona = _load_persona_for_tool(teacher_id)
 
     unit = UnitPlan(
         title=f"{topic} Unit", subject=subject, grade_level=grade, topic=topic,
@@ -200,18 +222,15 @@ async def _tool_generate_lesson(topic: str, grade: str = "8", subject: str = "Ge
     return "\n".join(lines)
 
 
-async def _tool_generate_unit(topic: str, grade: str = "8", subject: str = "General", weeks: int = 2) -> str:
+async def _tool_generate_unit(
+    topic: str, grade: str = "8", subject: str = "General", weeks: int = 2, teacher_id: str = ""
+) -> str:
     """Generate a unit plan."""
-    from clawed.models import AppConfig, TeacherPersona
+    from clawed.models import AppConfig
     from clawed.planner import plan_unit
 
     config = AppConfig.load()
-    persona = TeacherPersona()
-    try:
-        from clawed.persona import load_persona
-        persona = load_persona(Path.home() / ".eduagent" / "persona.json")
-    except Exception:
-        pass
+    persona = _load_persona_for_tool(teacher_id)
 
     unit = await plan_unit(
         subject=subject, grade_level=grade, topic=topic,
