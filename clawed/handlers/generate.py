@@ -7,6 +7,7 @@ Extracted from tg.py lines 1697-1766.
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from clawed.gateway_response import Button, GatewayResponse
@@ -35,9 +36,17 @@ class GenerateHandler:
     async def lesson(self, topic: str, teacher_id: str) -> GatewayResponse:
         """Generate a lesson on the given topic."""
         try:
-            response_text = await handle_message(
-                f"generate a lesson on {topic}",
-                teacher_id=teacher_id,
+            response_text = await asyncio.wait_for(
+                handle_message(
+                    f"generate a lesson on {topic}",
+                    teacher_id=teacher_id,
+                ),
+                timeout=120.0,
+            )
+        except asyncio.TimeoutError:
+            logger.error("Lesson generation timed out after 120s")
+            return GatewayResponse(
+                text="Generation timed out. Please try again with a simpler topic."
             )
         except Exception as e:
             logger.error("Lesson generation failed: %s", e)
@@ -55,9 +64,17 @@ class GenerateHandler:
     async def unit(self, topic: str, teacher_id: str) -> GatewayResponse:
         """Generate a unit plan on the given topic."""
         try:
-            response_text = await handle_message(
-                f"plan a unit on {topic}",
-                teacher_id=teacher_id,
+            response_text = await asyncio.wait_for(
+                handle_message(
+                    f"plan a unit on {topic}",
+                    teacher_id=teacher_id,
+                ),
+                timeout=120.0,
+            )
+        except asyncio.TimeoutError:
+            logger.error("Unit generation timed out after 120s")
+            return GatewayResponse(
+                text="Generation timed out. Please try again with a simpler topic."
             )
         except Exception as e:
             logger.error("Unit generation failed: %s", e)

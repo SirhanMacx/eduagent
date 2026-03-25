@@ -19,6 +19,7 @@ import logging
 import os
 import signal
 import tempfile
+import threading
 import time
 from pathlib import Path
 from typing import Any
@@ -342,10 +343,31 @@ class EduAgentTelegramBot:
                 files = self._download_files(msg)
 
                 text = msg.get("text", "")
+
+                # Show typing while gateway processes
                 self.api.send_chat_action(chat_id, "typing")
-                response = asyncio.run(
-                    self.gateway.handle(text, teacher_id, files=files or None)
-                )
+
+                # Periodic typing indicator for long operations
+                typing_stop = threading.Event()
+
+                def _typing_loop() -> None:
+                    while not typing_stop.wait(4.0):
+                        try:
+                            self.api.send_chat_action(chat_id, "typing")
+                        except Exception:
+                            break
+
+                typing_thread = threading.Thread(target=_typing_loop, daemon=True)
+                typing_thread.start()
+
+                try:
+                    response = asyncio.run(
+                        self.gateway.handle(text, teacher_id, files=files or None)
+                    )
+                finally:
+                    typing_stop.set()
+                    typing_thread.join(timeout=1)
+
                 self._send_response(self.api, chat_id, response)
 
         except Exception as e:
