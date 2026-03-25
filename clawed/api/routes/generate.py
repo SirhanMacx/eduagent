@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 
-from clawed.api.server import get_db, limiter
+from clawed.api.deps import get_db, limiter
 from clawed.models import DailyLesson, TeacherPersona, UnitPlan
 
 logger = logging.getLogger(__name__)

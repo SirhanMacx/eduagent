@@ -12,7 +12,7 @@ from pathlib import Path
 from fastapi import APIRouter, File, UploadFile
 from fastapi.responses import JSONResponse
 
-from clawed.api.server import get_db
+from clawed.api.deps import get_db
 from clawed.ingestor import ingest_path
 from clawed.persona import extract_persona
 

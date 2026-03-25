@@ -245,14 +245,14 @@ class TestStatsAPI:
     def client(self, web_db):
         from fastapi.testclient import TestClient
 
-        import clawed.api.server as srv
+        import clawed.api.deps as deps
         from clawed.api.server import create_app
 
-        old_db = srv._db
-        srv._db = web_db
+        old_db = deps._db
+        deps._db = web_db
         test_app = create_app()
         yield TestClient(test_app)
-        srv._db = old_db
+        deps._db = old_db
 
     def test_stats_page_renders(self, client):
         resp = client.get("/stats")

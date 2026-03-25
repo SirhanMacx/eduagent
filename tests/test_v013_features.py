@@ -58,14 +58,14 @@ def db(tmp_path):
 
 @pytest.fixture
 def app(db):
-    import clawed.api.server as srv
+    import clawed.api.deps as deps
     from clawed.api.server import create_app
 
-    old = srv._db
-    srv._db = db
+    old = deps._db
+    deps._db = db
     a = create_app()
     yield a
-    srv._db = old
+    deps._db = old
 
 
 @pytest.fixture

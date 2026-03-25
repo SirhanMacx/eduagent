@@ -6,7 +6,7 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from clawed.api.server import get_db
+from clawed.api.deps import get_db
 
 router = APIRouter(tags=["school"])
 

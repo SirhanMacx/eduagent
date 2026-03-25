@@ -13,7 +13,7 @@ from fastapi import APIRouter
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
-from clawed.api.server import get_db
+from clawed.api.deps import get_db
 from clawed.database import Database
 from clawed.models import DailyLesson
 

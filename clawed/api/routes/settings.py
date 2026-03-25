@@ -8,7 +8,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 
 from clawed import __version__
-from clawed.api.server import get_db
+from clawed.api.deps import get_db
 from clawed.config import (
     get_api_key,
     mask_api_key,

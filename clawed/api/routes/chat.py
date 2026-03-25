@@ -9,7 +9,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from clawed.api.server import get_db, limiter
+from clawed.api.deps import get_db, limiter
 from clawed.chat import student_chat
 from clawed.models import TeacherPersona
 

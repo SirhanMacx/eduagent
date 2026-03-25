@@ -8,7 +8,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from clawed.api.server import limiter
+from clawed.api.deps import limiter
 
 logger = logging.getLogger(__name__)
 

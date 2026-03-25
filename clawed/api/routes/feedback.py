@@ -8,7 +8,7 @@ from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from clawed.api.server import get_db
+from clawed.api.deps import get_db
 from clawed.corpus import contribute_example
 from clawed.feedback import analyze_feedback, collect_feedback
 from clawed.improver import improve_prompts

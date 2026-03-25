@@ -28,13 +28,13 @@ def db(tmp_path):
 
 @pytest.fixture
 def app(db):
-    import clawed.api.server as srv
+    import clawed.api.deps as deps
 
-    old_db = srv._db
-    srv._db = db
+    old_db = deps._db
+    deps._db = db
     test_app = create_app()
     yield test_app
-    srv._db = old_db
+    deps._db = old_db
 
 
 @pytest.fixture

@@ -19,12 +19,12 @@ def db(tmp_path):
 @pytest.fixture
 def app(db):
     """Create a test app with the temp database injected."""
-    import clawed.api.server as srv
-    old_db = srv._db
-    srv._db = db
+    import clawed.api.deps as deps
+    old_db = deps._db
+    deps._db = db
     test_app = create_app()
     yield test_app
-    srv._db = old_db
+    deps._db = old_db
 
 
 @pytest.fixture

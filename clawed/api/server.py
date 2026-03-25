@@ -14,10 +14,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
 
+from clawed.api.deps import get_db, limiter, set_db
 from clawed.database import Database
 
 logger = logging.getLogger(__name__)
@@ -27,29 +27,16 @@ _PKG_DIR = Path(__file__).parent
 _TEMPLATE_DIR = _PKG_DIR / "templates"
 _STATIC_DIR = _PKG_DIR / "static"
 
-# Rate limiter (shared across the app)
-limiter = Limiter(key_func=get_remote_address)
-
-# Shared state
-_db: Database | None = None
-
-
-def get_db() -> Database:
-    global _db
-    if _db is None:
-        _db = Database()
-    return _db
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Startup/shutdown lifecycle."""
-    global _db
-    _db = Database()
+    set_db(Database())
     yield
-    if _db:
-        _db.close()
-        _db = None
+    db = get_db()
+    if db:
+        db.close()
+    set_db(None)
 
 
 def create_app() -> FastAPI:
