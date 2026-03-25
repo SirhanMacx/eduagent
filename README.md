@@ -13,11 +13,11 @@
 </p>
 
 <p align="center">
-  <a href="https://eduagent-ai-landing.netlify.app">Website</a> · <a href="#-getting-started">Quickstart</a> · <a href="FEATURES.md">Features</a> · <a href="ROADMAP.md">Roadmap</a> · <a href="CONTRIBUTING.md">Contributing</a>
+  <a href="https://sirhanmacx.github.io/Claw-ED/">Website</a> · <a href="#-getting-started">Quickstart</a> · <a href="FEATURES.md">Features</a> · <a href="ROADMAP.md">Roadmap</a> · <a href="CONTRIBUTING.md">Contributing</a>
 </p>
 
 <p align="center">
-  <strong>🌐 <a href="https://eduagent-ai-landing.netlify.app">eduagent-ai-landing.netlify.app</a></strong>
+  <strong>🌐 <a href="https://sirhanmacx.github.io/Claw-ED/">sirhanmacx.github.io/Claw-ED</a></strong>
 </p>
 
 ---
