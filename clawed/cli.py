@@ -14,7 +14,6 @@ from pathlib import Path
 from typing import Optional
 
 import typer
-from rich.panel import Panel
 
 from clawed import __version__
 from clawed.commands._helpers import console
@@ -75,36 +74,22 @@ def main(
     if ctx.invoked_subcommand is None:
         config_path = Path.home() / ".eduagent" / "config.json"
         if not config_path.exists():
-            # First run — open browser-based setup wizard
-            import threading
-            import webbrowser
-
-            import uvicorn
-
-            port = 8000
-            console.print(Panel(
-                "[bold]Welcome to Claw-ED![/bold]\n\n"
-                "Opening the setup wizard in your browser...\n"
-                f"If it doesn't open, go to: [cyan]http://localhost:{port}/setup[/cyan]\n\n"
-                "[dim]Press Ctrl+C when you're done.[/dim]",
-                title="\U0001f393 Claw-ED",
-                border_style="green",
-            ))
-
-            def _open_browser():
-                import time
-                time.sleep(1.5)
-                webbrowser.open(f"http://localhost:{port}/setup")
-
-            threading.Thread(target=_open_browser, daemon=True).start()
-
+            # Phase 1: Quick model setup in terminal
+            from clawed.onboarding import quick_model_setup
             try:
-                uvicorn.run("clawed.api.server:app", host="127.0.0.1", port=port, log_level="warning")
-            except KeyboardInterrupt:
-                pass
+                quick_model_setup()
+            except (KeyboardInterrupt, EOFError):
+                console.print("\n[dim]Setup cancelled. Run clawed again anytime.[/dim]")
+                raise typer.Exit()
 
-            if config_path.exists():
-                console.print("\n[green]Setup complete![/green] Run [bold]clawed[/bold] again to start chatting.")
+            # Phase 2: Drop into chat — agent handles the rest conversationally
+            import asyncio
+
+            from clawed.transports.cli import run_chat
+            try:
+                asyncio.run(run_chat())
+            except (KeyboardInterrupt, EOFError):
+                pass
             raise typer.Exit()
         else:
             # Returning user — drop straight into chat

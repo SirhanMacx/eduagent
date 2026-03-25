@@ -423,6 +423,63 @@ def _clear_config() -> None:
         console.print("  [dim]Previous configuration cleared.[/dim]")
 
 
+def quick_model_setup() -> None:
+    """Minimal first-run setup: model selection + API key. Takes 30 seconds."""
+    console.print(Panel(
+        "[bold]Welcome to Claw-ED![/bold] \U0001f393\n\n"
+        "Let's get you set up. This takes about 30 seconds.",
+        border_style="green",
+    ))
+
+    console.print("\n[bold]Which AI should I use to generate your lessons?[/bold]\n")
+    console.print(
+        "  [bold cyan][1][/bold cyan] \u2605 Ollama Cloud \u2014 $20/month flat rate [dim](recommended)[/dim]"
+    )
+    console.print("  [bold cyan][2][/bold cyan] Anthropic Claude \u2014 best quality, pay per use")
+    console.print("  [bold cyan][3][/bold cyan] OpenAI \u2014 widely used, pay per use")
+    console.print("  [bold cyan][4][/bold cyan] Skip \u2014 I'll set this up later\n")
+
+    choice = Prompt.ask("Choice", choices=["1", "2", "3", "4"], default="1")
+
+    provider_map = {"1": LLMProvider.OLLAMA, "2": LLMProvider.ANTHROPIC, "3": LLMProvider.OPENAI}
+    provider = provider_map.get(choice, LLMProvider.OLLAMA)
+
+    config = AppConfig(provider=provider)
+
+    if choice != "4":
+        key_prompts = {
+            "1": ("Ollama API key", "Get one at ollama.com \u2192 Settings \u2192 API Keys"),
+            "2": ("Anthropic API key", "Get one at console.anthropic.com \u2192 API Keys"),
+            "3": ("OpenAI API key", "Get one at platform.openai.com \u2192 API Keys"),
+        }
+        label, hint = key_prompts[choice]
+        console.print(f"\n  [dim]{hint}[/dim]")
+        key = Prompt.ask(f"  [bold]{label}[/bold]", password=True)
+        if key.strip():
+            prov_key = {1: "ollama", 2: "anthropic", 3: "openai"}[int(choice)]
+            set_api_key(prov_key, key.strip())
+            if choice == "1":
+                config.ollama_base_url = "https://api.ollama.com/v1"
+                config.ollama_model = "minimax-m2.7:cloud"
+                config.ollama_api_key = key.strip()
+            # Test connection
+            connected = _test_connection(config)
+            if not connected:
+                console.print("  [yellow]Connection failed \u2014 you can fix this later with 'clawed setup'[/yellow]")
+
+    # Optional Telegram token
+    console.print()
+    tg_token = Prompt.ask(
+        "[bold]Telegram bot token[/bold] [dim](paste token, or Enter to skip)[/dim]",
+        default="",
+    )
+    if tg_token.strip():
+        config.telegram_bot_token = tg_token.strip()
+
+    config.save()
+    console.print("\n  [green]\u2713 Ready![/green] Starting Claw-ED...\n")
+
+
 def run_setup_wizard(reset: bool = False) -> AppConfig:
     """Run the teacher-friendly setup wizard.
 

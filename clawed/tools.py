@@ -136,6 +136,51 @@ TOOL_DEFINITIONS = [
             },
         },
     },
+    {
+        "type": "function",
+        "function": {
+            "name": "configure_profile",
+            "description": "Save the teacher's profile (name, subject, grade, state, assistant name)",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "teacher_name": {"type": "string"},
+                    "subject": {"type": "string"},
+                    "grade_levels": {
+                        "type": "string",
+                        "description": "Comma-separated: '7,8' or '8'",
+                    },
+                    "state": {
+                        "type": "string",
+                        "description": "US state abbreviation like NY, CA",
+                    },
+                    "assistant_name": {
+                        "type": "string",
+                        "description": "What the teacher wants to call the AI",
+                        "default": "Claw-ED",
+                    },
+                },
+                "required": ["teacher_name", "subject"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "ingest_folder",
+            "description": "Ingest lesson plans from a folder path to learn the teacher's style",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "Folder path like ~/Documents/Lessons",
+                    },
+                },
+                "required": ["path"],
+            },
+        },
+    },
 ]
 
 
@@ -186,6 +231,10 @@ async def execute_tool(name: str, arguments: dict[str, Any], teacher_id: str = "
             return _tool_read_file(**arguments)
         elif name == "search_files":
             return _tool_search_files(**arguments)
+        elif name == "configure_profile":
+            return await _tool_configure_profile(teacher_id=teacher_id, **arguments)
+        elif name == "ingest_folder":
+            return await _tool_ingest_folder(teacher_id=teacher_id, **arguments)
         else:
             return json.dumps({"error": f"Unknown tool: {name}"})
     except Exception as e:
@@ -359,3 +408,73 @@ def _tool_search_files(query: str) -> str:
     if not matches:
         return f"No files matching '{query}' found."
     return f"Files matching '{query}':\n" + "\n".join(matches)
+
+
+async def _tool_configure_profile(
+    teacher_name: str,
+    subject: str,
+    grade_levels: str = "",
+    state: str = "",
+    assistant_name: str = "Claw-ED",
+    teacher_id: str = "",
+) -> str:
+    """Save the teacher's profile during onboarding."""
+    from clawed.models import AppConfig, TeacherPersona, TeacherProfile
+    from clawed.state import TeacherSession
+    from clawed.workspace import init_workspace
+
+    grades = [g.strip() for g in grade_levels.split(",") if g.strip()]
+
+    config = AppConfig.load()
+    config.teacher_profile = TeacherProfile(
+        name=teacher_name,
+        subjects=[subject],
+        grade_levels=grades,
+        state=state,
+    )
+    config.save()
+
+    persona = TeacherPersona(name=teacher_name, subject_area=subject)
+    session = TeacherSession.load(teacher_id or "local-teacher")
+    session.persona = persona
+    session.save()
+
+    try:
+        init_workspace(persona, config)
+    except Exception:
+        pass
+
+    return (
+        f"Profile saved! {teacher_name} teaches {subject}"
+        f"{' grade ' + grade_levels if grade_levels else ''}"
+        f"{' in ' + state if state else ''}. "
+        f"Assistant name: {assistant_name}."
+    )
+
+
+async def _tool_ingest_folder(path: str, teacher_id: str = "") -> str:
+    """Ingest lesson plans from a folder to learn the teacher's style."""
+    from clawed.ingestor import ingest_path
+
+    resolved = Path(path).expanduser().resolve()
+    if not resolved.exists():
+        return f"Folder not found: {path}. Check the path and try again."
+
+    docs = ingest_path(str(resolved))
+    if not docs:
+        return (
+            f"No supported files found in {path}. "
+            "I can read PDF, DOCX, PPTX, TXT, and MD files."
+        )
+
+    # Extract persona from ingested documents
+    try:
+        from clawed.models import AppConfig
+        from clawed.persona import extract_persona, save_persona
+
+        persona = await extract_persona(docs, AppConfig.load())
+        save_persona(persona, Path.home() / ".eduagent")
+        style = persona.teaching_style.value.replace("_", " ").title()
+        return f"Ingested {len(docs)} files! Teaching style: {style}, Tone: {persona.tone}."
+    except Exception as e:
+        return f"Ingested {len(docs)} files, but couldn't extract style patterns: {e}"
