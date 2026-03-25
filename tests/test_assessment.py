@@ -402,10 +402,11 @@ class TestPromptTemplates:
 
 class TestModelRouterAssessment:
     def test_assessment_task_in_router(self):
-        from clawed.model_router import TASK_MODELS
+        from clawed.model_router import TASK_TIERS, DEFAULT_TIER_MODELS, ModelTier
 
-        assert "assessment" in TASK_MODELS
-        assert TASK_MODELS["assessment"] == "minimax-m2.7:cloud"
+        assert "assessment" in TASK_TIERS
+        assert TASK_TIERS["assessment"] == ModelTier.WORK
+        assert DEFAULT_TIER_MODELS["work"] == "minimax-m2.7:cloud"
 
     def test_route_assessment_task(self):
         from clawed.model_router import route

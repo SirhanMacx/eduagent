@@ -168,6 +168,10 @@ class Gateway:
         if self._looks_like_path(message):
             return await self._ingest.handle(teacher_id, path=message.strip())
 
+        # NOTE: parse_intent() is keyword/regex-based (zero cost).
+        # When upgraded to LLM-based detection, use:
+        #   from clawed.model_router import route
+        #   config = route("intent_detection", self.config)
         parsed = parse_intent(message)
         intent = parsed.intent
 

@@ -1,43 +1,85 @@
-"""Smart model routing — picks the optimal LLM for each task type.
+"""Tier-based model routing for Claw-ED.
 
-Lightweight tasks (Q&A, bell ringers, search) go to a fast model.
-Heavy tasks (lesson plans, unit plans, materials) go to a strong model.
-Teachers can override per-task via AppConfig.task_models.
+Tasks map to tiers (fast/work/deep). Each tier has a default model.
+Teachers configure which model serves each tier via AppConfig.tier_models.
+
+Resolution order for a given task:
+  1. config.task_models[task]    -- per-task override (legacy, highest priority)
+  2. config.tier_models[tier]    -- teacher's tier preference
+  3. DEFAULT_TIER_MODELS[tier]   -- built-in defaults
 """
-
 from __future__ import annotations
+
+from enum import Enum
 
 from clawed.models import AppConfig
 
-# Default task → model mapping.
-# These are sensible defaults for Ollama Cloud; users can override in config.
-TASK_MODELS: dict[str, str] = {
-    "quick_answer": "qwen3.5:cloud",
-    "lesson_plan": "minimax-m2.7:cloud",
-    "unit_plan": "minimax-m2.7:cloud",
-    "materials": "minimax-m2.7:cloud",
-    "persona_extract": "qwen3.5:cloud",
-    "search": "qwen3.5:cloud",
-    "bellringer": "qwen3.5:cloud",
-    "differentiation": "minimax-m2.7:cloud",
-    "iep_modification": "minimax-m2.7:cloud",
-    "assessment": "minimax-m2.7:cloud",
-    "year_map": "minimax-m2.7:cloud",
-    "pacing_guide": "minimax-m2.7:cloud",
-    "curriculum_gaps": "minimax-m2.7:cloud",
+
+class ModelTier(str, Enum):
+    """The three model tiers. Fast is cheap, deep is powerful."""
+
+    FAST = "fast"
+    WORK = "work"
+    DEEP = "deep"
+
+
+TASK_TIERS: dict[str, ModelTier] = {
+    # Fast tier
+    "intent_detection": ModelTier.FAST,
+    "quick_answer": ModelTier.FAST,
+    "search": ModelTier.FAST,
+    "bellringer": ModelTier.FAST,
+    "formatting": ModelTier.FAST,
+
+    # Work tier
+    "lesson_plan": ModelTier.WORK,
+    "unit_plan": ModelTier.WORK,
+    "materials": ModelTier.WORK,
+    "differentiation": ModelTier.WORK,
+    "iep_modification": ModelTier.WORK,
+    "assessment": ModelTier.WORK,
+    "year_map": ModelTier.WORK,
+    "pacing_guide": ModelTier.WORK,
+    "curriculum_gaps": ModelTier.WORK,
+
+    # Deep tier
+    "persona_extract": ModelTier.DEEP,
+    "evaluation": ModelTier.DEEP,
 }
+
+DEFAULT_TIER_MODELS: dict[str, str] = {
+    "fast": "qwen3.5:cloud",
+    "work": "minimax-m2.7:cloud",
+    "deep": "minimax-m2.7:cloud",
+}
+
+
+def resolve_tier(task_type: str) -> ModelTier:
+    """Get the tier for a task. Unknown tasks default to WORK."""
+    return TASK_TIERS.get(task_type, ModelTier.WORK)
+
+
+def resolve_model(tier: ModelTier, config: AppConfig) -> str:
+    """Get the model for a tier, respecting teacher overrides."""
+    teacher_tiers = config.tier_models or {}
+    return teacher_tiers.get(tier.value) or DEFAULT_TIER_MODELS[tier.value]
 
 
 def route(task_type: str, config: AppConfig) -> AppConfig:
     """Return a config copy with the optimal model for this task type.
 
-    Lookup order:
-      1. config.task_models (user overrides)
-      2. TASK_MODELS (built-in defaults)
-      3. config.ollama_model (unchanged fallback)
+    Resolution order:
+      1. config.task_models[task]    -- per-task override (legacy compat)
+      2. config.tier_models[tier]    -- teacher's tier preference
+      3. DEFAULT_TIER_MODELS[tier]   -- built-in defaults
     """
-    user_overrides = config.task_models or {}
-    model = user_overrides.get(task_type) or TASK_MODELS.get(task_type) or config.ollama_model
+    user_task_overrides = config.task_models or {}
+    if task_type in user_task_overrides:
+        model = user_task_overrides[task_type]
+    else:
+        tier = resolve_tier(task_type)
+        model = resolve_model(tier, config)
+
     routed = config.model_copy()
     routed.ollama_model = model
     return routed

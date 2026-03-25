@@ -629,6 +629,9 @@ class AppConfig(BaseModel):
     # Per-task model overrides (e.g. {"bellringer": "qwen3.5:cloud"})
     task_models: Optional[dict[str, str]] = None
 
+    # Tier model overrides (e.g. {"fast": "qwen3.5:cloud", "work": "claude-sonnet-4-6", "deep": "claude-opus-4-6"})
+    tier_models: Optional[dict[str, str]] = None
+
     # Teacher profile — the key to auto-tailoring
     teacher_profile: TeacherProfile = Field(default_factory=TeacherProfile)
 
