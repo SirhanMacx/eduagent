@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  <a href="https://pypi.org/project/eduagent/"><img src="https://img.shields.io/pypi/v/eduagent?label=PyPI%20(eduagent)&color=blue" alt="PyPI"></a>
+  <a href="https://pypi.org/project/clawed/"><img src="https://img.shields.io/pypi/v/clawed?color=blue" alt="PyPI"></a>
   <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.10+-blue" alt="Python 3.10+"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License"></a>
   <a href="https://github.com/SirhanMacx/Claw-ED/stargazers"><img src="https://img.shields.io/github/stars/SirhanMacx/Claw-ED" alt="GitHub stars"></a>
@@ -97,12 +97,10 @@ Claw-ED runs on Python. Most Macs already have it. Here's how to check:
 In the same Terminal window, type this and press Enter:
 
 ```
-pip install "clawed @ git+https://github.com/SirhanMacx/Claw-ED.git"
+pip install clawed
 ```
 
 Wait about 30 seconds. You'll see text scrolling — that's normal. When it stops and you see a `$` again, it worked.
-
-> **Note:** Claw-ED is not yet published to PyPI. Install from GitHub as shown above. A PyPI release is coming soon.
 
 > **Upgrading from EDUagent?** Claw-ED is the same project, renamed. `pip install clawed` replaces `pip install eduagent`. All your existing config, lesson files, and API keys continue to work. The `eduagent` command still works too.
 
@@ -176,12 +174,10 @@ Then open your browser and go to **http://localhost:8000** — you'll see a full
 ## 📦 Installation options
 
 ```bash
-# Install from GitHub (PyPI release coming soon):
-pip install "clawed @ git+https://github.com/SirhanMacx/Claw-ED.git"
-
-# With extras:
-pip install "clawed[telegram] @ git+https://github.com/SirhanMacx/Claw-ED.git"
-pip install "clawed[all] @ git+https://github.com/SirhanMacx/Claw-ED.git"
+pip install clawed                    # Core (terminal chat + web dashboard)
+pip install 'clawed[telegram]'        # + Telegram bot for teacher and students
+pip install 'clawed[voice]'           # + Voice note transcription (optional)
+pip install 'clawed[all]'             # Everything (Telegram, voice, TUI, hosted)
 
 # Requires Python 3.10+. Run: python --version
 # Don't have Python? Download at https://python.org/downloads
