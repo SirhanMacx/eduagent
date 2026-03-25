@@ -58,6 +58,9 @@ class AssessmentStyle(str, Enum):
     POINT_BASED = "point_based"
     PORTFOLIO = "portfolio"
     STANDARDS_BASED = "standards_based"
+    COMPETENCY_BASED = "competency_based"
+    MASTERY_BASED = "mastery_based"
+    PARTICIPATION_BASED = "participation_based"
 
 
 class TeacherPersona(BaseModel):
@@ -99,12 +102,64 @@ class TeacherPersona(BaseModel):
             # Last resort: default to blended
             return TeachingStyle.BLENDED
         return v
+
     vocabulary_level: VocabularyLevel = VocabularyLevel.GRADE_APPROPRIATE
+
+    @field_validator("vocabulary_level", mode="before")
+    @classmethod
+    def _coerce_vocabulary_level(cls, v):
+        """Map unrecognized vocabulary levels to the closest enum value."""
+        if isinstance(v, VocabularyLevel):
+            return v
+        if isinstance(v, str):
+            try:
+                return VocabularyLevel(v)
+            except ValueError:
+                pass
+            normalized = v.lower().strip().replace("-", "_").replace(" ", "_")
+            # Try with normalization
+            for member in VocabularyLevel:
+                if member.value == normalized:
+                    return member
+            return VocabularyLevel.GRADE_APPROPRIATE
+        return v
+
     tone: str = "warm and encouraging"
     structural_preferences: list[str] = Field(
         default_factory=lambda: ["warm-ups", "exit tickets"]
     )
     assessment_style: AssessmentStyle = AssessmentStyle.RUBRIC_BASED
+
+    @field_validator("assessment_style", mode="before")
+    @classmethod
+    def _coerce_assessment_style(cls, v):
+        """Map unrecognized assessment styles to the closest enum value."""
+        if isinstance(v, AssessmentStyle):
+            return v
+        if isinstance(v, str):
+            try:
+                return AssessmentStyle(v)
+            except ValueError:
+                pass
+            aliases = {
+                "points_based": "point_based",
+                "points": "point_based",
+                "rubric": "rubric_based",
+                "rubrics": "rubric_based",
+                "standards": "standards_based",
+                "standard_based": "standards_based",
+                "competency": "competency_based",
+                "mastery": "mastery_based",
+                "participation": "participation_based",
+                "performance_based": "rubric_based",
+                "grade_based": "point_based",
+                "grading": "point_based",
+            }
+            normalized = v.lower().strip().replace("-", "_").replace(" ", "_")
+            if normalized in aliases:
+                return AssessmentStyle(aliases[normalized])
+            return AssessmentStyle.RUBRIC_BASED
+        return v
     preferred_lesson_format: str = "I Do / We Do / You Do"
     favorite_strategies: list[str] = Field(default_factory=list)
     subject_area: str = ""
