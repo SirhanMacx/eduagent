@@ -122,7 +122,8 @@ def _test_connection(config: AppConfig) -> bool:
 def _detect_available_models() -> tuple[LLMProvider | None, str]:
     """Auto-detect what LLM backends are available.
 
-    Checks: ANTHROPIC_API_KEY, OPENAI_API_KEY, Ollama running locally.
+    Checks: ANTHROPIC_API_KEY, OPENAI_API_KEY, OLLAMA_API_KEY (cloud),
+    and Ollama running locally.
     Returns (provider, description) or (None, message).
     """
     # Check Anthropic
@@ -133,7 +134,11 @@ def _detect_available_models() -> tuple[LLMProvider | None, str]:
     if os.environ.get("OPENAI_API_KEY"):
         return LLMProvider.OPENAI, "OpenAI API key found in environment"
 
-    # Check Ollama
+    # Check Ollama Cloud (API key in env) — before local Ollama check
+    if os.environ.get("OLLAMA_API_KEY"):
+        return LLMProvider.OLLAMA, "Ollama Cloud API key found in environment"
+
+    # Check local Ollama
     try:
         import httpx
         resp = httpx.get("http://localhost:11434/api/tags", timeout=3.0)
@@ -236,8 +241,236 @@ def _show_persona_preview(subjects: list[str], grade_levels: list[str], state_ab
     return confirm.lower() == "y"
 
 
+def _ask_provider_wizard() -> tuple[LLMProvider, str | None, str | None, str | None]:
+    """New setup wizard provider selection — strongly recommends Ollama Cloud.
+
+    Returns (provider, api_key, ollama_base_url, ollama_model).
+    """
+    console.print(
+        "\n[bold]Claw-ED needs an AI brain to generate lessons.[/bold]\n"
+        "Here's what we recommend:\n"
+    )
+    console.print(
+        "  [bold yellow]*[/bold yellow] [bold]Ollama Cloud[/bold] -- $20/month flat rate, great quality, no surprises\n"
+        "    Best choice for most teachers.\n"
+    )
+    console.print(
+        "  Already have an API key? Enter it below.\n"
+        "  Don't have one yet? Go to [cyan]https://ollama.com[/cyan] -> sign up -> Settings -> API Keys\n"
+    )
+
+    key = Prompt.ask(
+        "[bold]Enter your Ollama API key[/bold]  [dim](or press Enter to choose a different option)[/dim]",
+        default="",
+    )
+    if key.strip():
+        return (
+            LLMProvider.OLLAMA,
+            key.strip(),
+            "https://api.ollama.com/v1",
+            "minimax-m2.7:cloud",
+        )
+
+    # Show alternatives
+    console.print("\n[bold]Other options:[/bold]")
+    console.print("  [bold][1][/bold] Anthropic Claude -- best quality, pay per use (~$10-30/month light use)")
+    console.print("  [bold][2][/bold] OpenAI GPT -- widely used, pay per use")
+    console.print("  [bold][3][/bold] Local Ollama -- free but lower quality (runs on your computer)")
+    console.print("  [bold][4][/bold] Skip for now -- I'll set up the AI later")
+
+    while True:
+        choice = Prompt.ask(
+            "\n[bold]Pick an option[/bold]",
+            choices=["1", "2", "3", "4"],
+            default="1",
+        )
+        if choice == "1":
+            akey = Prompt.ask("  [bold]Anthropic API key[/bold]  [dim](sk-ant-...)[/dim]")
+            if not akey.strip():
+                console.print("  [red]API key cannot be empty.[/red]")
+                continue
+            return LLMProvider.ANTHROPIC, akey.strip(), None, None
+        elif choice == "2":
+            okey = Prompt.ask("  [bold]OpenAI API key[/bold]  [dim](sk-...)[/dim]")
+            if not okey.strip():
+                console.print("  [red]API key cannot be empty.[/red]")
+                continue
+            return LLMProvider.OPENAI, okey.strip(), None, None
+        elif choice == "3":
+            return LLMProvider.OLLAMA, None, None, None
+        else:
+            # Skip for now
+            return None, None, None, None
+
+
+def _clear_config() -> None:
+    """Remove existing config file for --reset."""
+    path = AppConfig.config_path()
+    if path.exists():
+        path.unlink()
+        console.print("  [dim]Previous configuration cleared.[/dim]")
+
+
+def run_setup_wizard(reset: bool = False) -> AppConfig:
+    """Run the teacher-friendly setup wizard.
+
+    This is the main entry point for `clawed setup`. It walks teachers
+    through configuration in plain English with a strongly recommended
+    default (Ollama Cloud).
+
+    Args:
+        reset: If True, clear existing config before starting.
+
+    Returns the saved AppConfig so callers can proceed immediately.
+    """
+    if reset:
+        _clear_config()
+
+    # ── Step 1: Welcome ──
+    console.print(
+        Panel(
+            "[bold]Welcome to Claw-ED![/bold]\n\n"
+            "I'm your AI teaching assistant. I'll learn your teaching style\n"
+            "and generate lessons, worksheets, and assessments in YOUR voice.\n\n"
+            "Let's get you set up -- it takes about 60 seconds.",
+            title="[bold green]\U0001f393 Claw-ED Setup[/bold green]",
+            border_style="green",
+            padding=(1, 2),
+        )
+    )
+
+    # ── Step 2: About you ──
+    subjects_raw = Prompt.ask("\n[bold]What subject(s) do you teach?[/bold]")
+    subjects = [s.strip() for s in subjects_raw.split(",") if s.strip()]
+
+    grades_raw = Prompt.ask("[bold]What grade level(s)?[/bold]")
+    grade_levels = [g.strip() for g in grades_raw.split(",") if g.strip()]
+
+    state_abbr = _ask_state()
+
+    # Preview and confirm
+    confirmed = _show_persona_preview(subjects, grade_levels, state_abbr)
+    if not confirmed:
+        console.print("  [dim]Let's try again.[/dim]")
+        subjects_raw = Prompt.ask("[bold]What subject(s) do you teach?[/bold]")
+        subjects = [s.strip() for s in subjects_raw.split(",") if s.strip()]
+        grades_raw = Prompt.ask("[bold]What grade level(s)?[/bold]")
+        grade_levels = [g.strip() for g in grades_raw.split(",") if g.strip()]
+        state_abbr = _ask_state()
+
+    # ── Step 3: Choose your AI ──
+    detected_provider, detect_msg = _detect_available_models()
+
+    provider = None
+    api_key = None
+    ollama_base_url = None
+    ollama_model = None
+
+    if detected_provider:
+        # Auto-detected — confirm and use it
+        provider_label = detect_msg
+        if detected_provider == LLMProvider.ANTHROPIC:
+            provider_label = "Anthropic (Claude)"
+        elif detected_provider == LLMProvider.OPENAI:
+            provider_label = "OpenAI (GPT)"
+        elif "Cloud" in detect_msg:
+            provider_label = "Ollama Cloud"
+        else:
+            provider_label = "local Ollama"
+        console.print(f"\n  [green]\u2713 Found your {provider_label}.[/green] {detect_msg}")
+
+        provider = detected_provider
+        api_key = None  # Already in env
+
+        # If Ollama Cloud detected via env, set cloud URL/model
+        if detected_provider == LLMProvider.OLLAMA and "Cloud" in detect_msg:
+            ollama_base_url = "https://api.ollama.com/v1"
+            ollama_model = "minimax-m2.7:cloud"
+    else:
+        # No auto-detection — run the wizard
+        provider, api_key, ollama_base_url, ollama_model = _ask_provider_wizard()
+
+    # Save API key securely
+    if api_key and provider:
+        set_api_key(provider.value, api_key)
+
+    # Build and save config
+    profile = TeacherProfile(
+        subjects=subjects,
+        grade_levels=grade_levels,
+        state=state_abbr,
+    )
+
+    config_kwargs: dict = {"teacher_profile": profile}
+    if provider:
+        config_kwargs["provider"] = provider
+    if ollama_base_url:
+        config_kwargs["ollama_base_url"] = ollama_base_url
+    if ollama_model:
+        config_kwargs["ollama_model"] = ollama_model
+    if api_key and provider == LLMProvider.OLLAMA:
+        config_kwargs["ollama_api_key"] = api_key
+
+    config = AppConfig(**config_kwargs)
+    config.save()
+
+    # ── Step 4: Test connection ──
+    connected = False
+    if provider is not None:
+        connected = _test_connection(config)
+        if not connected:
+            retry = Prompt.ask(
+                "  [yellow]Would you like to retry or skip?[/yellow]",
+                choices=["retry", "skip"],
+                default="skip",
+            )
+            if retry == "retry":
+                connected = _test_connection(config)
+            if not connected and provider != LLMProvider.OLLAMA:
+                console.print("  [yellow]You can update your key later with:[/yellow]")
+                console.print(f"    [bold]clawed config set-key {provider.value}[/bold]")
+    else:
+        console.print(
+            "\n  [yellow]No AI configured yet. You can set one up later with:[/yellow]\n"
+            "    [bold]clawed setup[/bold]"
+        )
+
+    # ── Step 5: Import materials (optional) ──
+    materials_path = _ask_materials()
+    if materials_path:
+        profile.materials_paths = [materials_path]
+        config.teacher_profile = profile
+        config.save()
+        _ingest_materials(materials_path, config)
+
+    # ── Step 6: Done ──
+    console.print(
+        Panel(
+            "[bold green]You're all set![/bold green]\n\n"
+            "  [bold]clawed chat[/bold]                                  -- Start an interactive session\n"
+            "  [bold]clawed lesson \"Topic\" -g 8 -s \"Subject\"[/bold]  -- Generate a lesson\n"
+            "  [bold]clawed serve[/bold]                                 -- Launch the web dashboard\n"
+            "  [bold]clawed setup --reset[/bold]                         -- Re-run this wizard anytime",
+            title="[bold green]\u2705 Ready[/bold green]",
+            border_style="green",
+            padding=(1, 2),
+        )
+    )
+
+    return config
+
+
 def run_onboarding() -> AppConfig:
     """Run the interactive first-run onboarding wizard.
+
+    This is a backward-compatible alias for run_setup_wizard().
+    Returns the saved AppConfig so callers can proceed immediately.
+    """
+    return run_setup_wizard()
+
+
+def _run_onboarding_legacy() -> AppConfig:
+    """Legacy onboarding flow (preserved for reference).
 
     Returns the saved AppConfig so callers can proceed immediately.
     """

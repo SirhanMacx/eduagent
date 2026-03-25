@@ -90,10 +90,7 @@ def main(
             # First run -- show welcome
             console.print(Panel(
                 "[bold]Welcome to Claw-ED![/bold]\n\n"
-                "Get started in 3 steps:\n"
-                "  1. [cyan]clawed config set-model ollama[/cyan]\n"
-                "  2. [cyan]clawed ingest ~/my-lessons/[/cyan]\n"
-                "  3. [cyan]clawed lesson \"Your Topic\" --grade 8 --subject \"Math\"[/cyan]\n\n"
+                "Run [cyan bold]clawed setup[/cyan bold] to get started -- it takes about 60 seconds.\n\n"
                 "Or see sample output first: [cyan]clawed demo[/cyan]",
                 title="Claw-ED",
                 border_style="blue",
@@ -102,6 +99,28 @@ def main(
             # Returning user, show help
             ctx.get_help()
         raise typer.Exit()
+
+
+# ── Top-level setup command ────────────────────────────────────────────
+
+
+@app.command()
+def setup(
+    reset: bool = typer.Option(False, "--reset", help="Reset existing config and start fresh"),
+) -> None:
+    """Set up Claw-ED -- guided wizard for new teachers.
+
+    \b
+    Walks you through:
+      1. What you teach (subject, grade, state)
+      2. Choosing an AI model (we recommend one)
+      3. Optionally importing your existing lesson plans
+
+    Run this again anytime to change your settings.
+    """
+    from clawed.onboarding import run_setup_wizard
+
+    run_setup_wizard(reset=reset)
 
 
 # ── Register named sub-app groups ───────────────────────────────────────

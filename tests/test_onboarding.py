@@ -204,19 +204,24 @@ class TestRunOnboarding:
         """Simulate a complete onboarding flow and verify config is saved."""
         config_file = tmp_path / "config.json"
 
+        # New wizard flow: subjects, grades, state, confirm,
+        # Ollama key prompt (empty = skip), alternative choice "3" (local),
+        # retry/skip on failed connection, materials (skip)
         side_effects = [
             "Global History",        # subjects
             "10",                    # grade levels
             "New York",              # state
             "y",                     # persona preview confirmation
-            "3",                     # provider (Ollama) — only asked if not auto-detected
+            "",                      # Ollama key prompt (skip to alternatives)
+            "3",                     # alternative: local Ollama
+            "skip",                  # retry/skip on connection test
             "",                      # materials (skip)
         ]
 
         with (
             patch.object(AppConfig, "config_path", return_value=config_file),
             patch("clawed.onboarding.Prompt.ask", side_effect=side_effects),
-            patch("clawed.onboarding._test_connection", return_value=True),
+            patch("clawed.onboarding._test_connection", return_value=False),
             patch("clawed.onboarding._detect_available_models", return_value=(None, "No LLM found")),
         ):
             from clawed.onboarding import run_onboarding
@@ -228,3 +233,172 @@ class TestRunOnboarding:
             assert "Global History" in config.teacher_profile.subjects
             assert "10" in config.teacher_profile.grade_levels
             assert config_file.exists()
+
+
+class TestSetupWizard:
+    def test_run_setup_wizard_exists(self):
+        from clawed.onboarding import run_setup_wizard
+
+        assert callable(run_setup_wizard)
+
+    def test_setup_command_registered(self):
+        from clawed.cli import app
+
+        # Typer uses the callback function name as the command name when
+        # name is not explicitly set.  Check both .name and callback.__name__.
+        command_names = []
+        for cmd in app.registered_commands:
+            if cmd.name:
+                command_names.append(cmd.name)
+            elif cmd.callback:
+                command_names.append(cmd.callback.__name__)
+        assert "setup" in command_names
+
+    def test_detect_env_anthropic(self, monkeypatch):
+        from clawed.onboarding import _detect_available_models
+
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        monkeypatch.delenv("OLLAMA_API_KEY", raising=False)
+        provider, msg = _detect_available_models()
+        assert provider == LLMProvider.ANTHROPIC
+
+    def test_detect_env_ollama_key(self, monkeypatch):
+        from clawed.onboarding import _detect_available_models
+
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        monkeypatch.setenv("OLLAMA_API_KEY", "test-key")
+        provider, msg = _detect_available_models()
+        assert provider == LLMProvider.OLLAMA
+        assert "Cloud" in msg
+
+    def test_detect_env_openai(self, monkeypatch):
+        from clawed.onboarding import _detect_available_models
+
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        monkeypatch.setenv("OPENAI_API_KEY", "sk-test")
+        monkeypatch.delenv("OLLAMA_API_KEY", raising=False)
+        provider, msg = _detect_available_models()
+        assert provider == LLMProvider.OPENAI
+
+    def test_run_onboarding_is_alias(self):
+        """run_onboarding should be a backward-compatible alias for run_setup_wizard."""
+        from clawed.onboarding import run_onboarding, run_setup_wizard
+
+        # run_onboarding internally calls run_setup_wizard
+        assert callable(run_onboarding)
+        assert callable(run_setup_wizard)
+
+    def test_wizard_with_ollama_cloud_key(self, tmp_path):
+        """Teacher enters Ollama Cloud key directly at the recommended prompt."""
+        config_file = tmp_path / "config.json"
+
+        side_effects = [
+            "Social Studies, ELA",   # subjects
+            "7, 8",                  # grade levels
+            "New York",              # state
+            "y",                     # persona preview confirmation
+            "ollama-cloud-key-123",  # Ollama Cloud key (entered at recommended prompt)
+            "",                      # materials (skip)
+        ]
+
+        with (
+            patch.object(AppConfig, "config_path", return_value=config_file),
+            patch("clawed.onboarding.Prompt.ask", side_effect=side_effects),
+            patch("clawed.onboarding._test_connection", return_value=True),
+            patch("clawed.onboarding._detect_available_models", return_value=(None, "No LLM found")),
+            patch("clawed.onboarding.set_api_key") as mock_set_key,
+        ):
+            from clawed.onboarding import run_setup_wizard
+
+            config = run_setup_wizard()
+
+            assert config.provider == LLMProvider.OLLAMA
+            assert config.ollama_base_url == "https://api.ollama.com/v1"
+            assert config.ollama_model == "minimax-m2.7:cloud"
+            mock_set_key.assert_any_call("ollama", "ollama-cloud-key-123")
+
+    def test_wizard_skip_for_now(self, tmp_path):
+        """Teacher chooses 'skip for now' — config saves without a provider error."""
+        config_file = tmp_path / "config.json"
+
+        side_effects = [
+            "Math",                  # subjects
+            "6",                     # grade levels
+            "California",            # state
+            "y",                     # persona preview confirmation
+            "",                      # Ollama key (skip)
+            "4",                     # Skip for now
+            "",                      # materials (skip)
+        ]
+
+        with (
+            patch.object(AppConfig, "config_path", return_value=config_file),
+            patch("clawed.onboarding.Prompt.ask", side_effect=side_effects),
+            patch("clawed.onboarding._detect_available_models", return_value=(None, "No LLM found")),
+        ):
+            from clawed.onboarding import run_setup_wizard
+
+            config = run_setup_wizard()
+
+            assert config.teacher_profile.state == "CA"
+            assert "Math" in config.teacher_profile.subjects
+            assert config_file.exists()
+
+    def test_wizard_reset_clears_config(self, tmp_path):
+        """--reset should clear existing config before starting."""
+        config_file = tmp_path / "config.json"
+        config_file.write_text('{"provider": "openai"}')
+
+        side_effects = [
+            "Science",               # subjects
+            "9",                     # grade levels
+            "Texas",                 # state
+            "y",                     # persona preview confirmation
+            "",                      # Ollama key (skip)
+            "3",                     # local Ollama
+            "skip",                  # retry/skip
+            "",                      # materials (skip)
+        ]
+
+        with (
+            patch.object(AppConfig, "config_path", return_value=config_file),
+            patch("clawed.onboarding.Prompt.ask", side_effect=side_effects),
+            patch("clawed.onboarding._test_connection", return_value=False),
+            patch("clawed.onboarding._detect_available_models", return_value=(None, "No LLM found")),
+        ):
+            from clawed.onboarding import run_setup_wizard
+
+            config = run_setup_wizard(reset=True)
+
+            assert config.provider == LLMProvider.OLLAMA
+            assert config.teacher_profile.state == "TX"
+
+    def test_wizard_auto_detects_anthropic(self, tmp_path):
+        """If ANTHROPIC_API_KEY is in env, skip the provider prompt entirely."""
+        config_file = tmp_path / "config.json"
+
+        side_effects = [
+            "ELA",                   # subjects
+            "5",                     # grade levels
+            "Florida",               # state
+            "y",                     # persona preview confirmation
+            "",                      # materials (skip)
+        ]
+
+        with (
+            patch.object(AppConfig, "config_path", return_value=config_file),
+            patch("clawed.onboarding.Prompt.ask", side_effect=side_effects),
+            patch("clawed.onboarding._test_connection", return_value=True),
+            patch(
+                "clawed.onboarding._detect_available_models",
+                return_value=(LLMProvider.ANTHROPIC, "Anthropic API key found in environment"),
+            ),
+        ):
+            from clawed.onboarding import run_setup_wizard
+
+            config = run_setup_wizard()
+
+            assert config.provider == LLMProvider.ANTHROPIC
+            assert config.teacher_profile.state == "FL"
