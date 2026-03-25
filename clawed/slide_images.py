@@ -172,11 +172,11 @@ def _select_sources(subject: str, topic: str = "") -> list[str]:
     if any(s in subject_lower for s in ("history", "social", "civics", "government")):
         return ["loc", "wikimedia", "unsplash"]
     elif any(s in subject_lower for s in ("science", "biology", "chemistry", "physics")):
-        return ["wikimedia", "unsplash"]
+        return ["wikimedia", "loc", "unsplash"]
     elif any(s in subject_lower for s in ("art", "music")):
-        return ["wikimedia", "unsplash"]
+        return ["wikimedia", "loc", "unsplash"]
     else:
-        return ["unsplash", "wikimedia"]
+        return ["loc", "wikimedia", "unsplash"]
 
 
 # ── Cache helpers ────────────────────────────────────────────────────

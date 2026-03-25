@@ -125,33 +125,21 @@ def config_set_token(
     )
 
 
-@config_app.command("set-unsplash-key")
-def config_set_unsplash_key(
-    key: str = typer.Argument(
-        ..., help="Unsplash Access Key for slide images"
+@config_app.command("set-search-key")
+def config_set_search_key(
+    key: str = typer.Argument(..., help="Web search API key"),
+    provider: str = typer.Option(
+        "brave", help="Search provider: brave, duckduckgo, or tavily"
     ),
 ):
-    """Save your Unsplash API key for fetching slide background images.
+    """Set a web search API key for research-powered lessons.
 
-    Get a free key at https://unsplash.com/developers (50 requests/hour).
-
-    After saving, PPTX exports will automatically include relevant
-    educational images on slides.  Without a key, slides still look
-    great -- just without photos.
+    Free options: Brave Search (1000 queries/month free), DuckDuckGo (no key needed).
     """
     from clawed.config import set_api_key
 
-    set_api_key("unsplash", key)
-    masked = key[:5] + "..." + key[-4:] if len(key) > 12 else "***"
-    console.print(
-        Panel(
-            f"[bold green]Unsplash key saved![/bold green]\n\n"
-            f"Key: {masked}\n\n"
-            f"PPTX exports will now include images.\n"
-            f"To remove: [cyan]unset UNSPLASH_ACCESS_KEY[/cyan]",
-            title="Unsplash API Key",
-        )
-    )
+    set_api_key(f"search_{provider}", key)
+    console.print(f"[green]\u2713 {provider.title()} search key saved.[/green]")
 
 
 @config_app.command("show")
@@ -164,12 +152,12 @@ def config_show():
     if cfg.telegram_bot_token:
         t = cfg.telegram_bot_token
         token_display = t[:5] + "..." + t[-4:] if len(t) > 12 else "***"
-    unsplash_key = get_api_key("unsplash")
-    unsplash_display = "Not set"
-    if unsplash_key:
-        unsplash_display = (
-            unsplash_key[:5] + "..." + unsplash_key[-4:]
-            if len(unsplash_key) > 12
+    search_key = get_api_key("search_brave") or get_api_key("search_tavily")
+    search_display = "Not set"
+    if search_key:
+        search_display = (
+            search_key[:5] + "..." + search_key[-4:]
+            if len(search_key) > 12
             else "***"
         )
     console.print(
@@ -183,7 +171,7 @@ def config_show():
             f"[bold]Export Format:[/bold] {cfg.export_format}\n"
             f"[bold]Include Homework:[/bold] {cfg.include_homework}\n"
             f"[bold]Telegram Token:[/bold] {token_display}\n"
-            f"[bold]Unsplash Key:[/bold] {unsplash_display}",
+            f"[bold]Web Search Key:[/bold] {search_display}",
             title="Claw-ED Configuration",
         )
     )

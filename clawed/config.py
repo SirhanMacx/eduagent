@@ -77,6 +77,8 @@ def get_api_key(provider: str) -> Optional[str]:
         "telegram": "TELEGRAM_BOT_TOKEN",
         "tavily": "TAVILY_API_KEY",
         "unsplash": "UNSPLASH_ACCESS_KEY",
+        "search_brave": "BRAVE_SEARCH_API_KEY",
+        "search_tavily": "TAVILY_API_KEY",
     }
     env_var = env_map.get(provider)
     if env_var:

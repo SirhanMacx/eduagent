@@ -519,18 +519,20 @@ class TestAcademicImageSources:
         sources = _select_sources("Art")
         assert sources[0] == "wikimedia"
 
-    def test_math_prefers_unsplash(self):
+    def test_math_prefers_loc(self):
         from clawed.slide_images import _select_sources
 
         sources = _select_sources("Math")
-        assert sources[0] == "unsplash"
+        assert sources[0] == "loc"
         assert "wikimedia" in sources
+        assert "unsplash" in sources
 
-    def test_unknown_subject_defaults_to_unsplash_first(self):
+    def test_unknown_subject_defaults_to_loc_first(self):
         from clawed.slide_images import _select_sources
 
         sources = _select_sources("Underwater Basket Weaving")
-        assert sources[0] == "unsplash"
+        assert sources[0] == "loc"
+        assert "unsplash" in sources
 
 
 class TestLOCResponseParsing:
