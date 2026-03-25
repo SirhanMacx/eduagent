@@ -6,10 +6,10 @@
 </p>
 
 <p align="center">
-  <a href="https://pypi.org/project/clawed/"><img src="https://img.shields.io/pypi/v/clawed?color=blue" alt="PyPI"></a>
+  <a href="https://pypi.org/project/eduagent/"><img src="https://img.shields.io/pypi/v/eduagent?label=PyPI%20(eduagent)&color=blue" alt="PyPI"></a>
   <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.10+-blue" alt="Python 3.10+"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License"></a>
-  <a href="https://github.com/SirhanMacx/clawed/stargazers"><img src="https://img.shields.io/github/stars/SirhanMacx/clawed" alt="GitHub stars"></a>
+  <a href="https://github.com/SirhanMacx/Claw-ED/stargazers"><img src="https://img.shields.io/github/stars/SirhanMacx/Claw-ED" alt="GitHub stars"></a>
 </p>
 
 <p align="center">
@@ -22,7 +22,7 @@
 
 ---
 
-> **If Claw-ED helps your teaching, [give it a star](https://github.com/SirhanMacx/clawed/stargazers).** It helps other teachers find it.
+> **If Claw-ED helps your teaching, [give it a star](https://github.com/SirhanMacx/Claw-ED/stargazers).** It helps other teachers find it.
 
 ---
 
@@ -454,5 +454,5 @@ Mr. Mac is the primary user and the reason this exists. Every feature was built 
 ---
 
 <p align="center">
-  <strong>If Claw-ED saves you time, <a href="https://github.com/SirhanMacx/clawed/stargazers">star it on GitHub</a></strong> so other teachers can find it.
+  <strong>If Claw-ED saves you time, <a href="https://github.com/SirhanMacx/Claw-ED/stargazers">star it on GitHub</a></strong> so other teachers can find it.
 </p>
