@@ -16,6 +16,38 @@ from clawed.models import AppConfig, LLMProvider
 bot_app = typer.Typer()
 
 
+# ── TUI Chat command ────────────────────────────────────────────────────
+
+
+@bot_app.command()
+def tui(
+    teacher_id: str = typer.Option(
+        "local-teacher", "--id", help="Teacher session ID"
+    ),
+) -> None:
+    """Start the full-screen TUI chat — no Telegram needed.
+
+    \b
+    A rich terminal interface for chatting with Claw-ED. Supports the same
+    onboarding flow, lesson generation, and all tools — just in your terminal.
+
+    Install TUI support: pip install 'clawed[tui]'
+    """
+    from clawed.onboarding import check_first_run
+
+    check_first_run()
+
+    try:
+        from clawed.tui_chat import run_tui_chat
+    except ImportError as e:
+        console.print(f"[red]Missing dependency:[/red] {e}")
+        console.print("\nInstall TUI support with:")
+        console.print("  [cyan]pip install 'clawed[tui]'[/cyan]")
+        raise typer.Exit(1)
+
+    run_tui_chat(teacher_id)
+
+
 # ── Chat command ─────────────────────────────────────────────────────────
 
 

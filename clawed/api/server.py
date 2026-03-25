@@ -114,12 +114,7 @@ def create_app() -> FastAPI:
         if has_persona and onboarding_complete:
             return RedirectResponse(url="/dashboard", status_code=302)
 
-        # Otherwise serve the landing page
-        landing_file = landing_dir / "index.html"
-        if landing_file.exists():
-            return HTMLResponse(landing_file.read_text(encoding="utf-8"))
-
-        # Fallback to template-based index
+        # New/incomplete user → show the onboarding wizard (not the marketing landing page)
         stats = db.get_stats()
         persona_data = None
         if teacher and teacher.get("persona_json"):

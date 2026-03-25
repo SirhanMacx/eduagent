@@ -82,10 +82,11 @@ class TestLandingPage:
         html = landing.read_text()
         assert "@media" in html
 
-    def test_root_serves_landing_when_no_persona(self, client):
+    def test_root_serves_wizard_when_no_persona(self, client):
         resp = client.get("/", follow_redirects=False)
         assert resp.status_code == 200
-        assert "Your AI co-teacher that sounds like you" in resp.text
+        # New users see the onboarding wizard, not the marketing landing page
+        assert "wizard" in resp.text.lower() or "Claw-ED" in resp.text
 
     def test_root_redirects_when_persona_exists(self, client, db):
         db.upsert_teacher("Ms. T", '{"name": "Ms. T"}')
