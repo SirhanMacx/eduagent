@@ -8,9 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 ## [0.1.3] - 2026-03-24
 
 ### Added
-- **Student Class Code System** — teachers create class codes with `eduagent class create`, students join via Telegram `/join`, teacher revokes with `eduagent class revoke`
+- **Student Class Code System** — teachers create class codes with `clawed class create`, students join via Telegram `/join`, teacher revokes with `clawed class revoke`
   - Database tables: `class_codes`, `student_enrollments`, `student_questions` with full CRUD
-  - CLI: `eduagent class create/list/stats/revoke/qr/report`
+  - CLI: `clawed class create/list/stats/revoke/qr/report`
   - Web: `GET /student/{class_code}` with QR code, class info, and Telegram link
   - Weekly progress reports with anonymized student activity and topic analysis
 - **Telegram Bot Polish** — production-ready Telegram bot with full state machine
@@ -37,11 +37,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 - **Sub Packet Generator** (`eduagent/sub_packet.py`) — complete substitute teacher packets with class overview, schedule, step-by-step lesson instructions, student notes, materials checklist, and emergency info
-  - CLI: `eduagent sub --class "Period 3 Global Studies" --grade 8 --subject "Social Studies" --topic "WWI Document Analysis" --date "March 25, 2026"`
+  - CLI: `clawed sub --class "Period 3 Global Studies" --grade 8 --subject "Social Studies" --topic "WWI Document Analysis" --date "March 25, 2026"`
   - API: `POST /api/sub-packet`
   - Markdown rendering with printable formatting
 - **Parent Communication Generator** (`eduagent/parent_comm.py`) — professional parent emails for 6 communication types: progress updates, behavior concerns, positive notes, upcoming units, permission requests, general updates
-  - CLI: `eduagent parent-comm --type progress --student-desc "a student struggling with document analysis" --context "Unit 4 WWI"`
+  - CLI: `clawed parent-comm --type progress --student-desc "a student struggling with document analysis" --context "Unit 4 WWI"`
   - API: `POST /api/parent-comm`
 - Dashboard "Teacher Tools" row with Generate Sub Packet and Parent Communication buttons
 - 33 new tests (test_sub_packet.py, test_parent_comm.py) — total: 910 passing
@@ -50,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ### Added
 - Background task queue (`eduagent/task_queue.py`) — submit long-running generation jobs (lessons, units, worksheets, assessments) and check back later
-- CLI commands: `eduagent queue submit`, `eduagent queue status`, `eduagent queue list`, `eduagent queue worker`
+- CLI commands: `clawed queue submit`, `clawed queue status`, `clawed queue list`, `clawed queue worker`
 - 6 new subject skills (Art, Music, PE, CS, Health, Economics)
 - Custom YAML skill plugin system
 - Persistent bot state across restarts

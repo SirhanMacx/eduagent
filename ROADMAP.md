@@ -32,7 +32,7 @@ No installation. Teachers sign up and start generating immediately.
 
 ## v0.3.0 — Mobile
 
-EDUagent in your pocket, natively.
+Claw-ED in your pocket, natively.
 
 - [ ] iOS app
 - [ ] Android app
@@ -55,4 +55,4 @@ Designed for school leaders and district administrators.
 
 ---
 
-Want to influence the roadmap? [Open an issue](https://github.com/SirhanMacx/eduagent/issues) or start a discussion.
+Want to influence the roadmap? [Open an issue](https://github.com/SirhanMacx/Claw-ED/issues) or start a discussion.
