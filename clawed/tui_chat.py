@@ -1,11 +1,14 @@
-"""Claw-ED TUI Chat — full-screen terminal chat interface built with Textual.
+"""Claw-ED TUI Chat — full-screen terminal transport that connects to the gateway.
 
 Launch:
-    clawed tui                      # interactive chat in terminal
-    clawed tui --id my-teacher      # with custom teacher ID
+    clawed serve &                   # start the gateway in background
+    clawed tui                       # connect TUI to the running gateway
+    clawed tui --port 9000           # connect to a different port
 
-A proper chat interface for teachers who prefer the terminal over Telegram
-or the web UI. Routes all messages through the same Gateway.
+This is a thin transport — it renders the UI and sends every message to
+the running `clawed serve` instance over HTTP (POST /api/gateway/chat).
+No Gateway instantiation, no direct LLM calls. Same pattern as the
+Telegram and web transports.
 """
 
 from __future__ import annotations
@@ -22,8 +25,7 @@ except ImportError:
         "Or: pip install textual"
     )
 
-from clawed.gateway import Gateway
-from clawed.state import TeacherSession
+import httpx
 
 
 class ChatMessage(Static):
@@ -79,11 +81,13 @@ class ThinkingIndicator(Static):
 
     def _animate(self) -> None:
         self._frame = (self._frame + 1) % len(self._frames)
-        self.update(f"[bold green]Claw-ED[/bold green]  [dim]{self._frames[self._frame]}[/dim]")
+        self.update(
+            f"[bold green]Claw-ED[/bold green]  [dim]{self._frames[self._frame]}[/dim]"
+        )
 
 
 class ClawEDChat(App):
-    """Claw-ED TUI — interactive chat in the terminal."""
+    """Claw-ED TUI — transport client that connects to a running gateway."""
 
     TITLE = "Claw-ED Chat"
 
@@ -121,39 +125,44 @@ class ClawEDChat(App):
         Binding("ctrl+l", "clear_chat", "Clear chat"),
     ]
 
-    def __init__(self, teacher_id: str = "local-teacher", **kwargs) -> None:
+    def __init__(
+        self,
+        teacher_id: str = "local-teacher",
+        host: str = "127.0.0.1",
+        port: int = 8000,
+        **kwargs,
+    ) -> None:
         super().__init__(**kwargs)
         self._teacher_id = teacher_id
-        self._gateway = Gateway()
-        self._session = TeacherSession.load(teacher_id)
+        self._base_url = f"http://{host}:{port}"
+        self._client = httpx.AsyncClient(base_url=self._base_url, timeout=120.0)
 
     def compose(self) -> ComposeResult:
         yield Static("  [bold]Claw-ED Chat[/bold]", id="title-bar")
-        status = self._build_status()
-        yield Static(status, id="status-bar")
+        yield Static(
+            f"  Connected to {self._base_url}  |  /quit to exit, /clear to reset",
+            id="status-bar",
+        )
         yield VerticalScroll(id="chat-area")
         yield Input(placeholder="Type a message... (Esc to quit)", id="input-box")
         yield Footer()
 
-    def _build_status(self) -> str:
-        name = self._session.persona.name if self._session.persona else self._teacher_id
-        provider = self._gateway.config.provider.value.title()
-        return f"  {name}  |  {provider}  |  /quit to exit, /clear to reset"
-
     async def on_mount(self) -> None:
         self.query_one("#input-box", Input).focus()
-        if self._session.is_new:
-            # Auto-trigger onboarding greeting
-            await self._send_message("hello", auto=True)
-        else:
+        # Check gateway connectivity, then trigger onboarding greeting
+        try:
+            await self._client.get("/api/docs", timeout=3.0)
+        except httpx.ConnectError:
             chat_area = self.query_one("#chat-area", VerticalScroll)
-            welcome = ChatMessage(
-                "assistant",
-                "Welcome back! Type anything to get started.\n"
-                "Try: *plan a unit on photosynthesis* or *generate a quiz*",
+            await chat_area.mount(
+                ChatMessage(
+                    "assistant",
+                    f"[red]Cannot connect to gateway at {self._base_url}[/red]\n"
+                    "Start the server first: [bold]clawed serve[/bold]",
+                )
             )
-            await chat_area.mount(welcome)
-            chat_area.scroll_end(animate=False)
+            return
+        await self._send_message("hello", auto=True)
 
     async def on_input_submitted(self, event: Input.Submitted) -> None:
         text = event.value.strip()
@@ -162,14 +171,11 @@ class ClawEDChat(App):
 
         event.input.value = ""
 
-        # Built-in commands
         if text.lower() in ("/quit", "/exit", "quit", "exit"):
             self.exit()
             return
 
         if text.lower() == "/clear":
-            self._session = TeacherSession(teacher_id=self._teacher_id)
-            self._session.save()
             chat_area = self.query_one("#chat-area", VerticalScroll)
             await chat_area.remove_children()
             self.notify("Session cleared")
@@ -181,7 +187,6 @@ class ClawEDChat(App):
         chat_area = self.query_one("#chat-area", VerticalScroll)
         input_box = self.query_one("#input-box", Input)
 
-        # Show user message (unless auto-triggered greeting)
         if not auto:
             user_msg = ChatMessage("user", text)
             await chat_area.mount(user_msg)
@@ -193,10 +198,27 @@ class ClawEDChat(App):
         chat_area.scroll_end(animate=False)
         input_box.disabled = True
 
-        # Send to gateway
+        # POST to the running gateway
+        response_text = ""
+        files: list[str] = []
+        buttons: list[dict] = []
         try:
-            result = await self._gateway.handle(text, self._teacher_id)
-            response_text = result.text
+            resp = await self._client.post(
+                "/api/gateway/chat",
+                json={"message": text, "teacher_id": self._teacher_id},
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                response_text = data.get("text", "")
+                files = data.get("files", [])
+                buttons = data.get("buttons", [])
+            else:
+                response_text = f"Gateway error (HTTP {resp.status_code}): {resp.text}"
+        except httpx.ConnectError:
+            response_text = (
+                f"[red]Lost connection to gateway at {self._base_url}[/red]\n"
+                "Is `clawed serve` still running?"
+            )
         except Exception as e:
             response_text = f"Something went wrong: {e}"
 
@@ -205,17 +227,15 @@ class ClawEDChat(App):
         assistant_msg = ChatMessage("assistant", response_text)
         await chat_area.mount(assistant_msg)
 
-        # Show file outputs
-        if result and result.files:
-            for f in result.files:
-                file_msg = ChatMessage("assistant", f"[green]File saved:[/green] {f}")
-                await chat_area.mount(file_msg)
+        for f in files:
+            file_msg = ChatMessage("assistant", f"[green]File saved:[/green] {f}")
+            await chat_area.mount(file_msg)
 
-        # Show button options as text
-        if result and (result.button_rows or result.buttons):
-            rows = result.button_rows or [result.buttons]
-            options = [b.label for row in rows for b in row]
-            opts_msg = ChatMessage("assistant", f"[dim]Options: {' | '.join(options)}[/dim]")
+        if buttons:
+            options = [b["label"] for b in buttons]
+            opts_msg = ChatMessage(
+                "assistant", f"[dim]Options: {' | '.join(options)}[/dim]"
+            )
             await chat_area.mount(opts_msg)
 
         chat_area.scroll_end(animate=False)
@@ -223,15 +243,20 @@ class ClawEDChat(App):
         input_box.focus()
 
     def action_clear_chat(self) -> None:
-        """Clear chat and reset session via keybinding."""
-        self._session = TeacherSession(teacher_id=self._teacher_id)
-        self._session.save()
+        """Clear chat via keybinding."""
         chat_area = self.query_one("#chat-area", VerticalScroll)
         chat_area.remove_children()
         self.notify("Session cleared")
 
+    async def on_unmount(self) -> None:
+        await self._client.aclose()
 
-def run_tui_chat(teacher_id: str = "local-teacher") -> None:
-    """Entry point — run the TUI chat app."""
-    app = ClawEDChat(teacher_id=teacher_id)
+
+def run_tui_chat(
+    teacher_id: str = "local-teacher",
+    host: str = "127.0.0.1",
+    port: int = 8000,
+) -> None:
+    """Entry point — run the TUI chat transport."""
+    app = ClawEDChat(teacher_id=teacher_id, host=host, port=port)
     app.run()

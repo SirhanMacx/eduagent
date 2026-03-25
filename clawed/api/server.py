@@ -76,6 +76,7 @@ def create_app() -> FastAPI:
     from clawed.api.routes.chat import router as chat_router
     from clawed.api.routes.export import router as export_router
     from clawed.api.routes.feedback import router as feedback_router
+    from clawed.api.routes.gateway_chat import router as gateway_chat_router
     from clawed.api.routes.generate import router as generate_router
     from clawed.api.routes.ingest import router as ingest_router
     from clawed.api.routes.lessons import router as lessons_router
@@ -94,6 +95,7 @@ def create_app() -> FastAPI:
     app.include_router(lessons_router, prefix="/api")
     app.include_router(tools_router, prefix="/api")
     app.include_router(waitlist_router, prefix="/api")
+    app.include_router(gateway_chat_router, prefix="/api")
 
     from clawed.api.routes.setup import router as setup_router
     app.include_router(setup_router)

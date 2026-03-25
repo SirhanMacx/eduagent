@@ -24,12 +24,21 @@ def tui(
     teacher_id: str = typer.Option(
         "local-teacher", "--id", help="Teacher session ID"
     ),
+    port: int = typer.Option(
+        8000, "--port", "-p", help="Gateway server port"
+    ),
+    host: str = typer.Option(
+        "127.0.0.1", "--host", "-h", help="Gateway server host"
+    ),
 ) -> None:
-    """Start the full-screen TUI chat — no Telegram needed.
+    """Start the full-screen TUI chat — connects to a running gateway.
 
     \b
-    A rich terminal interface for chatting with Claw-ED. Supports the same
-    onboarding flow, lesson generation, and all tools — just in your terminal.
+    A rich terminal interface for chatting with Claw-ED. Connects to a
+    running `clawed serve` instance over HTTP. Start the server first:
+
+        clawed serve &          # start gateway in background
+        clawed tui              # connect the TUI
 
     Install TUI support: pip install 'clawed[tui]'
     """
@@ -45,7 +54,7 @@ def tui(
         console.print("  [cyan]pip install 'clawed[tui]'[/cyan]")
         raise typer.Exit(1)
 
-    run_tui_chat(teacher_id)
+    run_tui_chat(teacher_id, host=host, port=port)
 
 
 # ── Chat command ─────────────────────────────────────────────────────────
