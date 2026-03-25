@@ -22,7 +22,7 @@ try:
     from textual.app import App, ComposeResult
     from textual.binding import Binding
     from textual.containers import Horizontal
-    from textual.widgets import DataTable, Footer, Header, Static
+    from textual.widgets import DataTable, Footer, Static
 except ImportError:
     raise ImportError(
         "textual is required for the TUI dashboard.\n"
@@ -127,7 +127,7 @@ class StatsBar(Static):
         self.set_interval(1.0, self._refresh)
 
     def _refresh(self) -> None:
-        s = self._gateway._gateway_stats
+        s = self._gateway._stats
         elapsed = int(s.uptime_seconds)
         h, remainder = divmod(elapsed, 3600)
         m, sec = divmod(remainder, 60)
@@ -175,6 +175,13 @@ class EduAgentDashboard(App):
         layout: vertical;
         background: $surface;
     }
+    #app-title {
+        height: 1;
+        background: $accent;
+        color: $text;
+        text-align: center;
+        text-style: bold;
+    }
     #teacher-header {
         height: 4;
         border: solid green;
@@ -215,7 +222,9 @@ class EduAgentDashboard(App):
         self._gateway = gateway
 
     def compose(self) -> ComposeResult:
-        yield Header()
+        # Use a Static title bar instead of Textual's Header widget to avoid
+        # HeaderTitle query mismatch across Textual versions (v0.56 → v8+).
+        yield Static(f"  [bold]{self.TITLE}[/bold]", id="app-title")
         yield TeacherHeader(self._gateway, id="teacher-header")
         yield ActivityLog(self._gateway, id="activity-section")
         with Horizontal(id="bottom-panels"):

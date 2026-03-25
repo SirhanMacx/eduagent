@@ -1,12 +1,12 @@
 #!/bin/bash
 set -euo pipefail
 
-# Build and publish EDUagent to PyPI
+# Build and publish Claw-ED to PyPI
 # Usage: ./scripts/publish.sh
 #
 # Requires: pip install build twine
 
-echo "==> EDUagent PyPI Publisher"
+echo "==> Claw-ED PyPI Publisher"
 echo ""
 
 # ── Check dist/ ──────────────────────────────────────────────────────────────
@@ -31,12 +31,14 @@ ls -1 dist/
 
 # ── PyPI credentials ─────────────────────────────────────────────────────────
 
-TWINE_ARGS=("--username" "manfredmacx")
+# Use API token auth (recommended by PyPI)
+TWINE_ARGS=("--username" "__token__")
 
 if [[ -z "${TWINE_PASSWORD:-}" ]]; then
     echo ""
-    echo "PyPI password/token not found in env (TWINE_PASSWORD)."
-    read -rsp "Enter PyPI password or API token: " TWINE_PASSWORD
+    echo "PyPI API token not found in env (TWINE_PASSWORD)."
+    echo "Get one at: https://pypi.org/manage/account/token/"
+    read -rsp "Enter PyPI API token (starts with pypi-): " TWINE_PASSWORD
     echo ""
     export TWINE_PASSWORD
 fi
@@ -48,7 +50,7 @@ echo "Uploading to PyPI..."
 python3 -m twine upload dist/* "${TWINE_ARGS[@]}"
 
 echo ""
-echo "✓ Upload complete! https://pypi.org/project/eduagent/"
+echo "✓ Upload complete! https://pypi.org/project/clawed/"
 
 # ── Bump version for next dev cycle ──────────────────────────────────────────
 
@@ -60,8 +62,8 @@ echo ""
 read -rp "Bump version to ${NEXT} for next release? [Y/n] " bump
 if [[ "${bump:-Y}" =~ ^[Yy]$ ]]; then
     sed -i.bak "s/^version = \"${CURRENT}\"/version = \"${NEXT}\"/" pyproject.toml
-    sed -i.bak "s/^__version__ = \"${CURRENT}\"/__version__ = \"${NEXT}\"/" eduagent/__init__.py
-    rm -f pyproject.toml.bak eduagent/__init__.py.bak
+    sed -i.bak "s/^__version__ = \"${CURRENT}\"/__version__ = \"${NEXT}\"/" clawed/__init__.py
+    rm -f pyproject.toml.bak clawed/__init__.py.bak
     echo "✓ Version bumped to ${NEXT}"
 
     echo "Rebuilding with new version..."
