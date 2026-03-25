@@ -47,12 +47,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-telegram = ["python-telegram-bot>=20.8"]
 google = ["google-api-python-client>=2.0.0", "google-auth-oauthlib>=1.0.0"]
 voice = ["faster-whisper>=0.10.0"]
 tui = ["textual>=0.56.0"]
 all = [
-    "python-telegram-bot>=20.0",
     "faster-whisper>=0.10.0",
     "textual>=0.56.0",
     "keyring>=24.0.0",
