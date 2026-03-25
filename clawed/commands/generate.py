@@ -1221,7 +1221,7 @@ def parent_note(
     ),
 ) -> None:
     """Generate a parent progress update in the teacher's voice."""
-    from clawed.parent_communication import (
+    from clawed.parent_comm import (
         format_progress_update_text,
         generate_progress_update,
         save_progress_update,
