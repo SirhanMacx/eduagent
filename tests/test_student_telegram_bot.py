@@ -284,41 +284,44 @@ class TestTopicNoClass:
 
 
 class TestHandlerRegistration:
-    def test_registers_all_handlers(self) -> None:
-        """The student bot should register 5 command handlers + 1 message handler."""
+    def test_routes_all_commands(self) -> None:
+        """The student bot should route /start, /help, /join, /topic, /quit."""
         sbot = StudentTelegramBot(token="fake:student-token")
 
-        mock_app_instance = MagicMock()
-        mock_app_instance.run_polling = MagicMock()
-        mock_builder = MagicMock()
-        mock_builder.token.return_value = mock_builder
-        mock_builder.build.return_value = mock_app_instance
+        # Mock the TelegramAPI so no real HTTP calls happen
+        sbot.api = MagicMock()
+        sbot.api.send_message = MagicMock()
 
-        mock_telegram = MagicMock()
-        mock_telegram_ext = MagicMock()
-        mock_telegram_ext.Application.builder.return_value = mock_builder
-        mock_telegram_ext.filters.TEXT = MagicMock()
-        mock_telegram_ext.filters.COMMAND = MagicMock()
-        mock_telegram_ext.filters.TEXT.__and__ = MagicMock(return_value="text_filter")
+        mock_bot = MagicMock()
+        mock_bot.get_class.return_value = None
 
-        with patch.dict("sys.modules", {
-            "telegram": mock_telegram,
-            "telegram.ext": mock_telegram_ext,
-        }):
-            sbot.start()
+        # Each command should be routed without error
+        for cmd_text, method_name in [
+            ("/start", "_cmd_start"),
+            ("/help", "_cmd_help"),
+            ("/topic", "_cmd_topic"),
+            ("/quit", "_cmd_quit"),
+        ]:
+            update = {
+                "update_id": 1,
+                "message": {
+                    "chat": {"id": 99},
+                    "from": {"id": 12345},
+                    "text": cmd_text,
+                },
+            }
+            sbot._process_update(update, mock_bot)
+            assert sbot.api.send_message.called
 
-            # 5 CommandHandlers: start, help, join, topic, quit
-            # 1 MessageHandler: free-text
-            assert mock_app_instance.add_handler.call_count == 6
-            assert mock_telegram_ext.CommandHandler.call_count == 5
-            assert mock_telegram_ext.MessageHandler.call_count == 1
-
-            cmd_names = [call.args[0] for call in mock_telegram_ext.CommandHandler.call_args_list]
-            assert "start" in cmd_names
-            assert "help" in cmd_names
-            assert "join" in cmd_names
-            assert "topic" in cmd_names
-            assert "quit" in cmd_names
-
-            assert mock_app_instance.post_init is not None
-            mock_app_instance.run_polling.assert_called_once()
+        # /join needs an argument
+        update_join = {
+            "update_id": 2,
+            "message": {
+                "chat": {"id": 99},
+                "from": {"id": 12345},
+                "text": "/join AB-CDE-3",
+            },
+        }
+        sbot.api.send_message.reset_mock()
+        sbot._process_update(update_join, mock_bot)
+        assert sbot.api.send_message.called

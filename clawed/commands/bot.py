@@ -442,16 +442,7 @@ def student_bot_cmd(
     ),
 ) -> None:
     """Run the student-facing Telegram bot (separate from the teacher bot)."""
-    try:
-        import telegram  # noqa: F401
-    except ImportError:
-        console.print(
-            "[red]Telegram support requires python-telegram-bot.[/red]\n"
-            "Install it with: [bold]pip install 'clawed[telegram]'[/bold]"
-        )
-        raise typer.Exit(1)
-
-    from clawed.student_telegram_bot import StudentTelegramBot
+    from clawed.transports.student_telegram import StudentTelegramBot
 
     if not token:
         console.print(
