@@ -10,7 +10,6 @@ The actual command implementations live in:
 
 from __future__ import annotations
 
-import sys
 from pathlib import Path
 from typing import Optional
 
@@ -20,17 +19,7 @@ from rich.panel import Panel
 from clawed import __version__
 from clawed.commands._helpers import console
 
-# Ensure UTF-8 encoding on all platforms at CLI startup
-if hasattr(sys.stdout, "reconfigure"):
-    try:
-        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
-if hasattr(sys.stderr, "reconfigure"):
-    try:
-        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
-    except Exception:
-        pass
+# UTF-8 encoding is enforced in clawed/__init__.py for all entry points
 from clawed.commands.bot import bot_app
 from clawed.commands.config import (
     class_app,
