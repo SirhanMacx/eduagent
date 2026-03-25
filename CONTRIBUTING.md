@@ -1,6 +1,6 @@
-# Contributing to EDUagent
+# Contributing to Claw-ED
 
-Thanks for your interest in making EDUagent better! Whether you're a teacher with ideas, a developer who wants to add features, or someone who found a bug — we'd love your help.
+Thanks for your interest in making Claw-ED better! Whether you're a teacher with ideas, a developer who wants to add features, or someone who found a bug — we'd love your help.
 
 ---
 
@@ -22,8 +22,8 @@ Thanks for your interest in making EDUagent better! Whether you're a teacher wit
 1. **Fork and clone** the repo:
 
 ```bash
-git clone https://github.com/SirhanMacx/eduagent.git
-cd eduagent
+git clone https://github.com/SirhanMacx/Claw-ED.git
+cd Claw-ED
 ```
 
 2. **Install in development mode** (includes test and lint tools):
@@ -54,14 +54,14 @@ git checkout -b my-feature
 
 ## How to Add a New Subject Skill
 
-EDUagent generates curriculum materials across subjects. Each subject is supported through prompt templates, standards alignment, and corpus examples. To add or improve a subject:
+Claw-ED generates curriculum materials across subjects. Each subject is supported through prompt templates, standards alignment, and corpus examples. To add or improve a subject:
 
 ### 1. Add or update prompts
 
-Prompt templates live in `eduagent/prompts/`. Each file is a plain-text Jinja2 template:
+Prompt templates live in `clawed/prompts/`. Each file is a plain-text Jinja2 template:
 
 ```
-eduagent/prompts/
+clawed/prompts/
 ├── unit_plan.txt          # Unit plan generation
 ├── lesson_plan.txt        # Daily lesson generation
 ├── worksheet.txt          # Worksheet/practice problems
@@ -79,11 +79,11 @@ To improve output for a specific subject (e.g., adding better science lab prompt
    Include a hands-on lab or demonstration activity in the guided practice section.
    {% endif %}
    ```
-3. Test by generating a lesson: `eduagent lesson "your topic" --grade 8 --subject Science`
+3. Test by generating a lesson: `clawed lesson "your topic" --grade 8 --subject Science`
 
 ### 2. Add standards for the subject
 
-If your subject needs new national standards, add them to `eduagent/standards.py`:
+If your subject needs new national standards, add them to `clawed/standards.py`:
 
 ```python
 # In the STANDARDS dict, add entries:
@@ -109,9 +109,9 @@ ruff check .
 
 ## How to Add State Standards
 
-EDUagent maps all 50 US states to their standards frameworks. The mapping lives in two files:
+Claw-ED maps all 50 US states to their standards frameworks. The mapping lives in two files:
 
-### `eduagent/state_standards.py`
+### `clawed/state_standards.py`
 
 Contains `STATE_STANDARDS_CONFIG` — a dict mapping state abbreviations to framework names per subject:
 
@@ -141,7 +141,7 @@ To add or update a state's standards:
    ```
 4. **Test:** `pytest tests/test_state_standards.py`
 
-### `eduagent/standards.py`
+### `clawed/standards.py`
 
 Contains the actual standard codes and descriptions in the `STANDARDS` dict. To add specific standards for a new framework:
 
@@ -156,15 +156,15 @@ Lesson templates are example materials that improve generation quality through f
 
 ### Via the corpus system
 
-1. Generate a lesson with EDUagent
+1. Generate a lesson with Claw-ED
 2. Rate it highly (4-5 stars) — high-rated content automatically enters the few-shot corpus
 3. Edit the generated content to fix any issues before rating
 
 ### Via code contribution
 
-Add examples directly to the corpus module in `eduagent/corpus.py`:
+Add examples directly to the corpus module in `clawed/corpus.py`:
 
-1. Create a JSON file matching the `DailyLesson` or `UnitPlan` schema (see `eduagent/models.py`)
+1. Create a JSON file matching the `DailyLesson` or `UnitPlan` schema (see `clawed/models.py`)
 2. Include realistic, high-quality content appropriate for the grade level
 3. Ensure standards alignment is accurate
 4. Submit as a PR with the example in `examples/`
@@ -226,7 +226,7 @@ pytest tests/test_basic.py
 ### Project structure conventions
 
 ```
-eduagent/
+clawed/
 ├── models.py          # All Pydantic data models
 ├── llm.py             # LLM client (add provider support here)
 ├── prompts/           # LLM prompt templates (Jinja2 .txt files)
@@ -271,11 +271,11 @@ Examples:
 
 ## Good First Issues
 
-New to EDUagent? These are great places to start:
+New to Claw-ED? These are great places to start:
 
 | Issue | Description | Skills needed |
 |-------|-------------|---------------|
-| **Improve a prompt** | Pick any template in `eduagent/prompts/` and improve its output for a subject you know well | Teaching knowledge |
+| **Improve a prompt** | Pick any template in `clawed/prompts/` and improve its output for a subject you know well | Teaching knowledge |
 | **Add example materials** | Contribute high-quality lesson examples to `examples/` | Teaching knowledge |
 | **Add missing state standards** | Fill in specific standard codes for a state framework you're familiar with | Education standards knowledge |
 | **Better error messages** | Find a confusing error path and add a helpful message | Python |
@@ -291,6 +291,6 @@ New to EDUagent? These are great places to start:
 
 - **Open an issue** on GitHub — we're happy to help
 - **Check existing issues** for context on planned work
-- **Read the architecture docs** at [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for a deep dive into how EDUagent works
+- **Read the architecture docs** at [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for a deep dive into how Claw-ED works
 
 We appreciate every contribution, whether it's a one-line typo fix or a major feature. Thank you!

@@ -10,7 +10,7 @@
 - [ ] `pytest` passes
 - [ ] `ruff check .` passes (no lint errors)
 - [ ] I haven't added any school-account integrations (privacy policy)
-- [ ] Any new prompts are in `eduagent/prompts/` as `.txt` files
+- [ ] Any new prompts are in `clawed/prompts/` as `.txt` files
 - [ ] I've updated the README if this adds a user-facing feature
 
 ## Type of change
