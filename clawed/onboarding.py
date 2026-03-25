@@ -431,15 +431,34 @@ def quick_model_setup() -> None:
         border_style="green",
     ))
 
-    console.print("\n[bold]Which AI should I use to generate your lessons?[/bold]\n")
-    console.print(
-        "  [bold cyan][1][/bold cyan] \u2605 Ollama Cloud \u2014 $20/month flat rate [dim](recommended)[/dim]"
-    )
-    console.print("  [bold cyan][2][/bold cyan] Anthropic Claude \u2014 best quality, pay per use")
-    console.print("  [bold cyan][3][/bold cyan] OpenAI \u2014 widely used, pay per use")
-    console.print("  [bold cyan][4][/bold cyan] Skip \u2014 I'll set this up later\n")
+    # Auto-detect an existing API key in the environment
+    _env_providers = [
+        ("OLLAMA_API_KEY", "Ollama", "1"),
+        ("ANTHROPIC_API_KEY", "Anthropic", "2"),
+        ("OPENAI_API_KEY", "OpenAI", "3"),
+    ]
+    auto_choice: str | None = None
+    for env_var, name, ch in _env_providers:
+        if os.environ.get(env_var):
+            console.print(f"\n  [green]Found your {name} API key![/green] Using that.")
+            auto_choice = ch
+            break
 
-    choice = Prompt.ask("Choice", choices=["1", "2", "3", "4"], default="1")
+    if auto_choice:
+        choice = auto_choice
+    else:
+        console.print("\n[bold]Which AI should I use to generate your lessons?[/bold]\n")
+        console.print(
+            "  [bold cyan][1][/bold cyan] \u2605 Ollama Cloud \u2014 $20/month flat rate [dim](recommended)[/dim]"
+        )
+        console.print("  [bold cyan][2][/bold cyan] Anthropic Claude \u2014 best quality, pay per use")
+        console.print("  [bold cyan][3][/bold cyan] OpenAI \u2014 widely used, pay per use")
+        console.print("  [bold cyan][4][/bold cyan] Skip \u2014 I'll set this up later")
+        console.print(
+            "\n  [dim]Don't have a key yet? https://ollama.com (recommended), "
+            "https://console.anthropic.com, or https://platform.openai.com[/dim]\n"
+        )
+        choice = Prompt.ask("Choice", choices=["1", "2", "3", "4"], default="1")
 
     provider_map = {"1": LLMProvider.OLLAMA, "2": LLMProvider.ANTHROPIC, "3": LLMProvider.OPENAI}
     provider = provider_map.get(choice, LLMProvider.OLLAMA)
@@ -452,9 +471,12 @@ def quick_model_setup() -> None:
             "2": ("Anthropic API key", "Get one at console.anthropic.com \u2192 API Keys"),
             "3": ("OpenAI API key", "Get one at platform.openai.com \u2192 API Keys"),
         }
-        label, hint = key_prompts[choice]
-        console.print(f"\n  [dim]{hint}[/dim]")
-        key = Prompt.ask(f"  [bold]{label}[/bold]", password=True)
+        if not auto_choice:
+            label, hint = key_prompts[choice]
+            console.print(f"\n  [dim]{hint}[/dim]")
+            key = Prompt.ask(f"  [bold]{label}[/bold]", password=True)
+        else:
+            key = ""  # Already in environment; no need to prompt
         if key.strip():
             prov_key = {1: "ollama", 2: "anthropic", 3: "openai"}[int(choice)]
             set_api_key(prov_key, key.strip())
@@ -462,15 +484,18 @@ def quick_model_setup() -> None:
                 config.ollama_base_url = "https://api.ollama.com/v1"
                 config.ollama_model = "minimax-m2.7:cloud"
                 config.ollama_api_key = key.strip()
-            # Test connection
-            connected = _test_connection(config)
-            if not connected:
-                console.print("  [yellow]Connection failed \u2014 you can fix this later with 'clawed setup'[/yellow]")
+        # Test connection
+        connected = _test_connection(config)
+        if connected:
+            console.print("  [green]Great \u2014 you're connected! Let's start teaching.[/green]")
+        else:
+            console.print("  [yellow]Connection failed \u2014 you can fix this later with 'clawed setup'[/yellow]")
 
     # Optional Telegram token
     console.print()
     tg_token = Prompt.ask(
-        "[bold]Telegram bot token[/bold] [dim](paste token, or Enter to skip)[/dim]",
+        "[bold]Telegram bot[/bold] [dim](Want to use Claw-ED from your phone via "
+        "Telegram? Paste your bot token. If not, just press Enter)[/dim]",
         default="",
     )
     if tg_token.strip():
