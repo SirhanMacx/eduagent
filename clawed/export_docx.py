@@ -1,0 +1,585 @@
+"""Word document (DOCX) export for lesson plans and student handouts.
+
+Generates full lesson plan documents and print-ready student worksheets.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import logging
+from datetime import date
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
+
+from clawed.export_theme import _resolve_output
+
+if TYPE_CHECKING:
+    from clawed.models import DailyLesson, TeacherPersona
+
+logger = logging.getLogger(__name__)
+
+
+# ── Image helpers (DOCX-specific) ─────────────────────────────────────
+
+
+def _docx_add_image(
+    doc: Any,  # docx.Document
+    topic: str,
+    subject: str,
+    width_inches: float = 5.0,
+    caption: str = "",
+) -> bool:
+    """Try to fetch and embed an academic image into the DOCX.
+
+    Fails silently -- handout works fine without images.
+    Returns True if an image was successfully added.
+    """
+    try:
+        from docx.shared import Inches, Pt
+
+        from clawed.slide_images import fetch_slide_image
+
+        img_path = asyncio.run(fetch_slide_image(topic, subject=subject))
+        if img_path and img_path.exists():
+            doc.add_picture(str(img_path), width=Inches(width_inches))
+            # Center the image
+            last_para = doc.paragraphs[-1]
+            from docx.enum.text import WD_ALIGN_PARAGRAPH
+            last_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            # Add caption if provided
+            if caption:
+                cap_para = doc.add_paragraph()
+                cap_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                cap_run = cap_para.add_run(caption)
+                cap_run.font.size = Pt(9)
+                cap_run.font.italic = True
+                cap_run.font.name = "Calibri"
+                from docx.shared import RGBColor
+                cap_run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
+            return True
+    except Exception:
+        pass  # Images are a bonus, not a requirement
+    return False
+
+
+def _docx_add_content_image(
+    doc: Any,  # docx.Document
+    content_text: str,
+    fallback_topic: str,
+    subject: str,
+    width_inches: float = 3.0,
+) -> bool:
+    """Fetch and embed an image based on content text, with auto-caption.
+
+    Uses ``_extract_key_concepts`` to find the best search query, then
+    adds a captioned image.  Returns True if an image was added.
+    """
+    try:
+        from docx.shared import Inches, Pt
+
+        from clawed.slide_images import _extract_key_concepts, fetch_content_image
+
+        img_path = asyncio.run(
+            fetch_content_image(
+                content_text,
+                subject=subject,
+                fallback_topic=fallback_topic,
+            )
+        )
+        if img_path and img_path.exists():
+            doc.add_picture(str(img_path), width=Inches(width_inches))
+            last_para = doc.paragraphs[-1]
+            from docx.enum.text import WD_ALIGN_PARAGRAPH
+            last_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            # Build caption from key concepts
+            concepts = _extract_key_concepts(content_text)
+            caption = ", ".join(concepts[:2]) if concepts else ""
+            if caption:
+                cap_para = doc.add_paragraph()
+                cap_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+                cap_run = cap_para.add_run(caption)
+                cap_run.font.size = Pt(9)
+                cap_run.font.italic = True
+                cap_run.font.name = "Calibri"
+                from docx.shared import RGBColor
+                cap_run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
+            return True
+    except Exception:
+        pass
+    return False
+
+
+# ── Main lesson DOCX export ──────────────────────────────────────────
+
+
+def export_lesson_docx(
+    lesson: "DailyLesson",
+    persona: "TeacherPersona",
+    output_dir: Path | None = None,
+) -> Path:
+    """Generate a Word document from a lesson plan with embedded academic images.
+
+    Returns the path to the saved .docx file.
+    """
+    from docx import Document
+    from docx.shared import Pt
+
+    doc = Document()
+
+    # Resolve subject for image searches
+    subject = persona.subject_area or ""
+
+    # Title
+    doc.add_heading(lesson.title, level=0)
+    doc.add_paragraph(
+        f"Teacher: {persona.name or 'Teacher'}  |  "
+        f"Lesson {lesson.lesson_number}  |  "
+        f"{date.today().strftime('%B %d, %Y')}"
+    )
+
+    # Try to add a header image relevant to the lesson content
+    _docx_add_content_image(
+        doc,
+        content_text=lesson.title + " " + lesson.objective,
+        fallback_topic=lesson.title,
+        subject=subject,
+        width_inches=5.5,
+    )
+
+    # Standards table
+    if lesson.standards:
+        doc.add_heading("Standards Addressed", level=2)
+        table = doc.add_table(rows=1, cols=1)
+        table.style = "Light Grid Accent 1"
+        hdr = table.rows[0].cells
+        hdr[0].text = "Standard"
+        for std in lesson.standards:
+            row = table.add_row().cells
+            row[0].text = std
+
+    # Objective
+    doc.add_heading("Objective (SWBAT)", level=2)
+    doc.add_paragraph(lesson.objective)
+
+    # Materials
+    if lesson.materials_needed:
+        doc.add_heading("Materials Needed", level=2)
+        for m in lesson.materials_needed:
+            doc.add_paragraph(m, style="List Bullet")
+
+    # Lesson Sections — add relevant images to instruction sections
+    sections = [
+        ("Do Now / Warm-Up", lesson.do_now, False),
+        ("Direct Instruction", lesson.direct_instruction, True),
+        ("Guided Practice", lesson.guided_practice, False),
+        ("Independent Work", lesson.independent_work, False),
+    ]
+    for heading, content, add_img in sections:
+        if content:
+            time_key = heading.lower().replace(" / warm-up", "").replace(" ", "_")
+            minutes = lesson.time_estimates.get(time_key, "")
+            time_label = f" ({minutes} min)" if minutes else ""
+            doc.add_heading(f"{heading}{time_label}", level=2)
+            doc.add_paragraph(content)
+            # Add a content-specific image to the direct instruction section
+            if add_img:
+                _docx_add_content_image(
+                    doc,
+                    content_text=content,
+                    fallback_topic=lesson.title,
+                    subject=subject,
+                    width_inches=4.0,
+                )
+
+    # Exit Ticket
+    if lesson.exit_ticket:
+        doc.add_heading("Exit Ticket", level=2)
+        for i, q in enumerate(lesson.exit_ticket, 1):
+            doc.add_paragraph(f"{i}. {q.question}")
+
+    # Differentiation
+    diff = lesson.differentiation
+    if diff:
+        doc.add_heading("Differentiation", level=2)
+        if diff.struggling:
+            doc.add_paragraph(f"Struggling learners: {diff.struggling}")
+        if diff.advanced:
+            doc.add_paragraph(f"Advanced learners: {diff.advanced}")
+        if diff.ell:
+            doc.add_paragraph(f"ELL support: {diff.ell}")
+
+    # Homework
+    if lesson.homework:
+        doc.add_heading("Homework", level=2)
+        doc.add_paragraph(lesson.homework)
+
+    # Footer
+    doc.add_paragraph("")
+    footer = doc.add_paragraph("Generated by EDUagent")
+    footer.runs[0].font.size = Pt(8)
+
+    out = _resolve_output(output_dir, lesson, ".docx")
+    doc.save(str(out))
+    return out
+
+
+# ── Student handout export ────────────────────────────────────────────
+
+
+def export_student_handout(
+    lesson: "DailyLesson",
+    persona: "TeacherPersona",
+    output_dir: Path | None = None,
+) -> Path:
+    """Generate a print-ready student handout (DOCX worksheet).
+
+    Produces a clean, self-contained 1-2 page document suitable for
+    printing on standard letter paper.  Includes:
+    - Header with lesson title, teacher name, date
+    - Bordered Do Now box with lined response area
+    - Aim / Objective line
+    - Core content section (direct instruction text)
+    - Numbered activity questions with lined response areas
+    - Exit ticket questions with response lines
+    - Footer with Name / Date / Period blanks
+
+    Returns the path to the saved .docx file.
+    """
+    from docx import Document
+    from docx.enum.table import WD_TABLE_ALIGNMENT
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.shared import Inches, Pt, RGBColor
+
+    doc = Document()
+
+    # ── Page setup ────────────────────────────────────────────────────
+    for section in doc.sections:
+        section.top_margin = Inches(0.6)
+        section.bottom_margin = Inches(0.5)
+        section.left_margin = Inches(0.75)
+        section.right_margin = Inches(0.75)
+
+    # ── Default font ──────────────────────────────────────────────────
+    style = doc.styles["Normal"]
+    font = style.font
+    font.name = "Calibri"
+    font.size = Pt(12)
+
+    # ── Header: Title, Teacher, Date, Period ──────────────────────────
+    title_para = doc.add_paragraph()
+    title_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = title_para.add_run(lesson.title)
+    run.bold = True
+    run.font.size = Pt(14)
+    run.font.name = "Calibri"
+
+    meta_para = doc.add_paragraph()
+    meta_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    meta_run = meta_para.add_run(
+        f"{persona.name or 'Teacher'}  |  {date.today().strftime('%B %d, %Y')}"
+    )
+    meta_run.font.size = Pt(10)
+    meta_run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
+    meta_run.font.name = "Calibri"
+
+    # ── Header image (below title, max 2 images total) ───────────────
+    subject = persona.subject_area or ""
+    _handout_image_count = 0
+    if _handout_image_count < 2:
+        if _docx_add_content_image(
+            doc,
+            content_text=lesson.title + " " + lesson.objective,
+            fallback_topic=lesson.title,
+            subject=subject,
+            width_inches=3.0,
+        ):
+            _handout_image_count += 1
+
+    # ── Do Now box ────────────────────────────────────────────────────
+    if lesson.do_now:
+        _handout_section_heading(doc, "Do Now")
+        do_now_table = doc.add_table(rows=2, cols=1)
+        do_now_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        _set_table_borders(do_now_table)
+
+        # Prompt cell
+        prompt_cell = do_now_table.rows[0].cells[0]
+        prompt_cell.text = ""
+        prompt_para = prompt_cell.paragraphs[0]
+        prompt_run = prompt_para.add_run(lesson.do_now)
+        prompt_run.font.size = Pt(11)
+        prompt_run.font.name = "Calibri"
+
+        # Response area with lines
+        response_cell = do_now_table.rows[1].cells[0]
+        response_cell.text = ""
+        _add_lined_space(response_cell, line_count=4)
+
+    # ── Aim / Objective ───────────────────────────────────────────────
+    _handout_section_heading(doc, "Aim")
+    aim_para = doc.add_paragraph(lesson.objective)
+    aim_para.paragraph_format.space_after = Pt(4)
+
+    # ── Core Content ──────────────────────────────────────────────────
+    if lesson.direct_instruction:
+        _handout_section_heading(doc, "Key Content")
+        # Include a condensed version -- long DI sections get trimmed
+        content_text = lesson.direct_instruction
+        if len(content_text) > 1200:
+            # Take first ~1200 chars at a sentence boundary
+            cutoff = content_text[:1200].rfind(". ")
+            if cutoff > 600:
+                content_text = content_text[: cutoff + 1]
+        content_para = doc.add_paragraph(content_text)
+        content_para.paragraph_format.space_after = Pt(6)
+        for run in content_para.runs:
+            run.font.size = Pt(11)
+            run.font.name = "Calibri"
+
+        # Add content image next to direct instruction (max 2 total)
+        if _handout_image_count < 2:
+            if _docx_add_content_image(
+                doc,
+                content_text=lesson.direct_instruction,
+                fallback_topic=lesson.title,
+                subject=subject,
+                width_inches=3.0,
+            ):
+                _handout_image_count += 1
+
+    # ── Activity Section (Guided Practice) ────────────────────────────
+    if lesson.guided_practice:
+        _handout_section_heading(doc, "Activity")
+        _add_numbered_content_with_lines(doc, lesson.guided_practice)
+
+    # ── Independent Work ──────────────────────────────────────────────
+    if lesson.independent_work:
+        _handout_section_heading(doc, "Independent Practice")
+        _add_numbered_content_with_lines(doc, lesson.independent_work)
+
+    # ── Exit Ticket ───────────────────────────────────────────────────
+    if lesson.exit_ticket:
+        _handout_section_heading(doc, "Exit Ticket")
+        exit_table = doc.add_table(rows=len(lesson.exit_ticket) * 2, cols=1)
+        exit_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        _set_table_borders(exit_table)
+
+        for i, q in enumerate(lesson.exit_ticket):
+            q_cell = exit_table.rows[i * 2].cells[0]
+            q_cell.text = ""
+            q_para = q_cell.paragraphs[0]
+            q_run = q_para.add_run(f"{i + 1}. {q.question}")
+            q_run.bold = True
+            q_run.font.size = Pt(11)
+            q_run.font.name = "Calibri"
+
+            ans_cell = exit_table.rows[i * 2 + 1].cells[0]
+            ans_cell.text = ""
+            _add_lined_space(ans_cell, line_count=3)
+
+    # ── Footer: Name / Date / Period ──────────────────────────────────
+    doc.add_paragraph("")  # spacer
+    footer_table = doc.add_table(rows=1, cols=3)
+    footer_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    footer_table.columns[0].width = Inches(3.0)
+    footer_table.columns[1].width = Inches(2.5)
+    footer_table.columns[2].width = Inches(1.5)
+
+    labels = ["Name: _______________", "Date: _______________", "Period: ______"]
+    for idx, label in enumerate(labels):
+        cell = footer_table.rows[0].cells[idx]
+        cell.text = ""
+        para = cell.paragraphs[0]
+        run = para.add_run(label)
+        run.font.size = Pt(10)
+        run.font.name = "Calibri"
+        run.font.color.rgb = RGBColor(0x33, 0x33, 0x33)
+
+    # Remove borders from footer table
+    _remove_table_borders(footer_table)
+
+    # ── Watermark ─────────────────────────────────────────────────────
+    wm_para = doc.add_paragraph()
+    wm_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    wm_run = wm_para.add_run("Generated by EDUagent")
+    wm_run.font.size = Pt(8)
+    wm_run.font.color.rgb = RGBColor(0x99, 0x99, 0x99)
+
+    # ── Save ──────────────────────────────────────────────────────────
+    out = _resolve_output(output_dir, lesson, "_handout.docx")
+    doc.save(str(out))
+    return out
+
+
+# ── DOCX formatting helpers ──────────────────────────────────────────
+
+
+def _handout_section_heading(doc: Any, text: str) -> None:
+    """Add a styled section heading for the student handout."""
+    from docx.shared import Pt, RGBColor
+
+    para = doc.add_paragraph()
+    para.paragraph_format.space_before = Pt(8)
+    para.paragraph_format.space_after = Pt(4)
+    run = para.add_run(text)
+    run.bold = True
+    run.font.size = Pt(12)
+    run.font.name = "Calibri"
+    run.font.color.rgb = RGBColor(0x1A, 0x36, 0x5D)
+    # Add a bottom border via XML
+    from docx.oxml.ns import qn
+
+    pPr = para._p.get_or_add_pPr()
+    pBdr = pPr.makeelement(qn("w:pBdr"), {})
+    bottom = pBdr.makeelement(
+        qn("w:bottom"),
+        {
+            qn("w:val"): "single",
+            qn("w:sz"): "6",
+            qn("w:space"): "1",
+            qn("w:color"): "1A365D",
+        },
+    )
+    pBdr.append(bottom)
+    pPr.append(pBdr)
+
+
+def _add_lined_space(cell: Any, line_count: int = 3) -> None:
+    """Add blank lines with bottom borders to simulate writing lines."""
+    from docx.oxml.ns import qn
+    from docx.shared import Pt
+
+    for i in range(line_count):
+        para = cell.add_paragraph("")
+        para.paragraph_format.space_before = Pt(0)
+        para.paragraph_format.space_after = Pt(12)
+        # Add bottom border to simulate a writing line
+        pPr = para._p.get_or_add_pPr()
+        pBdr = pPr.makeelement(qn("w:pBdr"), {})
+        bottom = pBdr.makeelement(
+            qn("w:bottom"),
+            {
+                qn("w:val"): "single",
+                qn("w:sz"): "4",
+                qn("w:space"): "1",
+                qn("w:color"): "CCCCCC",
+            },
+        )
+        pBdr.append(bottom)
+        pPr.append(pBdr)
+
+
+def _add_numbered_content_with_lines(doc: Any, text: str) -> None:
+    """Parse text into numbered items and add lined response areas.
+
+    If the text contains numbered items (1. / 2. / etc.), each gets its own
+    response area.  Otherwise the full text is shown with a single response area.
+    """
+    import re
+
+    from docx.shared import Pt
+
+    # Try to split on numbered items
+    items = re.split(r"(?:^|\n)\s*(\d+)[.)]\s*", text)
+
+    # items[0] is preamble, then alternating [number, content, number, content...]
+    preamble = items[0].strip() if items else ""
+    numbered: list[str] = []
+    if len(items) > 2:
+        for i in range(1, len(items) - 1, 2):
+            numbered.append(items[i + 1].strip() if i + 1 < len(items) else "")
+
+    if numbered:
+        if preamble:
+            p = doc.add_paragraph(preamble)
+            p.paragraph_format.space_after = Pt(4)
+            for run in p.runs:
+                run.font.size = Pt(11)
+                run.font.name = "Calibri"
+        for idx, item in enumerate(numbered, 1):
+            p = doc.add_paragraph()
+            run = p.add_run(f"{idx}. {item}")
+            run.font.size = Pt(11)
+            run.font.name = "Calibri"
+            p.paragraph_format.space_after = Pt(2)
+            # Add a small lined area after each item
+            line_para = doc.add_paragraph("")
+            line_para.paragraph_format.space_after = Pt(10)
+            from docx.oxml.ns import qn
+
+            pPr = line_para._p.get_or_add_pPr()
+            pBdr = pPr.makeelement(qn("w:pBdr"), {})
+            bottom = pBdr.makeelement(
+                qn("w:bottom"),
+                {
+                    qn("w:val"): "single",
+                    qn("w:sz"): "4",
+                    qn("w:space"): "1",
+                    qn("w:color"): "CCCCCC",
+                },
+            )
+            pBdr.append(bottom)
+            pPr.append(pBdr)
+    else:
+        # No numbered items — show the text with a response area
+        p = doc.add_paragraph(text)
+        p.paragraph_format.space_after = Pt(4)
+        for run in p.runs:
+            run.font.size = Pt(11)
+            run.font.name = "Calibri"
+        # Add 3 lined spaces
+        for _ in range(3):
+            line_para = doc.add_paragraph("")
+            line_para.paragraph_format.space_after = Pt(10)
+            from docx.oxml.ns import qn
+
+            pPr = line_para._p.get_or_add_pPr()
+            pBdr = pPr.makeelement(qn("w:pBdr"), {})
+            bottom = pBdr.makeelement(
+                qn("w:bottom"),
+                {
+                    qn("w:val"): "single",
+                    qn("w:sz"): "4",
+                    qn("w:space"): "1",
+                    qn("w:color"): "CCCCCC",
+                },
+            )
+            pBdr.append(bottom)
+            pPr.append(pBdr)
+
+
+def _set_table_borders(table: Any) -> None:
+    """Set solid borders on all sides of a table."""
+    from docx.oxml.ns import qn
+
+    tbl = table._tbl
+    tblPr = tbl.tblPr if tbl.tblPr is not None else tbl.makeelement(qn("w:tblPr"), {})
+    borders = tblPr.makeelement(qn("w:tblBorders"), {})
+    for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
+        element = borders.makeelement(
+            qn(f"w:{edge}"),
+            {
+                qn("w:val"): "single",
+                qn("w:sz"): "6",
+                qn("w:space"): "0",
+                qn("w:color"): "444444",
+            },
+        )
+        borders.append(element)
+    tblPr.append(borders)
+
+
+def _remove_table_borders(table: Any) -> None:
+    """Remove all borders from a table."""
+    from docx.oxml.ns import qn
+
+    tbl = table._tbl
+    tblPr = tbl.tblPr if tbl.tblPr is not None else tbl.makeelement(qn("w:tblPr"), {})
+    borders = tblPr.makeelement(qn("w:tblBorders"), {})
+    for edge in ("top", "left", "bottom", "right", "insideH", "insideV"):
+        element = borders.makeelement(
+            qn(f"w:{edge}"),
+            {qn("w:val"): "none", qn("w:sz"): "0", qn("w:space"): "0"},
+        )
+        borders.append(element)
+    tblPr.append(borders)
