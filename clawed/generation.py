@@ -14,12 +14,80 @@ from pathlib import Path
 
 from clawed.model_router import route as route_model
 from clawed.models import AppConfig, TeacherPersona
-from clawed.openclaw_plugin import _fmt_lesson_summary, _fmt_persona, _fmt_unit_summary
 from clawed.router import ParsedIntent
 from clawed.state import TeacherSession
 from clawed.student_bot import StudentBot
 
 logger = logging.getLogger(__name__)
+
+
+# ── Response formatters ──────────────────────────────────────────────────────
+
+
+def _fmt_unit_summary(unit) -> str:
+    """Format a unit plan for Telegram (no markdown tables)."""
+    lines = [
+        f"\U0001f4da *{unit.title}*",
+        f"Grade {unit.grade_level} {unit.subject} | {unit.duration_weeks} weeks | {len(unit.daily_lessons)} lessons",
+        "",
+        "\U0001f4cc *Essential Questions*",
+    ]
+    for q in unit.essential_questions[:3]:
+        lines.append(f"\u2022 {q}")
+    lines.append("")
+    lines.append("\U0001f4c5 *Lesson Sequence*")
+    for lesson in unit.daily_lessons[:5]:
+        lines.append(f"  L{lesson.lesson_number}: {lesson.topic}")
+    if len(unit.daily_lessons) > 5:
+        lines.append(f"  ... +{len(unit.daily_lessons) - 5} more lessons")
+    lines.append("")
+    lines.append("_Reply with 'generate lesson 1' to get the full first lesson plan, or 'export PDF' to download._")
+    return "\n".join(lines)
+
+
+def _fmt_lesson_summary(lesson) -> str:
+    """Format a lesson plan for Telegram."""
+    lines = [
+        f"\U0001f4dd *Lesson {lesson.lesson_number}: {lesson.title}*",
+        "",
+        f"\U0001f3af *Objective:* {lesson.objective}",
+        "",
+        f"\U0001f514 *Do-Now (5 min):* {lesson.do_now[:200]}...",
+        "",
+        "\U0001f4cb *Structure:*",
+        f"\u2022 Direct Instruction ({lesson.time_estimates.get('direct_instruction', 20)} min)",
+        f"\u2022 Guided Practice ({lesson.time_estimates.get('guided_practice', 15)} min)",
+        f"\u2022 Independent Work ({lesson.time_estimates.get('independent_work', 10)} min)",
+        f"\u2022 Exit Ticket ({len(lesson.exit_ticket)} questions)",
+        "",
+    ]
+    if lesson.differentiation.struggling:
+        lines.append("\u267f *Differentiation included* (struggling/advanced/ELL)")
+    if lesson.homework:
+        lines.append("\U0001f4da *Homework:* Yes")
+    lines.append("")
+    lines.append("_Reply 'generate materials' for the worksheet + assessment, or 'export PDF' to download._")
+    return "\n".join(lines)
+
+
+def _fmt_persona(persona: TeacherPersona) -> str:
+    """Format a teacher persona for Telegram."""
+    lines = [
+        "\U0001f469\u200d\U0001f3eb *Your Teaching Profile*",
+        "",
+        f"\u2022 Style: {persona.teaching_style.value.replace('_', ' ').title()}",
+        f"\u2022 Tone: {persona.tone}",
+        f"\u2022 Format: {persona.preferred_lesson_format}",
+    ]
+    if persona.structural_preferences:
+        lines.append(f"\u2022 Preferences: {', '.join(persona.structural_preferences[:4])}")
+    if persona.subject_area:
+        lines.append(f"\u2022 Subject: {persona.subject_area}")
+    if persona.grade_levels:
+        lines.append(f"\u2022 Grades: {', '.join(persona.grade_levels)}")
+    lines.append("")
+    lines.append("_Everything I generate will match this profile. Reply 'update my profile' to change anything._")
+    return "\n".join(lines)
 
 
 # ── Unit generation ──────────────────────────────────────────────────────────
