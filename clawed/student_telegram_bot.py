@@ -3,7 +3,7 @@
 Students join a class with a code from their teacher, then ask questions
 about the lesson. The bot answers in the teacher's voice.
 
-Separate from the teacher bot (telegram_bot.py). Run with:
+Separate from the teacher bot (transports/telegram.py). Run with:
     clawed student-bot --token YOUR_STUDENT_BOT_TOKEN
 """
 

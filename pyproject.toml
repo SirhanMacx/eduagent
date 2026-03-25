@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "clawed"
-version = "0.3.0"
+version = "0.5.0"
 description = "Claw-ED — Your teaching files, your AI co-teacher. Upload curriculum materials, get a digital co-teacher that generates lessons in your voice."
 readme = "README.md"
 license = "MIT"
@@ -47,7 +47,6 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-telegram-legacy = ["python-telegram-bot>=20.8"]
 telegram = ["python-telegram-bot>=20.8"]
 google = ["google-api-python-client>=2.0.0", "google-auth-oauthlib>=1.0.0"]
 voice = ["faster-whisper>=0.10.0"]

@@ -19,14 +19,6 @@ from fastapi.testclient import TestClient
 from clawed.database import Database
 from clawed.models import AppConfig, LLMProvider, TeacherPersona
 from clawed.state import init_db
-from clawed.telegram_bot import (
-    BOT_COMMANDS,
-    ChatState,
-    ConversationState,
-    _chat_states,
-    _get_chat_state,
-    _log_error,
-)
 
 
 def _run(coro):
@@ -40,13 +32,6 @@ def _run(coro):
 def _use_tmp_db(tmp_path, monkeypatch):
     monkeypatch.setattr("clawed.state.DEFAULT_DATA_DIR", tmp_path)
     init_db()
-
-
-@pytest.fixture(autouse=True)
-def _clear_chat_states():
-    _chat_states.clear()
-    yield
-    _chat_states.clear()
 
 
 @pytest.fixture
@@ -193,99 +178,6 @@ class TestStudentBotClassExtended:
         assert stats["registered_students"] == 0
         assert stats["total_questions"] == 0
         assert stats["active_students"] == 0
-
-
-# ═══════════════════════════════════════════════════════════════════════════
-# WAVE 2: TELEGRAM BOT POLISH
-# ═══════════════════════════════════════════════════════════════════════════
-
-
-class TestConversationStateMachineExtended:
-    """Extended conversation state machine tests."""
-
-    def test_collecting_state_not_busy(self):
-        state = ChatState()
-        state.state = ConversationState.COLLECTING_LESSON_INFO
-        assert not state.is_busy()
-
-    def test_state_stores_pending_topic(self):
-        state = ChatState()
-        state.pending_topic = "photosynthesis"
-        assert state.pending_topic == "photosynthesis"
-
-    def test_state_stores_last_lesson_id(self):
-        state = ChatState()
-        state.last_lesson_id = "lesson-abc123"
-        assert state.last_lesson_id == "lesson-abc123"
-
-    def test_multiple_chats_independent(self):
-        s1 = _get_chat_state(1001)
-        s2 = _get_chat_state(1002)
-        s1.state = ConversationState.GENERATING
-        assert s2.state == ConversationState.IDLE
-
-    def test_state_persists_across_lookups(self):
-        s = _get_chat_state(2001)
-        s.state = ConversationState.DONE
-        s.last_lesson_id = "test-id"
-        s2 = _get_chat_state(2001)
-        assert s2.state == ConversationState.DONE
-        assert s2.last_lesson_id == "test-id"
-
-
-class TestBotCommandContents:
-    """Test the contents of bot commands and help text."""
-
-    def test_commands_list_has_seven_entries(self):
-        assert len(BOT_COMMANDS) == 8
-
-    def test_all_commands_have_lowercase_names(self):
-        for cmd, _ in BOT_COMMANDS:
-            assert cmd == cmd.lower()
-
-    def test_health_command_in_list(self):
-        cmds = dict(BOT_COMMANDS)
-        assert "health" in cmds
-        assert "status" in cmds["health"].lower()
-
-
-class TestErrorLogging:
-    """Test error logging to file."""
-
-    def test_error_log_creates_file(self, tmp_path):
-        log_file = tmp_path / "errors.log"
-        with patch("clawed.telegram_bot._ERROR_LOG", log_file):
-            _log_error(RuntimeError("test boom"))
-        assert log_file.exists()
-        assert "RuntimeError" in log_file.read_text()
-        assert "test boom" in log_file.read_text()
-
-    def test_error_log_appends(self, tmp_path):
-        log_file = tmp_path / "errors.log"
-        with patch("clawed.telegram_bot._ERROR_LOG", log_file):
-            _log_error(ValueError("first"))
-            _log_error(TypeError("second"))
-        lines = log_file.read_text().strip().split("\n")
-        assert len(lines) == 2
-
-    def test_error_log_includes_timestamp(self, tmp_path):
-        log_file = tmp_path / "errors.log"
-        with patch("clawed.telegram_bot._ERROR_LOG", log_file):
-            _log_error(Exception("timed"))
-        content = log_file.read_text()
-        # ISO format timestamp
-        assert "T" in content  # datetime separator
-
-
-class TestEduAgentBotConfig:
-    """Test bot configuration and token resolution."""
-
-    def test_bot_from_env_with_config_fallback(self, tmp_path, monkeypatch):
-        monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
-        with patch("clawed.models.AppConfig.load") as mock_cfg:
-            mock_cfg.return_value = MagicMock(telegram_bot_token="config:TOKEN")
-            bot = __import__("clawed.telegram_bot", fromlist=["EduAgentBot"]).EduAgentBot.from_env(data_dir=tmp_path)
-            assert bot.token == "config:TOKEN"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -572,9 +464,9 @@ class TestVersion:
     def test_version_string(self):
         from clawed import __version__
 
-        assert __version__ == "0.3.0"
+        assert __version__ == "0.5.0"
 
     def test_version_in_health_endpoint(self, client):
         resp = client.get("/api/health")
         data = resp.json()
-        assert data["version"] == "0.3.0"
+        assert data["version"] == "0.5.0"

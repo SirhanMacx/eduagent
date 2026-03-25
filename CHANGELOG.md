@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.5.0] - 2026-03-25
+
+### Removed
+- **Legacy Telegram bot** (`telegram_bot.py`, 913 lines) — the deprecated `--legacy` and `--live` bot flags have been removed. All Telegram functionality now uses the gateway-based httpx transport (`clawed/transports/telegram.py`).
+- `telegram-legacy` optional dependency removed
+
+### Note
+- The student bot (`student_telegram_bot.py`) still uses python-telegram-bot and is unchanged
+- `pip install 'clawed[telegram]'` still works for the student bot
+
 ## [0.1.3] - 2026-03-24
 
 ### Added

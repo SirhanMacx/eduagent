@@ -92,14 +92,6 @@ def _isolate_state_db(tmp_path, monkeypatch):
         raising=False,
     )
 
-    # ── clawed.telegram_bot (error log / lock file) ────────────────────
-    monkeypatch.setattr(
-        "clawed.telegram_bot._ERROR_LOG", tmp_path / "errors.log", raising=False,
-    )
-    monkeypatch.setattr(
-        "clawed.telegram_bot._BOT_LOCK", tmp_path / "bot.lock", raising=False,
-    )
-
     # ── clawed.student_telegram_bot ────────────────────────────────────
     monkeypatch.setattr(
         "clawed.student_telegram_bot._ERROR_LOG",

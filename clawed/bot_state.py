@@ -1,7 +1,7 @@
 """Persistent bot state storage backed by SQLite.
 
 Stores Telegram bot conversation states so they survive restarts.
-Used by both telegram_bot.py (teacher bot) and student_telegram_bot.py.
+Used by transports/telegram.py (teacher bot) and student_telegram_bot.py.
 """
 
 from __future__ import annotations

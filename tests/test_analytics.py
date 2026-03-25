@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import sqlite3
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
@@ -277,57 +277,3 @@ class TestStatsAPI:
             assert data["total_lessons"] == 0
 
 
-# ── Telegram bot rating keyboard ─────────────────────────────────
-
-
-class TestTelegramRating:
-    def test_rating_callback_prefix(self):
-        from clawed.telegram_bot import RATING_CALLBACK_PREFIX
-        assert RATING_CALLBACK_PREFIX == "rate:"
-
-    def test_bot_registers_callback_handler(self):
-        """Verify the bot registers the CallbackQueryHandler for ratings."""
-        from clawed.telegram_bot import EduAgentBot
-
-        bot = EduAgentBot(token="fake:token")
-
-        from unittest.mock import AsyncMock
-
-        mock_app_instance = MagicMock()
-        mock_app_instance.initialize = AsyncMock()
-        mock_app_instance.post_init = None
-        mock_app_instance.start = AsyncMock()
-        mock_app_instance.stop = AsyncMock()
-        mock_app_instance.shutdown = AsyncMock()
-        mock_app_instance.updater = MagicMock()
-        mock_app_instance.updater.start_polling = AsyncMock()
-        mock_app_instance.updater.stop = AsyncMock()
-        mock_builder = MagicMock()
-        mock_builder.token.return_value = mock_builder
-        mock_builder.build.return_value = mock_app_instance
-
-        mock_telegram = MagicMock()
-        mock_telegram_ext = MagicMock()
-        mock_telegram_ext.Application.builder.return_value = mock_builder
-        mock_telegram_ext.filters.TEXT = MagicMock()
-        mock_telegram_ext.filters.COMMAND = MagicMock()
-        mock_telegram_ext.filters.TEXT.__and__ = MagicMock(return_value="text_filter")
-
-        import asyncio
-
-        class _InstantEvent(asyncio.Event):
-            async def wait(self):
-                return
-
-        with patch.dict("sys.modules", {
-            "telegram": mock_telegram,
-            "telegram.ext": mock_telegram_ext,
-        }):
-            with patch("asyncio.Event", _InstantEvent):
-                bot.start()
-
-            # Handlers: start, help, status, join, class, callback(s), message, etc.
-            assert mock_app_instance.add_handler.call_count >= 5
-            assert mock_telegram_ext.CommandHandler.call_count >= 3
-            assert mock_telegram_ext.CallbackQueryHandler.call_count >= 1
-            assert mock_telegram_ext.MessageHandler.call_count >= 1

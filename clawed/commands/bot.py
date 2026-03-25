@@ -490,43 +490,12 @@ def bot(
     data_dir: Optional[str] = typer.Option(
         None,
         "--data-dir",
-        help="Data directory (default: ~/.eduagent)",  # keep
-    ),
-    live: bool = typer.Option(
-        False,
-        "--live",
-        help="Show a Rich live status display while running",
-    ),
-    webhook_url: Optional[str] = typer.Option(
-        None,
-        "--webhook-url",
-        envvar="EDUAGENT_WEBHOOK_URL",
-        help=(
-            "Public HTTPS URL for webhook mode "
-            "(e.g. https://myserver.com/telegram). "
-            "Omit to use polling mode (works anywhere, no public URL needed)."
-        ),
-    ),
-    webhook_port: int = typer.Option(
-        8443,
-        "--webhook-port",
-        help="Local port to listen on in webhook mode (default: 8443).",
-    ),
-    webhook_secret: Optional[str] = typer.Option(
-        None,
-        "--webhook-secret",
-        envvar="EDUAGENT_WEBHOOK_SECRET",
-        help="Secret token to verify Telegram webhook requests.",
+        help="Data directory (default: ~/.eduagent)",
     ),
     force: bool = typer.Option(
         False,
         "--force",
         help="Force start even if another instance appears to be running",
-    ),
-    legacy: bool = typer.Option(
-        False,
-        "--legacy",
-        help="Use the legacy python-telegram-bot backend instead of the new httpx bot",
     ),
 ):
     """Start the Claw-ED Telegram bot.
@@ -537,12 +506,6 @@ def bot(
         # Polling mode — works on any machine, no public URL needed:
         clawed bot --token YOUR_TOKEN
         export TELEGRAM_BOT_TOKEN=YOUR_TOKEN && clawed bot
-
-        # Webhook mode (legacy only) — for VPS/server deployments:
-        clawed bot --token YOUR_TOKEN --webhook-url https://myserver.com/telegram --legacy
-
-        # With live dashboard (legacy only):
-        clawed bot --token YOUR_TOKEN --live --legacy
 
     Save the token permanently (so you don't have to pass it every time):
         clawed config set-token YOUR_TOKEN
@@ -573,70 +536,6 @@ def bot(
         Path(data_dir).expanduser().resolve() if data_dir else None
     )
 
-    # Legacy mode: use python-telegram-bot (supports webhooks, live display)
-    if legacy or live or webhook_url:
-        console.print(
-            "[yellow]Note: --legacy mode is deprecated and will be removed in v0.5. "
-            "The default bot (without --legacy) is recommended.[/yellow]\n"
-        )
-        try:
-            import telegram  # noqa: F401
-        except ImportError:
-            console.print(
-                "[red]Legacy bot mode requires python-telegram-bot.[/red]\n"
-                "Install it with: [bold]pip install 'clawed[telegram-legacy]'[/bold]\n"
-                "Or use the default bot (no --legacy flag) which needs no extra deps."
-            )
-            raise typer.Exit(1)
-
-        from clawed.telegram_bot import run_bot as run_legacy_bot
-
-        if live:
-            _bot_with_live_display(token=token, data_path=data_path)
-        else:
-            mode_line = (
-                f"Webhook: [cyan]{webhook_url}[/cyan] (port {webhook_port})"
-                if webhook_url
-                else "Mode: polling (legacy)"
-            )
-            console.print(
-                Panel(
-                    f"[bold green]Claw-ED Telegram Bot (legacy)[/bold green]\n\n"
-                    f"Starting bot...\n"
-                    f"Data directory:"
-                    f" {data_path or Path.home() / '.eduagent'}\n"
-                    f"{mode_line}\n\n"
-                    f"[dim]Press Ctrl+C to stop[/dim]",
-                    title="Claw-ED",
-                    border_style="green",
-                )
-            )
-
-            try:
-                run_legacy_bot(
-                    token=token,
-                    data_dir=data_path,
-                    webhook_url=webhook_url,
-                    webhook_port=webhook_port,
-                    webhook_secret=webhook_secret or None,
-                    force=force,
-                )
-            except RuntimeError as e:
-                console.print(f"[red]{e}[/red]")
-                raise typer.Exit(1)
-            except KeyboardInterrupt:
-                console.print("\n[yellow]Bot stopped.[/yellow]")
-            except ImportError as e:
-                console.print(f"[red]Missing dependency:[/red] {e}")
-                console.print("\nInstall legacy Telegram support with:")
-                console.print(
-                    "  [cyan]pip install"
-                    " 'clawed[telegram-legacy]'[/cyan]"
-                )
-                raise typer.Exit(1)
-        return
-
-    # Default mode: new lightweight httpx bot (no extra deps needed)
     from clawed.tg import run_bot as run_new_bot
 
     console.print(
@@ -661,65 +560,5 @@ def bot(
     except RuntimeError as e:
         console.print(f"[red]{e}[/red]")
         raise typer.Exit(1)
-    except KeyboardInterrupt:
-        console.print("\n[yellow]Bot stopped.[/yellow]")
-
-
-def _bot_with_live_display(
-    token: str, data_path: Optional[Path] = None
-) -> None:
-    """Run the Telegram bot with a Rich Live status panel.
-
-    Starts the actual Telegram transport (legacy python-telegram-bot)
-    alongside a Rich Live display that shows gateway stats.
-    """
-    import threading
-    import time
-
-    from rich.live import Live
-
-    from clawed.gateway import EduAgentGateway
-
-    gateway = EduAgentGateway()
-    start_time = time.monotonic()
-
-    def _make_display() -> Panel:
-        elapsed = int(time.monotonic() - start_time)
-        h, remainder = divmod(elapsed, 3600)
-        m, s = divmod(remainder, 60)
-        stats = gateway._stats
-        sessions = len(gateway.active_sessions)
-        return Panel(
-            f"[bold green]Claw-ED Bot[/bold green]"
-            f"  [dim]running[/dim]\n\n"
-            f"  Messages:     {stats.messages_today}\n"
-            f"  Generations:  {stats.generations_today}\n"
-            f"  Errors:       {stats.errors_today}\n"
-            f"  Sessions:     {sessions}\n"
-            f"  Uptime:       {h}:{m:02d}:{s:02d}\n\n"
-            f"[dim]Press Ctrl+C to stop[/dim]",
-            title="Claw-ED",
-            border_style="green",
-        )
-
-    # Start the actual Telegram bot in a background thread
-    from clawed.telegram_bot import run_bot as run_legacy_bot
-
-    bot_thread = threading.Thread(
-        target=run_legacy_bot,
-        kwargs={"token": token, "data_dir": data_path, "force": True},
-        daemon=True,
-    )
-    bot_thread.start()
-
-    try:
-        with Live(
-            _make_display(),
-            console=console,
-            refresh_per_second=1,
-        ) as live_display:
-            while bot_thread.is_alive():
-                live_display.update(_make_display())
-                time.sleep(1)
     except KeyboardInterrupt:
         console.print("\n[yellow]Bot stopped.[/yellow]")

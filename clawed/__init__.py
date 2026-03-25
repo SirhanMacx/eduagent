@@ -1,6 +1,6 @@
 """Claw-ED — Your teaching files, your AI co-teacher."""
 
-__version__ = "0.3.0"
+__version__ = "0.5.0"
 __author__ = "Jon Maccarello & Claw-ED contributors"
 __description__ = "Your teaching files, your AI co-teacher"
 
