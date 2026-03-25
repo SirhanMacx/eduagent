@@ -385,7 +385,7 @@ def _serve_gateway_headless(
 
                     uvicorn.run("clawed.api.server:app", host=host, port=port)
                     return
-                except OSError:
+                except (OSError, SystemError):
                     pass  # Process is dead, stale lock — proceed normally
         except (ValueError, OSError):
             pass  # Invalid lock file — proceed normally
@@ -686,7 +686,7 @@ def _bot_with_live_display(
         elapsed = int(time.monotonic() - start_time)
         h, remainder = divmod(elapsed, 3600)
         m, s = divmod(remainder, 60)
-        stats = gateway._gateway_stats
+        stats = gateway._stats
         sessions = len(gateway.active_sessions)
         return Panel(
             f"[bold green]Claw-ED Bot[/bold green]"

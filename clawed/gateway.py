@@ -301,5 +301,10 @@ class Gateway:
         self._running = True
         await self.emit("system", {"message": "Gateway started"})
 
+    async def stop(self) -> None:
+        """Shut down the gateway."""
+        self._running = False
+        await self.emit("system", {"message": "Gateway stopped"})
+
 
 EduAgentGateway = Gateway
