@@ -323,7 +323,7 @@ def _serve_with_tui(
         console.print("  [cyan]pip install 'eduagent[tui]'[/cyan]")
         raise typer.Exit(1)
 
-    gateway = EduAgentGateway(token=token, config=config)
+    gateway = EduAgentGateway(config=config)
 
     async def _run() -> None:
         tasks = [asyncio.create_task(gateway.start())]
@@ -392,7 +392,7 @@ def _serve_gateway_headless(
 
     from clawed.gateway import EduAgentGateway
 
-    gateway = EduAgentGateway(token=token, config=config)
+    gateway = EduAgentGateway(config=config)
 
     console.print(
         Panel(
@@ -675,7 +675,7 @@ def _bot_with_live_display(
 
     from clawed.gateway import EduAgentGateway
 
-    gateway = EduAgentGateway(token=token)
+    gateway = EduAgentGateway()
     start_time = time.monotonic()
 
     def _make_display() -> Panel:
