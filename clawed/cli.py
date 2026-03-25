@@ -73,20 +73,31 @@ def main(
 ) -> None:
     """Your teaching files, your AI co-teacher."""
     if ctx.invoked_subcommand is None:
-        # No command specified
         config_path = Path.home() / ".eduagent" / "config.json"
         if not config_path.exists():
-            # First run -- show welcome
-            console.print(Panel(
-                "[bold]Welcome to Claw-ED![/bold]\n\n"
-                "Run [cyan bold]clawed setup[/cyan bold] to get started -- it takes about 60 seconds.\n\n"
-                "Or see sample output first: [cyan]clawed demo[/cyan]",
-                title="Claw-ED",
-                border_style="blue",
-            ))
+            # First run — run setup wizard, then drop into chat
+            from clawed.onboarding import run_setup_wizard
+            try:
+                run_setup_wizard()
+            except (KeyboardInterrupt, EOFError):
+                console.print("\n[dim]Setup cancelled. Run [bold]clawed[/bold] again anytime.[/dim]")
+                raise typer.Exit()
+
+            # After setup, start chat automatically
+            import asyncio
+            from clawed.transports.cli import run_chat
+            try:
+                asyncio.run(run_chat())
+            except (KeyboardInterrupt, EOFError):
+                pass
         else:
-            # Returning user, show help
-            ctx.get_help()
+            # Returning user — drop straight into chat
+            import asyncio
+            from clawed.transports.cli import run_chat
+            try:
+                asyncio.run(run_chat())
+            except (KeyboardInterrupt, EOFError):
+                pass
         raise typer.Exit()
 
 
