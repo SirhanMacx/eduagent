@@ -31,10 +31,7 @@ jobs:
         run: ruff check .
 
       - name: Run tests
-        shell: bash
-        run: |
-          set -o pipefail
-          pytest -x --tb=short 2>&1 | tail -80
+        run: pytest --tb=short -q
 
   lint:
     runs-on: ubuntu-latest
