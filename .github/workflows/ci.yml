@@ -1,4 +1,4 @@
- .                                                                                                                                                                                                                                                             ame: CI
+ name: CI                                                                                                                                                                                                                                                         ame: CI
  
   on:
    push:
