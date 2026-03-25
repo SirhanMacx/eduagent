@@ -78,20 +78,27 @@ Every lesson includes differentiation, exit tickets, and homework — all in the
 
 ---
 
-### Step 1 — Install Python
+### Step 1 — Install Python (if you don't have it)
 
-Most Macs already have Python. On **Windows**, [download it here](https://www.python.org/downloads/) — click the big yellow button and run the installer.
+- **Mac**: Open Terminal (`Cmd + Space`, type "Terminal", hit Enter). Type `python3 --version`. If you see `Python 3.x.x`, you're good. If not, [download Python here](https://www.python.org/downloads/) — click the yellow button and run the installer.
+- **Windows**: Press the Windows key, type "cmd", hit Enter. Type `python --version`. If you see an error, [download Python here](https://www.python.org/downloads/) — click the yellow button, run the installer, and **check "Add Python to PATH"** during setup.
 
 ### Step 2 — Install and run
 
-Open Terminal (Mac: `Cmd + Space`, type "Terminal") or Command Prompt (Windows: press Windows key, type "cmd"). Then:
+In the same Terminal or Command Prompt window:
 
 ```
 pip install clawed
 clawed
 ```
 
-That's it. **A setup wizard opens in your browser** — pick your subject, grade, and AI provider from dropdown menus, upload your lesson plans, and you're ready to go. No API keys to paste in the terminal, no config files to edit.
+That's it. **A setup wizard opens in your browser** where you:
+- Pick your subject, grade level, and state from dropdown menus
+- Choose an AI provider and paste your API key (we recommend Ollama Cloud — $20/month)
+- Optionally upload your existing lesson plans (drag and drop)
+- Click "Get Started"
+
+No config files to edit, no environment variables to set. The wizard handles everything.
 
 > **Upgrading from EDUagent?** `pip install clawed` replaces `pip install eduagent`. All your existing config and files continue to work.
 
@@ -153,23 +160,15 @@ pip install 'clawed[all]'             # Everything (voice, TUI, hosted)
 
 ## 🔧 Which AI should I use?
 
-Claw-ED needs an AI brain. We recommend **Ollama Cloud** — $20/month flat rate, great quality, no surprises.
+The setup wizard lets you choose your AI provider. We recommend **Ollama Cloud** — $20/month flat rate, great quality, no surprises. Sign up at [ollama.com](https://ollama.com), grab your API key from Settings, and paste it in the wizard.
 
-1. Go to [ollama.com](https://ollama.com) and create a free account (some free usage included)
-2. Upgrade to the **$20/month** plan for unlimited use
-3. Grab your API key: profile icon → **Settings** → **API Keys** → **Generate**
-4. In Terminal:
-   ```
-   export OLLAMA_API_KEY=your-key-here
-   clawed config set-model ollama
-   ```
-
-> **Prefer Anthropic Claude or OpenAI?** Those work too — see [Choosing a Model](docs/CHOOSING_A_MODEL.md) for the full comparison.
+> **Prefer Anthropic Claude or OpenAI?** Those work too — the wizard supports all three. See [Choosing a Model](docs/CHOOSING_A_MODEL.md) for a detailed comparison.
 
 ## 📋 Commands
 
 | Command | What it does |
 |---------|-------------|
+| `clawed` | Setup wizard (first run) or start chatting (returning user) |
 | `clawed chat` | Start terminal chat |
 | `clawed serve` | Start web dashboard |
 | `clawed bot --token TOKEN` | Start teacher Telegram bot |
@@ -232,8 +231,8 @@ See [ROADMAP.md](ROADMAP.md) for the full plan. Highlights:
 
 | Version | What's coming |
 |---------|--------------|
-| **v0.5.0** *(current)* | Conversational agent, tool use, gateway-only transport |
-| **v0.4.0** | Hosted version — no install, no terminal, no API keys |
+| **v0.5.0** *(current)* | Conversational agent, tool use, browser setup wizard |
+| **v0.6.0** | Hosted version — no install, no terminal, no API keys |
 | **v1.0.0** | District deployment with admin dashboard and SSO |
 
 ## 🤝 Contributing
