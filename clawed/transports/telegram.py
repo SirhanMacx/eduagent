@@ -52,23 +52,87 @@ def _log_error(error: Exception) -> None:
         pass
 
 
+def _is_clawed_process(pid: int) -> bool:
+    """Check if a PID is actually a running clawed/python process (not just any process)."""
+    import sys
+
+    try:
+        if sys.platform == "win32":
+            import subprocess
+            result = subprocess.run(
+                ["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
+                capture_output=True, text=True, timeout=5,
+            )
+            output = result.stdout.lower()
+            return "python" in output or "clawed" in output
+        else:
+            # Unix: check /proc or ps
+            os.kill(pid, 0)  # Raises OSError if process doesn't exist
+            try:
+                import subprocess
+                result = subprocess.run(
+                    ["ps", "-p", str(pid), "-o", "comm="],
+                    capture_output=True, text=True, timeout=5,
+                )
+                output = result.stdout.lower()
+                return "python" in output or "clawed" in output
+            except Exception:
+                return True  # Can't check command name, assume it's ours
+    except (OSError, SystemError):
+        return False  # Process doesn't exist
+
+
+def kill_bot_process() -> bool:
+    """Find and kill any existing clawed bot process. Returns True if a process was killed."""
+    import sys
+
+    if not _BOT_LOCK.exists():
+        return False
+
+    try:
+        pid = int(_BOT_LOCK.read_text(encoding="utf-8").strip())
+        if pid == os.getpid():
+            return False
+        if not _is_clawed_process(pid):
+            _BOT_LOCK.unlink(missing_ok=True)
+            return False
+
+        # Kill the process
+        if sys.platform == "win32":
+            import subprocess
+            subprocess.run(["taskkill", "/F", "/PID", str(pid)], capture_output=True, timeout=10)
+        else:
+            os.kill(pid, signal.SIGTERM)
+            time.sleep(1)
+            try:
+                os.kill(pid, signal.SIGKILL)
+            except OSError:
+                pass  # Already dead
+
+        _BOT_LOCK.unlink(missing_ok=True)
+        return True
+    except Exception:
+        _BOT_LOCK.unlink(missing_ok=True)
+        return False
+
+
 def _check_bot_lock(force: bool = False) -> None:
     """Check if another bot instance is running."""
     if _BOT_LOCK.exists():
         try:
             pid = int(_BOT_LOCK.read_text(encoding="utf-8").strip())
             if pid != os.getpid():
-                try:
-                    os.kill(pid, 0)
+                if _is_clawed_process(pid):
                     if not force:
                         raise RuntimeError(
                             f"Another bot instance is already running (PID {pid}). "
-                            f"Stop it first or use --force."
+                            f"Stop it first, use --force, or use 'clawed bot --kill'."
                         )
-                    logger.warning("Force-removing stale lock for PID %d", pid)
-                except OSError:
-                    logger.info("Removing stale bot lock (PID %d)", pid)
-        except (ValueError, OSError):
+                    logger.warning("Force-killing existing bot (PID %d)", pid)
+                    kill_bot_process()
+                else:
+                    logger.info("Removing stale bot lock (PID %d is not a clawed process)", pid)
+        except (ValueError, OSError, SystemError):
             logger.info("Removing invalid bot lock file")
 
     _BOT_LOCK.parent.mkdir(parents=True, exist_ok=True)
@@ -173,24 +237,38 @@ class TelegramAPI:
         file_path: Path,
         caption: str | None = None,
     ) -> dict:
-        """Send a document file to a chat."""
+        """Send a document file to a chat. Retries on network errors."""
         url = f"{self._base}/sendDocument"
-        try:
-            with open(file_path, "rb") as f:
-                files = {"document": (file_path.name, f)}
-                data: dict[str, Any] = {"chat_id": chat_id}
-                if caption:
-                    data["caption"] = caption
-                resp = self._client.post(url, data=data, files=files)
-                result = resp.json()
-                if result.get("ok"):
-                    return result.get("result", {})
-                logger.warning("Telegram API error: %s", result.get("description", ""))
+        last_err: Exception | None = None
+        for attempt in range(3):
+            try:
+                with open(file_path, "rb") as f:
+                    files = {"document": (file_path.name, f)}
+                    data: dict[str, Any] = {"chat_id": chat_id}
+                    if caption:
+                        data["caption"] = caption
+                    resp = self._client.post(url, data=data, files=files)
+                    result = resp.json()
+                    if result.get("ok"):
+                        return result.get("result", {})
+                    logger.warning("Telegram API error: %s", result.get("description", ""))
+                    return {}
+            except (httpx.ConnectError, httpx.ReadTimeout, httpx.WriteTimeout) as e:
+                last_err = e
+                wait = 2 ** attempt
+                logger.warning(
+                    "Network error sending document (attempt %d): %s. Retrying in %ds...",
+                    attempt + 1, e, wait,
+                )
+                time.sleep(wait)
+            except Exception as e:
+                logger.error("Error sending document: %s", e)
+                _log_error(e)
                 return {}
-        except Exception as e:
-            logger.error("Error sending document: %s", e)
-            _log_error(e)
-            return {}
+        if last_err:
+            logger.error("Failed to send document after 3 retries: %s", last_err)
+            _log_error(last_err)
+        return {}
 
     def send_chat_action(self, chat_id: int, action: str = "typing") -> dict:
         return self._call("sendChatAction", chat_id=chat_id, action=action)
@@ -223,17 +301,26 @@ class TelegramAPI:
         return self._call("getFile", file_id=file_id)
 
     def download_file(self, file_path: str, local_path: Path) -> bool:
-        """Download a file from Telegram servers."""
+        """Download a file from Telegram servers. Retries on network errors."""
         url = f"{_API_BASE}/file/bot{self.token}/{file_path}"
-        try:
-            resp = self._client.get(url)
-            resp.raise_for_status()
-            local_path.parent.mkdir(parents=True, exist_ok=True)
-            local_path.write_bytes(resp.content)
-            return True
-        except Exception as e:
-            logger.error("Error downloading file: %s", e)
-            return False
+        for attempt in range(3):
+            try:
+                resp = self._client.get(url)
+                resp.raise_for_status()
+                local_path.parent.mkdir(parents=True, exist_ok=True)
+                local_path.write_bytes(resp.content)
+                return True
+            except (httpx.ConnectError, httpx.ReadTimeout, httpx.WriteTimeout) as e:
+                wait = 2 ** attempt
+                logger.warning(
+                    "Network error downloading file (attempt %d): %s. Retrying in %ds...",
+                    attempt + 1, e, wait,
+                )
+                time.sleep(wait)
+            except Exception as e:
+                logger.error("Error downloading file: %s", e)
+                return False
+        return False
 
     def set_my_commands(self, commands: list[dict]) -> dict:
         return self._call("setMyCommands", commands=commands)

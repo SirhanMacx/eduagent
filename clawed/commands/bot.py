@@ -497,6 +497,11 @@ def bot(
         "--force",
         help="Force start even if another instance appears to be running",
     ),
+    kill: bool = typer.Option(
+        False,
+        "--kill",
+        help="Kill any existing bot process and exit",
+    ),
 ):
     """Start the Claw-ED Telegram bot.
 
@@ -511,6 +516,15 @@ def bot(
         clawed config set-token YOUR_TOKEN
         clawed bot
     """
+    # Handle --kill: find and kill any existing bot process, then exit
+    if kill:
+        from clawed.transports.telegram import kill_bot_process
+        if kill_bot_process():
+            console.print("[green]Killed existing bot process.[/green]")
+        else:
+            console.print("[dim]No running bot process found.[/dim]")
+        raise typer.Exit(0)
+
     from clawed.onboarding import check_first_run
 
     check_first_run()
