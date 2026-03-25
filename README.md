@@ -1,15 +1,15 @@
 <p align="center">
-  <h1 align="center">EDUagent 🎓</h1>
+  <h1 align="center">Claw-ED 🎓</h1>
   <p align="center"><strong>Your teaching files, your AI co-teacher.</strong></p>
   <p align="center">Open-source AI assistant that learns from your lesson plans and generates new ones in your exact teaching voice.</p>
   <p align="center">No cloud service. No vendor lock-in. Your materials stay on your machine.</p>
 </p>
 
 <p align="center">
-  <a href="https://pypi.org/project/eduagent/"><img src="https://img.shields.io/pypi/v/eduagent?color=blue" alt="PyPI"></a>
+  <a href="https://pypi.org/project/clawed/"><img src="https://img.shields.io/pypi/v/clawed?color=blue" alt="PyPI"></a>
   <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.10+-blue" alt="Python 3.10+"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green" alt="MIT License"></a>
-  <a href="https://github.com/SirhanMacx/eduagent/stargazers"><img src="https://img.shields.io/github/stars/SirhanMacx/eduagent" alt="GitHub stars"></a>
+  <a href="https://github.com/SirhanMacx/clawed/stargazers"><img src="https://img.shields.io/github/stars/SirhanMacx/clawed" alt="GitHub stars"></a>
 </p>
 
 <p align="center">
@@ -22,7 +22,7 @@
 
 ---
 
-> **If EDUagent helps your teaching, [give it a star](https://github.com/SirhanMacx/eduagent/stargazers).** It helps other teachers find it.
+> **If Claw-ED helps your teaching, [give it a star](https://github.com/SirhanMacx/clawed/stargazers).** It helps other teachers find it.
 
 ---
 
@@ -31,7 +31,7 @@
 ```
 Your lesson plans (PDFs, DOCX, PPTX, TXT)
         ↓
-EDUagent reads them and learns your teaching fingerprint:
+Claw-ED reads them and learns your teaching fingerprint:
   • Teaching style (inquiry-based, direct instruction, Socratic...)
   • Structural preferences (AIM questions, Do Nows, exit tickets...)
   • Vocabulary level and tone
@@ -39,7 +39,7 @@ EDUagent reads them and learns your teaching fingerprint:
         ↓
 You ask: "Plan a 2-week unit on WWI for my 10th graders"
         ↓
-EDUagent generates:
+Claw-ED generates:
   • Full unit plan with essential questions
   • 10 daily lesson plans in YOUR voice
   • Student worksheets, assessments, rubrics
@@ -49,7 +49,7 @@ EDUagent generates:
 
 ## Real output
 
-This is actual EDUagent output — not mockups. Generated for an 8th grade Social Studies class studying the American Revolution.
+This is actual Claw-ED output — not mockups. Generated for an 8th grade Social Studies class studying the American Revolution.
 
 **Unit plan:**
 
@@ -88,7 +88,7 @@ Every lesson includes differentiation, exit tickets, and homework — all in the
 
 ### Step 1 — Check that Python is installed
 
-EDUagent runs on Python. Most Macs already have it. Here's how to check:
+Claw-ED runs on Python. Most Macs already have it. Here's how to check:
 
 1. On a **Mac**: press `Cmd + Space`, type `Terminal`, hit Enter
 2. On **Windows**: press the Windows key, type `cmd`, hit Enter
@@ -100,21 +100,23 @@ EDUagent runs on Python. Most Macs already have it. Here's how to check:
 
 ---
 
-### Step 2 — Install EDUagent
+### Step 2 — Install Claw-ED
 
 In the same Terminal window, type this and press Enter:
 
 ```
-pip install eduagent
+pip install clawed
 ```
 
 Wait about 30 seconds. You'll see text scrolling — that's normal. When it stops and you see a `$` again, it worked.
+
+> **Upgrading from EDUagent?** Claw-ED is the same project, renamed. `pip install clawed` replaces `pip install eduagent`. All your existing config, lesson files, and API keys continue to work. The `eduagent` command still works too.
 
 ---
 
 ### Step 3 — Get an AI key (free to start)
 
-EDUagent needs an AI brain. The easiest option is **Anthropic Claude** — you get $5 free credit, no credit card required.
+Claw-ED needs an AI brain. The easiest option is **Anthropic Claude** — you get $5 free credit, no credit card required.
 
 1. Go to [console.anthropic.com](https://console.anthropic.com) and create a free account
 2. Click **API Keys** in the left sidebar → **Create Key**
@@ -129,39 +131,41 @@ EDUagent needs an AI brain. The easiest option is **Anthropic Claude** — you g
      set ANTHROPIC_API_KEY=sk-ant-your-key-here
      ```
 
-> **Prefer ChatGPT?** Use `OPENAI_API_KEY=` instead. **Want free?** [Install Ollama](https://ollama.com) and run `eduagent config set-model ollama` — no API key needed.
+> **Prefer ChatGPT?** Use `OPENAI_API_KEY=` instead. **Want free?** [Install Ollama](https://ollama.com) and run `clawed config set-model ollama` — no API key needed.
 
 ---
 
-### Step 4 — Start EDUagent
+### Step 4 — Start Claw-ED
 
 ```
-eduagent chat
+clawed chat
 ```
 
-That's it. EDUagent will ask you a few questions about what you teach, then you can point it at your existing lesson plans (or just start from scratch).
+That's it. Claw-ED will ask you a few questions about what you teach, then you can point it at your existing lesson plans (or just start from scratch).
 
 **Example:**
 ```
-EDUagent: What do you teach?
+Claw-ED: What do you teach?
 You: 9th grade Global History in New York
 
-EDUagent: Do you have any lesson plans or materials I can learn from?
+Claw-ED: Do you have any lesson plans or materials I can learn from?
 You: yes, they're in my Documents/Teaching folder
 
-EDUagent: Analyzing 246 files... I can see your style now.
+Claw-ED: Analyzing 246 files... I can see your style now.
   You love Socratic questioning, primary sources, and AIM questions.
   Ready to help — what do you need?
 
 You: write a do now for tomorrow's lesson on the causes of WWI
-EDUagent: Here's your Do Now...
+Claw-ED: Here's your Do Now...
 ```
+
+> **Note:** The `eduagent` command still works as an alias for `clawed`. Use whichever you prefer.
 
 ---
 
 ### 📱 Want it on your phone? (Telegram bot)
 
-Once EDUagent is set up, you can connect it to Telegram so you can generate lessons from your phone — during your commute, in the copy room, wherever.
+Once Claw-ED is set up, you can connect it to Telegram so you can generate lessons from your phone — during your commute, in the copy room, wherever.
 
 **What is Telegram?** It's a free messaging app (like iMessage or WhatsApp). You need the app on your phone and an account. Download it at [telegram.org](https://telegram.org) if you don't have it yet.
 
@@ -175,12 +179,12 @@ Once EDUagent is set up, you can connect it to Telegram so you can generate less
 6. BotFather will send you a **token** — a long string like `7412836591:AAHdqTqFEe...`
 7. Copy that token (hold down on it, select Copy)
 
-**Step 2 — Connect it to EDUagent**
+**Step 2 — Connect it to Claw-ED**
 
 In Terminal on your computer:
 ```
-pip install 'eduagent[telegram]'
-eduagent bot --token PASTE-YOUR-TOKEN-HERE
+pip install 'clawed[telegram]'
+clawed bot --token PASTE-YOUR-TOKEN-HERE
 ```
 
 Leave that Terminal window open (the bot runs as long as the window is open). Now open Telegram, find your new bot, and send it a message — it should respond!
@@ -197,7 +201,7 @@ You can create a *second* bot for your students. They join with a class code you
 2. Copy the new token
 3. In Terminal:
    ```
-   eduagent student-bot --token PASTE-STUDENT-BOT-TOKEN-HERE
+   clawed student-bot --token PASTE-STUDENT-BOT-TOKEN-HERE
    ```
 4. In your teacher bot, type: `/create-class` to get a class code
 5. Share the code and your student bot username with your students
@@ -208,7 +212,7 @@ You can create a *second* bot for your students. They join with a class code you
 ### 🌐 Prefer a website interface?
 
 ```
-eduagent serve
+clawed serve
 ```
 
 Then open your browser and go to **http://localhost:8000** — you'll see a full dashboard.
@@ -220,10 +224,10 @@ Then open your browser and go to **http://localhost:8000** — you'll see a full
 ## 📦 Installation options
 
 ```bash
-pip install eduagent                    # Core (terminal chat + web dashboard)
-pip install 'eduagent[telegram]'        # + Telegram bot for teacher and students
-pip install 'eduagent[voice]'           # + Voice note transcription (optional)
-pip install 'eduagent[all]'             # Everything (Telegram, voice, TUI, hosted)
+pip install clawed                    # Core (terminal chat + web dashboard)
+pip install 'clawed[telegram]'        # + Telegram bot for teacher and students
+pip install 'clawed[voice]'           # + Voice note transcription (optional)
+pip install 'clawed[all]'             # Everything (Telegram, voice, TUI, hosted)
 
 # Requires Python 3.10+. Run: python --version
 # Don't have Python? Download at https://python.org/downloads
@@ -231,7 +235,7 @@ pip install 'eduagent[all]'             # Everything (Telegram, voice, TUI, host
 
 ## 🔧 Which AI should I use?
 
-EDUagent is the tool — it needs an AI brain to do the thinking. Think of it like a car: EDUagent is the car, and the AI is the engine. **You pick the engine and pay for it directly.** Nothing goes through our servers.
+Claw-ED is the tool — it needs an AI brain to do the thinking. Think of it like a car: Claw-ED is the car, and the AI is the engine. **You pick the engine and pay for it directly.** Nothing goes through our servers.
 
 ---
 
@@ -275,7 +279,7 @@ Setup:
 2. There is some free usage to try it before committing
 3. Upgrade to the **$20/month** plan for unlimited use
 4. Find your API key: log in → click your profile icon (top right) → **Settings** → **API Keys** → **Generate**
-5. In Terminal: `export OLLAMA_API_KEY=your-key-here` then `eduagent config set-model ollama`
+5. In Terminal: `export OLLAMA_API_KEY=your-key-here` then `clawed config set-model ollama`
 
 > **Best value for most teachers.** Flat rate, no surprises, and MiniMax M2.7 is excellent at capturing your specific teaching style.
 
@@ -293,7 +297,7 @@ If you want to try anyway, we recommend the **Qwen 3.5 series**:
 | Modern Mac or PC (16GB RAM) | Qwen 3.5 9B | `ollama pull qwen3.5:9b` |
 | High-end workstation (32GB+ RAM) | Qwen 3.5 32B | `ollama pull qwen3.5:32b` |
 
-Then run: `eduagent config set-model ollama`
+Then run: `clawed config set-model ollama`
 
 > Start with Option 3 if cost is your concern — $20/month for cloud is far better than a free local model.
 
@@ -305,31 +309,31 @@ Then run: `eduagent config set-model ollama`
 
 | Command | What it does |
 |---------|-------------|
-| `eduagent chat` | Start terminal chat |
-| `eduagent bot --token TOKEN` | Start teacher Telegram bot |
-| `eduagent student-bot --token TOKEN` | Start student Telegram bot |
-| `eduagent serve` | Start web dashboard |
-| `eduagent ingest <path>` | Learn from your lesson plans |
-| `eduagent persona show` | See what EDUagent learned about you |
-| `eduagent unit "Topic" -g 8 -s "Subject"` | Generate a unit plan |
-| `eduagent lesson "Topic" -g 8 -s "Subject"` | Generate a single lesson |
-| `eduagent materials -l lesson.json` | Generate worksheet + assessment |
-| `eduagent sub-packet -d 2026-03-24` | Generate a substitute teacher packet |
-| `eduagent standards list -g 8 -s math` | Browse your state's standards |
-| `eduagent demo` | See example output (no API key needed) |
-| `eduagent lesson "Topic" -g 8 -s "Subject" --format pptx` | Generate a PowerPoint presentation |
-| `eduagent lesson "Topic" -g 8 -s "Subject" --format docx` | Generate a Word document |
-| `eduagent lesson "Topic" -g 8 -s "Subject" --format pdf` | Generate a PDF |
-| `eduagent workspace init` | Set up your teacher workspace (identity, memory, notes) |
-| `eduagent schedule list` | View autonomous task schedule |
-| `eduagent skills list` | Browse subject-specific teaching strategies |
-| `eduagent gap-analyze -s "Math" -g 8` | Find curriculum gaps against standards |
-| `eduagent evaluate --lessons 5` | Test voice consistency across generated lessons |
-| `eduagent config set-unsplash-key KEY` | Enable slide images (free) |
+| `clawed chat` | Start terminal chat |
+| `clawed bot --token TOKEN` | Start teacher Telegram bot |
+| `clawed student-bot --token TOKEN` | Start student Telegram bot |
+| `clawed serve` | Start web dashboard |
+| `clawed ingest <path>` | Learn from your lesson plans |
+| `clawed persona show` | See what Claw-ED learned about you |
+| `clawed unit "Topic" -g 8 -s "Subject"` | Generate a unit plan |
+| `clawed lesson "Topic" -g 8 -s "Subject"` | Generate a single lesson |
+| `clawed materials -l lesson.json` | Generate worksheet + assessment |
+| `clawed sub-packet -d 2026-03-24` | Generate a substitute teacher packet |
+| `clawed standards list -g 8 -s math` | Browse your state's standards |
+| `clawed demo` | See example output (no API key needed) |
+| `clawed lesson "Topic" -g 8 -s "Subject" --format pptx` | Generate a PowerPoint presentation |
+| `clawed lesson "Topic" -g 8 -s "Subject" --format docx` | Generate a Word document |
+| `clawed lesson "Topic" -g 8 -s "Subject" --format pdf` | Generate a PDF |
+| `clawed workspace init` | Set up your teacher workspace (identity, memory, notes) |
+| `clawed schedule list` | View autonomous task schedule |
+| `clawed skills list` | Browse subject-specific teaching strategies |
+| `clawed gap-analyze -s "Math" -g 8` | Find curriculum gaps against standards |
+| `clawed evaluate --lessons 5` | Test voice consistency across generated lessons |
+| `clawed config set-unsplash-key KEY` | Enable slide images (free) |
 
 ### 🖼️ Academic Images — Built In, No Setup Required
 
-EDUagent automatically finds relevant academic images for your slides and handouts. **No API keys needed.** It searches these sources in order:
+Claw-ED automatically finds relevant academic images for your slides and handouts. **No API keys needed.** It searches these sources in order:
 
 | Source | Best for | Cost | Key needed? |
 |--------|----------|------|-------------|
@@ -337,7 +341,7 @@ EDUagent automatically finds relevant academic images for your slides and handou
 | **Wikimedia Commons** | Science, Art, Music, all subjects | Free | No |
 | **Unsplash** (fallback) | Modern photos, generic visuals | Free | Optional |
 
-**How it works:** When you generate a lesson with `--format pptx` or `--format docx`, EDUagent searches for images that match your topic and subject. A lesson on "The American Revolution" gets historical paintings and primary source documents from the Library of Congress. A lesson on "Photosynthesis" gets scientific diagrams from Wikimedia Commons.
+**How it works:** When you generate a lesson with `--format pptx` or `--format docx`, Claw-ED searches for images that match your topic and subject. A lesson on "The American Revolution" gets historical paintings and primary source documents from the Library of Congress. A lesson on "Photosynthesis" gets scientific diagrams from Wikimedia Commons.
 
 **What you get:**
 - **Title slide:** Full-bleed academic image with dark overlay for readability
@@ -345,42 +349,41 @@ EDUagent automatically finds relevant academic images for your slides and handou
 - **Student handouts (DOCX):** Embedded images alongside relevant sections
 - **No images?** Slides still look professional — subject-themed colors, clean typography, proper layouts
 
-**Image caching:** Every image is cached locally at `~/.eduagent/cache/images/` so the same topic never re-downloads. Searches have a 5-second timeout — if a source is slow, it's skipped gracefully.
+**Image caching:** Every image is cached locally at `~/.clawed/cache/images/` so the same topic never re-downloads. Searches have a 5-second timeout — if a source is slow, it's skipped gracefully.
 
 **Want even more images?** Optionally add an Unsplash key for modern photography:
 ```bash
-eduagent config set-unsplash-key YOUR_KEY   # from unsplash.com/developers (free)
+clawed config set-unsplash-key YOUR_KEY   # from unsplash.com/developers (free)
 ```
 
 ## 🏗️ Architecture
 
 ```
-Teacher's files (PDFs, DOCX, PPTX, TXT)
-        ↓ ingestor.py
-Document corpus
-        ↓ persona.py
-TeacherPersona (style, structure, voice)
+Teacher's message (Telegram, CLI, Web, or OpenClaw)
+        ↓ transport layer
+Gateway.handle(text, teacher_id)
+        ↓ router.py (intent detection)
+Handler (one per domain):
+  handlers/generate.py  → Lessons, units, materials
+  handlers/export.py    → PPTX, DOCX, PDF, handouts
+  handlers/feedback.py  → Ratings + memory loop
+  handlers/onboard.py   → New teacher setup
+  handlers/schedule.py  → Automated tasks
+  handlers/gaps.py      → Curriculum gap analysis
+  handlers/standards.py → Standards lookup
+  handlers/ingest.py    → File ingestion
         ↓
-Generation pipeline:
-  planner.py → UnitPlan
-  lesson.py  → DailyLesson
-  materials.py → Worksheet + Assessment
-  differentiation.py → IEP/504 modifications
+GatewayResponse (text, files, buttons)
+        ↓ transport renders it
+Teacher sees the result
 
-Delivery:
-  commands/bot.py      → Telegram bot
-  commands/generate.py → Generation CLI commands
-  commands/config.py   → Config & API key management
-  commands/export.py   → Export (PDF, Classroom, share)
-  api/server.py        → Web dashboard (FastAPI)
-  cli.py               → Entry point (~100 lines)
-
-Security & reliability:
-  API keys stored in OS keychain (keyring) — never in config.json
-  JSON repair via json-repair package for resilient LLM output parsing
-  Thread-safe SQLite with per-operation connections and context managers
-  SQL injection guards on all dynamic queries
-  CORS middleware + slowapi rate limiting on API endpoints
+Services (used by handlers):
+  llm.py           → Unified LLM client (Anthropic/OpenAI/Ollama)
+  model_router.py  → Tier-based routing (fast/work/deep)
+  persona.py       → Teaching style extraction
+  memory_engine.py → Self-improvement from feedback
+  workspace.py     → Teacher workspace (identity, soul, memory)
+  doc_export.py    → Professional document generation
 ```
 
 ## ✅ Features
@@ -394,7 +397,7 @@ Security & reliability:
 - [x] Telegram bot (standalone, no other tools required)
 - [x] Web dashboard with streaming generation
 - [x] Student chatbot (students ask questions in teacher's voice)
-- [x] Voice note transcription (optional: `pip install 'eduagent[voice]'`)
+- [x] Voice note transcription (optional: `pip install 'clawed[voice]'`)
 - [x] School/department curriculum sharing
 - [x] Substitute teacher packet generator
 - [x] Parent communication generator
@@ -426,15 +429,15 @@ See [ROADMAP.md](ROADMAP.md) for the full plan. Highlights:
 
 | Version | What's coming |
 |---------|--------------|
-| **v0.2.0** | Hosted version — no install, no terminal, no API keys |
-| **v0.3.0** | iOS and Android apps |
+| **v0.3.0** *(current)* | Claw-ED architecture — gateway, handlers, transports |
+| **v0.4.0** | Hosted version — no install, no terminal, no API keys |
 | **v1.0.0** | District deployment with admin dashboard and SSO |
 
 ## 🤝 Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). First issues are labeled `good first issue`.
 
-Subject matter experts welcome: if you know how great lessons are structured in your subject, open a PR for `eduagent/skills/your_subject.py`.
+Subject matter experts welcome: if you know how great lessons are structured in your subject, open a PR for `clawed/skills/your_subject.py`.
 
 ## 📄 License
 
@@ -444,12 +447,12 @@ MIT. Build on it, sell it, use it in your classroom. Just don't be evil.
 
 ## 👨‍🏫 Built by a teacher
 
-EDUagent was created by **Mr. Mac** — 9 years teaching Social Studies in Long Island, NY school districts. This isn't a startup's idea of what teachers need. It's a tool built by someone who writes lesson plans every week, knows what a good Do Now looks like, and got tired of starting from scratch.
+Claw-ED was created by **Mr. Mac** — 9 years teaching Social Studies in Long Island, NY school districts. This isn't a startup's idea of what teachers need. It's a tool built by someone who writes lesson plans every week, knows what a good Do Now looks like, and got tired of starting from scratch.
 
 Mr. Mac is the primary user and the reason this exists. Every feature was built because he needed it.
 
 ---
 
 <p align="center">
-  <strong>If EDUagent saves you time, <a href="https://github.com/SirhanMacx/eduagent/stargazers">star it on GitHub</a></strong> so other teachers can find it.
+  <strong>If Claw-ED saves you time, <a href="https://github.com/SirhanMacx/clawed/stargazers">star it on GitHub</a></strong> so other teachers can find it.
 </p>
