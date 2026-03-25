@@ -147,7 +147,6 @@ Once Claw-ED is set up, you can connect it to Telegram so you can generate lesso
 
 In Terminal on your computer:
 ```
-pip install 'clawed[telegram]'
 clawed bot --token PASTE-YOUR-TOKEN-HERE
 ```
 
@@ -174,10 +173,9 @@ Then open your browser and go to **http://localhost:8000** — you'll see a full
 ## 📦 Installation options
 
 ```bash
-pip install clawed                    # Core (terminal chat + web dashboard)
-pip install 'clawed[telegram]'        # + Telegram bot for teacher and students
+pip install clawed                    # Everything you need (chat, bot, web dashboard)
 pip install 'clawed[voice]'           # + Voice note transcription (optional)
-pip install 'clawed[all]'             # Everything (Telegram, voice, TUI, hosted)
+pip install 'clawed[all]'             # Everything (voice, TUI, hosted)
 
 # Requires Python 3.10+. Run: python --version
 # Don't have Python? Download at https://python.org/downloads
@@ -264,7 +262,7 @@ See [ROADMAP.md](ROADMAP.md) for the full plan. Highlights:
 
 | Version | What's coming |
 |---------|--------------|
-| **v0.3.0** *(current)* | Claw-ED architecture — gateway, handlers, transports |
+| **v0.5.0** *(current)* | Conversational agent, tool use, gateway-only transport |
 | **v0.4.0** | Hosted version — no install, no terminal, no API keys |
 | **v1.0.0** | District deployment with admin dashboard and SSO |
 
