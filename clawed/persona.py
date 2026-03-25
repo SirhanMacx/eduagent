@@ -10,14 +10,37 @@ from clawed.models import AppConfig, Document, TeacherPersona
 PROMPT_PATH = Path(__file__).parent / "prompts" / "persona_extract.txt"
 
 
+_MAX_TOTAL_CHARS = 50_000  # ~12k tokens — fits comfortably in any model's context
+_MAX_PER_DOC_CHARS = 3_000
+_MAX_DOCS = 30  # Sample at most 30 representative documents
+
+
 def _build_document_block(documents: list[Document]) -> str:
-    """Format documents for insertion into the prompt."""
+    """Format documents for insertion into the prompt.
+
+    For large corpora (1000+ docs), samples representative documents
+    to stay within LLM context limits.
+    """
+    # Sample if corpus is very large
+    sampled = documents
+    if len(documents) > _MAX_DOCS:
+        import random
+        # Deterministic sample for reproducibility
+        rng = random.Random(42)
+        sampled = rng.sample(documents, _MAX_DOCS)
+
     parts: list[str] = []
-    for i, doc in enumerate(documents, 1):
+    total = 0
+    for i, doc in enumerate(sampled, 1):
+        excerpt = doc.content[:_MAX_PER_DOC_CHARS]
+        if total + len(excerpt) > _MAX_TOTAL_CHARS:
+            break
         parts.append(
             f"--- Document {i}: {doc.title} ({doc.doc_type.value}) ---\n"
-            f"{doc.content[:3000]}\n"  # Cap per-doc length to stay within context
+            f"{excerpt}\n"
         )
+        total += len(excerpt)
+
     return "\n".join(parts)
 
 

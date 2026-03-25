@@ -671,8 +671,13 @@ def bot(
 def _bot_with_live_display(
     token: str, data_path: Optional[Path] = None
 ) -> None:
-    """Run the Telegram bot with a Rich Live status panel."""
+    """Run the Telegram bot with a Rich Live status panel.
+
+    Starts the actual Telegram transport (legacy python-telegram-bot)
+    alongside a Rich Live display that shows gateway stats.
+    """
     import asyncio
+    import threading
     import time
 
     from rich.live import Live
@@ -701,19 +706,24 @@ def _bot_with_live_display(
             border_style="green",
         )
 
+    # Start the actual Telegram bot in a background thread
+    from clawed.telegram_bot import run_bot as run_legacy_bot
+
+    bot_thread = threading.Thread(
+        target=run_legacy_bot,
+        kwargs={"token": token, "data_dir": data_path, "force": True},
+        daemon=True,
+    )
+    bot_thread.start()
+
     try:
         with Live(
             _make_display(),
             console=console,
             refresh_per_second=1,
         ) as live_display:
-
-            async def _run_with_refresh() -> None:
-                await gateway.start()
-                while True:
-                    live_display.update(_make_display())
-                    await asyncio.sleep(1)
-
-            asyncio.run(_run_with_refresh())
+            while bot_thread.is_alive():
+                live_display.update(_make_display())
+                time.sleep(1)
     except KeyboardInterrupt:
         console.print("\n[yellow]Bot stopped.[/yellow]")

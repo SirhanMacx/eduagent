@@ -6,7 +6,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class DocType(str, Enum):
@@ -39,6 +39,11 @@ class TeachingStyle(str, Enum):
     INQUIRY_BASED = "inquiry_based"
     PROJECT_BASED = "project_based"
     BLENDED = "blended"
+    LECTURE_DISCUSSION = "lecture_discussion"
+    WORKSHOP = "workshop"
+    FLIPPED = "flipped"
+    COOPERATIVE = "cooperative"
+    DIFFERENTIATED = "differentiated"
 
 
 class VocabularyLevel(str, Enum):
@@ -60,6 +65,40 @@ class TeacherPersona(BaseModel):
 
     name: str = "My Teaching Persona"
     teaching_style: TeachingStyle = TeachingStyle.DIRECT_INSTRUCTION
+
+    @field_validator("teaching_style", mode="before")
+    @classmethod
+    def _coerce_teaching_style(cls, v):
+        """Map unrecognized LLM-generated styles to the closest enum value."""
+        if isinstance(v, TeachingStyle):
+            return v
+        if isinstance(v, str):
+            # Try exact match first
+            try:
+                return TeachingStyle(v)
+            except ValueError:
+                pass
+            # Fuzzy map common LLM outputs to valid enum values
+            _ALIASES = {
+                "lecture": "lecture_discussion",
+                "discussion": "lecture_discussion",
+                "lecture_based": "lecture_discussion",
+                "collaborative": "cooperative",
+                "experiential": "inquiry_based",
+                "constructivist": "inquiry_based",
+                "problem_based": "project_based",
+                "student_centered": "inquiry_based",
+                "teacher_centered": "direct_instruction",
+                "traditional": "direct_instruction",
+                "hybrid": "blended",
+                "mixed": "blended",
+            }
+            normalized = v.lower().strip().replace("-", "_").replace(" ", "_")
+            if normalized in _ALIASES:
+                return TeachingStyle(_ALIASES[normalized])
+            # Last resort: default to blended
+            return TeachingStyle.BLENDED
+        return v
     vocabulary_level: VocabularyLevel = VocabularyLevel.GRADE_APPROPRIATE
     tone: str = "warm and encouraging"
     structural_preferences: list[str] = Field(
