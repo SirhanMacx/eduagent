@@ -243,7 +243,7 @@ def _ask_materials() -> tuple[str | None, str | None]:
         drive_str = raw_drive.strip()
         if drive_str and ("drive.google.com" in drive_str or "docs.google.com" in drive_str):
             drive_url = drive_str
-            console.print(f"  [green]\u2713[/green] Drive link saved")
+            console.print("  [green]\u2713[/green] Drive link saved")
         elif drive_str:
             console.print("  [yellow]That doesn't look like a Google Drive link.[/yellow]")
 
@@ -255,7 +255,7 @@ def _ask_materials() -> tuple[str | None, str | None]:
         )
         if raw_drive.strip() and "drive.google.com" in raw_drive.strip():
             drive_url = raw_drive.strip()
-            console.print(f"  [green]\u2713[/green] Drive link saved")
+            console.print("  [green]\u2713[/green] Drive link saved")
 
     if not local_path and not drive_url:
         console.print(
@@ -313,7 +313,7 @@ def _ingest_materials(path_str: str, config: AppConfig) -> None:
 
 def _ingest_drive(drive_url: str, config: AppConfig) -> None:
     """Ingest materials from a Google Drive folder link."""
-    console.print(f"\n  [dim]Connecting to Google Drive...[/dim]")
+    console.print("\n  [dim]Connecting to Google Drive...[/dim]")
     try:
         from clawed.drive import ingest_drive_folder
 

@@ -13,8 +13,6 @@ from clawed.commands._helpers import _safe_progress, console, load_persona_or_ex
 from clawed.commands._helpers import output_dir as _output_dir
 from clawed.commands._helpers import run_async as _run_async
 from clawed.commands.generate import generate_app
-from clawed.models import AppConfig
-
 
 # ── Unit planning ────────────────────────────────────────────────────────
 

@@ -856,5 +856,5 @@ def gap_analyze(
 
 
 # ── Import split modules so their commands register on generate_app ──────
-import clawed.commands.generate_unit  # noqa: E402, F401
 import clawed.commands.generate_assessment  # noqa: E402, F401
+import clawed.commands.generate_unit  # noqa: E402, F401

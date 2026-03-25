@@ -15,7 +15,6 @@ from clawed.commands._helpers import run_async as _run_async
 from clawed.commands.generate import generate_app
 from clawed.models import AppConfig
 
-
 # ── Materials generation ─────────────────────────────────────────────────
 
 

@@ -673,7 +673,6 @@ def _bot_with_live_display(
     Starts the actual Telegram transport (legacy python-telegram-bot)
     alongside a Rich Live display that shows gateway stats.
     """
-    import asyncio
     import threading
     import time
 

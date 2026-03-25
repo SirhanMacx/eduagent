@@ -79,7 +79,7 @@ class TeacherPersona(BaseModel):
             except ValueError:
                 pass
             # Fuzzy map common LLM outputs to valid enum values
-            _ALIASES = {
+            aliases = {
                 "lecture": "lecture_discussion",
                 "discussion": "lecture_discussion",
                 "lecture_based": "lecture_discussion",
@@ -94,8 +94,8 @@ class TeacherPersona(BaseModel):
                 "mixed": "blended",
             }
             normalized = v.lower().strip().replace("-", "_").replace(" ", "_")
-            if normalized in _ALIASES:
-                return TeachingStyle(_ALIASES[normalized])
+            if normalized in aliases:
+                return TeachingStyle(aliases[normalized])
             # Last resort: default to blended
             return TeachingStyle.BLENDED
         return v

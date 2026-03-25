@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Optional
 
 from clawed.generation import _fmt_lesson_summary, _fmt_persona, _fmt_unit_summary
-from clawed.models import AppConfig, TeacherPersona
+from clawed.models import AppConfig
 from clawed.state import TeacherSession
 
 # Re-export formatters for backward compatibility
@@ -71,7 +71,8 @@ def _show_status(session: TeacherSession) -> str:
     """Return a formatted status string for the given session."""
     lines = ["\u2699\ufe0f *Claw-ED Status*", ""]
     if session.persona:
-        lines.append(f"\U0001f469\u200d\U0001f3eb Persona: {session.persona.teaching_style.value.replace('_', ' ').title()} teacher")
+        style = session.persona.teaching_style.value.replace("_", " ").title()
+        lines.append(f"\U0001f469\u200d\U0001f3eb Persona: {style} teacher")
         if session.persona.subject_area:
             lines.append(f"\U0001f4da Subject: {session.persona.subject_area}")
         if session.persona.grade_levels:

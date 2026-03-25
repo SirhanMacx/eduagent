@@ -99,8 +99,6 @@ def _extract_handlers(bot: EduAgentBot) -> dict:
     }):
         # The new start() uses asyncio.run(_run_async()) which blocks on
         # stop_event.wait(). Patch asyncio.Event so wait() returns immediately.
-        original_event = asyncio.Event
-
         class _InstantEvent(asyncio.Event):
             async def wait(self):
                 return  # Don't block
