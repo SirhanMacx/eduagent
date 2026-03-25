@@ -231,8 +231,10 @@ class Gateway:
 
     async def _chat(self, message: str, teacher_id: str) -> GatewayResponse:
         try:
-            from clawed.openclaw_plugin import handle_message
-            response = await handle_message(message, teacher_id=teacher_id)
+            from clawed.generation import generate_freeform
+            from clawed.state import TeacherSession
+            session = TeacherSession.load(teacher_id)
+            response = await generate_freeform(message, session)
             return GatewayResponse(text=response)
         except Exception as e:
             logger.error("Chat fallback failed: %s", e)

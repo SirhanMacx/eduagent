@@ -7,17 +7,16 @@ from clawed.gateway_response import GatewayResponse
 
 logger = logging.getLogger(__name__)
 
-async def handle_message(text, **kwargs):
-    from clawed.openclaw_plugin import handle_message as _hm
-    return await _hm(text, **kwargs)
-
 class DemoHandler:
     async def run(self, teacher_id: str) -> GatewayResponse:
         try:
-            text = await handle_message(
-                "generate a sample lesson on photosynthesis for 6th grade science",
-                teacher_id=teacher_id,
-            )
+            from clawed.generation import generate_lesson
+            from clawed.router import parse_intent
+            from clawed.state import TeacherSession
+
+            parsed = parse_intent("generate a sample lesson on photosynthesis for 6th grade science")
+            session = TeacherSession.load(teacher_id)
+            text = await generate_lesson(parsed, session)
             return GatewayResponse(text=text)
         except Exception as e:
             return GatewayResponse(text=f"Demo failed: {e}")

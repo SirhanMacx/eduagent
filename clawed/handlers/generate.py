@@ -1,6 +1,6 @@
 """Lesson and unit generation handler.
 
-Wraps openclaw_plugin.handle_message with transport-agnostic response
+Wraps clawed.generation service functions with transport-agnostic response
 building (post-generation buttons, error handling).
 
 Extracted from tg.py lines 1697-1766.
@@ -11,7 +11,7 @@ import asyncio
 import logging
 
 from clawed.gateway_response import Button, GatewayResponse
-from clawed.openclaw_plugin import get_last_lesson_id, handle_message
+from clawed.openclaw_plugin import get_last_lesson_id
 
 logger = logging.getLogger(__name__)
 
@@ -36,11 +36,14 @@ class GenerateHandler:
     async def lesson(self, topic: str, teacher_id: str) -> GatewayResponse:
         """Generate a lesson on the given topic."""
         try:
+            from clawed.generation import generate_lesson
+            from clawed.router import parse_intent
+            from clawed.state import TeacherSession
+
+            parsed = parse_intent(f"generate a lesson on {topic}")
+            session = TeacherSession.load(teacher_id)
             response_text = await asyncio.wait_for(
-                handle_message(
-                    f"generate a lesson on {topic}",
-                    teacher_id=teacher_id,
-                ),
+                generate_lesson(parsed, session),
                 timeout=120.0,
             )
         except asyncio.TimeoutError:
@@ -64,11 +67,14 @@ class GenerateHandler:
     async def unit(self, topic: str, teacher_id: str) -> GatewayResponse:
         """Generate a unit plan on the given topic."""
         try:
+            from clawed.generation import generate_unit
+            from clawed.router import parse_intent
+            from clawed.state import TeacherSession
+
+            parsed = parse_intent(f"plan a unit on {topic}")
+            session = TeacherSession.load(teacher_id)
             response_text = await asyncio.wait_for(
-                handle_message(
-                    f"plan a unit on {topic}",
-                    teacher_id=teacher_id,
-                ),
+                generate_unit(parsed, session),
                 timeout=120.0,
             )
         except asyncio.TimeoutError:

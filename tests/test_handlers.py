@@ -73,33 +73,33 @@ class TestGenerateHandler:
 
     @pytest.mark.asyncio
     async def test_generate_lesson_returns_response(self):
-        with patch("clawed.handlers.generate.handle_message", new_callable=AsyncMock) as mock_hm:
-            mock_hm.return_value = "Here is your lesson on photosynthesis..."
+        with patch("clawed.generation.generate_lesson", new_callable=AsyncMock) as mock_gl:
+            mock_gl.return_value = "Here is your lesson on photosynthesis..."
             r = await self.handler.lesson("photosynthesis", "teacher_1")
             assert isinstance(r, GatewayResponse)
             assert "photosynthesis" in r.text.lower()
-            mock_hm.assert_awaited_once()
+            mock_gl.assert_awaited_once()
 
     @pytest.mark.asyncio
     async def test_generate_unit_returns_response(self):
-        with patch("clawed.handlers.generate.handle_message", new_callable=AsyncMock) as mock_hm:
-            mock_hm.return_value = "Unit plan for WWI..."
+        with patch("clawed.generation.generate_unit", new_callable=AsyncMock) as mock_gu:
+            mock_gu.return_value = "Unit plan for WWI..."
             r = await self.handler.unit("World War I", "teacher_1")
             assert isinstance(r, GatewayResponse)
             assert r.has_content
 
     @pytest.mark.asyncio
     async def test_generate_with_post_gen_buttons(self):
-        with patch("clawed.handlers.generate.handle_message", new_callable=AsyncMock) as mock_hm:
-            mock_hm.return_value = "Lesson content..."
+        with patch("clawed.generation.generate_lesson", new_callable=AsyncMock) as mock_gl:
+            mock_gl.return_value = "Lesson content..."
             with patch("clawed.handlers.generate.get_last_lesson_id", return_value="lesson_abc"):
                 r = await self.handler.lesson("fractions", "teacher_1")
                 assert len(r.button_rows) > 0 or len(r.buttons) > 0
 
     @pytest.mark.asyncio
     async def test_generate_error_returns_friendly_message(self):
-        with patch("clawed.handlers.generate.handle_message", new_callable=AsyncMock) as mock_hm:
-            mock_hm.side_effect = RuntimeError("LLM timeout")
+        with patch("clawed.generation.generate_lesson", new_callable=AsyncMock) as mock_gl:
+            mock_gl.side_effect = RuntimeError("LLM timeout")
             r = await self.handler.lesson("topic", "teacher_1")
             assert "issue" in r.text.lower() or "error" in r.text.lower() or "try again" in r.text.lower()
 
@@ -215,8 +215,8 @@ class TestGapsHandler:
 
     @pytest.mark.asyncio
     async def test_gaps_returns_response(self):
-        with patch("clawed.handlers.gaps.handle_message", new_callable=AsyncMock) as mock_hm:
-            mock_hm.return_value = "You're missing: fractions, decimals"
+        with patch("clawed.generation.generate_freeform", new_callable=AsyncMock) as mock_gf:
+            mock_gf.return_value = "You're missing: fractions, decimals"
             r = await self.handler.analyze("teacher_1")
             assert r.has_content
 
@@ -265,8 +265,8 @@ from clawed.handlers.misc import DemoHandler, PersonaHandler, ProgressHandler, S
 class TestMiscHandlers:
     @pytest.mark.asyncio
     async def test_demo_handler(self):
-        with patch("clawed.handlers.misc.handle_message", new_callable=AsyncMock) as mock_hm:
-            mock_hm.return_value = "Here's a sample lesson..."
+        with patch("clawed.generation.generate_lesson", new_callable=AsyncMock) as mock_gl:
+            mock_gl.return_value = "Here's a sample lesson..."
             handler = DemoHandler()
             r = await handler.run("teacher_1")
             assert r.has_content
