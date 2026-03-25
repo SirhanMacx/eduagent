@@ -230,15 +230,61 @@ class Gateway:
         return await self._chat(message, teacher_id)
 
     async def _chat(self, message: str, teacher_id: str) -> GatewayResponse:
+        """Conversational agent with tool use for freeform chat."""
         try:
-            from clawed.generation import generate_freeform
+            from clawed.agent import run_agent
+            from clawed.model_router import route
             from clawed.state import TeacherSession
+
             session = TeacherSession.load(teacher_id)
-            response = await generate_freeform(message, session)
+            persona_context = (
+                session.persona.to_prompt_context()
+                if session.persona
+                else "Teacher persona not yet configured."
+            )
+
+            system = (
+                "You are Claw-ED, a warm and friendly AI teaching assistant. "
+                "You speak naturally and conversationally -- like a supportive colleague "
+                "in the teacher's lounge, not a corporate chatbot. Use contractions, "
+                "be personable, ask follow-up questions when helpful.\n\n"
+                "Keep responses concise: 1-3 sentences for casual chat (greetings, "
+                "small talk, simple questions). Only give longer responses when the "
+                "teacher asks for actual content generation or detailed curriculum help.\n\n"
+                "You have access to tools for generating lessons, looking up standards, "
+                "reading files, and more. Use them when the teacher's request needs action.\n\n"
+                f"{persona_context}"
+            )
+
+            config = route("quick_answer", self.config)
+            history = session.get_context_for_llm(max_turns=4)
+
+            response = await run_agent(
+                message=message,
+                system=system,
+                teacher_id=teacher_id,
+                config=config,
+                conversation_history=history,
+            )
+
+            # Save to conversation context
+            session.add_context("user", message)
+            session.add_context("assistant", response[:500])
+            session.save()
+
             return GatewayResponse(text=response)
         except Exception as e:
-            logger.error("Chat fallback failed: %s", e)
-            return GatewayResponse(text="I couldn't process that. Please try again.")
+            logger.error("Agent chat failed: %s", e)
+            # Fall back to simple generation
+            try:
+                from clawed.generation import generate_freeform
+                from clawed.state import TeacherSession as FallbackSession
+                session = FallbackSession.load(teacher_id)
+                response = await generate_freeform(message, session)
+                return GatewayResponse(text=response)
+            except Exception as e2:
+                logger.error("Fallback chat also failed: %s", e2)
+                return GatewayResponse(text="I couldn't process that. Please try again.")
 
     def _help_response(self) -> GatewayResponse:
         return GatewayResponse(
