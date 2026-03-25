@@ -144,7 +144,19 @@ Leave that Terminal window open (the bot runs as long as the window is open). No
 clawed serve
 ```
 
-Then open your browser and go to **http://localhost:8000** — you'll see a full dashboard.
+Then open your browser and go to **http://localhost:8000**. New teachers see the onboarding wizard; returning teachers land on the dashboard.
+
+### 💻 Prefer a full-screen terminal chat? (TUI)
+
+If you don't want Telegram or a browser, the TUI gives you a rich chat interface right in your terminal — connected to the same gateway:
+
+```bash
+pip install 'clawed[tui]'
+clawed serve &          # start the gateway in the background
+clawed tui              # connect the TUI chat
+```
+
+The TUI supports the same onboarding, lesson generation, and all tools. No Telegram required.
 
 ---
 
@@ -152,8 +164,9 @@ Then open your browser and go to **http://localhost:8000** — you'll see a full
 
 ```bash
 pip install clawed                    # Everything you need (chat, bot, web dashboard)
-pip install 'clawed[voice]'           # + Voice note transcription (optional)
-pip install 'clawed[all]'             # Everything (voice, TUI, hosted)
+pip install 'clawed[tui]'             # + Full-screen terminal chat (Textual)
+pip install 'clawed[voice]'           # + Voice note transcription
+pip install 'clawed[all]'             # Everything (TUI, voice, hosted)
 
 # Requires Python 3.10+. Run: python --version
 # Don't have Python? Download at https://python.org/downloads
@@ -182,7 +195,8 @@ Claw-ED can search the web to find current events, articles, and resources for y
 |---------|-------------|
 | `clawed` | First run: quick setup + AI introduces itself. Returning: drops into chat |
 | `clawed chat` | Start terminal chat |
-| `clawed serve` | Start web dashboard |
+| `clawed tui` | Full-screen TUI chat — connects to running gateway (no Telegram needed) |
+| `clawed serve` | Start web server (onboarding wizard for new users, dashboard for returning) |
 | `clawed bot --token TOKEN` | Start teacher Telegram bot |
 | `clawed ingest <path>` | Learn from your lesson plans |
 | `clawed unit "Topic" -g 8 -s "Subject"` | Generate a unit plan |
@@ -202,7 +216,7 @@ Slides automatically include relevant academic images from Library of Congress, 
 ## 🏗️ Architecture
 
 ```
-Teacher's message (Telegram, CLI, Web, or OpenClaw)
+Teacher's message (Telegram, CLI, TUI, Web, or OpenClaw)
         ↓
 Gateway → Router → Handler (generate, export, feedback, onboard, ...)
         ↓
@@ -219,7 +233,7 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full handler and services br
 - [x] Unit plans, daily lessons, worksheets, assessments, rubrics
 - [x] IEP/504 accommodations and differentiation
 - [x] 50-state standards alignment
-- [x] Telegram bot, web dashboard, student chatbot
+- [x] Telegram bot, web dashboard, TUI chat, student chatbot
 - [x] PPTX, DOCX, PDF export with academic images
 - [x] 12 subject skill libraries + custom YAML plugins
 - [x] Teacher workspace, autonomous scheduler, self-improvement loop
