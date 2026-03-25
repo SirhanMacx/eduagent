@@ -326,9 +326,10 @@ def _serve_with_tui(
     gateway = EduAgentGateway(config=config)
 
     async def _run() -> None:
-        tasks = [asyncio.create_task(gateway.start())]
+        # Start the gateway (near-instant)
+        await gateway.start()
 
-        # Also start web server in background
+        # Start web server in background
         import uvicorn
 
         uv_config = uvicorn.Config(
@@ -338,19 +339,16 @@ def _serve_with_tui(
             log_level="warning",
         )
         server = uvicorn.Server(uv_config)
-        tasks.append(asyncio.create_task(server.serve()))
+        server_task = asyncio.create_task(server.serve())
 
-        # TUI blocks until quit
+        # TUI blocks until quit — this is the main blocking call
         dashboard = EduAgentDashboard(gateway=gateway)
-        tasks.append(asyncio.create_task(dashboard.run_async()))
-
-        done, pending = await asyncio.wait(
-            tasks, return_when=asyncio.FIRST_COMPLETED
-        )
-        for t in pending:
-            t.cancel()
-        await asyncio.gather(*pending, return_exceptions=True)
-        await gateway.stop()
+        try:
+            await dashboard.run_async()
+        finally:
+            server.should_exit = True
+            await server_task
+            await gateway.stop()
 
     try:
         asyncio.run(_run())
@@ -408,7 +406,10 @@ def _serve_gateway_headless(
     async def _run() -> None:
         import uvicorn
 
-        tasks = [asyncio.create_task(gateway.start())]
+        # Start the gateway (near-instant — sets _running and emits event)
+        await gateway.start()
+
+        # Run the web server — this blocks until shutdown
         uv_config = uvicorn.Config(
             "clawed.api.server:app",
             host=host,
@@ -416,14 +417,10 @@ def _serve_gateway_headless(
             log_level="warning",
         )
         server = uvicorn.Server(uv_config)
-        tasks.append(asyncio.create_task(server.serve()))
-        done, pending = await asyncio.wait(
-            tasks, return_when=asyncio.FIRST_COMPLETED
-        )
-        for t in pending:
-            t.cancel()
-        await asyncio.gather(*pending, return_exceptions=True)
-        await gateway.stop()
+        try:
+            await server.serve()
+        finally:
+            await gateway.stop()
 
     try:
         asyncio.run(_run())
