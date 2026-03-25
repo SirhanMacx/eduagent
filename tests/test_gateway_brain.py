@@ -9,6 +9,8 @@ from clawed.gateway_response import GatewayResponse
 class TestGatewayHandle:
     def setup_method(self):
         self.gw = Gateway()
+        # Ensure clean onboard state (no leakage from prior tests)
+        self.gw._onboard._state.clear()
 
     @pytest.mark.asyncio
     async def test_handle_returns_gateway_response(self):
