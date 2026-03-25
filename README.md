@@ -164,6 +164,17 @@ The setup wizard lets you choose your AI provider. We recommend **Ollama Cloud**
 
 > **Prefer Anthropic Claude or OpenAI?** Those work too — the wizard supports all three. See [Choosing a Model](docs/CHOOSING_A_MODEL.md) for a detailed comparison.
 
+### 🔍 Web Search (optional)
+
+Claw-ED can search the web to find current events, articles, and resources for your lessons. Free options:
+
+| Provider | Cost | Setup |
+|----------|------|-------|
+| **DuckDuckGo** | Free, no key needed | Works out of the box |
+| **Brave Search** | Free (1000/month) | [Get a key](https://api.search.brave.com/) → `clawed config set-search-key YOUR_KEY` |
+
+> Web search is optional — Claw-ED works great without it.
+
 ## 📋 Commands
 
 | Command | What it does |
