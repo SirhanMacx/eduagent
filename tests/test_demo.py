@@ -5,7 +5,7 @@ from unittest.mock import patch
 
 import pytest
 
-from eduagent.demo import is_demo_mode, list_demo_files, load_all_demos, load_demo
+from clawed.demo import is_demo_mode, list_demo_files, load_all_demos, load_demo
 
 
 class TestDemoFiles:
@@ -76,31 +76,31 @@ class TestDemoMode:
 
 class TestLLMDemoFallback:
     def test_demo_response_social_studies(self):
-        from eduagent.llm import LLMClient
+        from clawed.llm import LLMClient
         response = LLMClient._demo_response("Generate a social studies lesson")
         data = json.loads(response)
         assert data["subject"] == "Social Studies"
 
     def test_demo_response_science(self):
-        from eduagent.llm import LLMClient
+        from clawed.llm import LLMClient
         response = LLMClient._demo_response("Generate a science lesson")
         data = json.loads(response)
         assert data["subject"] == "Science"
 
     def test_demo_response_assessment(self):
-        from eduagent.llm import LLMClient
+        from clawed.llm import LLMClient
         response = LLMClient._demo_response("Create a DBQ assessment")
         data = json.loads(response)
         assert data["assessment_type"] == "dbq"
 
     def test_demo_response_unit(self):
-        from eduagent.llm import LLMClient
+        from clawed.llm import LLMClient
         response = LLMClient._demo_response("Build a unit plan")
         data = json.loads(response)
         assert "daily_lessons" in data
 
     def test_demo_response_default(self):
-        from eduagent.llm import LLMClient
+        from clawed.llm import LLMClient
         response = LLMClient._demo_response("Generate something")
         data = json.loads(response)
         # Default is social studies

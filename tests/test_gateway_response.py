@@ -1,7 +1,7 @@
 """Tests for GatewayResponse — the transport-agnostic response type."""
 from pathlib import Path
 
-from eduagent.gateway_response import Button, GatewayResponse
+from clawed.gateway_response import Button, GatewayResponse
 
 
 class TestGatewayResponse:

@@ -16,10 +16,10 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from fastapi.testclient import TestClient
 
-from eduagent.database import Database
-from eduagent.models import AppConfig, LLMProvider, TeacherPersona
-from eduagent.state import init_db
-from eduagent.telegram_bot import (
+from clawed.database import Database
+from clawed.models import AppConfig, LLMProvider, TeacherPersona
+from clawed.state import init_db
+from clawed.telegram_bot import (
     BOT_COMMANDS,
     ChatState,
     ConversationState,
@@ -38,7 +38,7 @@ def _run(coro):
 
 @pytest.fixture(autouse=True)
 def _use_tmp_db(tmp_path, monkeypatch):
-    monkeypatch.setattr("eduagent.state.DEFAULT_DATA_DIR", tmp_path)
+    monkeypatch.setattr("clawed.state.DEFAULT_DATA_DIR", tmp_path)
     init_db()
 
 
@@ -58,8 +58,8 @@ def db(tmp_path):
 
 @pytest.fixture
 def app(db):
-    import eduagent.api.server as srv
-    from eduagent.api.server import create_app
+    import clawed.api.server as srv
+    from clawed.api.server import create_app
 
     old = srv._db
     srv._db = db
@@ -126,7 +126,7 @@ class TestStudentBotClassExtended:
     """Extended tests for student bot class management."""
 
     def test_multiple_classes_same_teacher(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         c1 = bot.create_class("teacher-multi", name="Period 1")
@@ -136,7 +136,7 @@ class TestStudentBotClassExtended:
         assert bot.get_class(c2).name == "Period 2"
 
     def test_student_conversation_history(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class("teacher-hist")
@@ -145,7 +145,7 @@ class TestStudentBotClassExtended:
         assert history == []
 
     def test_is_expired_with_invalid_date(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class("teacher-bad", expires_at="not-a-date")
@@ -153,16 +153,16 @@ class TestStudentBotClassExtended:
         assert bot.is_expired(code) is False
 
     def test_get_mode_nonexistent_class(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         # get_mode on non-existent class returns "answer" (default)
         assert bot.get_mode("FAKE-CODE") == "answer"
 
-    @patch("eduagent.chat.student_chat", new_callable=AsyncMock)
+    @patch("clawed.chat.student_chat", new_callable=AsyncMock)
     def test_weekly_report_anonymized(self, mock_chat):
-        from eduagent.state import TeacherSession
-        from eduagent.student_bot import StudentBot
+        from clawed.state import TeacherSession
+        from clawed.student_bot import StudentBot
 
         session = TeacherSession(
             teacher_id="teacher-anon",
@@ -185,7 +185,7 @@ class TestStudentBotClassExtended:
             assert "student_id" not in item
 
     def test_class_stats_empty_class(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class("teacher-empty")
@@ -254,7 +254,7 @@ class TestErrorLogging:
 
     def test_error_log_creates_file(self, tmp_path):
         log_file = tmp_path / "errors.log"
-        with patch("eduagent.telegram_bot._ERROR_LOG", log_file):
+        with patch("clawed.telegram_bot._ERROR_LOG", log_file):
             _log_error(RuntimeError("test boom"))
         assert log_file.exists()
         assert "RuntimeError" in log_file.read_text()
@@ -262,7 +262,7 @@ class TestErrorLogging:
 
     def test_error_log_appends(self, tmp_path):
         log_file = tmp_path / "errors.log"
-        with patch("eduagent.telegram_bot._ERROR_LOG", log_file):
+        with patch("clawed.telegram_bot._ERROR_LOG", log_file):
             _log_error(ValueError("first"))
             _log_error(TypeError("second"))
         lines = log_file.read_text().strip().split("\n")
@@ -270,7 +270,7 @@ class TestErrorLogging:
 
     def test_error_log_includes_timestamp(self, tmp_path):
         log_file = tmp_path / "errors.log"
-        with patch("eduagent.telegram_bot._ERROR_LOG", log_file):
+        with patch("clawed.telegram_bot._ERROR_LOG", log_file):
             _log_error(Exception("timed"))
         content = log_file.read_text()
         # ISO format timestamp
@@ -282,9 +282,9 @@ class TestEduAgentBotConfig:
 
     def test_bot_from_env_with_config_fallback(self, tmp_path, monkeypatch):
         monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
-        with patch("eduagent.models.AppConfig.load") as mock_cfg:
+        with patch("clawed.models.AppConfig.load") as mock_cfg:
             mock_cfg.return_value = MagicMock(telegram_bot_token="config:TOKEN")
-            bot = __import__("eduagent.telegram_bot", fromlist=["EduAgentBot"]).EduAgentBot.from_env(data_dir=tmp_path)
+            bot = __import__("clawed.telegram_bot", fromlist=["EduAgentBot"]).EduAgentBot.from_env(data_dir=tmp_path)
             assert bot.token == "config:TOKEN"
 
 
@@ -297,7 +297,7 @@ class TestModelAutoDetection:
     """Test model auto-detection priority and edge cases."""
 
     def test_anthropic_takes_priority_over_openai(self):
-        from eduagent.onboarding import _detect_available_models
+        from clawed.onboarding import _detect_available_models
 
         with patch.dict("os.environ", {
             "ANTHROPIC_API_KEY": "sk-ant-test",
@@ -307,7 +307,7 @@ class TestModelAutoDetection:
             assert provider == LLMProvider.ANTHROPIC
 
     def test_ollama_preferred_model_minimax(self):
-        from eduagent.onboarding import _detect_available_models
+        from clawed.onboarding import _detect_available_models
 
         mock_resp = MagicMock()
         mock_resp.status_code = 200
@@ -327,7 +327,7 @@ class TestModelAutoDetection:
             assert "minimax" in msg
 
     def test_ollama_no_models_pulled(self):
-        from eduagent.onboarding import _detect_available_models
+        from clawed.onboarding import _detect_available_models
 
         mock_resp = MagicMock()
         mock_resp.status_code = 200
@@ -341,7 +341,7 @@ class TestModelAutoDetection:
             assert "no models" in msg.lower()
 
     def test_ollama_connection_refused(self):
-        from eduagent.onboarding import _detect_available_models
+        from clawed.onboarding import _detect_available_models
 
         with (
             patch.dict("os.environ", {}, clear=True),
@@ -355,16 +355,16 @@ class TestOnboardingPersonaPreview:
     """Test the persona preview and confirmation flow."""
 
     def test_preview_contains_subjects(self):
-        from eduagent.onboarding import _show_persona_preview
+        from clawed.onboarding import _show_persona_preview
 
-        with patch("eduagent.onboarding.Prompt.ask", return_value="y"):
+        with patch("clawed.onboarding.Prompt.ask", return_value="y"):
             result = _show_persona_preview(
                 ["Social Studies", "History"], ["8", "9"], "NY"
             )
             assert result is True
 
     def test_preview_state_resolution(self):
-        from eduagent.onboarding import _resolve_state
+        from clawed.onboarding import _resolve_state
 
         # Test various state inputs
         assert _resolve_state("Florida") == "FL"
@@ -376,9 +376,9 @@ class TestOnboardingMaterialsIngestion:
     """Test material ingestion edge cases."""
 
     def test_ask_materials_whitespace_only(self):
-        from eduagent.onboarding import _ask_materials
+        from clawed.onboarding import _ask_materials
 
-        with patch("eduagent.onboarding.Prompt.ask", return_value="   "):
+        with patch("clawed.onboarding.Prompt.ask", return_value="   "):
             result = _ask_materials()
             assert result is None
 
@@ -498,7 +498,7 @@ class TestLessonPageEmbedSnippet:
     """Test that lesson pages include the embed snippet."""
 
     def test_lesson_page_has_chat_and_copy(self, client, db):
-        from eduagent.models import DailyLesson
+        from clawed.models import DailyLesson
 
         tid = db.upsert_teacher("T", '{"name": "T"}')
         uid = db.insert_unit(tid, "U", "Science", "8", "Cells", '{}')
@@ -515,7 +515,7 @@ class TestLessonPageEmbedSnippet:
         assert "Copy to Clipboard" in resp.text
 
     def test_lesson_page_shows_share_link(self, client, db):
-        from eduagent.models import DailyLesson
+        from clawed.models import DailyLesson
 
         tid = db.upsert_teacher("T", '{"name": "T"}')
         uid = db.insert_unit(tid, "U", "Science", "8", "Cells", '{}')
@@ -568,11 +568,11 @@ class TestDashboardPage:
 
 class TestVersion:
     def test_version_string(self):
-        from eduagent import __version__
+        from clawed import __version__
 
-        assert __version__ == "0.2.0"
+        assert __version__ == "0.3.0"
 
     def test_version_in_health_endpoint(self, client):
         resp = client.get("/api/health")
         data = resp.json()
-        assert data["version"] == "0.2.0"
+        assert data["version"] == "0.3.0"

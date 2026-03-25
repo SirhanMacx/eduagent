@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from eduagent.bot_state import BotStateStore, StudentBotStateStore
+from clawed.bot_state import BotStateStore, StudentBotStateStore
 
 
 class TestBotStateStore:

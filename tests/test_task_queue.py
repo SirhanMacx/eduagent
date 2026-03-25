@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from eduagent.task_queue import Task, TaskQueue, TaskStatus, TaskType
+from clawed.task_queue import Task, TaskQueue, TaskStatus, TaskType
 
 
 @pytest.fixture()

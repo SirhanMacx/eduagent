@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from eduagent.models import (
+from clawed.models import (
     AppConfig,
     AssessmentPlan,
     AssessmentQuestion,
@@ -146,13 +146,13 @@ class TestPersonaToPromptContext:
 
 class TestIngestPathNonexistent:
     def test_raises_file_not_found_for_nonexistent_path(self):
-        from eduagent.ingestor import ingest_path
+        from clawed.ingestor import ingest_path
 
         with pytest.raises(FileNotFoundError):
             ingest_path(Path("/tmp/definitely_does_not_exist_eduagent_test"))
 
     def test_raises_file_not_found_for_nonexistent_directory(self):
-        from eduagent.ingestor import ingest_directory
+        from clawed.ingestor import ingest_directory
 
         with pytest.raises(FileNotFoundError):
             ingest_directory(Path("/tmp/no_such_dir_eduagent_9999"))
@@ -332,9 +332,9 @@ class TestLessonMaterialsModel:
 
 class TestVersion:
     def test_version_string(self):
-        from eduagent import __version__
+        from clawed import __version__
 
-        assert __version__ == "0.2.0"
+        assert __version__ == "0.3.0"
 
 
 # ── Standards module ───────────────────────────────────────────────
@@ -342,7 +342,7 @@ class TestVersion:
 
 class TestStandards:
     def test_resolve_subject_canonical(self):
-        from eduagent.standards import resolve_subject
+        from clawed.standards import resolve_subject
 
         assert resolve_subject("math") == "math"
         assert resolve_subject("science") == "science"
@@ -350,7 +350,7 @@ class TestStandards:
         assert resolve_subject("history") == "history"
 
     def test_resolve_subject_aliases(self):
-        from eduagent.standards import resolve_subject
+        from clawed.standards import resolve_subject
 
         assert resolve_subject("Mathematics") == "math"
         assert resolve_subject("English") == "ela"
@@ -358,12 +358,12 @@ class TestStandards:
         assert resolve_subject("Social Studies") == "history"
 
     def test_resolve_subject_unknown(self):
-        from eduagent.standards import resolve_subject
+        from clawed.standards import resolve_subject
 
         assert resolve_subject("underwater basket weaving") is None
 
     def test_get_standards_returns_results(self):
-        from eduagent.standards import get_standards
+        from clawed.standards import get_standards
 
         results = get_standards("math", "8")
         assert len(results) > 0
@@ -373,27 +373,27 @@ class TestStandards:
         assert len(desc) > 0
 
     def test_get_standards_grade_filter(self):
-        from eduagent.standards import get_standards
+        from clawed.standards import get_standards
 
         results = get_standards("science", "8")
         for _code, _desc, band in results:
             assert band in ("6-8", "8")
 
     def test_get_standards_no_match(self):
-        from eduagent.standards import get_standards
+        from clawed.standards import get_standards
 
         results = get_standards("art")
         assert results == []
 
     def test_get_standards_all_grades(self):
-        from eduagent.standards import get_standards
+        from clawed.standards import get_standards
 
         all_math = get_standards("math")
         grade_8 = get_standards("math", "8")
         assert len(all_math) > len(grade_8)
 
     def test_grade_k_match(self):
-        from eduagent.standards import get_standards
+        from clawed.standards import get_standards
 
         results = get_standards("math", "K")
         assert len(results) > 0
@@ -406,7 +406,7 @@ class TestStandards:
 
 class TestDemoHtml:
     def test_demo_html_contains_key_content(self):
-        from eduagent.cli import _DEMO_HTML
+        from clawed.cli import _DEMO_HTML
 
         assert "Life From Light" in _DEMO_HTML
         assert "EDUagent Demo" in _DEMO_HTML
@@ -414,7 +414,7 @@ class TestDemoHtml:
         assert "github.com/SirhanMacx/eduagent" in _DEMO_HTML
 
     def test_demo_html_is_self_contained(self):
-        from eduagent.cli import _DEMO_HTML
+        from clawed.cli import _DEMO_HTML
 
         # No external CSS/JS links
         assert 'href="http' not in _DEMO_HTML.replace(
@@ -429,7 +429,7 @@ class TestDemoHtml:
 
 class TestShareHtml:
     def test_lesson_to_html_basic(self):
-        from eduagent.cli import _lesson_to_html
+        from clawed.cli import _lesson_to_html
 
         data = {
             "title": "Intro to Photosynthesis",
@@ -451,7 +451,7 @@ class TestShareHtml:
         assert "<!DOCTYPE html>" in html
 
     def test_lesson_to_html_escapes_special_chars(self):
-        from eduagent.cli import _lesson_to_html
+        from clawed.cli import _lesson_to_html
 
         data = {
             "title": "Test <script>alert('xss')</script>",

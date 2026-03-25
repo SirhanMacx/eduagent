@@ -9,9 +9,9 @@ import pytest
 from fastapi.testclient import TestClient
 from typer.testing import CliRunner
 
-from eduagent.api.server import create_app
-from eduagent.commands.export import _extract_token, export_app
-from eduagent.database import Database
+from clawed.api.server import create_app
+from clawed.commands.export import _extract_token, export_app
+from clawed.database import Database
 
 runner = CliRunner()
 
@@ -28,7 +28,7 @@ def db(tmp_path):
 
 @pytest.fixture
 def app(db):
-    import eduagent.api.server as srv
+    import clawed.api.server as srv
 
     old_db = srv._db
     srv._db = db
@@ -133,7 +133,7 @@ class TestImportAPI:
 
         mock_client = _mock_async_client(mock_resp)
 
-        with patch("eduagent.api.routes.export.httpx.AsyncClient", return_value=mock_client):
+        with patch("clawed.api.routes.export.httpx.AsyncClient", return_value=mock_client):
             resp = client.post(
                 "/api/import",
                 json={"token": token, "server": "http://fake:8000"},
@@ -153,7 +153,7 @@ class TestImportAPI:
 
         mock_client = _mock_async_client(mock_resp)
 
-        with patch("eduagent.api.routes.export.httpx.AsyncClient", return_value=mock_client):
+        with patch("clawed.api.routes.export.httpx.AsyncClient", return_value=mock_client):
             resp = client.post(
                 "/api/import",
                 json={"url": "https://school.io/share/tok55"},
@@ -169,7 +169,7 @@ class TestImportAPI:
 
         mock_client = _mock_async_client(mock_resp)
 
-        with patch("eduagent.api.routes.export.httpx.AsyncClient", return_value=mock_client):
+        with patch("clawed.api.routes.export.httpx.AsyncClient", return_value=mock_client):
             resp = client.post(
                 "/api/import",
                 json={"token": "bad", "server": "http://fake:8000"},
@@ -188,7 +188,7 @@ class TestImportAPI:
         mock_client.__aenter__ = AsyncMock(return_value=mock_client)
         mock_client.__aexit__ = AsyncMock(return_value=None)
 
-        with patch("eduagent.api.routes.export.httpx.AsyncClient", return_value=mock_client):
+        with patch("clawed.api.routes.export.httpx.AsyncClient", return_value=mock_client):
             resp = client.post(
                 "/api/import",
                 json={"token": "t", "server": "http://fake:8000"},
@@ -203,7 +203,7 @@ class TestShareCommand:
     def test_share_embed_flag(self, db):
         lid = _seed_lesson(db, "Embed Test")
 
-        with patch("eduagent.commands.export.Database", return_value=db):
+        with patch("clawed.commands.export.Database", return_value=db):
             result = runner.invoke(
                 export_app, ["share", "--lesson-id", lid, "--embed"]
             )
@@ -215,7 +215,7 @@ class TestShareCommand:
     def test_share_shows_url(self, db):
         lid = _seed_lesson(db, "URL Test")
 
-        with patch("eduagent.commands.export.Database", return_value=db):
+        with patch("clawed.commands.export.Database", return_value=db):
             result = runner.invoke(
                 export_app, ["share", "--lesson-id", lid]
             )
@@ -226,9 +226,9 @@ class TestShareCommand:
         lid = _seed_lesson(db, "Copy Test")
 
         with (
-            patch("eduagent.commands.export.Database", return_value=db),
-            patch("eduagent.commands.export.platform") as mock_platform,
-            patch("eduagent.commands.export.subprocess") as mock_sub,
+            patch("clawed.commands.export.Database", return_value=db),
+            patch("clawed.commands.export.platform") as mock_platform,
+            patch("clawed.commands.export.subprocess") as mock_sub,
         ):
             mock_platform.system.return_value = "Darwin"
             mock_sub.run.return_value = None
@@ -244,9 +244,9 @@ class TestShareCommand:
         lid = _seed_lesson(db, "Linux Test")
 
         with (
-            patch("eduagent.commands.export.Database", return_value=db),
-            patch("eduagent.commands.export.platform") as mock_platform,
-            patch("eduagent.commands.export.subprocess") as mock_sub,
+            patch("clawed.commands.export.Database", return_value=db),
+            patch("clawed.commands.export.platform") as mock_platform,
+            patch("clawed.commands.export.subprocess") as mock_sub,
         ):
             mock_platform.system.return_value = "Linux"
 
@@ -271,7 +271,7 @@ class TestImportCommand:
         }
 
         with (
-            patch("eduagent.commands.export.Database", return_value=db),
+            patch("clawed.commands.export.Database", return_value=db),
             patch("httpx.get", return_value=mock_resp),
         ):
             result = runner.invoke(
@@ -292,7 +292,7 @@ class TestImportCommand:
         }
 
         with (
-            patch("eduagent.commands.export.Database", return_value=db),
+            patch("clawed.commands.export.Database", return_value=db),
             patch("httpx.get", return_value=mock_resp),
         ):
             result = runner.invoke(

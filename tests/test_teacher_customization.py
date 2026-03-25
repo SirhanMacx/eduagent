@@ -16,9 +16,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from eduagent.handlers.onboard import OnboardHandler, OnboardState, _parse_grade_and_subject
-from eduagent.handlers.schedule import ScheduleHandler, _cron_to_human
-from eduagent.router import Intent, ParsedIntent, parse_intent
+from clawed.handlers.onboard import OnboardHandler, OnboardState, _parse_grade_and_subject
+from clawed.handlers.schedule import ScheduleHandler, _cron_to_human
+from clawed.router import Intent, ParsedIntent, parse_intent
 
 
 # ══════════════════════════════════════════════════════════════════════
@@ -104,7 +104,7 @@ class TestOnboardingStateMachine:
 @pytest.mark.skip(
     reason="Functions _parse_schedule_time, _parse_day_of_week, _match_task_name "
     "were removed during gateway extraction; scheduling now delegates to "
-    "eduagent.scheduler which uses its own parsing."
+    "clawed.scheduler which uses its own parsing."
 )
 class TestScheduleTimeParser:
     def test_morning(self):
@@ -228,8 +228,8 @@ class TestScheduleCommand:
 class TestTrackLessonMetadata:
     def test_tracks_high_rated_lesson(self, tmp_path, monkeypatch):
         monkeypatch.setenv("EDUAGENT_DATA_DIR", str(tmp_path))
-        from eduagent.memory_engine import track_lesson_metadata
-        from eduagent.models import DailyLesson, ExitTicketQuestion
+        from clawed.memory_engine import track_lesson_metadata
+        from clawed.models import DailyLesson, ExitTicketQuestion
 
         lesson = DailyLesson(
             title="Great Lesson",
@@ -255,8 +255,8 @@ class TestTrackLessonMetadata:
 
     def test_tracks_low_rated_lesson(self, tmp_path, monkeypatch):
         monkeypatch.setenv("EDUAGENT_DATA_DIR", str(tmp_path))
-        from eduagent.memory_engine import track_lesson_metadata
-        from eduagent.models import DailyLesson
+        from clawed.memory_engine import track_lesson_metadata
+        from clawed.models import DailyLesson
 
         lesson = DailyLesson(
             title="Bad Lesson",
@@ -274,8 +274,8 @@ class TestTrackLessonMetadata:
 
     def test_accumulates_over_multiple_lessons(self, tmp_path, monkeypatch):
         monkeypatch.setenv("EDUAGENT_DATA_DIR", str(tmp_path))
-        from eduagent.memory_engine import track_lesson_metadata
-        from eduagent.models import DailyLesson, ExitTicketQuestion
+        from clawed.memory_engine import track_lesson_metadata
+        from clawed.models import DailyLesson, ExitTicketQuestion
 
         for i in range(3):
             lesson = DailyLesson(
@@ -296,8 +296,8 @@ class TestTrackLessonMetadata:
 
     def test_mid_rating_bucket(self, tmp_path, monkeypatch):
         monkeypatch.setenv("EDUAGENT_DATA_DIR", str(tmp_path))
-        from eduagent.memory_engine import track_lesson_metadata
-        from eduagent.models import DailyLesson
+        from clawed.memory_engine import track_lesson_metadata
+        from clawed.models import DailyLesson
 
         lesson = DailyLesson(title="OK", lesson_number=1, objective="Test")
         track_lesson_metadata(lesson, rating=3)
@@ -310,15 +310,15 @@ class TestTrackLessonMetadata:
 class TestGetQualityInsights:
     def test_empty_stats_no_insights(self, tmp_path, monkeypatch):
         monkeypatch.setenv("EDUAGENT_DATA_DIR", str(tmp_path))
-        from eduagent.memory_engine import get_quality_insights
+        from clawed.memory_engine import get_quality_insights
 
         insights = get_quality_insights()
         assert insights == []
 
     def test_with_enough_data_produces_insights(self, tmp_path, monkeypatch):
         monkeypatch.setenv("EDUAGENT_DATA_DIR", str(tmp_path))
-        from eduagent.memory_engine import get_quality_insights, track_lesson_metadata
-        from eduagent.models import DailyLesson, ExitTicketQuestion
+        from clawed.memory_engine import get_quality_insights, track_lesson_metadata
+        from clawed.models import DailyLesson, ExitTicketQuestion
 
         # Create pattern: high-rated lessons have exit tickets, low-rated don't
         for i in range(5):
@@ -355,8 +355,8 @@ class TestGetQualityInsights:
     def test_insights_are_rule_based(self, tmp_path, monkeypatch):
         """Verify no LLM calls happen during insight generation."""
         monkeypatch.setenv("EDUAGENT_DATA_DIR", str(tmp_path))
-        from eduagent.memory_engine import get_quality_insights, track_lesson_metadata
-        from eduagent.models import DailyLesson
+        from clawed.memory_engine import get_quality_insights, track_lesson_metadata
+        from clawed.models import DailyLesson
 
         lesson = DailyLesson(title="Test", lesson_number=1, objective="Test")
         track_lesson_metadata(lesson, rating=5)

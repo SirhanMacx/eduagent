@@ -13,7 +13,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from eduagent.telegram_bot import EduAgentBot
+from clawed.telegram_bot import EduAgentBot
 
 # ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -239,8 +239,8 @@ class TestCommandContent:
     def test_status_calls_show_status(self):
         """The /status handler should use _show_status from openclaw_plugin."""
         with (
-            patch("eduagent.state.TeacherSession.load") as mock_load,
-            patch("eduagent.openclaw_plugin._show_status") as mock_status,
+            patch("clawed.state.TeacherSession.load") as mock_load,
+            patch("clawed.openclaw_plugin._show_status") as mock_status,
         ):
             mock_session = MagicMock()
             mock_load.return_value = mock_session
@@ -257,19 +257,19 @@ class TestCommandContent:
 class TestTokenConfig:
     def test_app_config_has_telegram_token(self):
         """AppConfig should support storing a Telegram bot token."""
-        from eduagent.models import AppConfig
+        from clawed.models import AppConfig
         config = AppConfig(telegram_bot_token="123:FAKE")
         assert config.telegram_bot_token == "123:FAKE"
 
     def test_app_config_default_no_token(self):
         """AppConfig should default to no Telegram token."""
-        from eduagent.models import AppConfig
+        from clawed.models import AppConfig
         config = AppConfig()
         assert config.telegram_bot_token is None
 
     def test_token_roundtrip_json(self):
         """Token should survive JSON serialization/deserialization."""
-        from eduagent.models import AppConfig
+        from clawed.models import AppConfig
         config = AppConfig(telegram_bot_token="999:TEST_TOKEN")
         json_str = config.model_dump_json()
         loaded = AppConfig.model_validate_json(json_str)
@@ -277,7 +277,7 @@ class TestTokenConfig:
 
     def test_token_excluded_when_none(self):
         """When token is None, it should not cause issues in JSON."""
-        from eduagent.models import AppConfig
+        from clawed.models import AppConfig
         config = AppConfig()
         json_str = config.model_dump_json()
         loaded = AppConfig.model_validate_json(json_str)

@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from eduagent.drive import extract_folder_id, ingest_drive_zip
+from clawed.drive import extract_folder_id, ingest_drive_zip
 
 
 def _run(coro):
@@ -78,7 +78,7 @@ class TestIngestDriveZip:
 
 class TestIngestDriveFolder:
     def test_invalid_url_raises(self):
-        from eduagent.drive import ingest_drive_folder
+        from clawed.drive import ingest_drive_folder
 
         with pytest.raises(ValueError, match="Could not parse"):
             _run(ingest_drive_folder("https://example.com/not-drive"))

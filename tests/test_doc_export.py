@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 import pytest
 
-from eduagent.models import (
+from clawed.models import (
     DailyLesson,
     DifferentiationNotes,
     ExitTicketQuestion,
@@ -101,14 +101,14 @@ def long_title_lesson() -> DailyLesson:
 
 class TestPPTXExport:
     def test_generates_pptx_file(self, sample_lesson, sample_persona, tmp_path):
-        from eduagent.doc_export import export_lesson_pptx
+        from clawed.doc_export import export_lesson_pptx
 
         path = export_lesson_pptx(sample_lesson, sample_persona, output_dir=tmp_path)
         assert path.exists()
         assert path.suffix == ".pptx"
 
     def test_pptx_is_nonempty(self, sample_lesson, sample_persona, tmp_path):
-        from eduagent.doc_export import export_lesson_pptx
+        from clawed.doc_export import export_lesson_pptx
 
         path = export_lesson_pptx(sample_lesson, sample_persona, output_dir=tmp_path)
         assert path.stat().st_size > 0
@@ -116,7 +116,7 @@ class TestPPTXExport:
     def test_pptx_has_correct_slide_count(self, sample_lesson, sample_persona, tmp_path):
         from pptx import Presentation
 
-        from eduagent.doc_export import export_lesson_pptx
+        from clawed.doc_export import export_lesson_pptx
 
         path = export_lesson_pptx(sample_lesson, sample_persona, output_dir=tmp_path)
         prs = Presentation(str(path))
@@ -125,14 +125,14 @@ class TestPPTXExport:
         assert len(prs.slides) >= 5  # At minimum title + objectives + 3 sections
 
     def test_pptx_minimal_lesson(self, minimal_lesson, sample_persona, tmp_path):
-        from eduagent.doc_export import export_lesson_pptx
+        from clawed.doc_export import export_lesson_pptx
 
         path = export_lesson_pptx(minimal_lesson, sample_persona, output_dir=tmp_path)
         assert path.exists()
         assert path.stat().st_size > 0
 
     def test_pptx_long_title(self, long_title_lesson, sample_persona, tmp_path):
-        from eduagent.doc_export import export_lesson_pptx
+        from clawed.doc_export import export_lesson_pptx
 
         path = export_lesson_pptx(long_title_lesson, sample_persona, output_dir=tmp_path)
         assert path.exists()
@@ -144,14 +144,14 @@ class TestPPTXExport:
 
 class TestDOCXExport:
     def test_generates_docx_file(self, sample_lesson, sample_persona, tmp_path):
-        from eduagent.doc_export import export_lesson_docx
+        from clawed.doc_export import export_lesson_docx
 
         path = export_lesson_docx(sample_lesson, sample_persona, output_dir=tmp_path)
         assert path.exists()
         assert path.suffix == ".docx"
 
     def test_docx_is_nonempty(self, sample_lesson, sample_persona, tmp_path):
-        from eduagent.doc_export import export_lesson_docx
+        from clawed.doc_export import export_lesson_docx
 
         path = export_lesson_docx(sample_lesson, sample_persona, output_dir=tmp_path)
         assert path.stat().st_size > 0
@@ -159,7 +159,7 @@ class TestDOCXExport:
     def test_docx_contains_lesson_title(self, sample_lesson, sample_persona, tmp_path):
         from docx import Document
 
-        from eduagent.doc_export import export_lesson_docx
+        from clawed.doc_export import export_lesson_docx
 
         path = export_lesson_docx(sample_lesson, sample_persona, output_dir=tmp_path)
         doc = Document(str(path))
@@ -167,14 +167,14 @@ class TestDOCXExport:
         assert "Causes of World War I" in full_text
 
     def test_docx_minimal_lesson(self, minimal_lesson, sample_persona, tmp_path):
-        from eduagent.doc_export import export_lesson_docx
+        from clawed.doc_export import export_lesson_docx
 
         path = export_lesson_docx(minimal_lesson, sample_persona, output_dir=tmp_path)
         assert path.exists()
         assert path.stat().st_size > 0
 
     def test_docx_long_title(self, long_title_lesson, sample_persona, tmp_path):
-        from eduagent.doc_export import export_lesson_docx
+        from clawed.doc_export import export_lesson_docx
 
         path = export_lesson_docx(long_title_lesson, sample_persona, output_dir=tmp_path)
         assert path.exists()
@@ -186,27 +186,27 @@ class TestDOCXExport:
 
 class TestPDFExport:
     def test_generates_pdf_file(self, sample_lesson, sample_persona, tmp_path):
-        from eduagent.doc_export import export_lesson_pdf
+        from clawed.doc_export import export_lesson_pdf
 
         path = export_lesson_pdf(sample_lesson, sample_persona, output_dir=tmp_path)
         assert path.exists()
         assert path.suffix == ".pdf"
 
     def test_pdf_is_nonempty(self, sample_lesson, sample_persona, tmp_path):
-        from eduagent.doc_export import export_lesson_pdf
+        from clawed.doc_export import export_lesson_pdf
 
         path = export_lesson_pdf(sample_lesson, sample_persona, output_dir=tmp_path)
         assert path.stat().st_size > 0
 
     def test_pdf_minimal_lesson(self, minimal_lesson, sample_persona, tmp_path):
-        from eduagent.doc_export import export_lesson_pdf
+        from clawed.doc_export import export_lesson_pdf
 
         path = export_lesson_pdf(minimal_lesson, sample_persona, output_dir=tmp_path)
         assert path.exists()
         assert path.stat().st_size > 0
 
     def test_pdf_long_title(self, long_title_lesson, sample_persona, tmp_path):
-        from eduagent.doc_export import export_lesson_pdf
+        from clawed.doc_export import export_lesson_pdf
 
         path = export_lesson_pdf(long_title_lesson, sample_persona, output_dir=tmp_path)
         assert path.exists()
@@ -218,49 +218,49 @@ class TestPDFExport:
 
 class TestColorTheme:
     def test_history_theme(self):
-        from eduagent.doc_export import get_color_theme
+        from clawed.doc_export import get_color_theme
 
         theme = get_color_theme("history")
         assert theme["primary"] == "8B4513"  # Saddle brown
         assert theme["secondary"] == "DAA520"  # Goldenrod
 
     def test_social_studies_matches_history(self):
-        from eduagent.doc_export import get_color_theme
+        from clawed.doc_export import get_color_theme
 
         assert get_color_theme("social studies") == get_color_theme("history")
 
     def test_science_theme(self):
-        from eduagent.doc_export import get_color_theme
+        from clawed.doc_export import get_color_theme
 
         theme = get_color_theme("science")
         assert theme["primary"] == "1B5E20"  # Dark green
 
     def test_math_theme(self):
-        from eduagent.doc_export import get_color_theme
+        from clawed.doc_export import get_color_theme
 
         theme = get_color_theme("math")
         assert theme["primary"] == "1565C0"  # Blue
 
     def test_ela_theme(self):
-        from eduagent.doc_export import get_color_theme
+        from clawed.doc_export import get_color_theme
 
         theme = get_color_theme("ela")
         assert theme["primary"] == "6A1B9A"  # Purple
 
     def test_default_theme_for_unknown_subject(self):
-        from eduagent.doc_export import get_color_theme
+        from clawed.doc_export import get_color_theme
 
         theme = get_color_theme("underwater basket weaving")
         assert theme["primary"] == "1A365D"  # professional navy
 
     def test_case_insensitive(self):
-        from eduagent.doc_export import get_color_theme
+        from clawed.doc_export import get_color_theme
 
         assert get_color_theme("History") == get_color_theme("history")
         assert get_color_theme("MATH") == get_color_theme("math")
 
     def test_theme_has_all_required_keys(self):
-        from eduagent.doc_export import get_color_theme
+        from clawed.doc_export import get_color_theme
 
         for subject in ["history", "science", "math", "ela", "unknown"]:
             theme = get_color_theme(subject)
@@ -273,7 +273,7 @@ class TestColorTheme:
 
 class TestSearchQueryBuilding:
     def test_basic_topic(self):
-        from eduagent.slide_images import _build_search_query
+        from clawed.slide_images import _build_search_query
 
         query = _build_search_query("Photosynthesis", "science")
         assert "photosynthesis" in query
@@ -281,7 +281,7 @@ class TestSearchQueryBuilding:
         assert "diagram" in query or "illustration" in query
 
     def test_strips_articles(self):
-        from eduagent.slide_images import _build_search_query
+        from clawed.slide_images import _build_search_query
 
         query = _build_search_query("The American Revolution", "history")
         assert "the" not in query.split()
@@ -289,25 +289,25 @@ class TestSearchQueryBuilding:
         assert "revolution" in query
 
     def test_history_adds_primary_source(self):
-        from eduagent.slide_images import _build_search_query
+        from clawed.slide_images import _build_search_query
 
         query = _build_search_query("The Civil War", "history")
         assert "historical" in query or "primary source" in query
 
     def test_adds_education_keywords(self):
-        from eduagent.slide_images import _build_search_query
+        from clawed.slide_images import _build_search_query
 
         query = _build_search_query("Solving Linear Equations", "math")
         assert "mathematics" in query or "education" in query
 
     def test_no_subject_uses_education_default(self):
-        from eduagent.slide_images import _build_search_query
+        from clawed.slide_images import _build_search_query
 
         query = _build_search_query("Random Topic")
         assert "education" in query
 
     def test_no_duplicate_words(self):
-        from eduagent.slide_images import _build_search_query
+        from clawed.slide_images import _build_search_query
 
         query = _build_search_query("mathematics quiz", "math")
         words = query.split()
@@ -349,12 +349,12 @@ class TestPPTXWithImages:
 
     def test_pptx_with_mock_image(self, sample_lesson, sample_persona, tmp_path, fake_image):
         """PPTX export works when fetch_slide_image returns a real image."""
-        from eduagent.doc_export import export_lesson_pptx
+        from clawed.doc_export import export_lesson_pptx
 
         async def mock_fetch(topic, subject="", cache_dir=None):
             return fake_image
 
-        with patch("eduagent.slide_images.fetch_slide_image", side_effect=mock_fetch):
+        with patch("clawed.slide_images.fetch_slide_image", side_effect=mock_fetch):
             path = export_lesson_pptx(sample_lesson, sample_persona, output_dir=tmp_path)
 
         assert path.exists()
@@ -366,11 +366,11 @@ class TestPPTXWithImages:
 
     def test_pptx_without_images_api_unavailable(self, sample_lesson, sample_persona, tmp_path):
         """PPTX export works fine when no Unsplash key is configured."""
-        from eduagent.doc_export import export_lesson_pptx
+        from clawed.doc_export import export_lesson_pptx
 
         # Ensure no UNSPLASH_ACCESS_KEY is set
         with patch.dict("os.environ", {}, clear=False):
-            with patch("eduagent.slide_images._get_unsplash_key", return_value=None):
+            with patch("clawed.slide_images._get_unsplash_key", return_value=None):
                 path = export_lesson_pptx(sample_lesson, sample_persona, output_dir=tmp_path)
 
         assert path.exists()
@@ -383,13 +383,13 @@ class TestPPTXWithImages:
 
     def test_pptx_graceful_on_fetch_failure(self, sample_lesson, sample_persona, tmp_path):
         """PPTX export completes even when image fetching raises exceptions."""
-        from eduagent.doc_export import export_lesson_pptx
+        from clawed.doc_export import export_lesson_pptx
 
         async def failing_fetch(topic, subject="", cache_dir=None):
             raise ConnectionError("Network unavailable")
 
-        with patch("eduagent.slide_images.fetch_slide_image", side_effect=failing_fetch):
-            with patch("eduagent.slide_images._get_unsplash_key", return_value="fake-key"):
+        with patch("clawed.slide_images.fetch_slide_image", side_effect=failing_fetch):
+            with patch("clawed.slide_images._get_unsplash_key", return_value="fake-key"):
                 path = export_lesson_pptx(sample_lesson, sample_persona, output_dir=tmp_path)
 
         assert path.exists()
@@ -404,7 +404,7 @@ class TestPPTXThemeIntegration:
         """A Social Studies persona produces slides with warm-toned theme."""
         from pptx import Presentation
 
-        from eduagent.doc_export import export_lesson_pptx
+        from clawed.doc_export import export_lesson_pptx
 
         persona = TeacherPersona(name="Mr. Smith", subject_area="History")
         path = export_lesson_pptx(sample_lesson, persona, output_dir=tmp_path)
@@ -414,7 +414,7 @@ class TestPPTXThemeIntegration:
         assert len(prs.slides) >= 5
 
     def test_science_persona_uses_cool_theme(self, sample_lesson, tmp_path):
-        from eduagent.doc_export import export_lesson_pptx
+        from clawed.doc_export import export_lesson_pptx
 
         persona = TeacherPersona(name="Dr. Lee", subject_area="Science")
         path = export_lesson_pptx(sample_lesson, persona, output_dir=tmp_path)
@@ -422,21 +422,21 @@ class TestPPTXThemeIntegration:
         assert path.stat().st_size > 0
 
     def test_math_persona_uses_blue_theme(self, sample_lesson, tmp_path):
-        from eduagent.doc_export import export_lesson_pptx
+        from clawed.doc_export import export_lesson_pptx
 
         persona = TeacherPersona(name="Ms. Chen", subject_area="Math")
         path = export_lesson_pptx(sample_lesson, persona, output_dir=tmp_path)
         assert path.exists()
 
     def test_ela_persona_uses_purple_theme(self, sample_lesson, tmp_path):
-        from eduagent.doc_export import export_lesson_pptx
+        from clawed.doc_export import export_lesson_pptx
 
         persona = TeacherPersona(name="Mrs. Jones", subject_area="ELA")
         path = export_lesson_pptx(sample_lesson, persona, output_dir=tmp_path)
         assert path.exists()
 
     def test_unknown_subject_uses_default(self, sample_lesson, tmp_path):
-        from eduagent.doc_export import export_lesson_pptx
+        from clawed.doc_export import export_lesson_pptx
 
         persona = TeacherPersona(name="Coach", subject_area="Physical Education")
         path = export_lesson_pptx(sample_lesson, persona, output_dir=tmp_path)
@@ -446,7 +446,7 @@ class TestPPTXThemeIntegration:
         """When lesson has homework, closing slide should include it."""
         from pptx import Presentation
 
-        from eduagent.doc_export import export_lesson_pptx
+        from clawed.doc_export import export_lesson_pptx
 
         path = export_lesson_pptx(sample_lesson, sample_persona, output_dir=tmp_path)
         prs = Presentation(str(path))
@@ -459,7 +459,7 @@ class TestPPTXThemeIntegration:
         """When no homework, closing slide should say 'Questions?'."""
         from pptx import Presentation
 
-        from eduagent.doc_export import export_lesson_pptx
+        from clawed.doc_export import export_lesson_pptx
 
         lesson = DailyLesson(
             title="No Homework Lesson",
@@ -482,7 +482,7 @@ class TestAcademicImageSources:
     """Tests for the multi-source image routing in slide_images.py."""
 
     def test_history_prefers_loc(self):
-        from eduagent.slide_images import _select_sources
+        from clawed.slide_images import _select_sources
 
         sources = _select_sources("History")
         assert sources[0] == "loc"
@@ -490,44 +490,44 @@ class TestAcademicImageSources:
         assert "unsplash" in sources
 
     def test_social_studies_prefers_loc(self):
-        from eduagent.slide_images import _select_sources
+        from clawed.slide_images import _select_sources
 
         sources = _select_sources("Social Studies")
         assert sources[0] == "loc"
 
     def test_civics_prefers_loc(self):
-        from eduagent.slide_images import _select_sources
+        from clawed.slide_images import _select_sources
 
         sources = _select_sources("Civics")
         assert sources[0] == "loc"
 
     def test_science_prefers_wikimedia(self):
-        from eduagent.slide_images import _select_sources
+        from clawed.slide_images import _select_sources
 
         sources = _select_sources("Science")
         assert sources[0] == "wikimedia"
 
     def test_biology_prefers_wikimedia(self):
-        from eduagent.slide_images import _select_sources
+        from clawed.slide_images import _select_sources
 
         sources = _select_sources("Biology")
         assert sources[0] == "wikimedia"
 
     def test_art_prefers_wikimedia(self):
-        from eduagent.slide_images import _select_sources
+        from clawed.slide_images import _select_sources
 
         sources = _select_sources("Art")
         assert sources[0] == "wikimedia"
 
     def test_math_prefers_unsplash(self):
-        from eduagent.slide_images import _select_sources
+        from clawed.slide_images import _select_sources
 
         sources = _select_sources("Math")
         assert sources[0] == "unsplash"
         assert "wikimedia" in sources
 
     def test_unknown_subject_defaults_to_unsplash_first(self):
-        from eduagent.slide_images import _select_sources
+        from clawed.slide_images import _select_sources
 
         sources = _select_sources("Underwater Basket Weaving")
         assert sources[0] == "unsplash"
@@ -541,7 +541,7 @@ class TestLOCResponseParsing:
         import asyncio
         from unittest.mock import AsyncMock, MagicMock, patch
 
-        from eduagent.slide_images import _fetch_loc
+        from clawed.slide_images import _fetch_loc
 
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -581,7 +581,7 @@ class TestLOCResponseParsing:
         import asyncio
         from unittest.mock import AsyncMock, MagicMock, patch
 
-        from eduagent.slide_images import _fetch_loc
+        from clawed.slide_images import _fetch_loc
 
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -609,7 +609,7 @@ class TestWikimediaResponseParsing:
         import asyncio
         from unittest.mock import AsyncMock, MagicMock, patch
 
-        from eduagent.slide_images import _fetch_wikimedia
+        from clawed.slide_images import _fetch_wikimedia
 
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -633,7 +633,7 @@ class TestWikimediaResponseParsing:
         import asyncio
         from unittest.mock import AsyncMock, patch
 
-        from eduagent.slide_images import _fetch_wikimedia
+        from clawed.slide_images import _fetch_wikimedia
 
         async def mock_get(url, **kwargs):
             raise ConnectionError("Network down")
@@ -656,7 +656,7 @@ class TestSlideCountMatchesContent:
         """A lesson with all sections should produce 8 slides."""
         from pptx import Presentation
 
-        from eduagent.doc_export import export_lesson_pptx
+        from clawed.doc_export import export_lesson_pptx
 
         path = export_lesson_pptx(sample_lesson, sample_persona, output_dir=tmp_path)
         prs = Presentation(str(path))
@@ -668,7 +668,7 @@ class TestSlideCountMatchesContent:
         """A minimal lesson (title + objective only) should produce 3 slides."""
         from pptx import Presentation
 
-        from eduagent.doc_export import export_lesson_pptx
+        from clawed.doc_export import export_lesson_pptx
 
         path = export_lesson_pptx(minimal_lesson, sample_persona, output_dir=tmp_path)
         prs = Presentation(str(path))
@@ -679,7 +679,7 @@ class TestSlideCountMatchesContent:
         """Removing exit ticket should reduce slide count by 1."""
         from pptx import Presentation
 
-        from eduagent.doc_export import export_lesson_pptx
+        from clawed.doc_export import export_lesson_pptx
 
         lesson = DailyLesson(
             title="No Exit Ticket Lesson",
@@ -703,7 +703,7 @@ class TestSlideCountMatchesContent:
 
 class TestStudentHandoutExport:
     def test_generates_handout_file(self, sample_lesson, sample_persona, tmp_path):
-        from eduagent.doc_export import export_student_handout
+        from clawed.doc_export import export_student_handout
 
         path = export_student_handout(sample_lesson, sample_persona, output_dir=tmp_path)
         assert path.exists()
@@ -711,7 +711,7 @@ class TestStudentHandoutExport:
         assert "_handout" in path.name
 
     def test_handout_is_nonempty(self, sample_lesson, sample_persona, tmp_path):
-        from eduagent.doc_export import export_student_handout
+        from clawed.doc_export import export_student_handout
 
         path = export_student_handout(sample_lesson, sample_persona, output_dir=tmp_path)
         assert path.stat().st_size > 0
@@ -719,7 +719,7 @@ class TestStudentHandoutExport:
     def test_handout_contains_lesson_title(self, sample_lesson, sample_persona, tmp_path):
         from docx import Document
 
-        from eduagent.doc_export import export_student_handout
+        from clawed.doc_export import export_student_handout
 
         path = export_student_handout(sample_lesson, sample_persona, output_dir=tmp_path)
         doc = Document(str(path))
@@ -729,7 +729,7 @@ class TestStudentHandoutExport:
     def test_handout_contains_objective(self, sample_lesson, sample_persona, tmp_path):
         from docx import Document
 
-        from eduagent.doc_export import export_student_handout
+        from clawed.doc_export import export_student_handout
 
         path = export_student_handout(sample_lesson, sample_persona, output_dir=tmp_path)
         doc = Document(str(path))
@@ -739,7 +739,7 @@ class TestStudentHandoutExport:
     def test_handout_contains_do_now(self, sample_lesson, sample_persona, tmp_path):
         from docx import Document
 
-        from eduagent.doc_export import export_student_handout
+        from clawed.doc_export import export_student_handout
 
         path = export_student_handout(sample_lesson, sample_persona, output_dir=tmp_path)
         doc = Document(str(path))
@@ -754,7 +754,7 @@ class TestStudentHandoutExport:
     def test_handout_contains_exit_ticket(self, sample_lesson, sample_persona, tmp_path):
         from docx import Document
 
-        from eduagent.doc_export import export_student_handout
+        from clawed.doc_export import export_student_handout
 
         path = export_student_handout(sample_lesson, sample_persona, output_dir=tmp_path)
         doc = Document(str(path))
@@ -768,7 +768,7 @@ class TestStudentHandoutExport:
     def test_handout_contains_footer_fields(self, sample_lesson, sample_persona, tmp_path):
         from docx import Document
 
-        from eduagent.doc_export import export_student_handout
+        from clawed.doc_export import export_student_handout
 
         path = export_student_handout(sample_lesson, sample_persona, output_dir=tmp_path)
         doc = Document(str(path))
@@ -782,7 +782,7 @@ class TestStudentHandoutExport:
         assert "Period:" in all_text
 
     def test_handout_minimal_lesson(self, minimal_lesson, sample_persona, tmp_path):
-        from eduagent.doc_export import export_student_handout
+        from clawed.doc_export import export_student_handout
 
         path = export_student_handout(minimal_lesson, sample_persona, output_dir=tmp_path)
         assert path.exists()
@@ -791,7 +791,7 @@ class TestStudentHandoutExport:
     def test_handout_teacher_name_in_header(self, sample_lesson, sample_persona, tmp_path):
         from docx import Document
 
-        from eduagent.doc_export import export_student_handout
+        from clawed.doc_export import export_student_handout
 
         path = export_student_handout(sample_lesson, sample_persona, output_dir=tmp_path)
         doc = Document(str(path))

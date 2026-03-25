@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from eduagent.models import (
+from clawed.models import (
     AppConfig,
     AssessmentQuestion,
     DailyLesson,
@@ -353,13 +353,13 @@ class TestSummativeQuestionModel:
 
 class TestAssessmentGeneratorClass:
     def test_import_and_construct(self):
-        from eduagent.assessment import AssessmentGenerator
+        from clawed.assessment import AssessmentGenerator
 
         gen = AssessmentGenerator()
         assert gen.config is None
 
     def test_construct_with_config(self):
-        from eduagent.assessment import AssessmentGenerator
+        from clawed.assessment import AssessmentGenerator
 
         config = AppConfig(provider=LLMProvider.OLLAMA)
         gen = AssessmentGenerator(config)
@@ -378,7 +378,7 @@ class TestPromptTemplates:
         "rubric.txt",
     ])
     def test_prompt_template_exists(self, template):
-        path = Path(__file__).parent.parent / "eduagent" / "prompts" / template
+        path = Path(__file__).parent.parent / "clawed" / "prompts" / template
         assert path.exists(), f"Missing prompt template: {template}"
         content = path.read_text()
         assert len(content) > 100, f"Template {template} seems too short"
@@ -391,7 +391,7 @@ class TestPromptTemplates:
         ("rubric.txt", ["{persona}", "{task_description}", "{criteria_count}"]),
     ])
     def test_prompt_template_has_placeholders(self, template, placeholders):
-        path = Path(__file__).parent.parent / "eduagent" / "prompts" / template
+        path = Path(__file__).parent.parent / "clawed" / "prompts" / template
         content = path.read_text()
         for ph in placeholders:
             assert ph in content, f"Template {template} missing placeholder {ph}"
@@ -402,13 +402,13 @@ class TestPromptTemplates:
 
 class TestModelRouterAssessment:
     def test_assessment_task_in_router(self):
-        from eduagent.model_router import TASK_MODELS
+        from clawed.model_router import TASK_MODELS
 
         assert "assessment" in TASK_MODELS
         assert TASK_MODELS["assessment"] == "minimax-m2.7:cloud"
 
     def test_route_assessment_task(self):
-        from eduagent.model_router import route
+        from clawed.model_router import route
 
         config = AppConfig(provider=LLMProvider.OLLAMA, ollama_model="llama3.2")
         routed = route("assessment", config)
@@ -420,7 +420,7 @@ class TestModelRouterAssessment:
 
 class TestSaveAssessment:
     def test_save_formative(self, tmp_path):
-        from eduagent.assessment import save_assessment
+        from clawed.assessment import save_assessment
 
         fa = FormativeAssessment(
             lesson_title="Test Lesson",
@@ -432,7 +432,7 @@ class TestSaveAssessment:
         assert path.suffix == ".json"
 
     def test_save_dbq(self, tmp_path):
-        from eduagent.assessment import save_assessment
+        from clawed.assessment import save_assessment
 
         dbq = DBQAssessment(topic="Industrialization", grade_level="10")
         path = save_assessment(dbq, tmp_path, "dbq")
@@ -440,7 +440,7 @@ class TestSaveAssessment:
         assert "dbq_" in path.name
 
     def test_save_quiz(self, tmp_path):
-        from eduagent.assessment import save_assessment
+        from clawed.assessment import save_assessment
 
         quiz = Quiz(topic="WWI Causes", grade_level="10")
         path = save_assessment(quiz, tmp_path, "quiz")
@@ -448,7 +448,7 @@ class TestSaveAssessment:
         assert "quiz_" in path.name
 
     def test_save_rubric(self, tmp_path):
-        from eduagent.assessment import save_assessment
+        from clawed.assessment import save_assessment
 
         r = Rubric(task_description="Write an essay")
         path = save_assessment(r, tmp_path, "rubric")
@@ -456,7 +456,7 @@ class TestSaveAssessment:
         assert "rubric_" in path.name
 
     def test_save_creates_directory(self, tmp_path):
-        from eduagent.assessment import save_assessment
+        from clawed.assessment import save_assessment
 
         nested = tmp_path / "deep" / "nested"
         fa = FormativeAssessment(lesson_title="Test", objective="Test")
@@ -464,7 +464,7 @@ class TestSaveAssessment:
         assert path.exists()
 
     def test_save_summative(self, tmp_path):
-        from eduagent.assessment import save_assessment
+        from clawed.assessment import save_assessment
 
         sa = SummativeAssessment(
             unit_title="American Revolution",
@@ -481,7 +481,7 @@ class TestSaveAssessment:
 
 class TestConvenienceWrappers:
     def test_convenience_functions_importable(self):
-        from eduagent.assessment import (
+        from clawed.assessment import (
             generate_dbq,
             generate_formative,
             generate_quiz,

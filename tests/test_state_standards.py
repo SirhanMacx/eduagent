@@ -1,6 +1,6 @@
 """Tests for 50-state standards configuration."""
 
-from eduagent.state_standards import (
+from clawed.state_standards import (
     STATE_STANDARDS_CONFIG,
     get_framework_description,
     get_standards_context_for_prompt,
@@ -127,7 +127,7 @@ def test_every_state_has_all_subjects():
 
 def test_teacher_profile_get_standards_context():
     """TeacherProfile.get_standards_context() delegates to state_standards."""
-    from eduagent.models import TeacherProfile
+    from clawed.models import TeacherProfile
 
     profile = TeacherProfile(
         state="NY",
@@ -141,7 +141,7 @@ def test_teacher_profile_get_standards_context():
 
 
 def test_teacher_profile_no_state():
-    from eduagent.models import TeacherProfile
+    from clawed.models import TeacherProfile
 
     profile = TeacherProfile(subjects=["math"], grade_levels=["5"])
     assert profile.get_standards_context() == ""

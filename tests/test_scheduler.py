@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from eduagent.scheduler import (
+from clawed.scheduler import (
     DEFAULT_TASKS,
     EduScheduler,
     _parse_cron_expr,
@@ -23,7 +23,7 @@ from eduagent.scheduler import (
 def tmp_schedule(tmp_path, monkeypatch):
     """Redirect schedule config to a temp directory."""
     config_path = tmp_path / "schedule.json"
-    monkeypatch.setattr("eduagent.scheduler.SCHEDULE_CONFIG_PATH", config_path)
+    monkeypatch.setattr("clawed.scheduler.SCHEDULE_CONFIG_PATH", config_path)
     return config_path
 
 
@@ -31,13 +31,13 @@ def tmp_schedule(tmp_path, monkeypatch):
 def tmp_workspace_for_scheduler(tmp_path, monkeypatch):
     """Also redirect workspace paths for tasks that write daily notes."""
     ws = tmp_path / "workspace"
-    monkeypatch.setattr("eduagent.workspace.WORKSPACE_DIR", ws)
-    monkeypatch.setattr("eduagent.workspace.IDENTITY_PATH", ws / "identity.md")
-    monkeypatch.setattr("eduagent.workspace.SOUL_PATH", ws / "soul.md")
-    monkeypatch.setattr("eduagent.workspace.MEMORY_PATH", ws / "memory.md")
-    monkeypatch.setattr("eduagent.workspace.HEARTBEAT_PATH", ws / "heartbeat.md")
-    monkeypatch.setattr("eduagent.workspace.NOTES_DIR", ws / "notes")
-    monkeypatch.setattr("eduagent.workspace.STUDENTS_DIR", ws / "students")
+    monkeypatch.setattr("clawed.workspace.WORKSPACE_DIR", ws)
+    monkeypatch.setattr("clawed.workspace.IDENTITY_PATH", ws / "identity.md")
+    monkeypatch.setattr("clawed.workspace.SOUL_PATH", ws / "soul.md")
+    monkeypatch.setattr("clawed.workspace.MEMORY_PATH", ws / "memory.md")
+    monkeypatch.setattr("clawed.workspace.HEARTBEAT_PATH", ws / "heartbeat.md")
+    monkeypatch.setattr("clawed.workspace.NOTES_DIR", ws / "notes")
+    monkeypatch.setattr("clawed.workspace.STUDENTS_DIR", ws / "students")
     return ws
 
 
@@ -87,7 +87,7 @@ class TestScheduleConfig:
 
     def test_save_creates_parent_dirs(self, tmp_path, monkeypatch):
         nested = tmp_path / "deep" / "nested" / "schedule.json"
-        monkeypatch.setattr("eduagent.scheduler.SCHEDULE_CONFIG_PATH", nested)
+        monkeypatch.setattr("clawed.scheduler.SCHEDULE_CONFIG_PATH", nested)
         config = load_schedule_config()
         save_schedule_config(config)
         assert nested.exists()
@@ -206,7 +206,7 @@ class TestRunTask:
     @pytest.mark.asyncio
     async def test_run_logs_to_daily_notes(self, tmp_schedule, tmp_workspace_for_scheduler):
         await run_task("morning-prep")
-        from eduagent.workspace import get_daily_notes
+        from clawed.workspace import get_daily_notes
         notes = get_daily_notes()
         assert "morning-prep" in notes.lower() or "Morning prep" in notes
 

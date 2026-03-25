@@ -10,30 +10,30 @@ def _isolate_state_db(tmp_path, monkeypatch):
     Prevents SQLite connection leaks and cross-test contamination
     that caused 1647 cascade errors when running the full suite.
     """
-    monkeypatch.setattr("eduagent.state.DEFAULT_DATA_DIR", tmp_path, raising=False)
+    monkeypatch.setattr("clawed.state.DEFAULT_DATA_DIR", tmp_path, raising=False)
 
     # Isolate the central I/O layer so tests don't write to real ~/.eduagent/
     monkeypatch.setenv("EDUAGENT_DATA_DIR", str(tmp_path))
 
     # Also isolate workspace to prevent tests writing to real ~/.eduagent/
     monkeypatch.setattr(
-        "eduagent.workspace.WORKSPACE_DIR", tmp_path / "workspace", raising=False,
+        "clawed.workspace.WORKSPACE_DIR", tmp_path / "workspace", raising=False,
     )
     monkeypatch.setattr(
-        "eduagent.workspace.IDENTITY_PATH", tmp_path / "workspace" / "identity.md", raising=False,
+        "clawed.workspace.IDENTITY_PATH", tmp_path / "workspace" / "identity.md", raising=False,
     )
     monkeypatch.setattr(
-        "eduagent.workspace.SOUL_PATH", tmp_path / "workspace" / "soul.md", raising=False,
+        "clawed.workspace.SOUL_PATH", tmp_path / "workspace" / "soul.md", raising=False,
     )
     monkeypatch.setattr(
-        "eduagent.workspace.MEMORY_PATH", tmp_path / "workspace" / "memory.md", raising=False,
+        "clawed.workspace.MEMORY_PATH", tmp_path / "workspace" / "memory.md", raising=False,
     )
     monkeypatch.setattr(
-        "eduagent.workspace.HEARTBEAT_PATH", tmp_path / "workspace" / "heartbeat.md", raising=False,
+        "clawed.workspace.HEARTBEAT_PATH", tmp_path / "workspace" / "heartbeat.md", raising=False,
     )
     monkeypatch.setattr(
-        "eduagent.workspace.NOTES_DIR", tmp_path / "workspace" / "notes", raising=False,
+        "clawed.workspace.NOTES_DIR", tmp_path / "workspace" / "notes", raising=False,
     )
     monkeypatch.setattr(
-        "eduagent.workspace.STUDENTS_DIR", tmp_path / "workspace" / "students", raising=False,
+        "clawed.workspace.STUDENTS_DIR", tmp_path / "workspace" / "students", raising=False,
     )

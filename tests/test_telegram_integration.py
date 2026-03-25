@@ -12,7 +12,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from eduagent.telegram_bot import (
+from clawed.telegram_bot import (
     ACTION_CALLBACK_PREFIX,
     BOT_COMMANDS,
     RATING_CALLBACK_PREFIX,
@@ -269,8 +269,8 @@ class TestLessonFlow:
         state = _get_chat_state(300)
         assert state.state == ConversationState.COLLECTING_LESSON_INFO
 
-    @patch("eduagent.telegram_bot._get_store")
-    @patch("eduagent.openclaw_plugin.handle_message", new_callable=AsyncMock)
+    @patch("clawed.telegram_bot._get_store")
+    @patch("clawed.openclaw_plugin.handle_message", new_callable=AsyncMock)
     def test_user_message_triggers_generation(self, mock_process, mock_store):
         """User's message triggers LLM generation and returns the response."""
         mock_store.return_value = MagicMock(
@@ -284,7 +284,7 @@ class TestLessonFlow:
 
         update = _make_update("photosynthesis for 6th grade", chat_id=400)
 
-        with patch("eduagent.openclaw_plugin.get_last_lesson_id", return_value=None):
+        with patch("clawed.openclaw_plugin.get_last_lesson_id", return_value=None):
             asyncio.run(handlers["handle_message"](update, None))
 
         update.message.reply_text.assert_awaited()
@@ -297,7 +297,7 @@ class TestLessonFlow:
 
 
 class TestHealthCommand:
-    @patch("eduagent.telegram_bot._get_store")
+    @patch("clawed.telegram_bot._get_store")
     def test_health_returns_all_fields(self, mock_store):
         """Test /health shows model, persona, lesson count, corpus size."""
         mock_store.return_value = MagicMock(
@@ -311,10 +311,10 @@ class TestHealthCommand:
         update = _make_update("/health", chat_id=500)
 
         with (
-            patch("eduagent.models.AppConfig.load") as mock_cfg,
-            patch("eduagent.state.TeacherSession.load") as mock_session,
-            patch("eduagent.state.init_db"),
-            patch("eduagent.state._get_conn") as mock_conn,
+            patch("clawed.models.AppConfig.load") as mock_cfg,
+            patch("clawed.state.TeacherSession.load") as mock_session,
+            patch("clawed.state.init_db"),
+            patch("clawed.state._get_conn") as mock_conn,
         ):
             mock_cfg.return_value = MagicMock(
                 provider=MagicMock(value="ollama"),
@@ -337,7 +337,7 @@ class TestHealthCommand:
         assert "Lessons generated:" in text
         assert "Corpus examples:" in text
 
-    @patch("eduagent.telegram_bot._get_store")
+    @patch("clawed.telegram_bot._get_store")
     def test_health_shows_persona_yes(self, mock_store):
         """When persona is loaded, health should say 'yes'."""
         mock_store.return_value = MagicMock(
@@ -350,10 +350,10 @@ class TestHealthCommand:
         update = _make_update("/health", chat_id=501)
 
         with (
-            patch("eduagent.models.AppConfig.load") as mock_cfg,
-            patch("eduagent.state.TeacherSession.load") as mock_session,
-            patch("eduagent.state.init_db"),
-            patch("eduagent.state._get_conn") as mock_conn,
+            patch("clawed.models.AppConfig.load") as mock_cfg,
+            patch("clawed.state.TeacherSession.load") as mock_session,
+            patch("clawed.state.init_db"),
+            patch("clawed.state._get_conn") as mock_conn,
         ):
             mock_cfg.return_value = MagicMock(
                 provider=MagicMock(value="anthropic"),
@@ -372,7 +372,7 @@ class TestHealthCommand:
         text = update.message.reply_text.call_args.args[0]
         assert "yes" in text
 
-    @patch("eduagent.telegram_bot._get_store")
+    @patch("clawed.telegram_bot._get_store")
     def test_health_shows_persona_no(self, mock_store):
         """When no persona, health should say 'no'."""
         mock_store.return_value = MagicMock(
@@ -385,10 +385,10 @@ class TestHealthCommand:
         update = _make_update("/health", chat_id=502)
 
         with (
-            patch("eduagent.models.AppConfig.load") as mock_cfg,
-            patch("eduagent.state.TeacherSession.load") as mock_session,
-            patch("eduagent.state.init_db"),
-            patch("eduagent.state._get_conn") as mock_conn,
+            patch("clawed.models.AppConfig.load") as mock_cfg,
+            patch("clawed.state.TeacherSession.load") as mock_session,
+            patch("clawed.state.init_db"),
+            patch("clawed.state._get_conn") as mock_conn,
         ):
             mock_cfg.return_value = MagicMock(
                 provider=MagicMock(value="ollama"),
@@ -412,8 +412,8 @@ class TestHealthCommand:
 
 
 class TestErrorRecovery:
-    @patch("eduagent.telegram_bot._get_store")
-    @patch("eduagent.openclaw_plugin.handle_message", new_callable=AsyncMock)
+    @patch("clawed.telegram_bot._get_store")
+    @patch("clawed.openclaw_plugin.handle_message", new_callable=AsyncMock)
     def test_retry_succeeds_on_second_attempt(self, mock_process, mock_store):
         """LLM fails once, retry succeeds — user gets the generated content."""
         mock_store.return_value = MagicMock(
@@ -430,15 +430,15 @@ class TestErrorRecovery:
 
         update = _make_update("generate a lesson on science", chat_id=600)
 
-        with patch("eduagent.openclaw_plugin.get_last_lesson_id", return_value=None):
+        with patch("clawed.openclaw_plugin.get_last_lesson_id", return_value=None):
             asyncio.run(handlers["handle_message"](update, None))
 
         assert mock_process.call_count == 2
         text = update.message.reply_text.call_args.args[0]
         assert "science" in text.lower()
 
-    @patch("eduagent.telegram_bot._get_store")
-    @patch("eduagent.openclaw_plugin.handle_message", new_callable=AsyncMock)
+    @patch("clawed.telegram_bot._get_store")
+    @patch("clawed.openclaw_plugin.handle_message", new_callable=AsyncMock)
     def test_fallback_after_both_fail(self, mock_process, mock_store):
         """Both attempts fail — user gets a friendly fallback, no traceback."""
         mock_store.return_value = MagicMock(
@@ -458,8 +458,8 @@ class TestErrorRecovery:
         assert "Traceback" not in text
         assert "RuntimeError" not in text
 
-    @patch("eduagent.telegram_bot._get_store")
-    @patch("eduagent.openclaw_plugin.handle_message", new_callable=AsyncMock)
+    @patch("clawed.telegram_bot._get_store")
+    @patch("clawed.openclaw_plugin.handle_message", new_callable=AsyncMock)
     def test_state_resets_after_error(self, mock_process, mock_store):
         """State resets to IDLE even when generation fails."""
         mock_store.return_value = MagicMock(
@@ -480,7 +480,7 @@ class TestErrorRecovery:
     def test_error_logging(self, tmp_path):
         """Errors should be written to errors.log."""
         log_file = tmp_path / "errors.log"
-        with patch("eduagent.telegram_bot._ERROR_LOG", log_file):
+        with patch("clawed.telegram_bot._ERROR_LOG", log_file):
             _log_error(ValueError("test error"))
         assert log_file.exists()
         content = log_file.read_text()
@@ -492,8 +492,8 @@ class TestErrorRecovery:
 
 
 class TestBusyState:
-    @patch("eduagent.telegram_bot._get_store")
-    @patch("eduagent.openclaw_plugin.handle_message", new_callable=AsyncMock)
+    @patch("clawed.telegram_bot._get_store")
+    @patch("clawed.openclaw_plugin.handle_message", new_callable=AsyncMock)
     def test_busy_message_when_generating(self, mock_process, mock_store):
         """Messages during generation get a 'still working' response."""
         mock_store.return_value = MagicMock(
@@ -516,8 +516,8 @@ class TestBusyState:
         assert "still working" in text.lower()
         mock_process.assert_not_called()
 
-    @patch("eduagent.telegram_bot._get_store")
-    @patch("eduagent.openclaw_plugin.handle_message", new_callable=AsyncMock)
+    @patch("clawed.telegram_bot._get_store")
+    @patch("clawed.openclaw_plugin.handle_message", new_callable=AsyncMock)
     def test_state_resets_after_success(self, mock_process, mock_store):
         """State resets to IDLE after successful generation."""
         mock_store.return_value = MagicMock(
@@ -531,7 +531,7 @@ class TestBusyState:
 
         update = _make_update("make a lesson", chat_id=800)
 
-        with patch("eduagent.openclaw_plugin.get_last_lesson_id", return_value=None):
+        with patch("clawed.openclaw_plugin.get_last_lesson_id", return_value=None):
             asyncio.run(handlers["handle_message"](update, None))
 
         state = _get_chat_state(800)
@@ -587,17 +587,17 @@ class TestResponseChunking:
 
 class TestTokenPersistence:
     def test_app_config_telegram_token(self):
-        from eduagent.models import AppConfig
+        from clawed.models import AppConfig
         config = AppConfig(telegram_bot_token="123:FAKE")
         assert config.telegram_bot_token == "123:FAKE"
 
     def test_app_config_default_no_token(self):
-        from eduagent.models import AppConfig
+        from clawed.models import AppConfig
         config = AppConfig()
         assert config.telegram_bot_token is None
 
     def test_token_roundtrip_json(self):
-        from eduagent.models import AppConfig
+        from clawed.models import AppConfig
         config = AppConfig(telegram_bot_token="999:TEST")
         json_str = config.model_dump_json()
         loaded = AppConfig.model_validate_json(json_str)
@@ -652,7 +652,7 @@ class TestWebhookSupport:
 
     def test_from_env_raises_without_token(self, tmp_path, monkeypatch):
         monkeypatch.delenv("TELEGRAM_BOT_TOKEN", raising=False)
-        with patch("eduagent.models.AppConfig.load") as mock_cfg:
+        with patch("clawed.models.AppConfig.load") as mock_cfg:
             mock_cfg.return_value = MagicMock(telegram_bot_token=None)
             with pytest.raises(ValueError, match="No Telegram bot token found"):
                 EduAgentBot.from_env(data_dir=tmp_path)

@@ -25,8 +25,8 @@ class TestPersonaExtraction:
 
     @pytest.mark.asyncio
     async def test_extract_persona_from_sample_document(self):
-        from eduagent.models import DocType, Document, TeacherPersona
-        from eduagent.persona import extract_persona
+        from clawed.models import DocType, Document, TeacherPersona
+        from clawed.persona import extract_persona
 
         sample_doc = Document(
             title="Sample Lesson Plan — Photosynthesis",
@@ -83,8 +83,8 @@ class TestLessonGeneration:
 
     @pytest.mark.asyncio
     async def test_generate_lesson_parses_into_daily_lesson(self):
-        from eduagent.lesson import generate_lesson
-        from eduagent.models import (
+        from clawed.lesson import generate_lesson
+        from clawed.models import (
             DailyLesson,
             LessonBrief,
             TeacherPersona,
@@ -164,7 +164,7 @@ class TestGenerateJson:
 
     @pytest.mark.asyncio
     async def test_generate_json_returns_valid_dict(self):
-        from eduagent.llm import LLMClient
+        from clawed.llm import LLMClient
 
         client = LLMClient()
         result = await client.generate_json(

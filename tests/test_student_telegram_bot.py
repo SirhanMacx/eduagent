@@ -10,7 +10,7 @@ import asyncio
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from eduagent.student_telegram_bot import (
+from clawed.student_telegram_bot import (
     STUDENT_BOT_COMMANDS,
     StudentTelegramBot,
     _get_session,
@@ -226,7 +226,7 @@ class TestErrorRecovery:
 
     def test_error_logged(self, tmp_path: Any) -> None:
         """Errors should be written to the log file."""
-        with patch("eduagent.student_telegram_bot._ERROR_LOG", tmp_path / "student_errors.log"):
+        with patch("clawed.student_telegram_bot._ERROR_LOG", tmp_path / "student_errors.log"):
             _log_error(RuntimeError("test error"))
             log_content = (tmp_path / "student_errors.log").read_text()
             assert "RuntimeError" in log_content

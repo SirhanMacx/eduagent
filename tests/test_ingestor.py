@@ -6,7 +6,7 @@ from xml.etree.ElementTree import Element, SubElement, tostring
 
 import pytest
 
-from eduagent.ingestor import (
+from clawed.ingestor import (
     EXTENSION_MAP,
     SUPPORTED_EXTENSIONS,
     _collect_files,
@@ -19,7 +19,7 @@ from eduagent.ingestor import (
     ingest_path,
     scan_directory,
 )
-from eduagent.models import DocType
+from clawed.models import DocType
 
 # ── Extension map ────────────────────────────────────────────────────
 

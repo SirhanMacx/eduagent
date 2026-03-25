@@ -1,7 +1,7 @@
 """Tests for the smart model router."""
 
-from eduagent.model_router import TASK_MODELS, route
-from eduagent.models import AppConfig, LLMProvider
+from clawed.model_router import TASK_MODELS, route
+from clawed.models import AppConfig, LLMProvider
 
 
 class TestTaskModelsMapping:
@@ -91,12 +91,12 @@ class TestRouteFunction:
 class TestLandingPage:
     def test_landing_html_exists(self):
         from pathlib import Path
-        landing = Path(__file__).parent.parent / "eduagent" / "landing" / "index.html"
+        landing = Path(__file__).parent.parent / "clawed" / "landing" / "index.html"
         assert landing.exists()
 
     def test_landing_html_contains_key_content(self):
         from pathlib import Path
-        landing = Path(__file__).parent.parent / "eduagent" / "landing" / "index.html"
+        landing = Path(__file__).parent.parent / "clawed" / "landing" / "index.html"
         html = landing.read_text()
         assert "Your AI co-teacher" in html
         assert "Trained on YOUR materials" in html
@@ -107,7 +107,7 @@ class TestLandingPage:
 
     def test_landing_html_is_self_contained(self):
         from pathlib import Path
-        landing = Path(__file__).parent.parent / "eduagent" / "landing" / "index.html"
+        landing = Path(__file__).parent.parent / "clawed" / "landing" / "index.html"
         html = landing.read_text()
         # Should not link to external CSS/JS (except GitHub link)
         stripped = html.replace('href="https://github.com/SirhanMacx/eduagent"', "")

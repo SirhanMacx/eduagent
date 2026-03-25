@@ -4,8 +4,8 @@ import json
 
 import pytest
 
-from eduagent.database import Database
-from eduagent.feedback import analyze_feedback, collect_feedback
+from clawed.database import Database
+from clawed.feedback import analyze_feedback, collect_feedback
 
 
 @pytest.fixture
@@ -21,13 +21,13 @@ def db(tmp_path):
 
 class TestChatEngine:
     def test_student_chat_import(self):
-        from eduagent.chat import student_chat
+        from clawed.chat import student_chat
         assert callable(student_chat)
 
     def test_chat_function_signature(self):
         import inspect
 
-        from eduagent.chat import student_chat
+        from clawed.chat import student_chat
         sig = inspect.signature(student_chat)
         params = list(sig.parameters.keys())
         assert "question" in params
@@ -92,22 +92,22 @@ class TestFeedback:
 
 class TestImprover:
     def test_improver_import(self):
-        from eduagent.improver import improve_prompts
+        from clawed.improver import improve_prompts
         assert callable(improve_prompts)
 
     def test_prompt_files_mapping(self):
-        from eduagent.improver import PROMPT_FILES
+        from clawed.improver import PROMPT_FILES
         assert "lesson_plan" in PROMPT_FILES
         assert "unit_plan" in PROMPT_FILES
         assert "persona_extract" in PROMPT_FILES
 
     def test_check_and_promote_no_candidates(self, db):
-        from eduagent.improver import _check_and_promote
+        from clawed.improver import _check_and_promote
         # Should not raise with no data
         _check_and_promote(db, "lesson_plan")
 
     def test_check_and_promote_with_data(self, db):
-        from eduagent.improver import _check_and_promote
+        from clawed.improver import _check_and_promote
         p1 = db.insert_prompt_version("lesson_plan", 1, "v1")
         p2 = db.insert_prompt_version("lesson_plan", 2, "v2")
         # Simulate usage: p2 has better rating and enough usage

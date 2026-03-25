@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from unittest.mock import patch
 
-from eduagent.models import AppConfig, LLMProvider
+from clawed.models import AppConfig, LLMProvider
 
 
 class TestOnboardingImport:
     def test_module_imports(self):
-        from eduagent.onboarding import (
+        from clawed.onboarding import (
             US_STATES,
             check_first_run,
             run_onboarding,
@@ -20,54 +20,54 @@ class TestOnboardingImport:
         assert isinstance(US_STATES, list)
 
     def test_us_states_complete(self):
-        from eduagent.onboarding import US_STATES
+        from clawed.onboarding import US_STATES
 
         # 50 states + DC = 51
         assert len(US_STATES) == 51
 
     def test_us_states_sorted(self):
-        from eduagent.onboarding import US_STATES
+        from clawed.onboarding import US_STATES
 
         assert US_STATES == sorted(US_STATES)
 
 
 class TestResolveState:
     def test_full_name(self):
-        from eduagent.onboarding import _resolve_state
+        from clawed.onboarding import _resolve_state
 
         assert _resolve_state("New York") == "NY"
         assert _resolve_state("California") == "CA"
         assert _resolve_state("Texas") == "TX"
 
     def test_abbreviation(self):
-        from eduagent.onboarding import _resolve_state
+        from clawed.onboarding import _resolve_state
 
         assert _resolve_state("NY") == "NY"
         assert _resolve_state("CA") == "CA"
         assert _resolve_state("tx") == "TX"
 
     def test_case_insensitive(self):
-        from eduagent.onboarding import _resolve_state
+        from clawed.onboarding import _resolve_state
 
         assert _resolve_state("new york") == "NY"
         assert _resolve_state("NEW YORK") == "NY"
         assert _resolve_state("california") == "CA"
 
     def test_prefix_match(self):
-        from eduagent.onboarding import _resolve_state
+        from clawed.onboarding import _resolve_state
 
         assert _resolve_state("New Y") == "NY"
         assert _resolve_state("Cal") == "CA"
 
     def test_invalid_state(self):
-        from eduagent.onboarding import _resolve_state
+        from clawed.onboarding import _resolve_state
 
         assert _resolve_state("Narnia") is None
         assert _resolve_state("") is None
         assert _resolve_state("XX") is None
 
     def test_dc(self):
-        from eduagent.onboarding import _resolve_state
+        from clawed.onboarding import _resolve_state
 
         assert _resolve_state("DC") == "DC"
         assert _resolve_state("District of Columbia") == "DC"
@@ -80,7 +80,7 @@ class TestCheckFirstRun:
         config_file.write_text("{}")
 
         with patch.object(AppConfig, "config_path", return_value=config_file):
-            from eduagent.onboarding import check_first_run
+            from clawed.onboarding import check_first_run
 
             result = check_first_run()
             assert result is False
@@ -91,13 +91,13 @@ class TestCheckFirstRun:
 
         with (
             patch.object(AppConfig, "config_path", return_value=config_file),
-            patch("eduagent.onboarding.run_onboarding") as mock_onboard,
+            patch("clawed.onboarding.run_onboarding") as mock_onboard,
             patch("sys.stdin") as mock_stdin,
         ):
             mock_stdin.isatty.return_value = True
             mock_onboard.return_value = AppConfig()
 
-            from eduagent.onboarding import check_first_run
+            from clawed.onboarding import check_first_run
 
             result = check_first_run()
             assert result is True
@@ -109,11 +109,11 @@ class TestCheckFirstRun:
 
         with (
             patch.object(AppConfig, "config_path", return_value=config_file),
-            patch("eduagent.onboarding.run_onboarding", side_effect=KeyboardInterrupt),
+            patch("clawed.onboarding.run_onboarding", side_effect=KeyboardInterrupt),
             patch("sys.stdin") as mock_stdin,
         ):
             mock_stdin.isatty.return_value = True
-            from eduagent.onboarding import check_first_run
+            from clawed.onboarding import check_first_run
 
             result = check_first_run()
             assert result is True
@@ -124,11 +124,11 @@ class TestCheckFirstRun:
 
         with (
             patch.object(AppConfig, "config_path", return_value=config_file),
-            patch("eduagent.onboarding.run_onboarding") as mock_onboard,
+            patch("clawed.onboarding.run_onboarding") as mock_onboard,
             patch("sys.stdin") as mock_stdin,
         ):
             mock_stdin.isatty.return_value = False
-            from eduagent.onboarding import check_first_run
+            from clawed.onboarding import check_first_run
 
             result = check_first_run()
             assert result is True
@@ -137,25 +137,25 @@ class TestCheckFirstRun:
 
 class TestAskProvider:
     def test_anthropic_selection(self):
-        from eduagent.onboarding import _ask_provider
+        from clawed.onboarding import _ask_provider
 
-        with patch("eduagent.onboarding.Prompt.ask", side_effect=["1", "sk-ant-test-key"]):
+        with patch("clawed.onboarding.Prompt.ask", side_effect=["1", "sk-ant-test-key"]):
             provider, key = _ask_provider()
             assert provider == LLMProvider.ANTHROPIC
             assert key == "sk-ant-test-key"
 
     def test_openai_selection(self):
-        from eduagent.onboarding import _ask_provider
+        from clawed.onboarding import _ask_provider
 
-        with patch("eduagent.onboarding.Prompt.ask", side_effect=["2", "sk-test-key"]):
+        with patch("clawed.onboarding.Prompt.ask", side_effect=["2", "sk-test-key"]):
             provider, key = _ask_provider()
             assert provider == LLMProvider.OPENAI
             assert key == "sk-test-key"
 
     def test_ollama_selection_no_key(self):
-        from eduagent.onboarding import _ask_provider
+        from clawed.onboarding import _ask_provider
 
-        with patch("eduagent.onboarding.Prompt.ask", return_value="3"):
+        with patch("clawed.onboarding.Prompt.ask", return_value="3"):
             provider, key = _ask_provider()
             assert provider == LLMProvider.OLLAMA
             assert key is None
@@ -163,36 +163,36 @@ class TestAskProvider:
 
 class TestAskMaterials:
     def test_skip_on_enter(self):
-        from eduagent.onboarding import _ask_materials
+        from clawed.onboarding import _ask_materials
 
-        with patch("eduagent.onboarding.Prompt.ask", return_value=""):
+        with patch("clawed.onboarding.Prompt.ask", return_value=""):
             result = _ask_materials()
             assert result is None
 
     def test_returns_resolved_path(self, tmp_path):
-        from eduagent.onboarding import _ask_materials
+        from clawed.onboarding import _ask_materials
 
         lesson_dir = tmp_path / "lessons"
         lesson_dir.mkdir()
 
-        with patch("eduagent.onboarding.Prompt.ask", return_value=str(lesson_dir)):
+        with patch("clawed.onboarding.Prompt.ask", return_value=str(lesson_dir)):
             result = _ask_materials()
             assert result == str(lesson_dir)
 
     def test_invalid_path_returns_none(self):
-        from eduagent.onboarding import _ask_materials
+        from clawed.onboarding import _ask_materials
 
-        with patch("eduagent.onboarding.Prompt.ask", return_value="/nonexistent/path/xyz"):
+        with patch("clawed.onboarding.Prompt.ask", return_value="/nonexistent/path/xyz"):
             result = _ask_materials()
             assert result is None
 
 
 class TestStateNameToAbbr:
     def test_all_50_states_plus_dc_mapped(self):
-        from eduagent.onboarding import _STATE_NAME_TO_ABBR
+        from clawed.onboarding import _STATE_NAME_TO_ABBR
 
         # Every state in the config should have both name and abbreviation entries
-        from eduagent.state_standards import STATE_STANDARDS_CONFIG
+        from clawed.state_standards import STATE_STANDARDS_CONFIG
 
         for abbr, info in STATE_STANDARDS_CONFIG.items():
             assert info["name"].lower() in _STATE_NAME_TO_ABBR
@@ -215,11 +215,11 @@ class TestRunOnboarding:
 
         with (
             patch.object(AppConfig, "config_path", return_value=config_file),
-            patch("eduagent.onboarding.Prompt.ask", side_effect=side_effects),
-            patch("eduagent.onboarding._test_connection", return_value=True),
-            patch("eduagent.onboarding._detect_available_models", return_value=(None, "No LLM found")),
+            patch("clawed.onboarding.Prompt.ask", side_effect=side_effects),
+            patch("clawed.onboarding._test_connection", return_value=True),
+            patch("clawed.onboarding._detect_available_models", return_value=(None, "No LLM found")),
         ):
-            from eduagent.onboarding import run_onboarding
+            from clawed.onboarding import run_onboarding
 
             config = run_onboarding()
 

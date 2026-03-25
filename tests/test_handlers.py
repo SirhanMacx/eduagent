@@ -1,8 +1,8 @@
 """Tests for gateway handlers."""
 import pytest
 from unittest.mock import AsyncMock, patch
-from eduagent.gateway_response import GatewayResponse
-from eduagent.handlers.onboard import OnboardHandler, OnboardState
+from clawed.gateway_response import GatewayResponse
+from clawed.handlers.onboard import OnboardHandler, OnboardState
 
 
 class TestOnboardHandler:
@@ -62,7 +62,7 @@ class TestOnboardHandler:
         assert OnboardState.DONE.value == "done"
 
 
-from eduagent.handlers.generate import GenerateHandler
+from clawed.handlers.generate import GenerateHandler
 
 
 class TestGenerateHandler:
@@ -71,7 +71,7 @@ class TestGenerateHandler:
 
     @pytest.mark.asyncio
     async def test_generate_lesson_returns_response(self):
-        with patch("eduagent.handlers.generate.handle_message", new_callable=AsyncMock) as mock_hm:
+        with patch("clawed.handlers.generate.handle_message", new_callable=AsyncMock) as mock_hm:
             mock_hm.return_value = "Here is your lesson on photosynthesis..."
             r = await self.handler.lesson("photosynthesis", "teacher_1")
             assert isinstance(r, GatewayResponse)
@@ -80,7 +80,7 @@ class TestGenerateHandler:
 
     @pytest.mark.asyncio
     async def test_generate_unit_returns_response(self):
-        with patch("eduagent.handlers.generate.handle_message", new_callable=AsyncMock) as mock_hm:
+        with patch("clawed.handlers.generate.handle_message", new_callable=AsyncMock) as mock_hm:
             mock_hm.return_value = "Unit plan for WWI..."
             r = await self.handler.unit("World War I", "teacher_1")
             assert isinstance(r, GatewayResponse)
@@ -88,22 +88,22 @@ class TestGenerateHandler:
 
     @pytest.mark.asyncio
     async def test_generate_with_post_gen_buttons(self):
-        with patch("eduagent.handlers.generate.handle_message", new_callable=AsyncMock) as mock_hm:
+        with patch("clawed.handlers.generate.handle_message", new_callable=AsyncMock) as mock_hm:
             mock_hm.return_value = "Lesson content..."
-            with patch("eduagent.handlers.generate.get_last_lesson_id", return_value="lesson_abc"):
+            with patch("clawed.handlers.generate.get_last_lesson_id", return_value="lesson_abc"):
                 r = await self.handler.lesson("fractions", "teacher_1")
                 assert len(r.button_rows) > 0 or len(r.buttons) > 0
 
     @pytest.mark.asyncio
     async def test_generate_error_returns_friendly_message(self):
-        with patch("eduagent.handlers.generate.handle_message", new_callable=AsyncMock) as mock_hm:
+        with patch("clawed.handlers.generate.handle_message", new_callable=AsyncMock) as mock_hm:
             mock_hm.side_effect = RuntimeError("LLM timeout")
             r = await self.handler.lesson("topic", "teacher_1")
             assert "issue" in r.text.lower() or "error" in r.text.lower() or "try again" in r.text.lower()
 
 
 from pathlib import Path
-from eduagent.handlers.export import ExportHandler
+from clawed.handlers.export import ExportHandler
 
 
 class TestExportHandler:
@@ -122,14 +122,14 @@ class TestExportHandler:
 
     @pytest.mark.asyncio
     async def test_export_slides_calls_pptx(self):
-        from eduagent.models import DailyLesson
+        from clawed.models import DailyLesson
         lesson = DailyLesson(
             title="Test Lesson", lesson_number=1, objective="Test",
             do_now="Test", direct_instruction="Test",
             guided_practice="Test", independent_work="Test",
         )
-        with patch("eduagent.handlers.export._load_lesson", return_value=lesson):
-            with patch("eduagent.handlers.export._load_persona", return_value=None):
+        with patch("clawed.handlers.export._load_lesson", return_value=lesson):
+            with patch("clawed.handlers.export._load_persona", return_value=None):
                 with patch.object(self.handler, "_do_export", new_callable=AsyncMock) as mock_export:
                     mock_export.return_value = Path("/tmp/test.pptx")
                     r = await self.handler.export("lesson_123", "teacher_1", "slides")
@@ -142,7 +142,7 @@ class TestExportHandler:
         assert "doc" in ExportHandler.SUPPORTED_FORMATS
 
 
-from eduagent.handlers.feedback import FeedbackHandler
+from clawed.handlers.feedback import FeedbackHandler
 
 
 class TestFeedbackHandler:
@@ -151,8 +151,8 @@ class TestFeedbackHandler:
 
     @pytest.mark.asyncio
     async def test_rate_lesson_valid(self):
-        with patch("eduagent.handlers.feedback.rate_lesson") as mock_rate:
-            with patch("eduagent.handlers.feedback.memory_process"):
+        with patch("clawed.handlers.feedback.rate_lesson") as mock_rate:
+            with patch("clawed.handlers.feedback.memory_process"):
                 r = await self.handler.rate("lesson_abc", "teacher_1", 5)
                 assert r.has_content
                 assert "5" in r.text or "star" in r.text.lower() or "thank" in r.text.lower()
@@ -170,7 +170,7 @@ class TestFeedbackHandler:
 
     @pytest.mark.asyncio
     async def test_feedback_summary(self):
-        with patch("eduagent.handlers.feedback.get_teacher_stats", return_value={
+        with patch("clawed.handlers.feedback.get_teacher_stats", return_value={
             "overall_avg_rating": 4.2, "rated_lessons": 10, "streak": 3,
             "total_lessons": 15, "total_units": 3, "total_feedback": 8,
             "rating_distribution": {1: 0, 2: 1, 3: 2, 4: 4, 5: 3},
@@ -179,10 +179,10 @@ class TestFeedbackHandler:
             assert "4.2" in r.text or "rating" in r.text.lower()
 
 
-from eduagent.handlers.schedule import ScheduleHandler
-from eduagent.handlers.gaps import GapsHandler
-from eduagent.handlers.standards import StandardsHandler
-from eduagent.handlers.ingest import IngestHandler
+from clawed.handlers.schedule import ScheduleHandler
+from clawed.handlers.gaps import GapsHandler
+from clawed.handlers.standards import StandardsHandler
+from clawed.handlers.ingest import IngestHandler
 
 
 class TestScheduleHandler:
@@ -191,7 +191,7 @@ class TestScheduleHandler:
 
     @pytest.mark.asyncio
     async def test_show_schedule(self):
-        with patch("eduagent.handlers.schedule.load_schedule_config", return_value={
+        with patch("clawed.handlers.schedule.load_schedule_config", return_value={
             "tasks": {"morning-prep": {"enabled": True, "cron": {"hour": "6", "minute": "0"}}}
         }):
             r = await self.handler.show("teacher_1")
@@ -200,7 +200,7 @@ class TestScheduleHandler:
 
     @pytest.mark.asyncio
     async def test_disable_task(self):
-        with patch("eduagent.handlers.schedule.disable_task") as mock_dis:
+        with patch("clawed.handlers.schedule.disable_task") as mock_dis:
             r = await self.handler.disable("teacher_1", "morning-prep")
             assert r.has_content
             mock_dis.assert_called_once()
@@ -212,7 +212,7 @@ class TestGapsHandler:
 
     @pytest.mark.asyncio
     async def test_gaps_returns_response(self):
-        with patch("eduagent.handlers.gaps.handle_message", new_callable=AsyncMock) as mock_hm:
+        with patch("clawed.handlers.gaps.handle_message", new_callable=AsyncMock) as mock_hm:
             mock_hm.return_value = "You're missing: fractions, decimals"
             r = await self.handler.analyze("teacher_1")
             assert r.has_content
@@ -224,7 +224,7 @@ class TestStandardsHandler:
 
     @pytest.mark.asyncio
     async def test_lookup_standards(self):
-        with patch("eduagent.handlers.standards.get_standards", return_value=[
+        with patch("clawed.handlers.standards.get_standards", return_value=[
             ("CCSS.MATH.6.NS.1", "Divide fractions", "6-8")
         ]):
             r = await self.handler.lookup("math", "6")
@@ -233,7 +233,7 @@ class TestStandardsHandler:
 
     @pytest.mark.asyncio
     async def test_no_standards_found(self):
-        with patch("eduagent.handlers.standards.get_standards", return_value=[]):
+        with patch("clawed.handlers.standards.get_standards", return_value=[]):
             r = await self.handler.lookup("underwater basket weaving", "99")
             assert "no standards" in r.text.lower() or "couldn't find" in r.text.lower()
 
@@ -249,20 +249,20 @@ class TestIngestHandler:
 
     @pytest.mark.asyncio
     async def test_ingest_with_path(self):
-        with patch("eduagent.handlers.ingest.ingest_path") as mock_ingest:
+        with patch("clawed.handlers.ingest.ingest_path") as mock_ingest:
             mock_ingest.return_value = [{"title": "doc1", "content": "stuff"}]
-            with patch("eduagent.handlers.ingest.extract_persona", new_callable=AsyncMock):
+            with patch("clawed.handlers.ingest.extract_persona", new_callable=AsyncMock):
                 r = await self.handler.handle(teacher_id="teacher_1", files=[], path="/tmp/test_lessons")
                 assert r.has_content
 
 
-from eduagent.handlers.misc import DemoHandler, PersonaHandler, SettingsHandler, ProgressHandler
+from clawed.handlers.misc import DemoHandler, PersonaHandler, SettingsHandler, ProgressHandler
 
 
 class TestMiscHandlers:
     @pytest.mark.asyncio
     async def test_demo_handler(self):
-        with patch("eduagent.handlers.misc.handle_message", new_callable=AsyncMock) as mock_hm:
+        with patch("clawed.handlers.misc.handle_message", new_callable=AsyncMock) as mock_hm:
             mock_hm.return_value = "Here's a sample lesson..."
             handler = DemoHandler()
             r = await handler.run("teacher_1")
@@ -271,12 +271,12 @@ class TestMiscHandlers:
     @pytest.mark.asyncio
     async def test_persona_handler_no_persona(self):
         handler = PersonaHandler()
-        with patch("eduagent.handlers.misc.TeacherSession", create=True) as mock_session_cls:
+        with patch("clawed.handlers.misc.TeacherSession", create=True) as mock_session_cls:
             mock_session = mock_session_cls.load.return_value
             mock_session.persona = None
             # PersonaHandler does a lazy import of TeacherSession inside show(),
             # so we patch at the state module level
-            with patch.dict("sys.modules", {"eduagent.state": type("mod", (), {"TeacherSession": mock_session_cls})}):
+            with patch.dict("sys.modules", {"clawed.state": type("mod", (), {"TeacherSession": mock_session_cls})}):
                 r = await handler.show("teacher_1")
                 assert r.has_content
 

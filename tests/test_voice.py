@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from eduagent.voice import AUDIO_EXTENSIONS, is_audio_file, transcribe_audio
+from clawed.voice import AUDIO_EXTENSIONS, is_audio_file, transcribe_audio
 
 
 def _run(coro):
@@ -56,8 +56,8 @@ class TestTranscribeAudio:
         audio.write_bytes(b"RIFF" + b"\x00" * 100)
 
         with (
-            patch("eduagent.voice.WhisperModel", None),
-            patch("eduagent.voice.shutil.which", return_value=None),
+            patch("clawed.voice.WhisperModel", None),
+            patch("clawed.voice.shutil.which", return_value=None),
         ):
             with pytest.raises(RuntimeError, match="Voice transcription requires faster-whisper"):
                 _run(transcribe_audio(audio))
@@ -66,10 +66,13 @@ class TestTranscribeAudio:
         audio = tmp_path / "test.ogg"
         audio.write_bytes(b"OggS" + b"\x00" * 100)
 
-        with patch(
-            "eduagent.voice._transcribe_faster_whisper",
-            new_callable=AsyncMock,
-            return_value="Hello from the teacher",
+        with (
+            patch("clawed.voice.WhisperModel", "fake-model"),
+            patch(
+                "clawed.voice._transcribe_faster_whisper",
+                new_callable=AsyncMock,
+                return_value="Hello from the teacher",
+            ),
         ):
             result = _run(transcribe_audio(audio))
             assert result == "Hello from the teacher"
@@ -79,10 +82,10 @@ class TestTranscribeAudio:
         audio.write_bytes(b"\xff\xfb" + b"\x00" * 100)
 
         with (
-            patch("eduagent.voice.WhisperModel", None),
-            patch("eduagent.voice.shutil.which", return_value="/usr/bin/whisper"),
+            patch("clawed.voice.WhisperModel", None),
+            patch("clawed.voice.shutil.which", return_value="/usr/bin/whisper"),
             patch(
-                "eduagent.voice._transcribe_whisper_cli",
+                "clawed.voice._transcribe_whisper_cli",
                 new_callable=AsyncMock,
                 return_value="Student question about homework",
             ),
@@ -96,13 +99,13 @@ class TestTranscribeAudio:
 
 class TestTranscribeAttachments:
     def test_transcribe_audio_attachments(self, tmp_path):
-        from eduagent.openclaw_plugin import _transcribe_attachments
+        from clawed.openclaw_plugin import _transcribe_attachments
 
         audio = tmp_path / "voice.ogg"
         audio.write_bytes(b"OggS" + b"\x00" * 100)
 
         with patch(
-            "eduagent.voice.transcribe_audio",
+            "clawed.voice.transcribe_audio",
             new_callable=AsyncMock,
             return_value="transcribed text",
         ):
@@ -110,7 +113,7 @@ class TestTranscribeAttachments:
             assert result == "transcribed text"
 
     def test_skip_non_audio_attachments(self, tmp_path):
-        from eduagent.openclaw_plugin import _transcribe_attachments
+        from clawed.openclaw_plugin import _transcribe_attachments
 
         pdf = tmp_path / "lesson.pdf"
         pdf.write_bytes(b"%PDF" + b"\x00" * 100)
@@ -119,7 +122,7 @@ class TestTranscribeAttachments:
         assert result == ""
 
     def test_mixed_attachments(self, tmp_path):
-        from eduagent.openclaw_plugin import _transcribe_attachments
+        from clawed.openclaw_plugin import _transcribe_attachments
 
         audio = tmp_path / "voice.m4a"
         audio.write_bytes(b"\x00" * 100)
@@ -127,7 +130,7 @@ class TestTranscribeAttachments:
         doc.write_bytes(b"\x00" * 100)
 
         with patch(
-            "eduagent.voice.transcribe_audio",
+            "clawed.voice.transcribe_audio",
             new_callable=AsyncMock,
             return_value="voice content",
         ):
@@ -135,13 +138,13 @@ class TestTranscribeAttachments:
             assert result == "voice content"
 
     def test_failed_transcription_skipped(self, tmp_path):
-        from eduagent.openclaw_plugin import _transcribe_attachments
+        from clawed.openclaw_plugin import _transcribe_attachments
 
         audio = tmp_path / "bad.wav"
         audio.write_bytes(b"\x00" * 100)
 
         with patch(
-            "eduagent.voice.transcribe_audio",
+            "clawed.voice.transcribe_audio",
             new_callable=AsyncMock,
             side_effect=RuntimeError("backend failed"),
         ):

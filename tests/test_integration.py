@@ -12,13 +12,13 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from eduagent.corpus import (
+from clawed.corpus import (
     contribute_example,
     get_examples,
     init_corpus_db,
 )
-from eduagent.lesson import generate_lesson
-from eduagent.models import (
+from clawed.lesson import generate_lesson
+from clawed.models import (
     AppConfig,
     DailyLesson,
     ExitTicketQuestion,
@@ -28,9 +28,9 @@ from eduagent.models import (
     TeachingStyle,
     UnitPlan,
 )
-from eduagent.planner import plan_unit
-from eduagent.router import Intent, parse_intent
-from eduagent.state import TeacherSession
+from clawed.planner import plan_unit
+from clawed.router import Intent, parse_intent
+from clawed.state import TeacherSession
 
 # ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -190,12 +190,12 @@ def sample_lesson() -> DailyLesson:
 @pytest.fixture()
 def temp_db(tmp_path, monkeypatch):
     """Redirect both state DB and corpus DB to a temp directory."""
-    monkeypatch.setattr("eduagent.state.DEFAULT_DATA_DIR", tmp_path)
+    monkeypatch.setattr("clawed.state.DEFAULT_DATA_DIR", tmp_path)
     monkeypatch.setattr(
-        "eduagent.corpus.CORPUS_DIR", tmp_path / "corpus",
+        "clawed.corpus.CORPUS_DIR", tmp_path / "corpus",
     )
     monkeypatch.setattr(
-        "eduagent.corpus.CORPUS_DB", tmp_path / "corpus" / "corpus.db",
+        "clawed.corpus.CORPUS_DB", tmp_path / "corpus" / "corpus.db",
     )
     return tmp_path
 
@@ -279,7 +279,7 @@ class TestFullUnitGenerationFlow:
         """plan_unit() with a mocked LLM produces a valid UnitPlan."""
         mock_json = _mock_unit_json()
 
-        with patch("eduagent.planner.LLMClient") as mock_cls:
+        with patch("clawed.planner.LLMClient") as mock_cls:
             _mock_llm_client(mock_cls, mock_json, model_class=UnitPlan)
 
             unit = _run(plan_unit(
@@ -302,7 +302,7 @@ class TestFullUnitGenerationFlow:
         """Unit plan preserves subject, grade, and duration."""
         mock_json = _mock_unit_json()
 
-        with patch("eduagent.planner.LLMClient") as mock_cls:
+        with patch("clawed.planner.LLMClient") as mock_cls:
             _mock_llm_client(mock_cls, mock_json, model_class=UnitPlan)
 
             unit = _run(plan_unit(
@@ -322,7 +322,7 @@ class TestFullUnitGenerationFlow:
         """Unit plan includes formative and summative assessments."""
         mock_json = _mock_unit_json()
 
-        with patch("eduagent.planner.LLMClient") as mock_cls:
+        with patch("clawed.planner.LLMClient") as mock_cls:
             _mock_llm_client(mock_cls, mock_json, model_class=UnitPlan)
 
             unit = _run(plan_unit(
@@ -341,7 +341,7 @@ class TestFullUnitGenerationFlow:
         """Persona context is passed to the LLM prompt."""
         mock_json = _mock_unit_json()
 
-        with patch("eduagent.planner.LLMClient") as mock_cls:
+        with patch("clawed.planner.LLMClient") as mock_cls:
             inst = _mock_llm_client(mock_cls, mock_json, model_class=UnitPlan)
 
             _run(plan_unit(
@@ -377,7 +377,7 @@ class TestLessonGenerationFromUnit:
         """generate_lesson() with mocked LLM produces a valid DailyLesson."""
         mock_json = _mock_lesson_json(lesson_number=1)
 
-        with patch("eduagent.lesson.LLMClient") as mock_cls:
+        with patch("clawed.lesson.LLMClient") as mock_cls:
             _mock_llm_client(mock_cls, mock_json, model_class=DailyLesson)
 
             lesson = _run(generate_lesson(
@@ -399,7 +399,7 @@ class TestLessonGenerationFromUnit:
         """Lesson objective includes SWBAT or 'will be able to'."""
         mock_json = _mock_lesson_json()
 
-        with patch("eduagent.lesson.LLMClient") as mock_cls:
+        with patch("clawed.lesson.LLMClient") as mock_cls:
             _mock_llm_client(mock_cls, mock_json, model_class=DailyLesson)
 
             lesson = _run(generate_lesson(
@@ -420,7 +420,7 @@ class TestLessonGenerationFromUnit:
         """Every key section of a DailyLesson is populated."""
         mock_json = _mock_lesson_json()
 
-        with patch("eduagent.lesson.LLMClient") as mock_cls:
+        with patch("clawed.lesson.LLMClient") as mock_cls:
             _mock_llm_client(mock_cls, mock_json, model_class=DailyLesson)
 
             lesson = _run(generate_lesson(
@@ -455,7 +455,7 @@ class TestLessonGenerationFromUnit:
         """Exit ticket contains at least one question with text."""
         mock_json = _mock_lesson_json()
 
-        with patch("eduagent.lesson.LLMClient") as mock_cls:
+        with patch("clawed.lesson.LLMClient") as mock_cls:
             _mock_llm_client(mock_cls, mock_json, model_class=DailyLesson)
 
             lesson = _run(generate_lesson(
@@ -634,7 +634,7 @@ class TestStatePersistence:
         unit_id = session.save_unit(sample_unit)
         session.save_lesson(sample_lesson, unit_id=unit_id)
 
-        from eduagent.state import _get_conn
+        from clawed.state import _get_conn
         with _get_conn() as conn:
             row = conn.execute(
                 "SELECT share_token FROM generated_lessons "
@@ -807,7 +807,7 @@ class TestCorpusContributionAndRetrieval:
             teacher_id="real-teacher-id-12345",
         )
 
-        from eduagent.corpus import _get_conn
+        from clawed.corpus import _get_conn
         with _get_conn() as conn:
             row = conn.execute(
                 "SELECT contributor_hash FROM corpus_examples",

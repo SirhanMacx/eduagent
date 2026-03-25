@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from eduagent.sub_packet import (
+from clawed.sub_packet import (
     SubPacket,
     SubPacketRequest,
     generate_sub_packet,
@@ -294,7 +294,7 @@ class TestSubCLI:
     def test_sub_command_registered(self):
         from typer.testing import CliRunner
 
-        from eduagent.cli import app
+        from clawed.cli import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["sub", "--help"])
@@ -308,7 +308,7 @@ class TestSubCLI:
     def test_parent_comm_command_registered(self):
         from typer.testing import CliRunner
 
-        from eduagent.cli import app
+        from clawed.cli import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["parent-comm", "--help"])

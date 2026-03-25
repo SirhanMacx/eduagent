@@ -8,8 +8,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from eduagent.models import TeacherPersona
-from eduagent.state import init_db
+from clawed.models import TeacherPersona
+from clawed.state import init_db
 
 
 def _run(coro):
@@ -20,7 +20,7 @@ def _run(coro):
 @pytest.fixture(autouse=True)
 def _use_tmp_db(tmp_path, monkeypatch):
     """Route all state.py DB operations to a temp directory."""
-    monkeypatch.setattr("eduagent.state.DEFAULT_DATA_DIR", tmp_path)
+    monkeypatch.setattr("clawed.state.DEFAULT_DATA_DIR", tmp_path)
     init_db()
 
 
@@ -29,7 +29,7 @@ def _use_tmp_db(tmp_path, monkeypatch):
 
 class TestTeacherClassCodes:
     def test_create_class_with_name_and_topic(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class(
@@ -43,7 +43,7 @@ class TestTeacherClassCodes:
         assert info.topic == "Unit 4: WWI"
 
     def test_create_class_with_allowed_lessons(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class(
@@ -54,7 +54,7 @@ class TestTeacherClassCodes:
         assert info.allowed_lesson_ids == ["lesson-1", "lesson-2"]
 
     def test_create_class_with_expiration(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class(
@@ -65,7 +65,7 @@ class TestTeacherClassCodes:
         assert info.expires_at == "2026-06-15"
 
     def test_class_code_format(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class("teacher-mac")
@@ -76,21 +76,21 @@ class TestTeacherClassCodes:
         assert parts[2].isdigit()
 
     def test_expired_class_detected(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class("teacher-mac", expires_at="2020-01-01")
         assert bot.is_expired(code) is True
 
     def test_non_expired_class(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class("teacher-mac", expires_at="2099-12-31")
         assert bot.is_expired(code) is False
 
     def test_no_expiry_not_expired(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class("teacher-mac")
@@ -102,7 +102,7 @@ class TestTeacherClassCodes:
 
 class TestStudentRevocation:
     def test_revoke_registered_student(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class("teacher-mac")
@@ -114,7 +114,7 @@ class TestStudentRevocation:
         assert not bot.is_registered("stu-001", code)
 
     def test_revoke_nonexistent_student(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class("teacher-mac")
@@ -127,7 +127,7 @@ class TestStudentRevocation:
 
 class TestClassStats:
     def test_empty_class_stats(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class("teacher-mac")
@@ -137,10 +137,10 @@ class TestClassStats:
         assert stats["total_questions"] == 0
         assert stats["active_students"] == 0
 
-    @patch("eduagent.chat.student_chat", new_callable=AsyncMock)
+    @patch("clawed.chat.student_chat", new_callable=AsyncMock)
     def test_stats_after_activity(self, mock_chat):
-        from eduagent.state import TeacherSession
-        from eduagent.student_bot import StudentBot
+        from clawed.state import TeacherSession
+        from clawed.student_bot import StudentBot
 
         session = TeacherSession(
             teacher_id="teacher-stats",
@@ -171,7 +171,7 @@ class TestClassStats:
 
 class TestWeeklyReport:
     def test_empty_report(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class("teacher-rpt")
@@ -180,10 +180,10 @@ class TestWeeklyReport:
         assert report["student_count"] == 0
         assert report["total_questions"] == 0
 
-    @patch("eduagent.chat.student_chat", new_callable=AsyncMock)
+    @patch("clawed.chat.student_chat", new_callable=AsyncMock)
     def test_report_with_data(self, mock_chat):
-        from eduagent.state import TeacherSession
-        from eduagent.student_bot import StudentBot
+        from clawed.state import TeacherSession
+        from clawed.student_bot import StudentBot
 
         session = TeacherSession(
             teacher_id="teacher-wrpt",
@@ -211,7 +211,7 @@ class TestWeeklyReport:
         assert 1 in counts
 
     def test_report_with_specific_week(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class("teacher-wk")
@@ -224,7 +224,7 @@ class TestWeeklyReport:
 
 class TestWebDatabaseClassCodes:
     def test_create_and_get_class_code(self, tmp_path):
-        from eduagent.database import Database
+        from clawed.database import Database
 
         db = Database(tmp_path / "test.db")
         db.create_class_code(
@@ -240,7 +240,7 @@ class TestWebDatabaseClassCodes:
         db.close()
 
     def test_list_class_codes(self, tmp_path):
-        from eduagent.database import Database
+        from clawed.database import Database
 
         db = Database(tmp_path / "test.db")
         db.create_class_code(code="AA-BBB-1", teacher_id="t1", name="Class 1")
@@ -252,7 +252,7 @@ class TestWebDatabaseClassCodes:
         db.close()
 
     def test_enroll_and_revoke_student(self, tmp_path):
-        from eduagent.database import Database
+        from clawed.database import Database
 
         db = Database(tmp_path / "test.db")
         db.create_class_code(code="XY-ZAB-1", teacher_id="t1")
@@ -264,7 +264,7 @@ class TestWebDatabaseClassCodes:
         db.close()
 
     def test_student_questions(self, tmp_path):
-        from eduagent.database import Database
+        from clawed.database import Database
 
         db = Database(tmp_path / "test.db")
         db.insert_student_question("stu-001", "AB-CDE-1", "What is photosynthesis?", "Plants use sunlight.")
@@ -281,11 +281,11 @@ class TestWebDatabaseClassCodes:
 
 class TestClassCLI:
     def test_class_app_importable(self):
-        from eduagent.commands.config import class_app
+        from clawed.commands.config import class_app
         assert class_app is not None
 
     def test_class_commands_registered(self):
-        from eduagent.commands.config import class_app
+        from clawed.commands.config import class_app
         cmd_names = [cmd.name for cmd in class_app.registered_commands]
         assert "create" in cmd_names
         assert "revoke" in cmd_names
@@ -294,7 +294,7 @@ class TestClassCLI:
         assert "qr" in cmd_names
 
     def test_class_app_in_main_cli(self):
-        from eduagent.cli import app
+        from clawed.cli import app
         group_names = [cmd.name for cmd in app.registered_groups]
         assert "class" in group_names
 
@@ -304,7 +304,7 @@ class TestClassCLI:
 
 class TestOnboardingDetection:
     def test_detect_no_models(self):
-        from eduagent.onboarding import _detect_available_models
+        from clawed.onboarding import _detect_available_models
 
         with (
             patch.dict("os.environ", {}, clear=True),
@@ -315,25 +315,25 @@ class TestOnboardingDetection:
             assert "No LLM backend" in msg
 
     def test_detect_anthropic_key(self):
-        from eduagent.onboarding import _detect_available_models
+        from clawed.onboarding import _detect_available_models
 
         with patch.dict("os.environ", {"ANTHROPIC_API_KEY": "sk-ant-test"}, clear=True):
             provider, msg = _detect_available_models()
-            from eduagent.models import LLMProvider
+            from clawed.models import LLMProvider
             assert provider == LLMProvider.ANTHROPIC
             assert "Anthropic" in msg
 
     def test_detect_openai_key(self):
-        from eduagent.onboarding import _detect_available_models
+        from clawed.onboarding import _detect_available_models
 
         with patch.dict("os.environ", {"OPENAI_API_KEY": "sk-test"}, clear=True):
             provider, msg = _detect_available_models()
-            from eduagent.models import LLMProvider
+            from clawed.models import LLMProvider
             assert provider == LLMProvider.OPENAI
             assert "OpenAI" in msg
 
     def test_detect_ollama_running(self):
-        from eduagent.onboarding import _detect_available_models
+        from clawed.onboarding import _detect_available_models
 
         mock_resp = MagicMock()
         mock_resp.status_code = 200
@@ -346,22 +346,22 @@ class TestOnboardingDetection:
             patch("httpx.get", return_value=mock_resp),
         ):
             provider, msg = _detect_available_models()
-            from eduagent.models import LLMProvider
+            from clawed.models import LLMProvider
             assert provider == LLMProvider.OLLAMA
             assert "llama3.2" in msg
 
 
 class TestPersonaPreview:
     def test_preview_confirmed(self):
-        from eduagent.onboarding import _show_persona_preview
+        from clawed.onboarding import _show_persona_preview
 
-        with patch("eduagent.onboarding.Prompt.ask", return_value="y"):
+        with patch("clawed.onboarding.Prompt.ask", return_value="y"):
             result = _show_persona_preview(["History"], ["8"], "NY")
             assert result is True
 
     def test_preview_rejected(self):
-        from eduagent.onboarding import _show_persona_preview
+        from clawed.onboarding import _show_persona_preview
 
-        with patch("eduagent.onboarding.Prompt.ask", return_value="n"):
+        with patch("clawed.onboarding.Prompt.ask", return_value="n"):
             result = _show_persona_preview(["Math"], ["6"], "CA")
             assert result is False

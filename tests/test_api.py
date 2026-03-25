@@ -5,8 +5,8 @@ import json
 import pytest
 from fastapi.testclient import TestClient
 
-from eduagent.api.server import create_app
-from eduagent.database import Database
+from clawed.api.server import create_app
+from clawed.database import Database
 
 
 @pytest.fixture
@@ -20,7 +20,7 @@ def db(tmp_path):
 @pytest.fixture
 def app(db):
     """Create a test app with the temp database injected."""
-    import eduagent.api.server as srv
+    import clawed.api.server as srv
 
     old_db = srv._db
     srv._db = db
@@ -258,7 +258,7 @@ class TestAPIRoutes:
         assert "error" in data
 
     def test_export_lesson_markdown(self, client, db):
-        from eduagent.models import DailyLesson
+        from clawed.models import DailyLesson
 
         tid = db.upsert_teacher("T", '{}')
         uid = db.insert_unit(tid, "U", "S", "8", "T", '{}')
@@ -269,7 +269,7 @@ class TestAPIRoutes:
         assert "Test" in resp.text
 
     def test_export_unsupported_format(self, client, db):
-        from eduagent.models import DailyLesson
+        from clawed.models import DailyLesson
 
         tid = db.upsert_teacher("T", '{}')
         uid = db.insert_unit(tid, "U", "S", "8", "T", '{}')
@@ -324,7 +324,7 @@ class TestAPIRoutes:
 
 class TestLessonPage:
     def test_lesson_page_renders(self, client, db):
-        from eduagent.models import DailyLesson
+        from clawed.models import DailyLesson
 
         tid = db.upsert_teacher("T", '{"name": "T"}')
         uid = db.insert_unit(tid, "U", "Science", "8", "Cells", '{}')
@@ -344,7 +344,7 @@ class TestLessonPage:
         assert "Learn about cells" in resp.text
 
     def test_share_page_renders(self, client, db):
-        from eduagent.models import DailyLesson
+        from clawed.models import DailyLesson
 
         tid = db.upsert_teacher("T", '{"name": "T"}')
         uid = db.insert_unit(tid, "U", "Science", "8", "Cells", '{}')
@@ -385,7 +385,7 @@ class TestTemplatesLib:
     """Test the lesson template system."""
 
     def test_list_templates(self):
-        from eduagent.templates_lib import list_templates
+        from clawed.templates_lib import list_templates
         templates = list_templates()
         assert len(templates) >= 7
         names = [t.name for t in templates]
@@ -395,25 +395,25 @@ class TestTemplatesLib:
         assert "Station Rotation" in names
 
     def test_get_template(self):
-        from eduagent.templates_lib import get_template
+        from clawed.templates_lib import get_template
         t = get_template("socratic-seminar")
         assert t is not None
         assert t.name == "Socratic Seminar"
         assert len(t.sections) > 0
 
     def test_get_template_not_found(self):
-        from eduagent.templates_lib import get_template
+        from clawed.templates_lib import get_template
         assert get_template("nonexistent") is None
 
     def test_template_sections(self):
-        from eduagent.templates_lib import get_template
+        from clawed.templates_lib import get_template
         t = get_template("jigsaw")
         assert t is not None
         total_time = sum(s.duration_minutes for s in t.sections)
         assert total_time > 0
 
     def test_template_to_prompt_constraint(self):
-        from eduagent.templates_lib import get_template, template_to_prompt_constraint
+        from clawed.templates_lib import get_template, template_to_prompt_constraint
         t = get_template("station-rotation")
         assert t is not None
         constraint = template_to_prompt_constraint(t)
@@ -425,13 +425,13 @@ class TestQualityScoreModel:
     """Test the LessonQualityScore class (without LLM calls)."""
 
     def test_dimensions_defined(self):
-        from eduagent.quality import LessonQualityScore
+        from clawed.quality import LessonQualityScore
         assert len(LessonQualityScore.dimensions) == 6
         assert "objective_clarity" in LessonQualityScore.dimensions
 
     def test_lesson_to_text(self):
-        from eduagent.models import DailyLesson
-        from eduagent.quality import LessonQualityScore
+        from clawed.models import DailyLesson
+        from clawed.quality import LessonQualityScore
         lesson = DailyLesson(title="Test", lesson_number=1, objective="Learn cells", do_now="Draw a cell")
         text = LessonQualityScore._lesson_to_text(lesson)
         assert "Learn cells" in text
@@ -442,8 +442,8 @@ class TestExporterPDF:
     """Test the weasyprint PDF export function (HTML generation)."""
 
     def test_lesson_to_html_for_pdf(self):
-        from eduagent.exporter import _lesson_to_html_for_pdf
-        from eduagent.models import DailyLesson
+        from clawed.exporter import _lesson_to_html_for_pdf
+        from clawed.models import DailyLesson
         lesson = DailyLesson(
             title="Cell Division", lesson_number=3, objective="Understand mitosis",
             do_now="Label a cell", direct_instruction="The cell cycle consists of...",
@@ -473,7 +473,7 @@ class TestNewAPIRoutes:
         assert resp.status_code == 404
 
     def test_classroom_export_success(self, client, db):
-        from eduagent.models import DailyLesson
+        from clawed.models import DailyLesson
         tid = db.upsert_teacher("T", '{}')
         uid = db.insert_unit(tid, "U", "S", "8", "T", '{}')
         lesson = DailyLesson(
@@ -517,7 +517,7 @@ class TestNewAPIRoutes:
         assert resp.status_code == 400
 
     def test_lesson_page_with_scores(self, client, db):
-        from eduagent.models import DailyLesson
+        from clawed.models import DailyLesson
         tid = db.upsert_teacher("T", '{"name": "T"}')
         uid = db.insert_unit(tid, "U", "Science", "8", "Cells", '{}')
         lesson = DailyLesson(title="Scored Lesson", lesson_number=1, objective="Test")
@@ -718,20 +718,20 @@ class TestConfigModule:
     """Test the config module functions."""
 
     def test_mask_api_key_short(self):
-        from eduagent.config import mask_api_key
+        from clawed.config import mask_api_key
         assert mask_api_key("abc") == "***"
         assert mask_api_key("") == ""
         assert mask_api_key(None) == ""
 
     def test_mask_api_key_long(self):
-        from eduagent.config import mask_api_key
+        from clawed.config import mask_api_key
         result = mask_api_key("sk-ant-api03-abcdefghij")
         assert result.startswith("sk-")
         assert result.endswith("ghij")  # last 6 chars
         assert "..." in result
 
     def test_has_config(self):
-        from eduagent.config import has_config
+        from clawed.config import has_config
         # Just test it doesn't crash — actual value depends on system state
         result = has_config()
         assert isinstance(result, bool)

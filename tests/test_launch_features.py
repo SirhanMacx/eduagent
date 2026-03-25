@@ -6,8 +6,8 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from eduagent.api.server import create_app
-from eduagent.database import Database
+from clawed.api.server import create_app
+from clawed.database import Database
 
 
 @pytest.fixture
@@ -21,7 +21,7 @@ def db(tmp_path):
 @pytest.fixture
 def app(db):
     """Create a test app with the temp database injected."""
-    import eduagent.api.server as srv
+    import clawed.api.server as srv
 
     old_db = srv._db
     srv._db = db
@@ -41,44 +41,44 @@ def client(app):
 
 class TestLandingPage:
     def test_landing_file_exists(self):
-        landing = Path(__file__).parent.parent / "eduagent" / "landing" / "index.html"
+        landing = Path(__file__).parent.parent / "clawed" / "landing" / "index.html"
         assert landing.exists()
 
     def test_landing_has_headline(self):
-        landing = Path(__file__).parent.parent / "eduagent" / "landing" / "index.html"
+        landing = Path(__file__).parent.parent / "clawed" / "landing" / "index.html"
         html = landing.read_text()
         assert "Your AI co-teacher that sounds like you" in html
 
     def test_landing_has_value_props(self):
-        landing = Path(__file__).parent.parent / "eduagent" / "landing" / "index.html"
+        landing = Path(__file__).parent.parent / "clawed" / "landing" / "index.html"
         html = landing.read_text()
         assert "Trained on YOUR materials" in html
         assert "Generates in your voice" in html
         assert "Students get you at 11pm" in html
 
     def test_landing_has_typewriter(self):
-        landing = Path(__file__).parent.parent / "eduagent" / "landing" / "index.html"
+        landing = Path(__file__).parent.parent / "clawed" / "landing" / "index.html"
         html = landing.read_text()
         assert "pip install eduagent" in html
         assert "eduagent setup" in html
 
     def test_landing_has_email_form(self):
-        landing = Path(__file__).parent.parent / "eduagent" / "landing" / "index.html"
+        landing = Path(__file__).parent.parent / "clawed" / "landing" / "index.html"
         html = landing.read_text()
         assert "install-steps" in html or "try-now" in html or "pip install" in html
 
     def test_landing_has_github_link(self):
-        landing = Path(__file__).parent.parent / "eduagent" / "landing" / "index.html"
+        landing = Path(__file__).parent.parent / "clawed" / "landing" / "index.html"
         html = landing.read_text()
         assert "github.com/SirhanMacx/eduagent" in html
 
     def test_landing_is_dark_theme(self):
-        landing = Path(__file__).parent.parent / "eduagent" / "landing" / "index.html"
+        landing = Path(__file__).parent.parent / "clawed" / "landing" / "index.html"
         html = landing.read_text()
         assert "#0f0f1a" in html or "#1a1a2e" in html  # dark background
 
     def test_landing_is_mobile_responsive(self):
-        landing = Path(__file__).parent.parent / "eduagent" / "landing" / "index.html"
+        landing = Path(__file__).parent.parent / "clawed" / "landing" / "index.html"
         html = landing.read_text()
         assert "@media" in html
 
@@ -149,14 +149,14 @@ class TestProductHuntKit:
 
 class TestDemoMode:
     def test_demo_files_exist(self):
-        demo_dir = Path(__file__).parent.parent / "eduagent" / "demo"
+        demo_dir = Path(__file__).parent.parent / "clawed" / "demo"
         assert (demo_dir / "demo_lesson_social_studies_g8.json").exists()
         assert (demo_dir / "demo_lesson_science_g6.json").exists()
         assert (demo_dir / "demo_unit_plan.json").exists()
         assert (demo_dir / "demo_assessment.json").exists()
 
     def test_demo_lesson_social_studies_valid_json(self):
-        demo_dir = Path(__file__).parent.parent / "eduagent" / "demo"
+        demo_dir = Path(__file__).parent.parent / "clawed" / "demo"
         data = json.loads((demo_dir / "demo_lesson_social_studies_g8.json").read_text())
         assert data["subject"] == "Social Studies"
         assert data["grade_level"] == "8"
@@ -166,20 +166,20 @@ class TestDemoMode:
         assert "differentiation" in data
 
     def test_demo_lesson_science_valid_json(self):
-        demo_dir = Path(__file__).parent.parent / "eduagent" / "demo"
+        demo_dir = Path(__file__).parent.parent / "clawed" / "demo"
         data = json.loads((demo_dir / "demo_lesson_science_g6.json").read_text())
         assert data["subject"] == "Science"
         assert data["grade_level"] == "6"
         assert "objective" in data
 
     def test_demo_unit_plan_valid_json(self):
-        demo_dir = Path(__file__).parent.parent / "eduagent" / "demo"
+        demo_dir = Path(__file__).parent.parent / "clawed" / "demo"
         data = json.loads((demo_dir / "demo_unit_plan.json").read_text())
         assert "daily_lessons" in data
         assert len(data["daily_lessons"]) >= 3
 
     def test_demo_assessment_valid_json(self):
-        demo_dir = Path(__file__).parent.parent / "eduagent" / "demo"
+        demo_dir = Path(__file__).parent.parent / "clawed" / "demo"
         data = json.loads((demo_dir / "demo_assessment.json").read_text())
         assert data["assessment_type"] == "dbq"
         assert "documents" in data
@@ -187,12 +187,12 @@ class TestDemoMode:
         assert "rubric" in data
 
     def test_load_demo(self):
-        from eduagent.demo import load_demo
+        from clawed.demo import load_demo
         data = load_demo("lesson_social_studies_g8")
         assert data["title"] == "The Causes of the American Revolution"
 
     def test_load_all_demos(self):
-        from eduagent.demo import load_all_demos
+        from clawed.demo import load_all_demos
         demos = load_all_demos()
         assert len(demos) >= 4
         assert "lesson_social_studies_g8" in demos
@@ -201,33 +201,33 @@ class TestDemoMode:
         assert "assessment" in demos
 
     def test_list_demo_files(self):
-        from eduagent.demo import list_demo_files
+        from clawed.demo import list_demo_files
         files = list_demo_files()
         assert len(files) >= 4
 
     def test_is_demo_mode_without_keys(self, monkeypatch):
         monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-        from eduagent.demo import is_demo_mode
+        from clawed.demo import is_demo_mode
         # May or may not be demo mode depending on config, but shouldn't crash
         result = is_demo_mode()
         assert isinstance(result, bool)
 
     def test_demo_response_in_llm(self):
-        from eduagent.llm import LLMClient
+        from clawed.llm import LLMClient
         # Test the static _demo_response method
         response = LLMClient._demo_response("Generate a social studies lesson")
         data = json.loads(response)
         assert "title" in data
 
     def test_demo_response_science(self):
-        from eduagent.llm import LLMClient
+        from clawed.llm import LLMClient
         response = LLMClient._demo_response("Create a science lesson about water")
         data = json.loads(response)
         assert data["subject"] == "Science"
 
     def test_demo_response_assessment(self):
-        from eduagent.llm import LLMClient
+        from clawed.llm import LLMClient
         response = LLMClient._demo_response("Generate a DBQ assessment")
         data = json.loads(response)
         assert data["assessment_type"] == "dbq"
@@ -238,14 +238,14 @@ class TestDemoMode:
 
 class TestWaitlist:
     def test_add_signup(self, tmp_path):
-        from eduagent.waitlist import WaitlistManager
+        from clawed.waitlist import WaitlistManager
         wl = WaitlistManager(tmp_path / "wl.db")
         wl.add_signup("teacher@school.edu", "teacher", "loves science")
         assert wl.count() == 1
         wl.close()
 
     def test_add_duplicate_ignored(self, tmp_path):
-        from eduagent.waitlist import WaitlistManager
+        from clawed.waitlist import WaitlistManager
         wl = WaitlistManager(tmp_path / "wl.db")
         wl.add_signup("teacher@school.edu")
         wl.add_signup("teacher@school.edu")
@@ -253,7 +253,7 @@ class TestWaitlist:
         wl.close()
 
     def test_invalid_email_rejected(self, tmp_path):
-        from eduagent.waitlist import WaitlistManager
+        from clawed.waitlist import WaitlistManager
         wl = WaitlistManager(tmp_path / "wl.db")
         with pytest.raises(ValueError):
             wl.add_signup("not-an-email")
@@ -261,7 +261,7 @@ class TestWaitlist:
         wl.close()
 
     def test_export_csv(self, tmp_path):
-        from eduagent.waitlist import WaitlistManager
+        from clawed.waitlist import WaitlistManager
         wl = WaitlistManager(tmp_path / "wl.db")
         wl.add_signup("a@b.com")
         wl.add_signup("c@d.com")
@@ -274,7 +274,7 @@ class TestWaitlist:
         wl.close()
 
     def test_list_all(self, tmp_path):
-        from eduagent.waitlist import WaitlistManager
+        from clawed.waitlist import WaitlistManager
         wl = WaitlistManager(tmp_path / "wl.db")
         wl.add_signup("x@y.com", "admin")
         signups = wl.list_all()
@@ -343,7 +343,7 @@ class TestShareableURLs:
         assert resp.status_code == 404
 
     def test_shared_page_renders(self, client, db):
-        from eduagent.models import DailyLesson
+        from clawed.models import DailyLesson
         tid = db.upsert_teacher("T", '{"name": "T"}')
         uid = db.insert_unit(tid, "U", "S", "8", "T", '{}')
         lesson = DailyLesson(title="Shared Test", lesson_number=1, objective="Test sharing")

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from eduagent.models import AppConfig, TeacherPersona, TeacherProfile, TeachingStyle, VocabularyLevel
-from eduagent.workspace import (
+from clawed.models import AppConfig, TeacherPersona, TeacherProfile, TeachingStyle, VocabularyLevel
+from clawed.workspace import (
     _sanitize_filename,
     append_daily_note,
     generate_identity,
@@ -25,13 +25,13 @@ from eduagent.workspace import (
 def tmp_workspace(tmp_path, monkeypatch):
     """Redirect all workspace paths to a temp directory."""
     ws = tmp_path / "workspace"
-    monkeypatch.setattr("eduagent.workspace.WORKSPACE_DIR", ws)
-    monkeypatch.setattr("eduagent.workspace.IDENTITY_PATH", ws / "identity.md")
-    monkeypatch.setattr("eduagent.workspace.SOUL_PATH", ws / "soul.md")
-    monkeypatch.setattr("eduagent.workspace.MEMORY_PATH", ws / "memory.md")
-    monkeypatch.setattr("eduagent.workspace.HEARTBEAT_PATH", ws / "heartbeat.md")
-    monkeypatch.setattr("eduagent.workspace.NOTES_DIR", ws / "notes")
-    monkeypatch.setattr("eduagent.workspace.STUDENTS_DIR", ws / "students")
+    monkeypatch.setattr("clawed.workspace.WORKSPACE_DIR", ws)
+    monkeypatch.setattr("clawed.workspace.IDENTITY_PATH", ws / "identity.md")
+    monkeypatch.setattr("clawed.workspace.SOUL_PATH", ws / "soul.md")
+    monkeypatch.setattr("clawed.workspace.MEMORY_PATH", ws / "memory.md")
+    monkeypatch.setattr("clawed.workspace.HEARTBEAT_PATH", ws / "heartbeat.md")
+    monkeypatch.setattr("clawed.workspace.NOTES_DIR", ws / "notes")
+    monkeypatch.setattr("clawed.workspace.STUDENTS_DIR", ws / "students")
     return ws
 
 

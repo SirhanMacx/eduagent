@@ -7,8 +7,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 
-from eduagent.models import TeacherPersona
-from eduagent.search import (
+from clawed.models import TeacherPersona
+from clawed.search import (
     _add_edu_framing,
     _format_results,
     _get_tavily_key,
@@ -88,7 +88,7 @@ class TestGetTavilyKey:
         monkeypatch.delenv("TAVILY_API_KEY", raising=False)
         # Point config to a nonexistent file
         _ = tmp_path / ".eduagent" / "config.json"
-        with patch("eduagent.search.Path.home", return_value=tmp_path):
+        with patch("clawed.search.Path.home", return_value=tmp_path):
             result = _get_tavily_key()
         assert result is None
 
@@ -125,7 +125,7 @@ class TestSearchForTeacher:
             ]
         })
 
-        with patch("eduagent.search.httpx.AsyncClient") as mock_client_cls:
+        with patch("clawed.search.httpx.AsyncClient") as mock_client_cls:
             mock_client_cls.return_value = _make_mock_client(mock_response)
             result = _run(search_for_teacher("photosynthesis activities"))
             assert "Photosynthesis Lesson" in result
@@ -142,8 +142,8 @@ class TestSearchForTeacher:
         """
         mock_response = _make_mock_response(text=ddg_html)
 
-        with patch("eduagent.search._get_tavily_key", return_value=None):
-            with patch("eduagent.search.httpx.AsyncClient") as mock_client_cls:
+        with patch("clawed.search._get_tavily_key", return_value=None):
+            with patch("clawed.search.httpx.AsyncClient") as mock_client_cls:
                 mock_client_cls.return_value = _make_mock_client(mock_response)
                 result = _run(search_for_teacher("photosynthesis"))
                 assert "Great Lesson Plan" in result
@@ -151,8 +151,8 @@ class TestSearchForTeacher:
     def test_handles_http_error(self, monkeypatch):
         monkeypatch.delenv("TAVILY_API_KEY", raising=False)
 
-        with patch("eduagent.search._get_tavily_key", return_value=None):
-            with patch("eduagent.search.httpx.AsyncClient") as mock_client_cls:
+        with patch("clawed.search._get_tavily_key", return_value=None):
+            with patch("clawed.search.httpx.AsyncClient") as mock_client_cls:
                 mock_client = AsyncMock()
                 mock_client.__aenter__ = AsyncMock(return_value=mock_client)
                 mock_client.__aexit__ = AsyncMock(return_value=False)
@@ -171,7 +171,7 @@ class TestSearchStandardsWeb:
             "results": [{"title": "NGSS Grade 8 Standards", "url": "https://ngss.org", "content": "Standards list."}]
         })
 
-        with patch("eduagent.search.httpx.AsyncClient") as mock_client_cls:
+        with patch("clawed.search.httpx.AsyncClient") as mock_client_cls:
             mock_client_cls.return_value = _make_mock_client(mock_response)
             result = _run(search_standards_web("8", "Science"))
             assert "NGSS" in result
@@ -185,7 +185,7 @@ class TestFindLessonResource:
             "results": [{"title": "Photosynthesis Lab Activity", "url": "https://edu.com/lab", "content": "Hands-on."}]
         })
 
-        with patch("eduagent.search.httpx.AsyncClient") as mock_client_cls:
+        with patch("clawed.search.httpx.AsyncClient") as mock_client_cls:
             mock_client_cls.return_value = _make_mock_client(mock_response)
             result = _run(find_lesson_resource("photosynthesis", "8"))
             assert "Photosynthesis Lab Activity" in result

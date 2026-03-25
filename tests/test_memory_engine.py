@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from eduagent.memory_engine import (
+from clawed.memory_engine import (
     DEFAULT_MEMORY_TEMPLATE,
     SECTION_GENERATION_STATS,
     SECTION_STRUCTURAL_PREFS,
@@ -21,7 +21,7 @@ from eduagent.memory_engine import (
     process_feedback,
     reset_memory,
 )
-from eduagent.models import DailyLesson, DifferentiationNotes, ExitTicketQuestion
+from clawed.models import DailyLesson, DifferentiationNotes, ExitTicketQuestion
 
 # ── Fixtures ─────────────────────────────────────────────────────────
 
@@ -88,7 +88,7 @@ def tmp_memory(tmp_path, monkeypatch):
     """Redirect memory.md to a temp directory."""
     ws = tmp_path / "workspace"
     ws.mkdir(parents=True)
-    monkeypatch.setattr("eduagent.workspace.MEMORY_PATH", ws / "memory.md")
+    monkeypatch.setattr("clawed.workspace.MEMORY_PATH", ws / "memory.md")
     # Write default template
     (ws / "memory.md").write_text(DEFAULT_MEMORY_TEMPLATE, encoding="utf-8")
     return ws / "memory.md"

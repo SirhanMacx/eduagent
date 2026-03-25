@@ -4,8 +4,8 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from eduagent.api.server import create_app
-from eduagent.database import Database
+from clawed.api.server import create_app
+from clawed.database import Database
 
 
 @pytest.fixture
@@ -19,7 +19,7 @@ def db(tmp_path):
 @pytest.fixture
 def app(db):
     """Create a test app with the temp database injected."""
-    import eduagent.api.server as srv
+    import clawed.api.server as srv
     old_db = srv._db
     srv._db = db
     test_app = create_app()

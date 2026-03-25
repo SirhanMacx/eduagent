@@ -2,7 +2,7 @@
 
 import pytest
 
-from eduagent.waitlist import WaitlistManager
+from clawed.waitlist import WaitlistManager
 
 
 @pytest.fixture

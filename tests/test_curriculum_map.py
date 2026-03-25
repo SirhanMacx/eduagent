@@ -3,7 +3,7 @@
 
 import pytest
 
-from eduagent.models import (
+from clawed.models import (
     AssessmentCalendarEntry,
     BigIdea,
     CurriculumGap,
@@ -248,7 +248,7 @@ class TestCurriculumGap:
 
 class TestSaveLoad:
     def test_save_and_load_year_map(self, tmp_path):
-        from eduagent.curriculum_map import load_year_map, save_year_map
+        from clawed.curriculum_map import load_year_map, save_year_map
 
         ym = YearMap(
             subject="Math",
@@ -267,7 +267,7 @@ class TestSaveLoad:
         assert loaded.units[0].title == "Unit One"
 
     def test_save_and_load_pacing_guide(self, tmp_path):
-        from eduagent.curriculum_map import load_pacing_guide, save_pacing_guide
+        from clawed.curriculum_map import load_pacing_guide, save_pacing_guide
 
         guide = PacingGuide(
             subject="Science",
@@ -291,13 +291,13 @@ class TestSaveLoad:
         assert loaded.weeks[0].unit_title == "Intro"
 
     def test_load_year_map_not_found(self, tmp_path):
-        from eduagent.curriculum_map import load_year_map
+        from clawed.curriculum_map import load_year_map
 
         with pytest.raises(FileNotFoundError):
             load_year_map(tmp_path / "nonexistent.json")
 
     def test_load_pacing_guide_not_found(self, tmp_path):
-        from eduagent.curriculum_map import load_pacing_guide
+        from clawed.curriculum_map import load_pacing_guide
 
         with pytest.raises(FileNotFoundError):
             load_pacing_guide(tmp_path / "nonexistent.json")
@@ -308,7 +308,7 @@ class TestSaveLoad:
 
 class TestExporters:
     def test_year_map_to_markdown(self):
-        from eduagent.exporter import year_map_to_markdown
+        from clawed.exporter import year_map_to_markdown
 
         ym = YearMap(
             subject="Math",
@@ -340,7 +340,7 @@ class TestExporters:
         assert "Unit 1 Test" in md
 
     def test_pacing_guide_to_markdown(self):
-        from eduagent.exporter import pacing_guide_to_markdown
+        from clawed.exporter import pacing_guide_to_markdown
 
         guide = PacingGuide(
             subject="Science",
@@ -366,7 +366,7 @@ class TestExporters:
         assert "First week" in md
 
     def test_export_year_map_markdown(self, tmp_path):
-        from eduagent.exporter import export_year_map
+        from clawed.exporter import export_year_map
 
         ym = YearMap(subject="ELA", grade_level="9", units=[])
         path = export_year_map(ym, tmp_path, fmt="markdown")
@@ -375,7 +375,7 @@ class TestExporters:
         assert "ELA" in path.read_text()
 
     def test_export_pacing_guide_markdown(self, tmp_path):
-        from eduagent.exporter import export_pacing_guide
+        from clawed.exporter import export_pacing_guide
 
         guide = PacingGuide(subject="History", grade_level="10", start_date="2025-09-04")
         path = export_pacing_guide(guide, tmp_path, fmt="markdown")
@@ -389,43 +389,43 @@ class TestExporters:
 
 class TestIntentRouter:
     def test_year_map_intent(self):
-        from eduagent.router import Intent, parse_intent
+        from clawed.router import Intent, parse_intent
 
         result = parse_intent("create a year map for 8th grade math")
         assert result.intent == Intent.GENERATE_YEAR_MAP
 
     def test_curriculum_map_intent(self):
-        from eduagent.router import Intent, parse_intent
+        from clawed.router import Intent, parse_intent
 
         result = parse_intent("build a curriculum map for my science class")
         assert result.intent == Intent.GENERATE_YEAR_MAP
 
     def test_scope_and_sequence_intent(self):
-        from eduagent.router import Intent, parse_intent
+        from clawed.router import Intent, parse_intent
 
         result = parse_intent("I need a scope and sequence for 10th grade history")
         assert result.intent == Intent.GENERATE_YEAR_MAP
 
     def test_full_year_plan_intent(self):
-        from eduagent.router import Intent, parse_intent
+        from clawed.router import Intent, parse_intent
 
         result = parse_intent("plan the full year for my class")
         assert result.intent == Intent.GENERATE_YEAR_MAP
 
     def test_pacing_guide_intent(self):
-        from eduagent.router import Intent, parse_intent
+        from clawed.router import Intent, parse_intent
 
         result = parse_intent("create a pacing guide for the year")
         assert result.intent == Intent.GENERATE_PACING_GUIDE
 
     def test_week_by_week_intent(self):
-        from eduagent.router import Intent, parse_intent
+        from clawed.router import Intent, parse_intent
 
         result = parse_intent("I need a week by week pacing calendar")
         assert result.intent == Intent.GENERATE_PACING_GUIDE
 
     def test_year_map_needs_clarification(self):
-        from eduagent.router import Intent, needs_clarification, parse_intent
+        from clawed.router import Intent, needs_clarification, parse_intent
 
         parsed = parse_intent("create a year map")
         assert parsed.intent == Intent.GENERATE_YEAR_MAP
@@ -439,18 +439,18 @@ class TestIntentRouter:
 
 class TestModelRouter:
     def test_year_map_routes_to_strong_model(self):
-        from eduagent.model_router import TASK_MODELS
+        from clawed.model_router import TASK_MODELS
 
         assert "year_map" in TASK_MODELS
         assert "minimax" in TASK_MODELS["year_map"]
 
     def test_pacing_guide_routes_to_strong_model(self):
-        from eduagent.model_router import TASK_MODELS
+        from clawed.model_router import TASK_MODELS
 
         assert "pacing_guide" in TASK_MODELS
         assert "minimax" in TASK_MODELS["pacing_guide"]
 
     def test_curriculum_gaps_routes_to_strong_model(self):
-        from eduagent.model_router import TASK_MODELS
+        from clawed.model_router import TASK_MODELS
 
         assert "curriculum_gaps" in TASK_MODELS

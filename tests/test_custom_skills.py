@@ -6,7 +6,7 @@ from pathlib import Path
 
 import yaml
 
-from eduagent.skills.library import SkillLibrary, _parse_yaml_skill, generate_skill_template
+from clawed.skills.library import SkillLibrary, _parse_yaml_skill, generate_skill_template
 
 # ── YAML parsing ─────────────────────────────────────────────────────
 

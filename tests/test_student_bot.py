@@ -8,8 +8,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from eduagent.models import TeacherPersona
-from eduagent.state import init_db
+from clawed.models import TeacherPersona
+from clawed.state import init_db
 
 
 def _run(coro):
@@ -23,7 +23,7 @@ def _run(coro):
 @pytest.fixture(autouse=True)
 def _use_tmp_db(tmp_path, monkeypatch):
     """Route all state.py DB operations to a temp directory."""
-    monkeypatch.setattr("eduagent.state.DEFAULT_DATA_DIR", tmp_path)
+    monkeypatch.setattr("clawed.state.DEFAULT_DATA_DIR", tmp_path)
     init_db()
 
 
@@ -32,7 +32,7 @@ def _use_tmp_db(tmp_path, monkeypatch):
 
 class TestStudentSessionCreation:
     def test_student_session_dataclass(self):
-        from eduagent.student_bot import StudentSession
+        from clawed.student_bot import StudentSession
 
         session = StudentSession(
             student_id="stu-001",
@@ -45,7 +45,7 @@ class TestStudentSessionCreation:
         assert session.message_count == 0
 
     def test_student_session_defaults(self):
-        from eduagent.student_bot import StudentSession
+        from clawed.student_bot import StudentSession
 
         session = StudentSession(student_id="stu-002")
         assert session.teacher_id == ""
@@ -58,7 +58,7 @@ class TestStudentSessionCreation:
 
 class TestClassCreation:
     def test_create_class_returns_code(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class("teacher-001")
@@ -67,7 +67,7 @@ class TestClassCreation:
         assert len(code) >= 8
 
     def test_create_class_is_unique(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code1 = bot.create_class("teacher-001")
@@ -75,13 +75,13 @@ class TestClassCreation:
         assert code1 != code2
 
     def test_get_class_returns_none_for_unknown(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         assert bot.get_class("NONEXISTENT") is None
 
     def test_get_class_returns_info(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class("teacher-mac")
@@ -97,7 +97,7 @@ class TestClassCreation:
 
 class TestSetActiveLesson:
     def test_set_active_lesson(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class("teacher-mac")
@@ -110,7 +110,7 @@ class TestSetActiveLesson:
         assert info.active_lesson_json == lesson_data
 
     def test_set_active_lesson_creates_class_if_needed(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         _run(bot.set_active_lesson("NEW-CLASS-01", "lesson-1", "teacher-new", '{"title": "Test"}'))
@@ -125,24 +125,24 @@ class TestSetActiveLesson:
 
 class TestHandleQuestion:
     def test_unknown_class_code(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         result = _run(bot.handle_message("What is photosynthesis?", "stu-001", "BAD-CODE"))
         assert "don't recognize" in result.lower()
 
     def test_no_active_lesson(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class("teacher-001")
         result = _run(bot.handle_message("Help!", "stu-001", code))
         assert "hasn't activated" in result.lower()
 
-    @patch("eduagent.chat.student_chat", new_callable=AsyncMock)
+    @patch("clawed.chat.student_chat", new_callable=AsyncMock)
     def test_handle_question_returns_string(self, mock_chat):
-        from eduagent.state import TeacherSession
-        from eduagent.student_bot import StudentBot
+        from clawed.state import TeacherSession
+        from clawed.student_bot import StudentBot
 
         # Set up teacher session with persona
         session = TeacherSession(
@@ -175,10 +175,10 @@ class TestHandleQuestion:
 
 
 class TestHintMode:
-    @patch("eduagent.chat.student_chat", new_callable=AsyncMock)
+    @patch("clawed.chat.student_chat", new_callable=AsyncMock)
     def test_hint_mode_does_not_give_direct_answer(self, mock_chat):
-        from eduagent.state import TeacherSession
-        from eduagent.student_bot import StudentBot
+        from clawed.state import TeacherSession
+        from clawed.student_bot import StudentBot
 
         # Set up teacher with persona
         session = TeacherSession(
@@ -209,7 +209,7 @@ class TestHintMode:
         assert "HINT MODE" in question_arg
 
     def test_set_hint_mode_toggle(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class("teacher-toggle")
@@ -226,7 +226,7 @@ class TestHintMode:
 
 class TestStudentReport:
     def test_empty_report(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class("teacher-report")
@@ -237,10 +237,10 @@ class TestStudentReport:
         assert report["total_messages"] == 0
         assert report["recent_questions"] == []
 
-    @patch("eduagent.chat.student_chat", new_callable=AsyncMock)
+    @patch("clawed.chat.student_chat", new_callable=AsyncMock)
     def test_report_after_questions(self, mock_chat):
-        from eduagent.state import TeacherSession
-        from eduagent.student_bot import StudentBot
+        from clawed.state import TeacherSession
+        from clawed.student_bot import StudentBot
 
         session = TeacherSession(
             teacher_id="teacher-rpt",
@@ -269,14 +269,14 @@ class TestStudentReport:
 
 class TestStudentRegistration:
     def test_register_student_bad_class(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         result = bot.register_student("stu-001", "BAD-CODE", "Alice")
         assert "don't recognize" in result.lower()
 
     def test_register_student_success(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class("teacher-mac")
@@ -285,7 +285,7 @@ class TestStudentRegistration:
         assert bot.is_registered("stu-001", code)
 
     def test_register_student_already_registered(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class("teacher-mac")
@@ -294,14 +294,14 @@ class TestStudentRegistration:
         assert "already registered" in result.lower()
 
     def test_is_registered_false_before_registration(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class("teacher-mac")
         assert not bot.is_registered("stu-new", code)
 
     def test_get_registered_students(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class("teacher-mac")
@@ -315,7 +315,7 @@ class TestStudentRegistration:
         assert "Bob" in names
 
     def test_register_student_no_name_uses_id(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class("teacher-mac")
@@ -331,38 +331,38 @@ class TestStudentRegistration:
 
 class TestConfusionDetection:
     def test_detect_confused_about(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         topic = StudentBot.detect_confusion_topic("I'm confused about the powder keg analogy")
         assert topic == "the powder keg analogy"
 
     def test_detect_dont_understand(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         topic = StudentBot.detect_confusion_topic("I don't understand alliances")
         assert topic == "alliances"
 
     def test_detect_explain(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         topic = StudentBot.detect_confusion_topic("can you explain the MANIA acronym?")
         assert topic is not None
         assert "mania" in topic.lower()
 
     def test_detect_help_me_understand(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         topic = StudentBot.detect_confusion_topic("help me understand nationalism")
         assert topic == "nationalism"
 
     def test_no_confusion_in_normal_question(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         topic = StudentBot.detect_confusion_topic("What year did WWI start?")
         assert topic is None
 
     def test_find_lesson_section_match(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         lesson = {
             "direct_instruction": "The powder keg analogy refers to the Balkans in 1914.",
@@ -372,7 +372,7 @@ class TestConfusionDetection:
         assert "powder keg" in section.lower()
 
     def test_find_lesson_section_no_match(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         lesson = {
             "direct_instruction": "Plants use sunlight.",
@@ -381,10 +381,10 @@ class TestConfusionDetection:
         section = StudentBot._find_lesson_section_for_topic("quantum physics", lesson)
         assert section == ""
 
-    @patch("eduagent.chat.student_chat", new_callable=AsyncMock)
+    @patch("clawed.chat.student_chat", new_callable=AsyncMock)
     def test_confusion_injects_lesson_context(self, mock_chat):
-        from eduagent.state import TeacherSession
-        from eduagent.student_bot import StudentBot
+        from clawed.state import TeacherSession
+        from clawed.student_bot import StudentBot
 
         session = TeacherSession(
             teacher_id="teacher-conf",
@@ -422,14 +422,14 @@ class TestConfusionDetection:
 
 class TestModeToggle:
     def test_get_mode_default_is_answer(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class("teacher-mode")
         assert bot.get_mode(code) == "answer"
 
     def test_get_mode_hint_when_enabled(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class("teacher-mode")
@@ -437,7 +437,7 @@ class TestModeToggle:
         assert bot.get_mode(code) == "hint"
 
     def test_get_mode_answer_when_disabled(self):
-        from eduagent.student_bot import StudentBot
+        from clawed.student_bot import StudentBot
 
         bot = StudentBot()
         code = bot.create_class("teacher-mode")
@@ -445,10 +445,10 @@ class TestModeToggle:
         bot.set_hint_mode(code, False)
         assert bot.get_mode(code) == "answer"
 
-    @patch("eduagent.chat.student_chat", new_callable=AsyncMock)
+    @patch("clawed.chat.student_chat", new_callable=AsyncMock)
     def test_answer_mode_no_hint_instruction(self, mock_chat):
-        from eduagent.state import TeacherSession
-        from eduagent.student_bot import StudentBot
+        from clawed.state import TeacherSession
+        from clawed.student_bot import StudentBot
 
         session = TeacherSession(
             teacher_id="teacher-ans",
@@ -470,10 +470,10 @@ class TestModeToggle:
         question_arg = call_args.kwargs.get("question", "")
         assert "HINT MODE" not in question_arg
 
-    @patch("eduagent.chat.student_chat", new_callable=AsyncMock)
+    @patch("clawed.chat.student_chat", new_callable=AsyncMock)
     def test_hint_mode_includes_socratic_instruction(self, mock_chat):
-        from eduagent.state import TeacherSession
-        from eduagent.student_bot import StudentBot
+        from clawed.state import TeacherSession
+        from clawed.student_bot import StudentBot
 
         session = TeacherSession(
             teacher_id="teacher-soc",
@@ -501,10 +501,10 @@ class TestModeToggle:
 
 
 class TestConversationMemory:
-    @patch("eduagent.chat.student_chat", new_callable=AsyncMock)
+    @patch("clawed.chat.student_chat", new_callable=AsyncMock)
     def test_history_passed_to_chat(self, mock_chat):
-        from eduagent.state import TeacherSession
-        from eduagent.student_bot import StudentBot
+        from clawed.state import TeacherSession
+        from clawed.student_bot import StudentBot
 
         session = TeacherSession(
             teacher_id="teacher-mem",
@@ -530,10 +530,10 @@ class TestConversationMemory:
         assert history[0]["content"] == "First question"
         assert history[1]["content"] == "First answer."
 
-    @patch("eduagent.chat.student_chat", new_callable=AsyncMock)
+    @patch("clawed.chat.student_chat", new_callable=AsyncMock)
     def test_different_students_have_separate_memory(self, mock_chat):
-        from eduagent.state import TeacherSession
-        from eduagent.student_bot import StudentBot
+        from clawed.state import TeacherSession
+        from clawed.student_bot import StudentBot
 
         session = TeacherSession(
             teacher_id="teacher-sep",
@@ -564,7 +564,7 @@ class TestConversationMemory:
 
 class TestStudentCLI:
     def test_student_cli_importable(self):
-        from eduagent.student_cli import cli_entry, main
+        from clawed.student_cli import cli_entry, main
         assert callable(main)
         assert callable(cli_entry)
 
@@ -574,37 +574,37 @@ class TestStudentCLI:
 
 class TestRouterStudentBotPatterns:
     def test_start_student_bot_intent(self):
-        from eduagent.router import Intent, parse_intent
+        from clawed.router import Intent, parse_intent
 
         result = parse_intent("start student bot for lesson 1")
         assert result.intent == Intent.START_STUDENT_BOT
 
     def test_show_student_report_intent(self):
-        from eduagent.router import Intent, parse_intent
+        from clawed.router import Intent, parse_intent
 
         result = parse_intent("show me what students are asking")
         assert result.intent == Intent.SHOW_STUDENT_REPORT
 
     def test_set_hint_mode_intent(self):
-        from eduagent.router import Intent, parse_intent
+        from clawed.router import Intent, parse_intent
 
         result = parse_intent("set homework hint mode")
         assert result.intent == Intent.SET_HINT_MODE
 
     def test_activate_student_chat(self):
-        from eduagent.router import Intent, parse_intent
+        from clawed.router import Intent, parse_intent
 
         result = parse_intent("activate student chat")
         assert result.intent == Intent.START_STUDENT_BOT
 
     def test_student_activity_report(self):
-        from eduagent.router import Intent, parse_intent
+        from clawed.router import Intent, parse_intent
 
         result = parse_intent("student activity report")
         assert result.intent == Intent.SHOW_STUDENT_REPORT
 
     def test_disable_hint_mode(self):
-        from eduagent.router import Intent, parse_intent
+        from clawed.router import Intent, parse_intent
 
         result = parse_intent("disable hint mode")
         assert result.intent == Intent.SET_HINT_MODE
@@ -623,17 +623,17 @@ except ImportError:
 @pytest.mark.skipif(not _has_mcp, reason="mcp package not installed")
 class TestMCPServer:
     def test_mcp_server_import(self):
-        from eduagent.mcp_server import mcp
+        from clawed.mcp_server import mcp
         assert mcp is not None
 
     def test_mcp_tools_registered(self):
-        from eduagent.mcp_server import mcp
+        from clawed.mcp_server import mcp
 
         # FastMCP registers tools internally; verify our module loaded
         assert hasattr(mcp, "run")
 
     def test_mcp_tool_functions_exist(self):
-        from eduagent.mcp_server import (
+        from clawed.mcp_server import (
             generate_lesson,
             generate_unit,
             get_teacher_standards,

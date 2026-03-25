@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from eduagent.parent_comm import (
+from clawed.parent_comm import (
     CommType,
     ParentComm,
     ParentCommRequest,

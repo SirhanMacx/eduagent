@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 
-from eduagent.gateway import ActivityEvent, EduAgentGateway, GatewayStats
+from clawed.gateway import ActivityEvent, EduAgentGateway, GatewayStats
 
 
 def _run(coro):

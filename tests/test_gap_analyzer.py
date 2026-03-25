@@ -7,9 +7,9 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 from typer.testing import CliRunner
 
-from eduagent.cli import app
-from eduagent.curriculum_map import CurriculumMapper
-from eduagent.models import CurriculumGap, TeacherPersona
+from clawed.cli import app
+from clawed.curriculum_map import CurriculumMapper
+from clawed.models import CurriculumGap, TeacherPersona
 
 # ── CurriculumGap model tests ────────────────────────────────────────
 
@@ -105,7 +105,7 @@ class TestCurriculumMapper:
         ]
 
         with patch(
-            "eduagent.curriculum_map.LLMClient"
+            "clawed.curriculum_map.LLMClient"
         ) as mock_llm:
             instance = mock_llm.return_value
             instance.generate_json = AsyncMock(return_value=mock_gaps)
@@ -139,7 +139,7 @@ class TestCurriculumMapper:
             ]
         }
 
-        with patch("eduagent.curriculum_map.LLMClient") as mock_llm:
+        with patch("clawed.curriculum_map.LLMClient") as mock_llm:
             instance = mock_llm.return_value
             instance.generate_json = AsyncMock(return_value=mock_wrapped)
 
@@ -158,7 +158,7 @@ class TestCurriculumMapper:
 
     def test_mapper_handles_empty_response(self):
         """Empty list from LLM = no gaps."""
-        with patch("eduagent.curriculum_map.LLMClient") as mock_llm:
+        with patch("clawed.curriculum_map.LLMClient") as mock_llm:
             instance = mock_llm.return_value
             instance.generate_json = AsyncMock(return_value=[])
 
@@ -176,7 +176,7 @@ class TestCurriculumMapper:
 
     def test_mapper_passes_persona_to_prompt(self):
         """Persona is forwarded to the LLM prompt."""
-        with patch("eduagent.curriculum_map.LLMClient") as mock_llm:
+        with patch("clawed.curriculum_map.LLMClient") as mock_llm:
             instance = mock_llm.return_value
             instance.generate_json = AsyncMock(return_value=[])
 
@@ -210,7 +210,7 @@ class TestCurriculumMapper:
             }
         ]
 
-        with patch("eduagent.curriculum_map.LLMClient") as mock_llm:
+        with patch("clawed.curriculum_map.LLMClient") as mock_llm:
             instance = mock_llm.return_value
             instance.generate_json = AsyncMock(return_value=mock_gaps)
 
@@ -230,7 +230,7 @@ class TestCurriculumMapper:
         """Very large materials lists should still function."""
         large_list = [f"file_{i}.md" for i in range(300)]
 
-        with patch("eduagent.curriculum_map.LLMClient") as mock_llm:
+        with patch("clawed.curriculum_map.LLMClient") as mock_llm:
             instance = mock_llm.return_value
             instance.generate_json = AsyncMock(return_value=[])
 
@@ -432,7 +432,7 @@ class TestGapAnalyzeCLI:
         assert result.exit_code != 0
 
     def test_invalid_materials_dir_fails(self, tmp_path):
-        with patch("eduagent.commands.generate.load_persona_or_exit") as mock_p:
+        with patch("clawed.commands.generate.load_persona_or_exit") as mock_p:
             mock_p.return_value = self._mock_persona()
             result = runner.invoke(
                 app,
@@ -448,10 +448,10 @@ class TestGapAnalyzeCLI:
     def test_gap_analyze_runs_and_outputs(self, tmp_path):
         """Full CLI run with mocked LLM — should produce output."""
         with (
-            patch("eduagent.commands.generate.load_persona_or_exit") as mock_p,
-            patch("eduagent.curriculum_map.CurriculumMapper") as mock_mapper,
-            patch("eduagent.commands.generate._output_dir", return_value=tmp_path),
-            patch("eduagent.models.AppConfig.load") as mock_config,
+            patch("clawed.commands.generate.load_persona_or_exit") as mock_p,
+            patch("clawed.curriculum_map.CurriculumMapper") as mock_mapper,
+            patch("clawed.commands.generate._output_dir", return_value=tmp_path),
+            patch("clawed.models.AppConfig.load") as mock_config,
         ):
             mock_p.return_value = self._mock_persona()
             mock_config.load.return_value = MagicMock(active_teacher_id=None)
@@ -476,10 +476,10 @@ class TestGapAnalyzeCLI:
     def test_gap_analyze_no_gaps_message(self, tmp_path):
         """When LLM returns no gaps, show success message."""
         with (
-            patch("eduagent.commands.generate.load_persona_or_exit") as mock_p,
-            patch("eduagent.curriculum_map.CurriculumMapper") as mock_mapper,
-            patch("eduagent.commands.generate._output_dir", return_value=tmp_path),
-            patch("eduagent.models.AppConfig.load") as mock_config,
+            patch("clawed.commands.generate.load_persona_or_exit") as mock_p,
+            patch("clawed.curriculum_map.CurriculumMapper") as mock_mapper,
+            patch("clawed.commands.generate._output_dir", return_value=tmp_path),
+            patch("clawed.models.AppConfig.load") as mock_config,
         ):
             mock_p.return_value = self._mock_persona()
             mock_config.load.return_value = MagicMock(active_teacher_id=None)
@@ -505,10 +505,10 @@ class TestGapAnalyzeCLI:
         standards_file.write_text("SS.8.A.1.1\nSS.8.A.2.1\nSS.8.B.1.1\n")
 
         with (
-            patch("eduagent.commands.generate.load_persona_or_exit") as mock_p,
-            patch("eduagent.curriculum_map.CurriculumMapper") as mock_mapper,
-            patch("eduagent.commands.generate._output_dir", return_value=tmp_path),
-            patch("eduagent.models.AppConfig.load") as mock_config,
+            patch("clawed.commands.generate.load_persona_or_exit") as mock_p,
+            patch("clawed.curriculum_map.CurriculumMapper") as mock_mapper,
+            patch("clawed.commands.generate._output_dir", return_value=tmp_path),
+            patch("clawed.models.AppConfig.load") as mock_config,
         ):
             mock_p.return_value = self._mock_persona()
             mock_config.load.return_value = MagicMock(active_teacher_id=None)
@@ -540,10 +540,10 @@ class TestGapAnalyzeCLI:
         (mat_dir / "lesson.pdf").write_text("lesson")
 
         with (
-            patch("eduagent.commands.generate.load_persona_or_exit") as mock_p,
-            patch("eduagent.curriculum_map.CurriculumMapper") as mock_mapper,
-            patch("eduagent.commands.generate._output_dir", return_value=tmp_path),
-            patch("eduagent.models.AppConfig.load") as mock_config,
+            patch("clawed.commands.generate.load_persona_or_exit") as mock_p,
+            patch("clawed.curriculum_map.CurriculumMapper") as mock_mapper,
+            patch("clawed.commands.generate._output_dir", return_value=tmp_path),
+            patch("clawed.models.AppConfig.load") as mock_config,
         ):
             mock_p.return_value = self._mock_persona()
             mock_config.load.return_value = MagicMock(active_teacher_id=None)
@@ -568,10 +568,10 @@ class TestGapAnalyzeCLI:
     def test_gap_analyze_markdown_format(self, tmp_path):
         """--format markdown produces a .md file."""
         with (
-            patch("eduagent.commands.generate.load_persona_or_exit") as mock_p,
-            patch("eduagent.curriculum_map.CurriculumMapper") as mock_mapper,
-            patch("eduagent.commands.generate._output_dir", return_value=tmp_path),
-            patch("eduagent.models.AppConfig.load") as mock_config,
+            patch("clawed.commands.generate.load_persona_or_exit") as mock_p,
+            patch("clawed.curriculum_map.CurriculumMapper") as mock_mapper,
+            patch("clawed.commands.generate._output_dir", return_value=tmp_path),
+            patch("clawed.models.AppConfig.load") as mock_config,
         ):
             mock_p.return_value = self._mock_persona()
             mock_config.load.return_value = MagicMock(active_teacher_id=None)
@@ -600,10 +600,10 @@ class TestGapAnalyzeCLI:
     def test_gap_analyze_html_format_default(self, tmp_path):
         """Default format is html — should produce .html file."""
         with (
-            patch("eduagent.commands.generate.load_persona_or_exit") as mock_p,
-            patch("eduagent.curriculum_map.CurriculumMapper") as mock_mapper,
-            patch("eduagent.commands.generate._output_dir", return_value=tmp_path),
-            patch("eduagent.models.AppConfig.load") as mock_config,
+            patch("clawed.commands.generate.load_persona_or_exit") as mock_p,
+            patch("clawed.curriculum_map.CurriculumMapper") as mock_mapper,
+            patch("clawed.commands.generate._output_dir", return_value=tmp_path),
+            patch("clawed.models.AppConfig.load") as mock_config,
         ):
             mock_p.return_value = self._mock_persona()
             mock_config.load.return_value = MagicMock(active_teacher_id=None)
@@ -637,10 +637,10 @@ class TestGapAnalyzeCLI:
         ]
 
         with (
-            patch("eduagent.commands.generate.load_persona_or_exit") as mock_p,
-            patch("eduagent.curriculum_map.CurriculumMapper") as mock_mapper,
-            patch("eduagent.commands.generate._output_dir", return_value=tmp_path),
-            patch("eduagent.models.AppConfig.load") as mock_config,
+            patch("clawed.commands.generate.load_persona_or_exit") as mock_p,
+            patch("clawed.curriculum_map.CurriculumMapper") as mock_mapper,
+            patch("clawed.commands.generate._output_dir", return_value=tmp_path),
+            patch("clawed.models.AppConfig.load") as mock_config,
         ):
             mock_p.return_value = self._mock_persona()
             mock_config.load.return_value = MagicMock(active_teacher_id=None)
