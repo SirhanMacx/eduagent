@@ -366,7 +366,7 @@ def _serve_gateway_headless(
     # Check for existing standalone bot instance
     import os
 
-    from clawed.tg import _BOT_LOCK
+    from clawed.transports.telegram import _BOT_LOCK
 
     if _BOT_LOCK.exists():
         try:
@@ -541,7 +541,7 @@ def bot(
         Path(data_dir).expanduser().resolve() if data_dir else None
     )
 
-    from clawed.tg import run_bot as run_new_bot
+    from clawed.transports.telegram import run_bot as run_new_bot
 
     console.print(
         Panel(
