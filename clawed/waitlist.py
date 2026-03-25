@@ -11,7 +11,7 @@ from typing import Any
 
 
 def _default_db_path() -> Path:
-    return Path("eduagent_data") / "clawed.db"
+    return Path("clawed_data") / "clawed.db"
 
 
 def _ensure_dir(path: Path) -> Path:

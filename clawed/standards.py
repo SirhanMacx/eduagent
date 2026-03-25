@@ -408,7 +408,7 @@ STANDARDS: dict[str, list[tuple[str, str, str]]] = {
     ],
 }
 
-# Subject name aliases — kept in sync with eduagent.skills aliases
+# Subject name aliases — kept in sync with clawed.skills aliases
 SUBJECT_ALIASES: dict[str, str] = {
     "math": "math",
     "mathematics": "math",

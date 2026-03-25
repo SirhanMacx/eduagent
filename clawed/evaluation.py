@@ -11,7 +11,7 @@ Usage:
     print(report.summary())
 
 CLI:
-    eduagent evaluate --lessons 10
+    clawed evaluate --lessons 10
 """
 
 from __future__ import annotations

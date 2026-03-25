@@ -536,7 +536,7 @@ select {{ padding: 6px 10px; border-radius: 4px;
             except (json.JSONDecodeError, TypeError):
                 pass
 
-        bot_link = f"https://t.me/eduagent_bot?start={class_code}"
+        bot_link = f"https://t.me/clawed_bot?start={class_code}"
 
         html = f"""<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
@@ -836,5 +836,5 @@ h1 {{ color: #1a73e8; margin-bottom: 8px; }}
     return app
 
 
-# Module-level app for `uvicorn eduagent.api.server:app`
+# Module-level app for `uvicorn clawed.api.server:app`
 app = create_app()

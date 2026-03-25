@@ -58,7 +58,7 @@ from clawed.commands.workspace_cmd import workspace_app
 # ── Build the main app ──────────────────────────────────────────────────
 
 app = typer.Typer(
-    name="eduagent",
+    name="clawed",
     help="Your teaching files, your AI co-teacher.",
     rich_markup_mode="rich",
 )
@@ -91,10 +91,10 @@ def main(
             console.print(Panel(
                 "[bold]Welcome to Claw-ED![/bold]\n\n"
                 "Get started in 3 steps:\n"
-                "  1. [cyan]eduagent config set-model ollama[/cyan]\n"
-                "  2. [cyan]eduagent ingest ~/my-lessons/[/cyan]\n"
-                "  3. [cyan]eduagent lesson \"Your Topic\" --grade 8 --subject \"Math\"[/cyan]\n\n"
-                "Or see sample output first: [cyan]eduagent demo[/cyan]",
+                "  1. [cyan]clawed config set-model ollama[/cyan]\n"
+                "  2. [cyan]clawed ingest ~/my-lessons/[/cyan]\n"
+                "  3. [cyan]clawed lesson \"Your Topic\" --grade 8 --subject \"Math\"[/cyan]\n\n"
+                "Or see sample output first: [cyan]clawed demo[/cyan]",
                 title="Claw-ED",
                 border_style="blue",
             ))
@@ -120,8 +120,8 @@ app.add_typer(schedule_app, name="schedule")
 
 # ── Register top-level commands from sub-modules ────────────────────────
 # Commands from generate_app, export_app, and bot_app are registered as
-# top-level commands on the main app (e.g. `eduagent ingest`, not
-# `eduagent generate ingest`).
+# top-level commands on the main app (e.g. `clawed ingest`, not
+# `clawed generate ingest`).
 
 for _cmd_info in generate_app.registered_commands:
     app.registered_commands.append(_cmd_info)

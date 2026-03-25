@@ -14,11 +14,11 @@ document.addEventListener('DOMContentLoaded', function () {
             var current = html.getAttribute('data-theme');
             if (current === 'dark') {
                 html.removeAttribute('data-theme');
-                localStorage.setItem('eduagent-theme', 'light');
+                localStorage.setItem('clawed-theme', 'light');
                 darkToggle.textContent = '\u263E';
             } else {
                 html.setAttribute('data-theme', 'dark');
-                localStorage.setItem('eduagent-theme', 'dark');
+                localStorage.setItem('clawed-theme', 'dark');
                 darkToggle.textContent = '\u2600';
             }
         });

@@ -1,8 +1,8 @@
 """Claw-ED TUI — Live terminal dashboard built with Textual.
 
 Launch:
-    eduagent serve --tui              # full gateway + TUI
-    eduagent serve --tui              # TUI only (demo, no Telegram)
+    clawed serve --tui              # full gateway + TUI
+    clawed serve --tui              # TUI only (demo, no Telegram)
 
 The TUI subscribes to the gateway's event_bus and renders:
   - Teacher header (name, school, grades, active model)
@@ -26,7 +26,7 @@ try:
 except ImportError:
     raise ImportError(
         "textual is required for the TUI dashboard.\n"
-        "Install with: pip install 'eduagent[tui]'\n"
+        "Install with: pip install 'clawed[tui]'\n"
         "Or: pip install textual"
     )
 

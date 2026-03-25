@@ -7,11 +7,11 @@ Wraps the core API server with:
 - Health check endpoint
 
 Run with:
-    uvicorn eduagent.hosted:app --host 0.0.0.0 --port 8000
+    uvicorn clawed.hosted:app --host 0.0.0.0 --port 8000
 
 Or via the Dockerfile:
-    docker build -t eduagent .
-    docker run -p 8000:8000 eduagent
+    docker build -t clawed .
+    docker run -p 8000:8000 clawed
 """
 
 from __future__ import annotations
@@ -75,7 +75,7 @@ def create_hosted_app() -> FastAPI:
         return JSONResponse(
             content={
                 "status": "healthy",
-                "service": "eduagent",
+                "service": "clawed",
                 "version": __version__,
             }
         )

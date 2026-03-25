@@ -18,7 +18,6 @@ from typing import Optional
 from clawed.models import AppConfig, TeacherPersona
 from clawed.state import TeacherSession
 
-
 # ── Rating helpers ────────────────────────────────────────────────────────────
 
 

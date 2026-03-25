@@ -1,6 +1,6 @@
 """First-run onboarding wizard for Claw-ED.
 
-When a teacher runs `eduagent chat` or `eduagent bot` with no config,
+When a teacher runs `clawed chat` or `clawed bot` with no config,
 this guided setup collects their teaching context, API key, and
 optionally ingests existing lesson plans — so Claw-ED is ready to
 go in under two minutes.
@@ -193,7 +193,7 @@ def _ingest_materials(path_str: str, config: AppConfig) -> None:
 
     if not all_files:
         console.print("  [yellow]No supported files found. You can ingest later with:[/yellow]")
-        console.print("    [bold]eduagent ingest <path>[/bold]")
+        console.print("    [bold]clawed ingest <path>[/bold]")
         return
 
     with _safe_progress(console=console) as progress:
@@ -311,7 +311,7 @@ def run_onboarding() -> AppConfig:
     connected = _test_connection(config)
     if not connected and provider != LLMProvider.OLLAMA:
         console.print("  [yellow]You can update your key later with:[/yellow]")
-        console.print(f"    [bold]eduagent config set-key {provider.value}[/bold]")
+        console.print(f"    [bold]clawed config set-key {provider.value}[/bold]")
 
     # ── Materials (optional) ──
     materials_path = _ask_materials()
@@ -361,10 +361,10 @@ def run_onboarding() -> AppConfig:
     console.print(
         Panel(
             "[bold green]Setup complete! Here's how to use me:[/bold green]\n\n"
-            "  [bold]eduagent chat[/bold]         \u2014 Start an interactive session\n"
-            "  [bold]eduagent ingest <path>[/bold] \u2014 Feed me your lesson plans\n"
-            "  [bold]eduagent serve[/bold]         \u2014 Launch the web dashboard\n\n"
-            "[dim]Tip: Run [bold]eduagent ingest <path>[/bold] anytime to add more materials.[/dim]",
+            "  [bold]clawed chat[/bold]         \u2014 Start an interactive session\n"
+            "  [bold]clawed ingest <path>[/bold] \u2014 Feed me your lesson plans\n"
+            "  [bold]clawed serve[/bold]         \u2014 Launch the web dashboard\n\n"
+            "[dim]Tip: Run [bold]clawed ingest <path>[/bold] anytime to add more materials.[/dim]",
             title="[bold green]\u2705 Ready[/bold green]",
             border_style="green",
             padding=(1, 2),
@@ -398,5 +398,5 @@ def check_first_run() -> bool:
     try:
         run_onboarding()
     except (KeyboardInterrupt, EOFError):
-        console.print("\n[dim]Setup cancelled. Run [bold]eduagent chat[/bold] again anytime.[/dim]")
+        console.print("\n[dim]Setup cancelled. Run [bold]clawed chat[/bold] again anytime.[/dim]")
     return True

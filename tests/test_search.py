@@ -1,4 +1,4 @@
-"""Tests for eduagent.search — web search for teachers."""
+"""Tests for clawed.search — web search for teachers."""
 
 from __future__ import annotations
 

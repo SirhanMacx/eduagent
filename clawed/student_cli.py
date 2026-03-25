@@ -1,8 +1,8 @@
 """Standalone student-facing terminal for Claw-ED.
 
 Usage:
-    python -m eduagent.student_cli --class-code MR-MAC-P3
-    eduagent student-chat --class-code MR-MAC-P3
+    python -m clawed.student_cli --class-code MR-MAC-P3
+    clawed student-chat --class-code MR-MAC-P3
 
 Students type questions about today's lesson and get responses in their
 teacher's voice. First-time students are auto-registered.
@@ -131,7 +131,7 @@ def main(
 
 
 def cli_entry() -> None:
-    """Entry point when run as ``python -m eduagent.student_cli``."""
+    """Entry point when run as ``python -m clawed.student_cli``."""
     import argparse
 
     parser = argparse.ArgumentParser(

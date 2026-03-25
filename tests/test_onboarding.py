@@ -1,4 +1,4 @@
-"""Tests for eduagent.onboarding — first-run guided wizard."""
+"""Tests for clawed.onboarding — first-run guided wizard."""
 
 from __future__ import annotations
 

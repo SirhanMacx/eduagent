@@ -8,10 +8,9 @@ plain string.  No routing, no intent parsing — that belongs in the gateway.
 """
 from __future__ import annotations
 
-import re
 import logging
+import re
 from pathlib import Path
-from typing import Optional
 
 from clawed.model_router import route as route_model
 from clawed.models import AppConfig, TeacherPersona
@@ -293,7 +292,7 @@ async def handle_export(parsed: ParsedIntent, session: TeacherSession, fmt: str)
     return (
         f"\U0001f4c4 Export as *{fmt.upper()}*\n\n"
         "Export functionality is available via the web interface.\n"
-        "Run `eduagent serve` and visit http://localhost:8000 to download your materials."
+        "Run `clawed serve` and visit http://localhost:8000 to download your materials."
     )
 
 
@@ -306,7 +305,7 @@ async def handle_share_students(parsed: ParsedIntent, session: TeacherSession) -
         return "Generate a lesson first, then I can create a student chatbot link for it."
     return (
         "\U0001f393 *Student Chatbot*\n\n"
-        "Once you run `eduagent serve`, your students can access a chatbot"
+        "Once you run `clawed serve`, your students can access a chatbot"
         " that answers questions about this lesson in your teaching voice.\n\n"
         "The embed code will be available at: http://localhost:8000"
     )
@@ -339,7 +338,7 @@ async def handle_start_student_bot(parsed: ParsedIntent, session: TeacherSession
         f"\U0001f4cb Class Code: `{class_code}`\n"
         f"\U0001f4dd Active Lesson: {session.current_lesson.title}\n\n"
         f"*Share this with your students:*\n"
-        f"Students can join using: `eduagent student-chat --class-code {class_code}`\n\n"
+        f"Students can join using: `clawed student-chat --class-code {class_code}`\n\n"
         f"*Teacher commands:*\n"
         f"\u2022 'show me what students are asking' \u2014 see student questions\n"
         f"\u2022 'set homework hint mode' \u2014 bot gives hints only, no direct answers\n"

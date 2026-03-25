@@ -281,7 +281,7 @@ class EduAgentTelegramBot:
             raise ValueError(
                 "No Telegram bot token found.\n"
                 "Set the TELEGRAM_BOT_TOKEN environment variable or run:\n"
-                "  eduagent config set-token YOUR_TOKEN"
+                "  clawed config set-token YOUR_TOKEN"
             )
         return cls(token=token, data_dir=data_dir)
 

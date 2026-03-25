@@ -1,4 +1,4 @@
-"""Tests for eduagent.drive — Google Drive folder ingestion."""
+"""Tests for clawed.drive — Google Drive folder ingestion."""
 
 from __future__ import annotations
 

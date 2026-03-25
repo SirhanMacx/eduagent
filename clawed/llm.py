@@ -227,7 +227,7 @@ class LLMClient:
         api_key = os.environ.get("ANTHROPIC_API_KEY")
         if not api_key:
             raise EnvironmentError(
-                "ANTHROPIC_API_KEY not set. Export it or run: eduagent config set-model ollama"
+                "ANTHROPIC_API_KEY not set. Export it or run: clawed config set-model ollama"
             )
         try:
             async with httpx.AsyncClient(timeout=120.0) as client:
@@ -271,7 +271,7 @@ class LLMClient:
         api_key = os.environ.get("OPENAI_API_KEY")
         if not api_key:
             raise EnvironmentError(
-                "OPENAI_API_KEY not set. Export it or run: eduagent config set-model ollama"
+                "OPENAI_API_KEY not set. Export it or run: clawed config set-model ollama"
             )
         messages: list[dict[str, str]] = []
         if system:

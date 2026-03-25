@@ -44,7 +44,7 @@ def submit(
     task_id = q.submit(resolved, payload)
     q.close()
     console.print(f"[green]Task submitted![/green]  id={task_id}  type={resolved.value}")
-    console.print("Run [bold]eduagent queue worker[/bold] to process the queue.")
+    console.print("Run [bold]clawed queue worker[/bold] to process the queue.")
 
 
 @queue_app.command()

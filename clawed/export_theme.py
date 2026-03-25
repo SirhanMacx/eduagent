@@ -150,7 +150,7 @@ def _hex_to_rgb(hex_str: str):
 def _resolve_output(output_dir: Path | None, lesson: "DailyLesson", ext: str) -> Path:
     """Build the output file path."""
     if output_dir is None:
-        output_dir = Path("eduagent_output").resolve()
+        output_dir = Path("clawed_output").resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     safe = f"lesson_{lesson.lesson_number:02d}"
     return output_dir / f"{safe}{ext}"

@@ -231,7 +231,7 @@ async def _execute_task(task: Task) -> dict[str, Any]:
             persona=persona,
             config=config,
         )
-        out = Path(payload.get("output_dir", "eduagent_output"))
+        out = Path(payload.get("output_dir", "clawed_output"))
         path = save_unit(unit, out)
         return {"title": unit.title, "saved_to": str(path), **unit.model_dump()}
 

@@ -19,7 +19,7 @@ CUSTOM_SKILLS_DIR = Path.home() / ".eduagent" / "skills"
 class SkillLibrary:
     """Registry of subject-specific pedagogy skills.
 
-    Discovers all skill modules in the ``eduagent.skills`` package at
+    Discovers all skill modules in the ``clawed.skills`` package at
     instantiation time and indexes them by canonical subject name and aliases.
     Then scans ``~/.eduagent/skills/`` for user-defined YAML skill files.
     Custom skills override built-in skills with the same subject name.

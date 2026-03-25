@@ -169,7 +169,7 @@ class TestAppConfigDefaults:
         assert config.openai_model == "gpt-4o"
         assert config.ollama_model == "llama3.2"
         assert config.ollama_base_url == "http://localhost:11434"
-        assert config.output_dir == "./eduagent_output"
+        assert config.output_dir == "./clawed_output"
         assert config.include_homework is True
         assert config.export_format == "markdown"
 
@@ -411,14 +411,14 @@ class TestDemoHtml:
         assert "Life From Light" in _DEMO_HTML
         assert "Claw-ED Demo" in _DEMO_HTML
         assert "Get Started" in _DEMO_HTML
-        assert "github.com/SirhanMacx/eduagent" in _DEMO_HTML
+        assert "github.com/SirhanMacx/Claw-ED" in _DEMO_HTML
 
     def test_demo_html_is_self_contained(self):
         from clawed.cli import _DEMO_HTML
 
         # No external CSS/JS links
         assert 'href="http' not in _DEMO_HTML.replace(
-            'href="https://github.com/SirhanMacx/eduagent"', ""
+            'href="https://github.com/SirhanMacx/Claw-ED"', ""
         )
         assert "<script src=" not in _DEMO_HTML
         assert '<link rel="stylesheet"' not in _DEMO_HTML

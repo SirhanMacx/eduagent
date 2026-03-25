@@ -1,4 +1,4 @@
-"""Tests for eduagent.cli_chat — terminal chat interface."""
+"""Tests for clawed.cli_chat — terminal chat interface."""
 
 from __future__ import annotations
 

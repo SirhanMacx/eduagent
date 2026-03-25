@@ -616,7 +616,7 @@ class AppConfig(BaseModel):
     openai_model: str = "gpt-4o"
     ollama_model: str = "llama3.2"
     ollama_base_url: str = "http://localhost:11434"
-    output_dir: str = "./eduagent_output"
+    output_dir: str = "./clawed_output"
     include_homework: bool = True
     export_format: str = "markdown"
 
@@ -645,7 +645,7 @@ class AppConfig(BaseModel):
 
     # Fields that contain secrets and must never be written to the JSON
     # config file.  They are stored via keyring (preferred) or env vars
-    # only.  See eduagent/config.py for the secure storage helpers.
+    # only.  See clawed/config.py for the secure storage helpers.
     _SECRET_FIELDS: tuple[str, ...] = (
         "ollama_api_key",
         "telegram_bot_token",
@@ -692,7 +692,7 @@ class AppConfig(BaseModel):
 
         Secret fields (API keys, tokens) are stripped before writing so
         they never end up in the plaintext JSON config file.  Use
-        eduagent.config.set_api_key() to store secrets securely.
+        clawed.config.set_api_key() to store secrets securely.
         """
         # Move secrets to the secure store before writing
         from clawed.config import set_api_key

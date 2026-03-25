@@ -175,7 +175,7 @@ def _parse_cron_expr(expr: str) -> dict[str, str]:
     return {"hour": expr, "minute": "0"}
 
 
-# ── Task implementations (stubs that call existing eduagent functions) ──
+# ── Task implementations (stubs that call existing Claw-ED functions) ──
 
 
 async def _task_morning_prep() -> str:

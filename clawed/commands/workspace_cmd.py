@@ -136,7 +136,7 @@ def workspace_show() -> None:
             )
         )
     else:
-        console.print("[dim]No identity.md found. Run 'eduagent workspace init'.[/dim]")
+        console.print("[dim]No identity.md found. Run 'clawed workspace init'.[/dim]")
 
     if SOUL_PATH.exists():
         console.print(
@@ -189,7 +189,7 @@ def workspace_memory() -> None:
             )
         )
     else:
-        console.print("[dim]No memory.md found. Run 'eduagent workspace init'.[/dim]")
+        console.print("[dim]No memory.md found. Run 'clawed workspace init'.[/dim]")
 
 
 @workspace_app.command("students")
@@ -238,4 +238,4 @@ def workspace_context() -> None:
             )
         )
     else:
-        console.print("[dim]No workspace context available. Run 'eduagent workspace init'.[/dim]")
+        console.print("[dim]No workspace context available. Run 'clawed workspace init'.[/dim]")

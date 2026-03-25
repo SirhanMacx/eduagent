@@ -541,7 +541,7 @@ class TestWidgetStatic:
     def test_widget_js_served(self, client):
         resp = client.get("/static/widget.js")
         assert resp.status_code == 200
-        assert "eduagent-widget" in resp.text
+        assert "clawed-widget" in resp.text
         assert "data-lesson-id" in resp.text
 
 

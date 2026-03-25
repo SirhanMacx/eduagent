@@ -66,7 +66,7 @@ def class_create(
             f"  Expires: {expires or 'Never'}\n\n"
             f"Share this code with students.\n"
             f"They join with: [bold]/join {code}[/bold] in Telegram\n"
-            f"Or: [bold]eduagent student-chat --class-code {code}[/bold]",
+            f"Or: [bold]clawed student-chat --class-code {code}[/bold]",
             title="[bold]New Class Code[/bold]",
             border_style="green",
         )
@@ -182,7 +182,7 @@ def class_qr(
     try:
         import qrcode  # type: ignore[import-untyped]
 
-        qr = qrcode.make(f"https://t.me/eduagent_bot?start={code}")
+        qr = qrcode.make(f"https://t.me/clawed_bot?start={code}")
         qr.save(output)
         console.print(f"[green]QR code saved to {output}[/green]")
     except ImportError:
@@ -191,7 +191,7 @@ def class_qr(
         out_path.write_text(
             f"Class: {info.name or code}\n"
             f"Code: {code}\n"
-            f"Join link: https://t.me/eduagent_bot?start={code}\n",
+            f"Join link: https://t.me/clawed_bot?start={code}\n",
             encoding="utf-8",
         )
         console.print(f"[yellow]qrcode package not installed. Link saved to {out_path}[/yellow]")
@@ -293,7 +293,7 @@ def config_set_token(
 
     After saving, just run:
 
-        eduagent bot
+        clawed bot
 
     No --token flag needed.
     """
@@ -308,7 +308,7 @@ def config_set_token(
             f"[bold green]Token saved![/bold green]\n\n"
             f"Token: {masked}\n\n"
             f"You can now start the bot with just:\n"
-            f"  [cyan]eduagent bot[/cyan]",
+            f"  [cyan]clawed bot[/cyan]",
             title="Telegram Bot Token",
         )
     )
@@ -559,7 +559,7 @@ def skills_create(
             f"  File: [cyan]{filepath}[/cyan]\n\n"
             f"Edit this file to customize the pedagogy for {subject}.\n"
             f"It will be loaded automatically next time you run Claw-ED.\n\n"
-            f"Run [bold]eduagent skills list[/bold] to verify it loaded.",
+            f"Run [bold]clawed skills list[/bold] to verify it loaded.",
             title="[bold]New Custom Skill[/bold]",
             border_style="green",
         )
@@ -606,7 +606,7 @@ def school_setup(
             f"  Grades:    {', '.join(grades) or '—'}\n"
             f"  School ID: [cyan]{school_id}[/cyan]\n\n"
             f"Share this ID with teachers:"
-            f" [bold]eduagent school join"
+            f" [bold]clawed school join"
             f" --school-id {school_id}[/bold]",
             title="[bold]School Setup[/bold]",
             border_style="green",
@@ -800,7 +800,7 @@ def school_library(
     if not items:
         console.print(
             "[dim]No shared content yet."
-            " Use 'eduagent school share' to contribute![/dim]"
+            " Use 'clawed school share' to contribute![/dim]"
         )
 
 
@@ -953,7 +953,7 @@ def register_stats(app: typer.Typer) -> None:
         if not data["rated_lessons"]:
             console.print(
                 "\n[dim]No ratings yet. Generate a lesson with"
-                " 'eduagent chat' and rate it to see analytics"
+                " 'clawed chat' and rate it to see analytics"
                 " here.[/dim]"
             )
         console.print()

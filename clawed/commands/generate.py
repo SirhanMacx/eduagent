@@ -442,10 +442,10 @@ def lesson(
 
     \b
     Standalone mode (no unit plan needed):
-        eduagent lesson "The American Revolution" --grade 8 --subject "social studies"
+        clawed lesson "The American Revolution" --grade 8 --subject "social studies"
 
     From a unit plan:
-        eduagent lesson "Photosynthesis" --unit-file output/unit_photosynthesis.json -n 1
+        clawed lesson "Photosynthesis" --unit-file output/unit_photosynthesis.json -n 1
     """
     from clawed.exporter import export_lesson
     from clawed.lesson import generate_lesson, save_lesson
@@ -976,7 +976,7 @@ def differentiate(
         console.print(
             "[yellow]Specify at least one option:[/yellow]"
             " --iep, --504, or --tiered-topic\n"
-            "Example: eduagent differentiate"
+            "Example: clawed differentiate"
             " --lesson-file lesson.json --iep students.json"
         )
         raise typer.Exit(1)
@@ -1678,7 +1678,7 @@ def gap_analyze(
     outputs a prioritized gap report with severity ratings and suggestions.
 
     Example:\n
-        eduagent gap-analyze --subject "Social Studies" --grade 8 \\
+        clawed gap-analyze --subject "Social Studies" --grade 8 \\
             --standards "8.1.a,8.2.b,8.3.c"
     """
     from datetime import datetime

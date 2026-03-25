@@ -110,7 +110,7 @@ def load_persona_or_exit() -> TeacherPersona:
     path = persona_path()
     if not path.exists():
         console.print(
-            "[red]No persona found.[/red] Run [bold]eduagent ingest <path>[/bold] first."
+            "[red]No persona found.[/red] Run [bold]clawed ingest <path>[/bold] first."
         )
         raise typer.Exit(1)
     from clawed.persona import load_persona

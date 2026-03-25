@@ -33,7 +33,7 @@
     // Inject styles (scoped to our widget)
     var style = document.createElement('style');
     style.textContent = [
-        '#eduagent-widget-btn{',
+        '#clawed-widget-btn{',
         '  position:fixed;bottom:20px;right:20px;z-index:99999;',
         '  width:56px;height:56px;border-radius:50%;border:none;',
         '  background:#1a56db;color:#fff;font-size:24px;cursor:pointer;',
@@ -41,8 +41,8 @@
         '  display:flex;align-items:center;justify-content:center;',
         '  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;',
         '}',
-        '#eduagent-widget-btn:hover{transform:scale(1.08);}',
-        '#eduagent-widget-panel{',
+        '#clawed-widget-btn:hover{transform:scale(1.08);}',
+        '#clawed-widget-panel{',
         '  position:fixed;bottom:86px;right:20px;z-index:99999;',
         '  width:360px;max-height:500px;border-radius:12px;',
         '  background:#fff;box-shadow:0 8px 30px rgba(0,0,0,0.18);',
@@ -50,72 +50,72 @@
         '  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;',
         '  font-size:14px;color:#1a1a2e;line-height:1.5;',
         '}',
-        '#eduagent-widget-panel.open{display:flex;}',
-        '#eduagent-header{',
+        '#clawed-widget-panel.open{display:flex;}',
+        '#clawed-header{',
         '  background:#0f3460;color:#fff;padding:14px 16px;',
         '  font-weight:600;font-size:14px;display:flex;',
         '  align-items:center;justify-content:space-between;',
         '}',
-        '#eduagent-header button{',
+        '#clawed-header button{',
         '  background:none;border:none;color:rgba(255,255,255,0.7);',
         '  font-size:18px;cursor:pointer;padding:0 4px;',
         '}',
-        '#eduagent-header button:hover{color:#fff;}',
-        '#eduagent-messages{',
+        '#clawed-header button:hover{color:#fff;}',
+        '#clawed-messages{',
         '  flex:1;overflow-y:auto;padding:12px;min-height:200px;max-height:340px;',
         '  background:#f9fafb;',
         '}',
-        '.eduagent-msg{',
+        '.clawed-msg{',
         '  padding:8px 12px;margin-bottom:8px;border-radius:8px;',
         '  max-width:85%;word-wrap:break-word;font-size:13px;',
         '}',
-        '.eduagent-msg.user{',
+        '.clawed-msg.user{',
         '  background:#e8f0fe;margin-left:auto;text-align:right;',
         '}',
-        '.eduagent-msg.assistant{',
+        '.clawed-msg.assistant{',
         '  background:#fff;border:1px solid #e5e7eb;margin-right:auto;',
         '}',
-        '.eduagent-msg.typing{',
+        '.clawed-msg.typing{',
         '  background:#fff;border:1px solid #e5e7eb;margin-right:auto;',
         '  color:#6b7280;font-style:italic;',
         '}',
-        '#eduagent-input-row{',
+        '#clawed-input-row{',
         '  display:flex;padding:10px;border-top:1px solid #e5e7eb;background:#fff;',
         '}',
-        '#eduagent-input{',
+        '#clawed-input{',
         '  flex:1;padding:8px 12px;border:1px solid #d1d5db;border-radius:8px;',
         '  font-size:13px;font-family:inherit;outline:none;',
         '}',
-        '#eduagent-input:focus{border-color:#1a56db;box-shadow:0 0 0 2px rgba(26,86,219,0.1);}',
-        '#eduagent-send{',
+        '#clawed-input:focus{border-color:#1a56db;box-shadow:0 0 0 2px rgba(26,86,219,0.1);}',
+        '#clawed-send{',
         '  margin-left:8px;padding:8px 14px;border:none;border-radius:8px;',
         '  background:#1a56db;color:#fff;font-size:13px;cursor:pointer;',
         '  font-weight:500;',
         '}',
-        '#eduagent-send:hover{background:#1e40af;}',
-        '#eduagent-send:disabled{opacity:0.5;cursor:not-allowed;}',
+        '#clawed-send:hover{background:#1e40af;}',
+        '#clawed-send:disabled{opacity:0.5;cursor:not-allowed;}',
     ].join('\n');
     document.head.appendChild(style);
 
     // Create widget button
     var btn = document.createElement('button');
-    btn.id = 'eduagent-widget-btn';
+    btn.id = 'clawed-widget-btn';
     btn.innerHTML = '&#128172;';
     btn.title = 'Chat with your teacher';
     document.body.appendChild(btn);
 
     // Create chat panel
     var panel = document.createElement('div');
-    panel.id = 'eduagent-widget-panel';
+    panel.id = 'clawed-widget-panel';
     panel.innerHTML = [
-        '<div id="eduagent-header">',
+        '<div id="clawed-header">',
         '  <span>' + escHtml(headerText) + '</span>',
-        '  <button id="eduagent-close" title="Close">&times;</button>',
+        '  <button id="clawed-close" title="Close">&times;</button>',
         '</div>',
-        '<div id="eduagent-messages"></div>',
-        '<div id="eduagent-input-row">',
-        '  <input type="text" id="eduagent-input" placeholder="Ask a question..." autocomplete="off">',
-        '  <button id="eduagent-send">Send</button>',
+        '<div id="clawed-messages"></div>',
+        '<div id="clawed-input-row">',
+        '  <input type="text" id="clawed-input" placeholder="Ask a question..." autocomplete="off">',
+        '  <button id="clawed-send">Send</button>',
         '</div>',
     ].join('\n');
     document.body.appendChild(panel);
@@ -124,18 +124,18 @@
     btn.addEventListener('click', function () {
         panel.classList.toggle('open');
         if (panel.classList.contains('open')) {
-            document.getElementById('eduagent-input').focus();
+            document.getElementById('clawed-input').focus();
         }
     });
 
-    document.getElementById('eduagent-close').addEventListener('click', function () {
+    document.getElementById('clawed-close').addEventListener('click', function () {
         panel.classList.remove('open');
     });
 
     // Send message
-    var input = document.getElementById('eduagent-input');
-    var sendBtn = document.getElementById('eduagent-send');
-    var messages = document.getElementById('eduagent-messages');
+    var input = document.getElementById('clawed-input');
+    var sendBtn = document.getElementById('clawed-send');
+    var messages = document.getElementById('clawed-messages');
 
     function sendMessage() {
         var question = input.value.trim();
@@ -181,7 +181,7 @@
 
     function appendMsg(role, text) {
         var div = document.createElement('div');
-        div.className = 'eduagent-msg ' + role;
+        div.className = 'clawed-msg ' + role;
         div.textContent = text;
         messages.appendChild(div);
         messages.scrollTop = messages.scrollHeight;

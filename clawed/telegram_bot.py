@@ -1,7 +1,7 @@
 """Claw-ED Telegram Bot — Standalone, no OpenClaw required.
 
 Teachers set up their own bot via BotFather and run:
-    eduagent bot --token YOUR_BOT_TOKEN
+    clawed bot --token YOUR_BOT_TOKEN
 
 That's it. No OpenClaw, no gateway, no extensions.
 Claw-ED is the product.
@@ -180,7 +180,7 @@ class EduAgentBot:
     Token resolution order:
         1. ``token`` constructor argument
         2. ``TELEGRAM_BOT_TOKEN`` environment variable
-        3. Saved config (``eduagent config set-token TOKEN``)
+        3. Saved config (``clawed config set-token TOKEN``)
 
     Webhook mode: pass ``webhook_url`` to ``start()`` to receive updates via
     HTTPS POST instead of long-polling. Useful for VPS / server deployments.
@@ -215,7 +215,7 @@ class EduAgentBot:
 
         Token resolution order:
             1. ``TELEGRAM_BOT_TOKEN`` environment variable
-            2. Saved config (``eduagent config set-token TOKEN``)
+            2. Saved config (``clawed config set-token TOKEN``)
 
         Raises ``ValueError`` if no token can be found.
         """
@@ -233,7 +233,7 @@ class EduAgentBot:
             raise ValueError(
                 "No Telegram bot token found.\n"
                 "Set the TELEGRAM_BOT_TOKEN environment variable or run:\n"
-                "  eduagent config set-token YOUR_TOKEN"
+                "  clawed config set-token YOUR_TOKEN"
             )
         return cls(
             token=token,
@@ -282,7 +282,7 @@ class EduAgentBot:
         except ImportError:
             raise ImportError(
                 "python-telegram-bot is required to run the Telegram bot.\n"
-                "Install it with: pip install 'eduagent[telegram]'\n"
+                "Install it with: pip install 'clawed[telegram]'\n"
                 "Or: pip install python-telegram-bot"
             )
 
@@ -840,7 +840,6 @@ class EduAgentBot:
         # Use the async lifecycle methods instead of run_polling()/run_webhook()
         # to avoid "event loop already running" errors when called from
         # contexts that already have an event loop (e.g., asyncio.run wrappers).
-        import asyncio
 
         async def _run_async() -> None:
             await app.initialize()
@@ -890,7 +889,7 @@ def run_bot(
 
     Args:
         token: Telegram bot token from @BotFather.
-        data_dir: Directory for persistent state (default: ~/.eduagent).
+        data_dir: Directory for persistent state (default: ~/.eduagent).  # keep
         webhook_url: If provided, run in webhook mode instead of polling.
             Must be a publicly reachable HTTPS URL
             (e.g. ``https://myserver.com/webhook``).

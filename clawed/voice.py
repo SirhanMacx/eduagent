@@ -57,7 +57,7 @@ async def transcribe_audio(audio_path: Path) -> str:
 
     raise RuntimeError(
         "Voice transcription requires faster-whisper.\n"
-        "Install it with: pip install 'eduagent[voice]'"
+        "Install it with: pip install 'clawed[voice]'"
     )
 
 
@@ -66,7 +66,7 @@ async def _transcribe_faster_whisper(audio_path: Path) -> str:
     if WhisperModel is None:
         raise RuntimeError(
             "Voice transcription requires faster-whisper.\n"
-            "Install it with: pip install 'eduagent[voice]'"
+            "Install it with: pip install 'clawed[voice]'"
         )
 
     loop = asyncio.get_event_loop()

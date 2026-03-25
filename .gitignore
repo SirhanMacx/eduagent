@@ -19,7 +19,9 @@ build/
 !eduagent/demo/*.json
 !clawed/demo/*.json
 eduagent_output/
+clawed_output/
 eduagent_data/
+clawed_data/
 
 # IDE
 .vscode/

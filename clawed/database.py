@@ -1,7 +1,7 @@
 """SQLite database layer for Claw-ED web platform.
 
 Storage locations (consolidation planned for v0.2):
-- eduagent_data/eduagent.db: web app data (lessons, units, feedback)
+- clawed_data/clawed.db: web app data (lessons, units, feedback)
 - ~/.eduagent/state.db: conversation state, classes, student questions
 - ~/.eduagent/bot_state.db: Telegram bot session persistence
 - ~/.eduagent/config.json: app configuration
@@ -23,7 +23,7 @@ def _default_db_path() -> Path:
     data_dir = os.environ.get("EDUAGENT_DATA_DIR")
     if data_dir:
         return Path(data_dir) / "clawed.db"
-    return Path("eduagent_data") / "clawed.db"
+    return Path("clawed_data") / "clawed.db"
 
 
 def _ensure_dir(path: Path) -> Path:

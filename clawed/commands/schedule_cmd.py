@@ -120,7 +120,7 @@ def schedule_start() -> None:
     jobs = [j for j in scheduler.get_jobs_info() if j["enabled"]]
 
     if not jobs:
-        console.print("[yellow]No tasks enabled. Enable tasks with 'eduagent schedule enable <task>'.[/yellow]")
+        console.print("[yellow]No tasks enabled. Enable tasks with 'clawed schedule enable <task>'.[/yellow]")
         raise typer.Exit(0)
 
     console.print(

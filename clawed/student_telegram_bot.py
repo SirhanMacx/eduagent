@@ -4,7 +4,7 @@ Students join a class with a code from their teacher, then ask questions
 about the lesson. The bot answers in the teacher's voice.
 
 Separate from the teacher bot (telegram_bot.py). Run with:
-    eduagent student-bot --token YOUR_STUDENT_BOT_TOKEN
+    clawed student-bot --token YOUR_STUDENT_BOT_TOKEN
 """
 
 from __future__ import annotations
@@ -111,7 +111,7 @@ class StudentTelegramBot:
         except ImportError:
             raise ImportError(
                 "python-telegram-bot is required to run the student bot.\n"
-                "Install it with: pip install 'eduagent[telegram]'\n"
+                "Install it with: pip install 'clawed[telegram]'\n"
                 "Or: pip install python-telegram-bot"
             )
 

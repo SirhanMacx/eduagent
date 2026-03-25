@@ -8,7 +8,7 @@ Uses stdio transport (the MCP standard). The client process spawns this
 server and communicates over stdin/stdout.
 
 Usage:
-    eduagent mcp-server
+    clawed mcp-server
 """
 
 from __future__ import annotations

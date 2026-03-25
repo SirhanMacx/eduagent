@@ -260,10 +260,10 @@ def serve(
 
     \b
     Modes:
-      eduagent serve --token TOKEN --tui   # Full TUI + gateway + web
-      eduagent serve --token TOKEN         # Gateway + web (no TUI, for VPS)
-      eduagent serve --tui                 # TUI only (no Telegram, demos)
-      eduagent serve                       # Web server only
+      clawed serve --token TOKEN --tui   # Full TUI + gateway + web
+      clawed serve --token TOKEN         # Gateway + web (no TUI, for VPS)
+      clawed serve --tui                 # TUI only (no Telegram, demos)
+      clawed serve                       # Web server only
     """
     if not skip_setup:
         _first_run_setup()
@@ -320,7 +320,7 @@ def _serve_with_tui(
     except ImportError as e:
         console.print(f"[red]Missing dependency:[/red] {e}")
         console.print("\nInstall TUI support with:")
-        console.print("  [cyan]pip install 'eduagent[tui]'[/cyan]")
+        console.print("  [cyan]pip install 'clawed[tui]'[/cyan]")
         raise typer.Exit(1)
 
     gateway = EduAgentGateway(config=config)
@@ -450,7 +450,7 @@ def student_bot_cmd(
     except ImportError:
         console.print(
             "[red]Telegram support requires python-telegram-bot.[/red]\n"
-            "Install it with: [bold]pip install 'eduagent[telegram]'[/bold]"
+            "Install it with: [bold]pip install 'clawed[telegram]'[/bold]"
         )
         raise typer.Exit(1)
 
@@ -493,7 +493,7 @@ def bot(
     data_dir: Optional[str] = typer.Option(
         None,
         "--data-dir",
-        help="Data directory (default: ~/.eduagent)",
+        help="Data directory (default: ~/.eduagent)",  # keep
     ),
     live: bool = typer.Option(
         False,
@@ -538,18 +538,18 @@ def bot(
     Get a bot token from @BotFather on Telegram, then run:
 
         # Polling mode — works on any machine, no public URL needed:
-        eduagent bot --token YOUR_TOKEN
-        export TELEGRAM_BOT_TOKEN=YOUR_TOKEN && eduagent bot
+        clawed bot --token YOUR_TOKEN
+        export TELEGRAM_BOT_TOKEN=YOUR_TOKEN && clawed bot
 
         # Webhook mode (legacy only) — for VPS/server deployments:
-        eduagent bot --token YOUR_TOKEN --webhook-url https://myserver.com/telegram --legacy
+        clawed bot --token YOUR_TOKEN --webhook-url https://myserver.com/telegram --legacy
 
         # With live dashboard (legacy only):
-        eduagent bot --token YOUR_TOKEN --live --legacy
+        clawed bot --token YOUR_TOKEN --live --legacy
 
     Save the token permanently (so you don't have to pass it every time):
-        eduagent config set-token YOUR_TOKEN
-        eduagent bot
+        clawed config set-token YOUR_TOKEN
+        clawed bot
     """
     from clawed.onboarding import check_first_run
 
@@ -563,10 +563,10 @@ def bot(
         console.print(
             "[red]No bot token found.[/red]\n\n"
             "Provide one of:\n"
-            "  1. [cyan]eduagent bot --token YOUR_TOKEN[/cyan]\n"
+            "  1. [cyan]clawed bot --token YOUR_TOKEN[/cyan]\n"
             "  2. [cyan]export"
             " TELEGRAM_BOT_TOKEN=YOUR_TOKEN[/cyan]\n"
-            "  3. [cyan]eduagent config set-token"
+            "  3. [cyan]clawed config set-token"
             " YOUR_TOKEN[/cyan]  (saves permanently)\n\n"
             "Get a token from @BotFather on Telegram."
         )
@@ -583,7 +583,7 @@ def bot(
         except ImportError:
             console.print(
                 "[red]Legacy bot mode requires python-telegram-bot.[/red]\n"
-                "Install it with: [bold]pip install 'eduagent[telegram-legacy]'[/bold]\n"
+                "Install it with: [bold]pip install 'clawed[telegram-legacy]'[/bold]\n"
                 "Or use the default bot (no --legacy flag) which needs no extra deps."
             )
             raise typer.Exit(1)
@@ -630,7 +630,7 @@ def bot(
                 console.print("\nInstall legacy Telegram support with:")
                 console.print(
                     "  [cyan]pip install"
-                    " 'eduagent[telegram-legacy]'[/cyan]"
+                    " 'clawed[telegram-legacy]'[/cyan]"
                 )
                 raise typer.Exit(1)
         return
