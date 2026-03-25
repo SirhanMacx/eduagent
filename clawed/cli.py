@@ -75,24 +75,41 @@ def main(
     if ctx.invoked_subcommand is None:
         config_path = Path.home() / ".eduagent" / "config.json"
         if not config_path.exists():
-            # First run — run setup wizard, then drop into chat
-            from clawed.onboarding import run_setup_wizard
-            try:
-                run_setup_wizard()
-            except (KeyboardInterrupt, EOFError):
-                console.print("\n[dim]Setup cancelled. Run [bold]clawed[/bold] again anytime.[/dim]")
-                raise typer.Exit()
+            # First run — open browser-based setup wizard
+            import threading
+            import webbrowser
 
-            # After setup, start chat automatically
-            import asyncio
-            from clawed.transports.cli import run_chat
+            import uvicorn
+
+            port = 8000
+            console.print(Panel(
+                "[bold]Welcome to Claw-ED![/bold]\n\n"
+                "Opening the setup wizard in your browser...\n"
+                f"If it doesn't open, go to: [cyan]http://localhost:{port}/setup[/cyan]\n\n"
+                "[dim]Press Ctrl+C when you're done.[/dim]",
+                title="\U0001f393 Claw-ED",
+                border_style="green",
+            ))
+
+            def _open_browser():
+                import time
+                time.sleep(1.5)
+                webbrowser.open(f"http://localhost:{port}/setup")
+
+            threading.Thread(target=_open_browser, daemon=True).start()
+
             try:
-                asyncio.run(run_chat())
-            except (KeyboardInterrupt, EOFError):
+                uvicorn.run("clawed.api.server:app", host="127.0.0.1", port=port, log_level="warning")
+            except KeyboardInterrupt:
                 pass
+
+            if config_path.exists():
+                console.print("\n[green]Setup complete![/green] Run [bold]clawed[/bold] again to start chatting.")
+            raise typer.Exit()
         else:
             # Returning user — drop straight into chat
             import asyncio
+
             from clawed.transports.cli import run_chat
             try:
                 asyncio.run(run_chat())

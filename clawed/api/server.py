@@ -95,6 +95,9 @@ def create_app() -> FastAPI:
     app.include_router(tools_router, prefix="/api")
     app.include_router(waitlist_router, prefix="/api")
 
+    from clawed.api.routes.setup import router as setup_router
+    app.include_router(setup_router)
+
     # ── Page routes (server-side rendered) ───────────────────────────
 
     # Landing page path
