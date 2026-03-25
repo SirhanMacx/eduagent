@@ -164,22 +164,106 @@ def _detect_available_models() -> tuple[LLMProvider | None, str]:
     )
 
 
-def _ask_materials() -> str | None:
-    """Optionally collect a materials path for ingestion."""
-    console.print()
-    raw = Prompt.ask(
-        "[bold]Point me at your existing lesson plans[/bold]\n"
-        "  [dim](folder path, or press Enter to skip)[/dim]",
-        default="",
+def _open_folder_picker() -> str | None:
+    """Open a native Finder/Explorer folder picker. Returns path or None."""
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+
+        root = tk.Tk()
+        root.withdraw()  # Hide the root window
+        root.attributes("-topmost", True)  # Bring dialog to front
+        folder = filedialog.askdirectory(
+            title="Select your lesson plans folder",
+        )
+        root.destroy()
+        return folder if folder else None
+    except Exception:
+        return None
+
+
+def _ask_materials() -> tuple[str | None, str | None]:
+    """Collect curriculum materials — local folder and/or Google Drive link.
+
+    Offers a native file picker (Finder/Explorer) for non-technical teachers,
+    with a paste-a-path fallback and Google Drive option.
+
+    Returns (local_path, drive_url) — either or both may be None.
+    """
+    console.print(
+        "\n[bold]Do you have existing lesson plans or curriculum materials?[/bold]\n"
+        "  Claw-ED learns your teaching style from your files.\n"
+        "  [dim]Supported: PDF, DOCX, PPTX, TXT, MD[/dim]\n"
     )
-    path_str = raw.strip()
-    if not path_str:
-        return None
-    resolved = Path(path_str).expanduser().resolve()
-    if not resolved.exists():
-        console.print(f"  [red]Path not found:[/red] {resolved}")
-        return None
-    return str(resolved)
+
+    console.print(
+        "  How would you like to share your materials?\n"
+        "    [bold][1][/bold] Browse for a folder (opens a file picker window)\n"
+        "    [bold][2][/bold] Paste a folder path\n"
+        "    [bold][3][/bold] Paste a Google Drive link\n"
+        "    [bold][4][/bold] Skip for now\n"
+    )
+
+    local_path = None
+    drive_url = None
+
+    choice = Prompt.ask("  Choose", choices=["1", "2", "3", "4"], default="1")
+
+    if choice == "1":
+        # Native file picker
+        console.print("  [dim]Opening folder picker...[/dim]")
+        picked = _open_folder_picker()
+        if picked:
+            local_path = picked
+            console.print(f"  [green]\u2713[/green] Selected: {picked}")
+        else:
+            console.print("  [dim]No folder selected. You can add materials later.[/dim]")
+
+    elif choice == "2":
+        # Manual path entry
+        raw = Prompt.ask(
+            "  [bold]Folder path[/bold]  [dim](e.g. ~/Documents/Lessons)[/dim]",
+            default="",
+        )
+        path_str = raw.strip()
+        if path_str:
+            resolved = Path(path_str).expanduser().resolve()
+            if resolved.exists():
+                local_path = str(resolved)
+                console.print(f"  [green]\u2713[/green] Found: {resolved}")
+            else:
+                console.print(f"  [red]Path not found:[/red] {resolved}")
+
+    elif choice == "3":
+        # Google Drive link
+        raw_drive = Prompt.ask(
+            "  [bold]Google Drive folder link[/bold]  [dim](paste the sharing URL)[/dim]",
+            default="",
+        )
+        drive_str = raw_drive.strip()
+        if drive_str and ("drive.google.com" in drive_str or "docs.google.com" in drive_str):
+            drive_url = drive_str
+            console.print(f"  [green]\u2713[/green] Drive link saved")
+        elif drive_str:
+            console.print("  [yellow]That doesn't look like a Google Drive link.[/yellow]")
+
+    # Also ask for the other option if they provided one
+    if local_path and not drive_url:
+        raw_drive = Prompt.ask(
+            "\n  [bold]Also have a Google Drive link?[/bold]  [dim](paste URL, or Enter to skip)[/dim]",
+            default="",
+        )
+        if raw_drive.strip() and "drive.google.com" in raw_drive.strip():
+            drive_url = raw_drive.strip()
+            console.print(f"  [green]\u2713[/green] Drive link saved")
+
+    if not local_path and not drive_url:
+        console.print(
+            "\n  [dim]No materials yet? No problem! You can add them anytime:[/dim]\n"
+            "    [bold]clawed ingest ~/your-lessons/[/bold]\n"
+        )
+
+    return local_path, drive_url
 
 
 def _ingest_materials(path_str: str, config: AppConfig) -> None:
@@ -225,6 +309,34 @@ def _ingest_materials(path_str: str, config: AppConfig) -> None:
     console.print(f"  [green]\u2713 Persona saved — {persona.name or 'Teacher'} profile ready[/green]")
 
     return persona
+
+
+def _ingest_drive(drive_url: str, config: AppConfig) -> None:
+    """Ingest materials from a Google Drive folder link."""
+    console.print(f"\n  [dim]Connecting to Google Drive...[/dim]")
+    try:
+        from clawed.drive import ingest_drive_folder
+
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        try:
+            docs = loop.run_until_complete(ingest_drive_folder(drive_url))
+        finally:
+            loop.close()
+
+        if docs:
+            console.print(f"  [green]\u2713 Imported {len(docs)} documents from Drive.[/green]")
+        else:
+            console.print("  [yellow]No documents found in that Drive folder.[/yellow]")
+    except ImportError:
+        console.print(
+            "  [yellow]Google Drive support requires extra dependencies.[/yellow]\n"
+            "    Install with: [bold]pip install 'clawed[google]'[/bold]\n"
+            "    Then re-run: [bold]clawed setup[/bold]"
+        )
+    except Exception as e:
+        console.print(f"  [red]Drive import failed:[/red] {e}")
+        console.print("  [dim]You can try again later with: clawed ingest <drive-link>[/dim]")
 
 
 def _show_persona_preview(subjects: list[str], grade_levels: list[str], state_abbr: str) -> bool:
@@ -436,12 +548,18 @@ def run_setup_wizard(reset: bool = False) -> AppConfig:
         )
 
     # ── Step 5: Import materials (optional) ──
-    materials_path = _ask_materials()
-    if materials_path:
-        profile.materials_paths = [materials_path]
+    local_path, drive_url = _ask_materials()
+    if local_path or drive_url:
+        if local_path:
+            profile.materials_paths = [local_path]
+        if drive_url:
+            profile.drive_urls = [drive_url]
         config.teacher_profile = profile
         config.save()
-        _ingest_materials(materials_path, config)
+        if local_path:
+            _ingest_materials(local_path, config)
+        if drive_url:
+            _ingest_drive(drive_url, config)
 
     # ── Step 6: Done ──
     console.print(
@@ -547,12 +665,18 @@ def _run_onboarding_legacy() -> AppConfig:
         console.print(f"    [bold]clawed config set-key {provider.value}[/bold]")
 
     # ── Materials (optional) ──
-    materials_path = _ask_materials()
-    if materials_path:
-        profile.materials_paths = [materials_path]
+    local_path, drive_url = _ask_materials()
+    if local_path or drive_url:
+        if local_path:
+            profile.materials_paths = [local_path]
+        if drive_url:
+            profile.drive_urls = [drive_url]
         config.teacher_profile = profile
         config.save()
-        _ingest_materials(materials_path, config)
+        if local_path:
+            _ingest_materials(local_path, config)
+        if drive_url:
+            _ingest_drive(drive_url, config)
 
     # ── Auto-generate a sample lesson ──
     if connected:

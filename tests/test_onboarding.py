@@ -162,29 +162,47 @@ class TestAskProvider:
 
 
 class TestAskMaterials:
-    def test_skip_on_enter(self):
+    def test_skip_returns_none_tuple(self):
         from clawed.onboarding import _ask_materials
 
-        with patch("clawed.onboarding.Prompt.ask", return_value=""):
-            result = _ask_materials()
-            assert result is None
+        with patch("clawed.onboarding.Prompt.ask", return_value="4"):
+            local_path, drive_url = _ask_materials()
+            assert local_path is None
+            assert drive_url is None
 
-    def test_returns_resolved_path(self, tmp_path):
+    def test_browse_folder_picker(self, tmp_path):
+        from clawed.onboarding import _ask_materials
+
+        with patch("clawed.onboarding.Prompt.ask", side_effect=["1", ""]):
+            with patch("clawed.onboarding._open_folder_picker", return_value=str(tmp_path)):
+                local_path, drive_url = _ask_materials()
+                assert local_path == str(tmp_path)
+                assert drive_url is None
+
+    def test_paste_path(self, tmp_path):
         from clawed.onboarding import _ask_materials
 
         lesson_dir = tmp_path / "lessons"
         lesson_dir.mkdir()
 
-        with patch("clawed.onboarding.Prompt.ask", return_value=str(lesson_dir)):
-            result = _ask_materials()
-            assert result == str(lesson_dir)
+        with patch("clawed.onboarding.Prompt.ask", side_effect=["2", str(lesson_dir), ""]):
+            local_path, drive_url = _ask_materials()
+            assert local_path == str(lesson_dir)
 
-    def test_invalid_path_returns_none(self):
+    def test_drive_link(self):
         from clawed.onboarding import _ask_materials
 
-        with patch("clawed.onboarding.Prompt.ask", return_value="/nonexistent/path/xyz"):
-            result = _ask_materials()
-            assert result is None
+        with patch("clawed.onboarding.Prompt.ask", side_effect=["3", "https://drive.google.com/folder/abc"]):
+            local_path, drive_url = _ask_materials()
+            assert local_path is None
+            assert drive_url == "https://drive.google.com/folder/abc"
+
+    def test_invalid_path_no_crash(self):
+        from clawed.onboarding import _ask_materials
+
+        with patch("clawed.onboarding.Prompt.ask", side_effect=["2", "/nonexistent/xyz", ""]):
+            local_path, drive_url = _ask_materials()
+            assert local_path is None
 
 
 class TestStateNameToAbbr:

@@ -375,12 +375,14 @@ class TestOnboardingPersonaPreview:
 class TestOnboardingMaterialsIngestion:
     """Test material ingestion edge cases."""
 
-    def test_ask_materials_whitespace_only(self):
+    def test_ask_materials_skip(self):
         from clawed.onboarding import _ask_materials
 
-        with patch("clawed.onboarding.Prompt.ask", return_value="   "):
-            result = _ask_materials()
-            assert result is None
+        # Choose option 4 (skip)
+        with patch("clawed.onboarding.Prompt.ask", return_value="4"):
+            local_path, drive_url = _ask_materials()
+            assert local_path is None
+            assert drive_url is None
 
     def test_ingest_supported_extensions_filter(self):
         """Verify the supported extension set used during ingestion."""
