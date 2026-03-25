@@ -1,6 +1,6 @@
-"""APScheduler-based task scheduler for autonomous EDUagent behavior.
+"""APScheduler-based task scheduler for autonomous Claw-ED behavior.
 
-Gives EDUagent scheduled tasks like OpenClaw's cron jobs, adapted for teachers:
+Gives Claw-ED scheduled tasks like OpenClaw's cron jobs, adapted for teachers:
 - morning-prep: review today's classes, auto-generate missing lessons
 - weekly-plan: draft next week's lesson plans
 - feedback-digest: summarize today's ratings and interactions
@@ -313,7 +313,7 @@ async def run_task(name: str) -> str:
 
 
 class EduScheduler:
-    """APScheduler-based task scheduler for EDUagent.
+    """APScheduler-based task scheduler for Claw-ED.
 
     Uses AsyncIOScheduler with CronTrigger for scheduled tasks.
     The scheduler is entirely optional and does not block normal usage.
@@ -362,13 +362,13 @@ class EduScheduler:
         scheduler = self._get_scheduler()
         self.register_jobs()
         scheduler.start()
-        logger.info("EDUagent scheduler started with %d job(s).", len(scheduler.get_jobs()))
+        logger.info("Claw-ED scheduler started with %d job(s).", len(scheduler.get_jobs()))
 
     def stop(self) -> None:
         """Stop the scheduler gracefully."""
         if self._scheduler and self._scheduler.running:
             self._scheduler.shutdown(wait=False)
-            logger.info("EDUagent scheduler stopped.")
+            logger.info("Claw-ED scheduler stopped.")
 
     def get_jobs_info(self) -> list[dict[str, Any]]:
         """Return info about all configured tasks (enabled or not)."""

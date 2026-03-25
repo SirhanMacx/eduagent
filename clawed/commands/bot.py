@@ -25,7 +25,7 @@ def chat(
         "local-teacher", "--id", help="Teacher session ID"
     ),
 ) -> None:
-    """Start an interactive chat session with EDUagent in the terminal."""
+    """Start an interactive chat session with Claw-ED in the terminal."""
     from clawed.onboarding import check_first_run
 
     check_first_run()
@@ -136,7 +136,7 @@ def student_chat(
 
 @bot_app.command(name="mcp-server")
 def mcp_server() -> None:
-    """Start the EDUagent MCP server for tool integration.
+    """Start the Claw-ED MCP server for tool integration.
 
     Uses stdio transport (the standard MCP transport). Connect to this
     server by launching the process and communicating over stdin/stdout.
@@ -149,7 +149,7 @@ def mcp_server() -> None:
             "Tools: generate_lesson, generate_unit,"
             " ingest_materials, student_question,"
             " get_teacher_standards",
-            title="[bold blue]EDUagent MCP Server[/bold blue]",
+            title="[bold blue]Claw-ED MCP Server[/bold blue]",
             border_style="blue",
         )
     )
@@ -170,7 +170,7 @@ def _first_run_setup() -> None:
 
     console.print(
         Panel(
-            "[bold]Welcome to EDUagent![/bold]\n\n"
+            "[bold]Welcome to Claw-ED![/bold]\n\n"
             "Let's get you set up in 2 minutes.",
             title="Setup",
             border_style="blue",
@@ -256,7 +256,7 @@ def serve(
         False, "--reload", help="Enable auto-reload for development"
     ),
 ):
-    """Start the EDUagent server.
+    """Start the Claw-ED server.
 
     \b
     Modes:
@@ -287,7 +287,7 @@ def serve(
 
         console.print(
             Panel(
-                f"[bold]Starting EDUagent web server[/bold]\n"
+                f"[bold]Starting Claw-ED web server[/bold]\n"
                 f"[cyan]http://{host}:{port}[/cyan]\n"
                 f"Dashboard:"
                 f" [cyan]http://{host}:{port}/dashboard[/cyan]\n"
@@ -295,7 +295,7 @@ def serve(
                 f" [cyan]http://{host}:{port}/generate[/cyan]\n"
                 f"Settings:"
                 f" [cyan]http://{host}:{port}/settings[/cyan]",
-                title="EDUagent Server",
+                title="Claw-ED Server",
                 border_style="green",
             )
         )
@@ -396,11 +396,11 @@ def _serve_gateway_headless(
 
     console.print(
         Panel(
-            f"[bold green]EDUagent Gateway[/bold green]\n\n"
+            f"[bold green]Claw-ED Gateway[/bold green]\n\n"
             f"Telegram: connected\n"
             f"Web: [cyan]http://{host}:{port}[/cyan]\n\n"
             f"[dim]Press Ctrl+C to stop[/dim]",
-            title="EDUagent",
+            title="Claw-ED",
             border_style="green",
         )
     )
@@ -532,7 +532,7 @@ def bot(
         help="Use the legacy python-telegram-bot backend instead of the new httpx bot",
     ),
 ):
-    """Start the EDUagent Telegram bot.
+    """Start the Claw-ED Telegram bot.
 
     \b
     Get a bot token from @BotFather on Telegram, then run:
@@ -600,13 +600,13 @@ def bot(
             )
             console.print(
                 Panel(
-                    f"[bold green]EDUagent Telegram Bot (legacy)[/bold green]\n\n"
+                    f"[bold green]Claw-ED Telegram Bot (legacy)[/bold green]\n\n"
                     f"Starting bot...\n"
                     f"Data directory:"
                     f" {data_path or Path.home() / '.eduagent'}\n"
                     f"{mode_line}\n\n"
                     f"[dim]Press Ctrl+C to stop[/dim]",
-                    title="EDUagent",
+                    title="Claw-ED",
                     border_style="green",
                 )
             )
@@ -640,13 +640,13 @@ def bot(
 
     console.print(
         Panel(
-            f"[bold green]EDUagent Telegram Bot[/bold green]\n\n"
+            f"[bold green]Claw-ED Telegram Bot[/bold green]\n\n"
             f"Starting bot...\n"
             f"Data directory:"
             f" {data_path or Path.home() / '.eduagent'}\n"
             f"Mode: polling (httpx)\n\n"
             f"[dim]Press Ctrl+C to stop[/dim]",
-            title="EDUagent",
+            title="Claw-ED",
             border_style="green",
         )
     )
@@ -685,7 +685,7 @@ def _bot_with_live_display(
         stats = gateway._gateway_stats
         sessions = len(gateway.active_sessions)
         return Panel(
-            f"[bold green]EDUagent Bot[/bold green]"
+            f"[bold green]Claw-ED Bot[/bold green]"
             f"  [dim]running[/dim]\n\n"
             f"  Messages:     {stats.messages_today}\n"
             f"  Generations:  {stats.generations_today}\n"
@@ -693,7 +693,7 @@ def _bot_with_live_display(
             f"  Sessions:     {sessions}\n"
             f"  Uptime:       {h}:{m:02d}:{s:02d}\n\n"
             f"[dim]Press Ctrl+C to stop[/dim]",
-            title="EDUagent",
+            title="Claw-ED",
             border_style="green",
         )
 

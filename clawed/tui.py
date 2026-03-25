@@ -1,4 +1,4 @@
-"""EDUagent TUI — Live terminal dashboard built with Textual.
+"""Claw-ED TUI — Live terminal dashboard built with Textual.
 
 Launch:
     eduagent serve --tui              # full gateway + TUI
@@ -59,7 +59,7 @@ class TeacherHeader(Static):
         cfg = self._gateway.config
         p = cfg.teacher_profile
         name = p.name or "Teacher"
-        school = p.school or "EDUagent"
+        school = p.school or "Claw-ED"
         subjects = ", ".join(p.subjects) if p.subjects else "All Subjects"
         grades = f" Gr. {', '.join(p.grade_levels)}" if p.grade_levels else ""
 
@@ -166,9 +166,9 @@ class ActivePanel(Static):
 
 
 class EduAgentDashboard(App):
-    """EDUagent TUI — live dashboard for monitoring the gateway."""
+    """Claw-ED TUI — live dashboard for monitoring the gateway."""
 
-    TITLE = "EDUagent Dashboard"
+    TITLE = "Claw-ED Dashboard"
 
     CSS = """
     Screen {

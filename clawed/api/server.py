@@ -1,4 +1,4 @@
-"""FastAPI web server for EDUagent — REST API + server-side rendered teacher dashboard."""
+"""FastAPI web server for Claw-ED — REST API + server-side rendered teacher dashboard."""
 
 from __future__ import annotations
 
@@ -44,7 +44,7 @@ def create_app() -> FastAPI:
     from clawed import __version__
 
     app = FastAPI(
-        title="EDUagent",
+        title="Claw-ED",
         description="Your teaching files, your AI co-teacher.",
         version=__version__,
         lifespan=lifespan,
@@ -302,7 +302,7 @@ def create_app() -> FastAPI:
             else "<p>No lessons yet. <a href='/generate'>Generate one.</a></p>"
         )
         html = f"""<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Lessons - EDUagent</title>
+<html><head><meta charset="utf-8"><title>Lessons - Claw-ED</title>
 <style>
 body {{ font-family: -apple-system, system-ui, sans-serif;
   max-width: 1000px; margin: 20px auto; padding: 0 20px; }}
@@ -540,7 +540,7 @@ select {{ padding: 6px 10px; border-radius: 4px;
 
         html = f"""<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{class_name or class_code} - EDUagent</title>
+<title>{class_name or class_code} - Claw-ED</title>
 <style>
 body {{
   font-family: -apple-system, system-ui, sans-serif;

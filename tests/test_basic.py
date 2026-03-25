@@ -1,4 +1,4 @@
-"""Basic tests for EDUagent models and core functionality."""
+"""Basic tests for Claw-ED models and core functionality."""
 
 from pathlib import Path
 
@@ -409,7 +409,7 @@ class TestDemoHtml:
         from clawed.cli import _DEMO_HTML
 
         assert "Life From Light" in _DEMO_HTML
-        assert "EDUagent Demo" in _DEMO_HTML
+        assert "Claw-ED Demo" in _DEMO_HTML
         assert "Get Started" in _DEMO_HTML
         assert "github.com/SirhanMacx/eduagent" in _DEMO_HTML
 

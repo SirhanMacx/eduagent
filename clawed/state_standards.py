@@ -1,4 +1,4 @@
-"""50-state standards configuration for EDUagent.
+"""50-state standards configuration for Claw-ED.
 
 Maps every US state + DC to its adopted standards frameworks for
 math, ELA, science, and social studies. Used to auto-tailor all

@@ -1,6 +1,6 @@
 """Student chatbot engine — students ask questions, get answers in their teacher's voice.
 
-The student bot is the other half of EDUagent. Teachers set up their persona and
+The student bot is the other half of Claw-ED. Teachers set up their persona and
 activate a lesson; students join with a class code and ask questions about today's
 lesson. The bot answers in the teacher's voice, gives hints (not answers) for
 homework, and tracks what students are asking so the teacher can see patterns.

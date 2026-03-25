@@ -1,4 +1,4 @@
-"""Demo mode — canned lesson outputs for trying EDUagent without an API key."""
+"""Demo mode — canned lesson outputs for trying Claw-ED without an API key."""
 
 from __future__ import annotations
 

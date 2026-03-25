@@ -1,8 +1,8 @@
-"""First-run onboarding wizard for EDUagent.
+"""First-run onboarding wizard for Claw-ED.
 
 When a teacher runs `eduagent chat` or `eduagent bot` with no config,
 this guided setup collects their teaching context, API key, and
-optionally ingests existing lesson plans — so EDUagent is ready to
+optionally ingests existing lesson plans — so Claw-ED is ready to
 go in under two minutes.
 """
 
@@ -243,10 +243,10 @@ def run_onboarding() -> AppConfig:
     """
     console.print(
         Panel(
-            "[bold]Welcome to EDUagent![/bold]\n\n"
+            "[bold]Welcome to Claw-ED![/bold]\n\n"
             "I was built by a teacher, for teachers.\n"
             "Let's get you set up in about a minute.",
-            title="[bold green]\U0001f393 EDUagent Setup[/bold green]",
+            title="[bold green]\U0001f393 Claw-ED Setup[/bold green]",
             border_style="green",
             padding=(1, 2),
         )
@@ -323,7 +323,7 @@ def run_onboarding() -> AppConfig:
 
     # ── Auto-generate a sample lesson ──
     if connected:
-        console.print("\n  [dim]Generating a sample lesson so you can see EDUagent in action...[/dim]")
+        console.print("\n  [dim]Generating a sample lesson so you can see Claw-ED in action...[/dim]")
         try:
             from clawed.llm import LLMClient
             client = LLMClient(config)

@@ -84,7 +84,7 @@ async def _search_duckduckgo(query: str, max_results: int = 3) -> list[dict]:
         resp = await client.post(
             "https://html.duckduckgo.com/html/",
             data={"q": query},
-            headers={"User-Agent": "Mozilla/5.0 (compatible; EDUagent/0.1)"},
+            headers={"User-Agent": "Mozilla/5.0 (compatible; Claw-ED/0.1)"},
         )
         resp.raise_for_status()
         html = resp.text

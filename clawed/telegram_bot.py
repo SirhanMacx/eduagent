@@ -1,10 +1,10 @@
-"""EDUagent Telegram Bot — Standalone, no OpenClaw required.
+"""Claw-ED Telegram Bot — Standalone, no OpenClaw required.
 
 Teachers set up their own bot via BotFather and run:
     eduagent bot --token YOUR_BOT_TOKEN
 
 That's it. No OpenClaw, no gateway, no extensions.
-EDUagent is the product.
+Claw-ED is the product.
 """
 
 from __future__ import annotations
@@ -172,7 +172,7 @@ BOT_COMMANDS = [
 
 
 class EduAgentBot:
-    """Standalone Telegram bot for EDUagent.
+    """Standalone Telegram bot for Claw-ED.
 
     Uses python-telegram-bot to run a native bot.
     Imports and reuses all generation logic from the core modules.
@@ -359,7 +359,7 @@ class EduAgentBot:
                     raise
 
         async def handle_message(update: Any, context: Any) -> None:
-            """Route every message through the EDUagent intent router."""
+            """Route every message through the Claw-ED intent router."""
             if not update.message or not update.message.text:
                 return
 
@@ -537,7 +537,7 @@ class EduAgentBot:
 
         async def cmd_start(update: Any, context: Any) -> None:
             await update.message.reply_text(
-                "Welcome to EDUagent!\n\n"
+                "Welcome to Claw-ED!\n\n"
                 "I'm your AI teaching assistant. I learn from your lesson plans "
                 "and generate lessons, units, and materials in your exact teaching voice.\n\n"
                 "To get started:\n"
@@ -548,7 +548,7 @@ class EduAgentBot:
 
         async def cmd_help(update: Any, context: Any) -> None:
             await update.message.reply_text(
-                "EDUagent Commands\n\n"
+                "Claw-ED Commands\n\n"
                 "Generate content:\n"
                 "/lesson - Generate a daily lesson\n"
                 "/unit - Plan a unit\n"
@@ -610,7 +610,7 @@ class EduAgentBot:
                 pass
 
             health_text = (
-                "EDUagent Health\n\n"
+                "Claw-ED Health\n\n"
                 f"Model: {model} ({provider})\n"
                 f"Persona loaded: {'yes' if has_persona else 'no'}\n"
                 f"Lessons generated: {lesson_count}\n"
@@ -833,8 +833,8 @@ class EduAgentBot:
 
         app.add_error_handler(_error_handler)
 
-        logger.info("EDUagent bot starting...")
-        print("EDUagent bot is running. Press Ctrl+C to stop.")
+        logger.info("Claw-ED bot starting...")
+        print("Claw-ED bot is running. Press Ctrl+C to stop.")
         print(f"   Data directory: {self.data_dir}")
 
         if effective_webhook:
@@ -872,7 +872,7 @@ def run_bot(
     webhook_secret: Optional[str] = None,
     force: bool = False,
 ) -> None:
-    """Run the EDUagent Telegram bot.
+    """Run the Claw-ED Telegram bot.
 
     Args:
         token: Telegram bot token from @BotFather.

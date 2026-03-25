@@ -1,4 +1,4 @@
-"""Pydantic data models for EDUagent."""
+"""Pydantic data models for Claw-ED."""
 
 from __future__ import annotations
 

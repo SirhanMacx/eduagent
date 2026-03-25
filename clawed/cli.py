@@ -1,4 +1,4 @@
-"""Rich CLI for EDUagent — beautiful terminal interface with typer.
+"""Rich CLI for Claw-ED — beautiful terminal interface with typer.
 
 This module registers all CLI sub-apps from clawed.commands.* modules.
 The actual command implementations live in:
@@ -66,7 +66,7 @@ app = typer.Typer(
 
 def _version_callback(value: bool) -> None:
     if value:
-        console.print(f"EDUagent v{__version__}")
+        console.print(f"Claw-ED v{__version__}")
         raise typer.Exit()
 
 
@@ -89,13 +89,13 @@ def main(
         if not config_path.exists():
             # First run -- show welcome
             console.print(Panel(
-                "[bold]Welcome to EDUagent![/bold]\n\n"
+                "[bold]Welcome to Claw-ED![/bold]\n\n"
                 "Get started in 3 steps:\n"
                 "  1. [cyan]eduagent config set-model ollama[/cyan]\n"
                 "  2. [cyan]eduagent ingest ~/my-lessons/[/cyan]\n"
                 "  3. [cyan]eduagent lesson \"Your Topic\" --grade 8 --subject \"Math\"[/cyan]\n\n"
                 "Or see sample output first: [cyan]eduagent demo[/cyan]",
-                title="EDUagent",
+                title="Claw-ED",
                 border_style="blue",
             ))
         else:

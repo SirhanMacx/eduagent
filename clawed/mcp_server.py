@@ -1,6 +1,6 @@
-"""EDUagent MCP Server — expose teaching tools via Model Context Protocol.
+"""Claw-ED MCP Server — expose teaching tools via Model Context Protocol.
 
-This lets OpenClaw, Claude Desktop, and other MCP clients call EDUagent
+This lets OpenClaw, Claude Desktop, and other MCP clients call Claw-ED
 tools directly: generate lessons, plan units, ingest materials, answer
 student questions, and look up standards.
 
@@ -18,9 +18,9 @@ import json
 from mcp.server.fastmcp import FastMCP
 
 mcp = FastMCP(
-    "EDUagent",
+    "Claw-ED",
     instructions=(
-        "EDUagent is an AI teaching assistant. Use these tools to generate "
+        "Claw-ED is an AI teaching assistant. Use these tools to generate "
         "lesson plans, unit plans, materials, answer student questions, and "
         "look up education standards — all in a specific teacher's voice."
     ),

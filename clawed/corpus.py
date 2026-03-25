@@ -1,6 +1,6 @@
-"""EDUagent Teaching Excellence Corpus.
+"""Claw-ED Teaching Excellence Corpus.
 
-The corpus is the collective intelligence of EDUagent — a growing library of
+The corpus is the collective intelligence of Claw-ED — a growing library of
 high-quality teaching examples that improves every teacher's generated content.
 
 Teachers opt in to contribute their best materials. These become few-shot

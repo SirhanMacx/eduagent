@@ -147,7 +147,7 @@ class StudentTelegramBot:
         async def cmd_start(update: Any, context: Any) -> None:
             """Welcome message — explain the bot and prompt for class code."""
             await update.message.reply_text(
-                "Welcome to EDUagent Student Bot!\n\n"
+                "Welcome to Claw-ED Student Bot!\n\n"
                 "I answer your questions about today's lesson — in your teacher's voice.\n\n"
                 "To get started, use:\n"
                 "  /join CODE  — join your class (e.g. /join AB-CDE-3)\n\n"
@@ -158,7 +158,7 @@ class StudentTelegramBot:
         async def cmd_help(update: Any, context: Any) -> None:
             """Show all available commands."""
             await update.message.reply_text(
-                "EDUagent Student Bot Commands\n\n"
+                "Claw-ED Student Bot Commands\n\n"
                 "/join CODE — Join a class with your class code\n"
                 "/topic — See what your class is studying\n"
                 "/help — Show this message\n"
@@ -331,6 +331,6 @@ class StudentTelegramBot:
         app.add_error_handler(_error_handler)
 
         logger.info("Student bot starting...")
-        print("EDUagent student bot is running. Press Ctrl+C to stop.")
+        print("Claw-ED student bot is running. Press Ctrl+C to stop.")
 
         app.run_polling(drop_pending_updates=True)

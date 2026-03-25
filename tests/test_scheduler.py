@@ -1,4 +1,4 @@
-"""Tests for the EDUagent scheduler module."""
+"""Tests for the Claw-ED scheduler module."""
 
 from __future__ import annotations
 

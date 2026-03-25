@@ -101,7 +101,7 @@ def lessons_needing_improvement(teacher_id: str, threshold: int = 3) -> list[dic
 
 
 def usage_streak(teacher_id: str) -> int:
-    """Count consecutive days (ending today) the teacher used EDUagent.
+    """Count consecutive days (ending today) the teacher used Claw-ED.
 
     Returns:
         Number of consecutive days (0 if not used today).

@@ -1,4 +1,4 @@
-"""Tests for the EDUagent FastAPI web platform."""
+"""Tests for the Claw-ED FastAPI web platform."""
 
 import json
 

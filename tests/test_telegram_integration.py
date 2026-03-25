@@ -1,4 +1,4 @@
-"""Integration tests for the EDUagent Telegram bot.
+"""Integration tests for the Claw-ED Telegram bot.
 
 Tests: /start, /lesson flow, /health, error recovery (LLM fails -> retry -> fallback),
 conversation state machine, command menu registration, and action callbacks.
@@ -218,7 +218,7 @@ class TestStartCommand:
 
         update.message.reply_text.assert_awaited_once()
         text = update.message.reply_text.call_args.args[0]
-        assert "Welcome to EDUagent" in text
+        assert "Welcome to Claw-ED" in text
         assert "/help" in text
 
     def test_start_mentions_lesson_plans(self):

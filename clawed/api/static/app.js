@@ -1,4 +1,4 @@
-/* EDUagent — JS for dark mode, wizard, settings, form handling, SSE, chat, feedback. */
+/* Claw-ED — JS for dark mode, wizard, settings, form handling, SSE, chat, feedback. */
 
 document.addEventListener('DOMContentLoaded', function () {
 
@@ -583,7 +583,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 if (!confirm('Really? Type OK to confirm.')) return;
                 fetch('/api/settings/reset', { method: 'POST' }).then(function (r) { return r.json(); }).then(function (data) {
                     if (data.status === 'reset') {
-                        window.eduToast('EDUagent has been reset.', 'success');
+                        window.eduToast('Claw-ED has been reset.', 'success');
                         window.location.href = '/';
                     }
                 });

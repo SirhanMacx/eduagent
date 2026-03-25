@@ -244,7 +244,7 @@ _PDF_CSS = """\
 @page {
     size: letter;
     margin: 0.75in 1in;
-    @top-center { content: "EDUagent Lesson Plan"; font-size: 9pt; color: #888; }
+    @top-center { content: "Claw-ED Lesson Plan"; font-size: 9pt; color: #888; }
     @bottom-center { content: "Page " counter(page) " of " counter(pages); font-size: 9pt; color: #888; }
 }
 body {

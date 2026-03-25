@@ -1,4 +1,4 @@
-"""Secure configuration and API key management for EDUagent.
+"""Secure configuration and API key management for Claw-ED.
 
 Stores API keys in OS keychain when available (via keyring library),
 with fallback to ~/.eduagent/secrets.json (0600 permissions).

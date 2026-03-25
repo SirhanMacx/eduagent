@@ -1,1 +1,1 @@
-"""EDUagent web API package."""
+"""Claw-ED web API package."""

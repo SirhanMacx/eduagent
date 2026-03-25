@@ -1,4 +1,4 @@
-"""Hosted (multi-tenant) version of the EDUagent FastAPI app.
+"""Hosted (multi-tenant) version of the Claw-ED FastAPI app.
 
 Wraps the core API server with:
 - Multi-tenant support (teacher_id from API key auth)
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 def create_hosted_app() -> FastAPI:
-    """Create a hosted, multi-tenant FastAPI app wrapping the core EDUagent server.
+    """Create a hosted, multi-tenant FastAPI app wrapping the core Claw-ED server.
 
     Returns a FastAPI instance configured with:
     - API key authentication middleware
@@ -42,8 +42,8 @@ def create_hosted_app() -> FastAPI:
     from clawed.api.server import lifespan
 
     hosted = FastAPI(
-        title="EDUagent Hosted API",
-        description="Multi-tenant hosted version of EDUagent",
+        title="Claw-ED Hosted API",
+        description="Multi-tenant hosted version of Claw-ED",
         version=__version__,
         lifespan=lifespan,
     )

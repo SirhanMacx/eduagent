@@ -1,4 +1,4 @@
-"""SQLite database layer for EDUagent web platform.
+"""SQLite database layer for Claw-ED web platform.
 
 Storage locations (consolidation planned for v0.2):
 - eduagent_data/eduagent.db: web app data (lessons, units, feedback)
@@ -32,7 +32,7 @@ def _ensure_dir(path: Path) -> Path:
 
 
 class Database:
-    """Thin wrapper around SQLite for EDUagent storage.
+    """Thin wrapper around SQLite for Claw-ED storage.
 
     Uses a per-operation connection pattern for thread safety.
     """

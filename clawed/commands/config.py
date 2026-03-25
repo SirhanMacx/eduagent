@@ -15,7 +15,7 @@ from clawed.commands._helpers import (
 )
 from clawed.models import AppConfig, LLMProvider
 
-config_app = typer.Typer(help="Configure EDUagent settings.")
+config_app = typer.Typer(help="Configure Claw-ED settings.")
 persona_app = typer.Typer(help="Manage teacher personas.")
 standards_app = typer.Typer(help="Browse education standards (CCSS, NGSS, C3).")
 templates_app = typer.Typer(help="Browse lesson structure templates.")
@@ -373,7 +373,7 @@ def config_show():
             f"[bold]Include Homework:[/bold] {cfg.include_homework}\n"
             f"[bold]Telegram Token:[/bold] {token_display}\n"
             f"[bold]Unsplash Key:[/bold] {unsplash_display}",
-            title="EDUagent Configuration",
+            title="Claw-ED Configuration",
         )
     )
 
@@ -548,7 +548,7 @@ def skills_create(
     """Generate a template YAML skill file in ~/.eduagent/skills/.
 
     Edit the generated file to customize the pedagogy for your subject,
-    then it will be automatically loaded next time EDUagent starts.
+    then it will be automatically loaded next time Claw-ED starts.
     """
     from clawed.skills.library import generate_skill_template
 
@@ -558,7 +558,7 @@ def skills_create(
             f"[bold green]Template created![/bold green]\n\n"
             f"  File: [cyan]{filepath}[/cyan]\n\n"
             f"Edit this file to customize the pedagogy for {subject}.\n"
-            f"It will be loaded automatically next time you run EDUagent.\n\n"
+            f"It will be loaded automatically next time you run Claw-ED.\n\n"
             f"Run [bold]eduagent skills list[/bold] to verify it loaded.",
             title="[bold]New Custom Skill[/bold]",
             border_style="green",
@@ -831,7 +831,7 @@ def register_stats(app: typer.Typer) -> None:
         console.print()
         console.print(
             Panel(
-                "[bold]EDUagent Teaching Analytics[/bold]",
+                "[bold]Claw-ED Teaching Analytics[/bold]",
                 border_style="blue",
             )
         )

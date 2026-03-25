@@ -414,7 +414,7 @@ async def generate_freeform(message: str, session: TeacherSession) -> str:
     recent_context = session.get_context_for_llm(max_turns=4)
 
     system = (
-        "You are EDUagent, an AI teaching assistant. You help K-12 teachers plan lessons, "
+        "You are Claw-ED, an AI teaching assistant. You help K-12 teachers plan lessons, "
         "units, assessments, and curriculum. Be concise, practical, and helpful. "
         "If asked to generate something specific, do it. "
         f"\n\n{persona_context}"
@@ -700,7 +700,7 @@ def setup_guide() -> str:
 def help_text() -> str:
     """Return the help message."""
     return (
-        "\U0001f393 *EDUagent \u2014 Your AI Teaching Assistant*\n\n"
+        "\U0001f393 *Claw-ED \u2014 Your AI Teaching Assistant*\n\n"
         "*What I can do:*\n"
         "\u2022 Plan units and lessons in your teaching voice\n"
         "\u2022 Generate worksheets, assessments, and rubrics\n"
@@ -728,7 +728,7 @@ def welcome_text() -> str:
     """Return the first-time welcome message."""
     return (
         "Hey there! Welcome \u2014 I'm so glad you're here. \U0001f393\n\n"
-        "I'm EDUagent, and I'm basically going to become your lesson-planning "
+        "I'm Claw-ED, and I'm basically going to become your lesson-planning "
         "partner. Think of me like that colleague down the hall who always has "
         "a great activity idea \u2014 except I'm available at midnight when you're "
         "prepping for tomorrow.\n\n"

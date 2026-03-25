@@ -1,4 +1,4 @@
-"""Voice consistency evaluation framework for EDUagent.
+"""Voice consistency evaluation framework for Claw-ED.
 
 Evaluates whether generated lessons match the teacher's persona voice.
 This is the "5 real teachers, 10 lessons each" test harness — it lets

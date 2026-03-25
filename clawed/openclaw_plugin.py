@@ -1,4 +1,4 @@
-"""EDUagent OpenClaw Plugin — thin shim delegating to the gateway.
+"""Claw-ED OpenClaw Plugin — thin shim delegating to the gateway.
 
 External callers (Telegram bot, tests, CLI) import these names:
     handle_message   — routes through gateway.handle()
@@ -127,7 +127,7 @@ async def _transcribe_attachments(attachments: list[str]) -> str:
 
 def _show_status(session: TeacherSession) -> str:
     """Return a formatted status string for the given session."""
-    lines = ["\u2699\ufe0f *EDUagent Status*", ""]
+    lines = ["\u2699\ufe0f *Claw-ED Status*", ""]
     if session.persona:
         lines.append(f"\U0001f469\u200d\U0001f3eb Persona: {session.persona.teaching_style.value.replace('_', ' ').title()} teacher")
         if session.persona.subject_area:

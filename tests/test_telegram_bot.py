@@ -1,4 +1,4 @@
-"""Integration tests for the EDUagent Telegram bot.
+"""Integration tests for the Claw-ED Telegram bot.
 
 Tests bot initialization, message chunking logic, error handling,
 handler wiring, and AppConfig token persistence — all without
@@ -212,7 +212,7 @@ class TestCommandContent:
         """The /start welcome text should contain key onboarding info."""
         # This is the exact text from telegram_bot.py cmd_start
         welcome = (
-            "🎓 *Welcome to EDUagent!*\n\n"
+            "🎓 *Welcome to Claw-ED!*\n\n"
             "I'm your AI teaching assistant. I learn from your lesson plans "
             "and generate lessons, units, and materials in your exact teaching voice.\n\n"
             "To get started:\n"
@@ -220,7 +220,7 @@ class TestCommandContent:
             "• Or just tell me what you teach: `I teach 8th grade social studies`\n\n"
             "Type `/help` to see what I can do."
         )
-        assert "Welcome to EDUagent" in welcome
+        assert "Welcome to Claw-ED" in welcome
         assert "/help" in welcome
         assert "lesson plans" in welcome
 
@@ -228,7 +228,7 @@ class TestCommandContent:
         """The /help text should list generation and setup capabilities."""
         # From telegram_bot.py cmd_help
         help_text = (
-            "🎓 *EDUagent Commands*\n\n"
+            "🎓 *Claw-ED Commands*\n\n"
             "*Generate content:*\n"
             "• Plan a unit on \\[topic\\] for \\[grade\\]\n"
             "• Generate a lesson on \\[topic\\]\n"
@@ -244,7 +244,7 @@ class TestCommandContent:
         ):
             mock_session = MagicMock()
             mock_load.return_value = mock_session
-            mock_status.return_value = "⚙️ *EDUagent Status*\n\n👩‍🏫 Persona: Not set up yet"
+            mock_status.return_value = "⚙️ *Claw-ED Status*\n\n👩‍🏫 Persona: Not set up yet"
 
             result = mock_status(mock_session)
             assert "Status" in result

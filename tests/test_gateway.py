@@ -1,4 +1,4 @@
-"""Tests for EDUagent gateway."""
+"""Tests for Claw-ED gateway."""
 
 from __future__ import annotations
 

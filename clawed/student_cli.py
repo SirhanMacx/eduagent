@@ -1,4 +1,4 @@
-"""Standalone student-facing terminal for EDUagent.
+"""Standalone student-facing terminal for Claw-ED.
 
 Usage:
     python -m eduagent.student_cli --class-code MR-MAC-P3
@@ -135,7 +135,7 @@ def cli_entry() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(
-        description="EDUagent Student Chat \u2014 ask your teacher bot anything"
+        description="Claw-ED Student Chat \u2014 ask your teacher bot anything"
     )
     parser.add_argument(
         "--class-code",

@@ -1,5 +1,5 @@
 /**
- * EDUagent Student Chatbot Widget
+ * Claw-ED Student Chatbot Widget
  *
  * Self-contained, no-dependency JS widget that teachers paste into any webpage.
  * Usage: <script src="http://localhost:8000/static/widget.js" data-lesson-id="abc123"></script>

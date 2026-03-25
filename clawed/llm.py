@@ -28,7 +28,7 @@ class LLMClient:
         """Generate text from the configured LLM backend.
 
         In demo mode (no API key configured), returns a canned sample lesson
-        so teachers can try EDUagent without any LLM credentials.
+        so teachers can try Claw-ED without any LLM credentials.
 
         Automatically injects workspace context (identity, soul, memory)
         into the system prompt when available.

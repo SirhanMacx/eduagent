@@ -1,1 +1,1 @@
-"""CLI command modules for EDUagent."""
+"""CLI command modules for Claw-ED."""

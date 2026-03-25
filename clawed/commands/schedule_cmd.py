@@ -1,4 +1,4 @@
-"""CLI commands for the EDUagent scheduler."""
+"""CLI commands for the Claw-ED scheduler."""
 
 from __future__ import annotations
 
@@ -20,7 +20,7 @@ def schedule_list() -> None:
 
     config = load_schedule_config()
 
-    table = Table(title="EDUagent Scheduled Tasks")
+    table = Table(title="Claw-ED Scheduled Tasks")
     table.add_column("Task", style="bold")
     table.add_column("Status", justify="center")
     table.add_column("Schedule")
@@ -128,7 +128,7 @@ def schedule_start() -> None:
             f"Starting scheduler with [bold]{len(jobs)}[/bold] enabled task(s).\n"
             f"Press [bold]Ctrl+C[/bold] to stop.\n\n"
             + "\n".join(f"  - {j['name']} ({_format_cron(j['cron'])})" for j in jobs),
-            title="[bold]EDUagent Scheduler[/bold]",
+            title="[bold]Claw-ED Scheduler[/bold]",
             border_style="blue",
         )
     )
