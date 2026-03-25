@@ -92,13 +92,14 @@ pip install clawed
 clawed
 ```
 
-That's it. **A setup wizard opens in your browser** where you:
-- Pick your subject, grade level, and state from dropdown menus
-- Choose an AI provider and paste your API key (we recommend Ollama Cloud — $20/month)
-- Optionally upload your existing lesson plans (drag and drop)
-- Click "Get Started"
+That's it. Claw-ED walks you through setup right in the terminal:
+1. **Pick your AI provider** — we recommend Ollama Cloud ($20/month flat rate). Paste your API key.
+2. **Meet your assistant** — Claw-ED introduces itself and asks about you: your name, what you teach, your grade level, and state (for standards alignment).
+3. **Share your files** (optional) — point Claw-ED at a folder of lesson plans and it learns your teaching voice.
 
-No config files to edit, no environment variables to set. The wizard handles everything.
+The whole thing takes about 60 seconds. No config files, no environment variables.
+
+> **Prefer a visual setup?** Run `clawed serve` and open `http://localhost:8000/setup` for a browser-based wizard instead.
 
 > **Upgrading from EDUagent?** `pip install clawed` replaces `pip install eduagent`. All your existing config and files continue to work.
 
@@ -179,7 +180,7 @@ Claw-ED can search the web to find current events, articles, and resources for y
 
 | Command | What it does |
 |---------|-------------|
-| `clawed` | Setup wizard (first run) or start chatting (returning user) |
+| `clawed` | First run: quick setup + AI introduces itself. Returning: drops into chat |
 | `clawed chat` | Start terminal chat |
 | `clawed serve` | Start web dashboard |
 | `clawed bot --token TOKEN` | Start teacher Telegram bot |
@@ -196,7 +197,7 @@ Run `clawed --help` for the full command list.
 
 ### 🖼️ Academic Images — Built In
 
-Slides automatically include relevant academic images from Library of Congress, Wikimedia Commons, and Unsplash. No API keys needed. [Details →](docs/SLIDE_IMAGES.md)
+Slides automatically include relevant academic images from Library of Congress, Wikimedia Commons, and web search. No API keys needed. [Details →](docs/SLIDE_IMAGES.md)
 
 ## 🏗️ Architecture
 

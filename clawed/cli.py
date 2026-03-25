@@ -82,24 +82,17 @@ def main(
                 console.print("\n[dim]Setup cancelled. Run clawed again anytime.[/dim]")
                 raise typer.Exit()
 
-            # Phase 2: Drop into chat — agent handles the rest conversationally
-            import asyncio
+        # Drop into chat — agent handles onboarding conversationally for new users
+        import asyncio
 
-            from clawed.transports.cli import run_chat
-            try:
-                asyncio.run(run_chat())
-            except (KeyboardInterrupt, EOFError):
-                pass
-            raise typer.Exit()
-        else:
-            # Returning user — drop straight into chat
-            import asyncio
-
-            from clawed.transports.cli import run_chat
-            try:
-                asyncio.run(run_chat())
-            except (KeyboardInterrupt, EOFError):
-                pass
+        from clawed.transports.cli import run_chat
+        try:
+            asyncio.run(run_chat())
+        except (KeyboardInterrupt, EOFError):
+            pass
+        except Exception as exc:
+            console.print(f"\n[red]Something went wrong:[/red] {exc}")
+            console.print("[dim]Try 'clawed setup --reset' to reconfigure, or 'clawed --help' for commands.[/dim]")
         raise typer.Exit()
 
 

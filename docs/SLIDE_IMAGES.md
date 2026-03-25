@@ -6,7 +6,7 @@ Claw-ED automatically finds relevant academic images for your slides and handout
 |--------|----------|------|-------------|
 | **Library of Congress** | History, Social Studies, Civics | Free | No |
 | **Wikimedia Commons** | Science, Art, Music, all subjects | Free | No |
-| **Unsplash** (fallback) | Modern photos, generic visuals | Free | Optional |
+| **Web Search** (fallback) | Modern photos, generic visuals | Free | Optional (Brave key) |
 
 ## How it works
 
@@ -25,10 +25,10 @@ Every image is cached locally at `~/.clawed/cache/images/` so the same topic nev
 
 ## Want even more images?
 
-Optionally add an Unsplash key for modern photography:
+Add a Brave Search key for broader image results:
 
 ```bash
-clawed config set-unsplash-key YOUR_KEY   # from unsplash.com/developers (free)
+clawed config set-search-key YOUR_KEY   # from api.search.brave.com (free, 1000/month)
 ```
 
 ---
