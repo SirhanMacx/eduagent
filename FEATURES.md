@@ -1,12 +1,12 @@
 # Features
 
-EDUagent learns your teaching voice and generates lessons, units, worksheets, and assessments that sound like *you* wrote them.
+Claw-ED learns your teaching voice and generates lessons, units, worksheets, and assessments that sound like *you* wrote them.
 
 ---
 
 ## Persona Extraction
 
-EDUagent reads your existing lesson plans and builds a profile of your teaching fingerprint — your style, structure, vocabulary, and pedagogical approach.
+Claw-ED reads your existing lesson plans and builds a profile of your teaching fingerprint — your style, structure, vocabulary, and pedagogical approach.
 
 <!-- Screenshot: Terminal showing persona extraction from ~/Documents/Teaching/ -->
 ![Persona Extraction](docs/screenshots/persona-extraction.png)
@@ -46,7 +46,7 @@ Each lesson includes a Do Now, direct instruction, guided practice, independent 
 <!-- Screenshot: Terminal showing a generated lesson -->
 ![Lesson Generation](docs/screenshots/lesson-generation.png)
 
-**Real output from EDUagent** (American Revolution unit, 8th grade Social Studies):
+**Real output from Claw-ED** (American Revolution unit, 8th grade Social Studies):
 
 > **Do-Now / Warm-Up (5 min)**
 >
