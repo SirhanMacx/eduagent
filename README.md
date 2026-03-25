@@ -99,7 +99,7 @@ That's it. Claw-ED walks you through setup right in the terminal:
 
 The whole thing takes about 60 seconds. No config files, no environment variables.
 
-> **Prefer a visual setup?** Run `clawed serve` and open `http://localhost:8000/setup` for a browser-based wizard instead.
+> **Prefer a visual setup?** Run `clawed serve` and open `http://localhost:8000` — new users see the browser-based onboarding wizard automatically.
 
 > **Upgrading from EDUagent?** `pip install clawed` replaces `pip install eduagent`. All your existing config and files continue to work.
 
@@ -248,7 +248,7 @@ See [FEATURES.md](FEATURES.md) for the full list with details.
 ## 🔒 Privacy
 
 - **Your files never leave your machine** unless you choose a cloud LLM
-- **API keys stored in OS keychain** — not in config files, not in the repo
+- **API keys stored in OS keychain** when `keyring` is installed (`pip install 'clawed[keyring]'`), otherwise in `~/.eduagent/` with restrictive permissions — never in the repo
 - **Google Drive:** Personal accounts only — never use school-issued accounts
 
 ## 🗺️ Roadmap

@@ -13,10 +13,11 @@ RUN apt-get update && \
         libffi-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install the package with hosted + telegram support
+# Copy both packages (clawed/ is the main package, eduagent/ is the compat shim)
 COPY pyproject.toml README.md ./
+COPY clawed/ clawed/
 COPY eduagent/ eduagent/
-RUN pip install --no-cache-dir -e '.[hosted,telegram]'
+RUN pip install --no-cache-dir -e '.[hosted]'
 
 # Teacher data volume
 VOLUME /data
@@ -24,5 +25,5 @@ ENV EDUAGENT_DATA_DIR=/data
 
 EXPOSE 8000
 
-# Default: run the hosted multi-tenant API
-CMD ["uvicorn", "eduagent.hosted:app", "--host", "0.0.0.0", "--port", "8000"]
+# Default: run the web server
+CMD ["clawed", "serve", "--host", "0.0.0.0", "--port", "8000"]

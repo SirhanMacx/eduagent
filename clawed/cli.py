@@ -10,7 +10,6 @@ The actual command implementations live in:
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Optional
 
 import typer
@@ -72,8 +71,8 @@ def main(
 ) -> None:
     """Your teaching files, your AI co-teacher."""
     if ctx.invoked_subcommand is None:
-        config_path = Path.home() / ".eduagent" / "config.json"
-        if not config_path.exists():
+        from clawed.config import has_config
+        if not has_config():
             # Phase 1: Quick model setup in terminal
             from clawed.onboarding import quick_model_setup
             try:

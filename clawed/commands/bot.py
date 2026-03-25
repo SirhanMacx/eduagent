@@ -51,7 +51,7 @@ def tui(
     except ImportError as e:
         console.print(f"[red]Missing dependency:[/red] {e}")
         console.print("\nInstall TUI support with:")
-        console.print("  [cyan]pip install 'clawed[tui]'[/cyan]")
+        console.print("  pip install 'clawed\\[tui]'", highlight=False)
         raise typer.Exit(1)
 
     run_tui_chat(teacher_id, host=host, port=port)
@@ -306,9 +306,8 @@ def serve(
       clawed serve --tui                 # TUI only (no Telegram, demos)
       clawed serve                       # Web server only
     """
-    if not skip_setup:
-        _first_run_setup()
-
+    # serve always starts the web server — browser wizard handles first-run onboarding
+    # (skip terminal setup; --skip-setup kept for backward compat but is now a no-op)
     cfg = AppConfig.load()
 
     # Resolve token from saved config if not provided
@@ -361,7 +360,7 @@ def _serve_with_tui(
     except ImportError as e:
         console.print(f"[red]Missing dependency:[/red] {e}")
         console.print("\nInstall TUI support with:")
-        console.print("  [cyan]pip install 'clawed[tui]'[/cyan]")
+        console.print("  pip install 'clawed\\[tui]'", highlight=False)
         raise typer.Exit(1)
 
     gateway = EduAgentGateway(config=config)
