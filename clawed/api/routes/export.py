@@ -29,7 +29,7 @@ class ImportRequest(BaseModel):
 @router.get("/export/{lesson_id}")
 async def export_lesson_endpoint(lesson_id: str, fmt: str = "markdown"):
     """Export a lesson as Markdown, PDF, or DOCX."""
-    from clawed.exporter import export_lesson
+    from clawed.export_markdown import export_lesson
 
     db = get_db()
     lesson_row = db.get_lesson(lesson_id)

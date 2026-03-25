@@ -442,7 +442,7 @@ class TestExporterPDF:
     """Test the weasyprint PDF export function (HTML generation)."""
 
     def test_lesson_to_html_for_pdf(self):
-        from clawed.exporter import _lesson_to_html_for_pdf
+        from clawed.export_markdown import _lesson_to_html_for_pdf
         from clawed.models import DailyLesson
         lesson = DailyLesson(
             title="Cell Division", lesson_number=3, objective="Understand mitosis",

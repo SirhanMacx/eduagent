@@ -308,7 +308,7 @@ class TestSaveLoad:
 
 class TestExporters:
     def test_year_map_to_markdown(self):
-        from clawed.exporter import year_map_to_markdown
+        from clawed.export_markdown import year_map_to_markdown
 
         ym = YearMap(
             subject="Math",
@@ -340,7 +340,7 @@ class TestExporters:
         assert "Unit 1 Test" in md
 
     def test_pacing_guide_to_markdown(self):
-        from clawed.exporter import pacing_guide_to_markdown
+        from clawed.export_markdown import pacing_guide_to_markdown
 
         guide = PacingGuide(
             subject="Science",
@@ -366,7 +366,7 @@ class TestExporters:
         assert "First week" in md
 
     def test_export_year_map_markdown(self, tmp_path):
-        from clawed.exporter import export_year_map
+        from clawed.export_markdown import export_year_map
 
         ym = YearMap(subject="ELA", grade_level="9", units=[])
         path = export_year_map(ym, tmp_path, fmt="markdown")
@@ -375,7 +375,7 @@ class TestExporters:
         assert "ELA" in path.read_text()
 
     def test_export_pacing_guide_markdown(self, tmp_path):
-        from clawed.exporter import export_pacing_guide
+        from clawed.export_markdown import export_pacing_guide
 
         guide = PacingGuide(subject="History", grade_level="10", start_date="2025-09-04")
         path = export_pacing_guide(guide, tmp_path, fmt="markdown")

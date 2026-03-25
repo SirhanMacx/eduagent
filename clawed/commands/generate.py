@@ -194,7 +194,7 @@ def unit(
     ),
 ):
     """Plan a complete curriculum unit."""
-    from clawed.exporter import export_unit
+    from clawed.export_markdown import export_unit
     from clawed.planner import plan_unit, save_unit
 
     persona = load_persona_or_exit()
@@ -260,7 +260,7 @@ def year_map(
 ):
     """Generate a full-year curriculum map with unit sequence, big ideas, and assessment calendar."""
     from clawed.curriculum_map import CurriculumMapper, save_year_map
-    from clawed.exporter import export_year_map
+    from clawed.export_markdown import export_year_map
 
     persona = load_persona_or_exit()
     std_list = [s.strip() for s in standards.split(",")] if standards else None
@@ -343,7 +343,7 @@ def pacing(
         load_year_map,
         save_pacing_guide,
     )
-    from clawed.exporter import export_pacing_guide
+    from clawed.export_markdown import export_pacing_guide
     from clawed.models import SchoolCalendarEvent
 
     persona = load_persona_or_exit()
@@ -447,7 +447,7 @@ def lesson(
     From a unit plan:
         clawed lesson "Photosynthesis" --unit-file output/unit_photosynthesis.json -n 1
     """
-    from clawed.exporter import export_lesson
+    from clawed.export_markdown import export_lesson
     from clawed.lesson import generate_lesson, save_lesson
 
     persona = load_persona_or_exit()
@@ -545,7 +545,7 @@ def materials(
     fmt: str = typer.Option("markdown", "--format", "-f", help="Export format"),
 ):
     """Generate all supporting materials for a lesson."""
-    from clawed.exporter import export_materials
+    from clawed.export_markdown import export_materials
     from clawed.lesson import load_lesson
     from clawed.materials import generate_all_materials, save_materials
 
@@ -1005,7 +1005,7 @@ def full(
     ),
 ):
     """End-to-end generation: unit plan + all lesson plans + all materials."""
-    from clawed.exporter import export_lesson, export_materials, export_unit
+    from clawed.export_markdown import export_lesson, export_materials, export_unit
     from clawed.lesson import generate_lesson, save_lesson
     from clawed.materials import generate_all_materials, save_materials
     from clawed.planner import plan_unit, save_unit
@@ -1464,7 +1464,7 @@ def course(
     fmt: str = typer.Option("markdown", "--format", "-f", help="Export format"),
 ):
     """Generate a full course — one unit per topic from a pacing guide."""
-    from clawed.exporter import export_unit
+    from clawed.export_markdown import export_unit
     from clawed.planner import plan_unit, save_unit
 
     persona = load_persona_or_exit()
