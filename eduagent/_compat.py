@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import importlib
 import sys
-from importlib.abc import MetaPathFinder, Loader
+from importlib.abc import Loader, MetaPathFinder
 from importlib.machinery import ModuleSpec
 
 

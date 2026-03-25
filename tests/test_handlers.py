@@ -1,6 +1,8 @@
 """Tests for gateway handlers."""
-import pytest
 from unittest.mock import AsyncMock, patch
+
+import pytest
+
 from clawed.gateway_response import GatewayResponse
 from clawed.handlers.onboard import OnboardHandler, OnboardState
 
@@ -62,7 +64,7 @@ class TestOnboardHandler:
         assert OnboardState.DONE.value == "done"
 
 
-from clawed.handlers.generate import GenerateHandler
+from clawed.handlers.generate import GenerateHandler  # noqa: E402
 
 
 class TestGenerateHandler:
@@ -102,8 +104,9 @@ class TestGenerateHandler:
             assert "issue" in r.text.lower() or "error" in r.text.lower() or "try again" in r.text.lower()
 
 
-from pathlib import Path
-from clawed.handlers.export import ExportHandler
+from pathlib import Path  # noqa: E402
+
+from clawed.handlers.export import ExportHandler  # noqa: E402
 
 
 class TestExportHandler:
@@ -142,7 +145,7 @@ class TestExportHandler:
         assert "doc" in ExportHandler.SUPPORTED_FORMATS
 
 
-from clawed.handlers.feedback import FeedbackHandler
+from clawed.handlers.feedback import FeedbackHandler  # noqa: E402
 
 
 class TestFeedbackHandler:
@@ -179,10 +182,10 @@ class TestFeedbackHandler:
             assert "4.2" in r.text or "rating" in r.text.lower()
 
 
-from clawed.handlers.schedule import ScheduleHandler
-from clawed.handlers.gaps import GapsHandler
-from clawed.handlers.standards import StandardsHandler
-from clawed.handlers.ingest import IngestHandler
+from clawed.handlers.gaps import GapsHandler  # noqa: E402
+from clawed.handlers.ingest import IngestHandler  # noqa: E402
+from clawed.handlers.schedule import ScheduleHandler  # noqa: E402
+from clawed.handlers.standards import StandardsHandler  # noqa: E402
 
 
 class TestScheduleHandler:
@@ -256,7 +259,7 @@ class TestIngestHandler:
                 assert r.has_content
 
 
-from clawed.handlers.misc import DemoHandler, PersonaHandler, SettingsHandler, ProgressHandler
+from clawed.handlers.misc import DemoHandler, PersonaHandler, ProgressHandler, SettingsHandler  # noqa: E402
 
 
 class TestMiscHandlers:

@@ -1,6 +1,8 @@
 """Standards lookup handler. Extracted from tg.py lines 916-945."""
 from __future__ import annotations
+
 import logging
+
 from clawed.gateway_response import GatewayResponse
 
 logger = logging.getLogger(__name__)

@@ -1,11 +1,11 @@
 """Tests for the tier-based model router."""
 
 from clawed.model_router import (
-    ModelTier,
-    TASK_TIERS,
     DEFAULT_TIER_MODELS,
-    resolve_tier,
+    TASK_TIERS,
+    ModelTier,
     resolve_model,
+    resolve_tier,
     route,
 )
 from clawed.models import AppConfig, LLMProvider
@@ -190,14 +190,14 @@ class TestLandingPage:
         assert "Trained on YOUR materials" in html
         assert "50 states" in html or "Standards" in html or "standard" in html.lower()
         assert "11pm" in html
-        assert "pip install eduagent" in html
-        assert "github.com/SirhanMacx/eduagent" in html
+        assert "pip install clawed" in html
+        assert "github.com/SirhanMacx/Claw-ED" in html
 
     def test_landing_html_is_self_contained(self):
         from pathlib import Path
         landing = Path(__file__).parent.parent / "clawed" / "landing" / "index.html"
         html = landing.read_text()
         # Should not link to external CSS/JS (except GitHub link)
-        stripped = html.replace('href="https://github.com/SirhanMacx/eduagent"', "")
+        stripped = html.replace('href="https://github.com/SirhanMacx/Claw-ED"', "")
         assert '<link rel="stylesheet" href="http' not in stripped
         assert "<script src=" not in stripped

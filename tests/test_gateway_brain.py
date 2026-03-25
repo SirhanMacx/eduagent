@@ -1,6 +1,7 @@
 """Tests for the rewritten gateway — the brain of Claw-ED."""
+from unittest.mock import AsyncMock, patch
+
 import pytest
-from unittest.mock import AsyncMock, patch, MagicMock
 
 from clawed.gateway import Gateway
 from clawed.gateway_response import GatewayResponse

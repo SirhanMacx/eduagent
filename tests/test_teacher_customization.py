@@ -11,15 +11,12 @@ Covers:
 from __future__ import annotations
 
 import json
-from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
-from clawed.handlers.onboard import OnboardHandler, OnboardState, _parse_grade_and_subject
-from clawed.handlers.schedule import ScheduleHandler, _cron_to_human
-from clawed.router import Intent, ParsedIntent, parse_intent
-
+from clawed.handlers.onboard import OnboardHandler, _parse_grade_and_subject
+from clawed.handlers.schedule import _cron_to_human
+from clawed.router import Intent, parse_intent
 
 # ══════════════════════════════════════════════════════════════════════
 # 1. Conversational onboarding

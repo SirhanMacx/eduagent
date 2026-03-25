@@ -9,7 +9,7 @@ import re
 from enum import Enum
 
 from clawed.gateway_response import GatewayResponse
-from clawed.models import AppConfig, LLMProvider, TeacherProfile, TeacherPersona
+from clawed.models import AppConfig, TeacherPersona, TeacherProfile
 
 
 class OnboardState(Enum):

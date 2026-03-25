@@ -1,4 +1,4 @@
-"""Terminal chat interface — test EDUagent from the command line."""
+"""Terminal chat interface — test Claw-ED from the command line."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from clawed.gateway import Gateway
 from clawed.state import TeacherSession
 
 _WELCOME = """\
-👋 Welcome to **EDUagent** — your AI teaching partner.
+👋 Welcome to **Claw-ED** — your AI teaching partner.
 
 **Get started:**
 • Tell me what you teach: *"I teach 8th grade science"*
@@ -32,11 +32,11 @@ Type anything to begin!
 
 
 async def run_chat(teacher_id: str = "local-teacher") -> None:
-    """Run an interactive terminal chat session with EDUagent."""
+    """Run an interactive terminal chat session with Claw-ED."""
     console.print(
         Panel(
             Markdown(_WELCOME),
-            title="[bold green]EDUagent Chat[/bold green]",
+            title="[bold green]Claw-ED Chat[/bold green]",
             border_style="green",
             padding=(1, 2),
         )
@@ -92,7 +92,7 @@ async def run_chat(teacher_id: str = "local-teacher") -> None:
         console.print(
             Panel(
                 response_text,
-                title="[bold green]EDUagent[/bold green]",
+                title="[bold green]Claw-ED[/bold green]",
                 border_style="green",
                 padding=(0, 1),
             )

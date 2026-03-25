@@ -402,7 +402,7 @@ class TestPromptTemplates:
 
 class TestModelRouterAssessment:
     def test_assessment_task_in_router(self):
-        from clawed.model_router import TASK_TIERS, DEFAULT_TIER_MODELS, ModelTier
+        from clawed.model_router import DEFAULT_TIER_MODELS, TASK_TIERS, ModelTier
 
         assert "assessment" in TASK_TIERS
         assert TASK_TIERS["assessment"] == ModelTier.WORK

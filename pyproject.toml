@@ -70,15 +70,15 @@ clawed = "clawed.cli:app"
 eduagent = "clawed.cli:app"
 
 [project.urls]
-Homepage = "https://github.com/SirhanMacx/clawed"
-Documentation = "https://github.com/SirhanMacx/clawed#readme"
-Issues = "https://github.com/SirhanMacx/clawed/issues"
+Homepage = "https://github.com/SirhanMacx/Claw-ED"
+Documentation = "https://github.com/SirhanMacx/Claw-ED#readme"
+Issues = "https://github.com/SirhanMacx/Claw-ED/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["clawed", "eduagent"]
 
-[tool.setuptools.package-data]
-clawed = ["prompts/*.txt", "demo/*.json"]
+[tool.hatch.build.targets.sdist]
+include = ["clawed/**", "eduagent/**"]
 
 [tool.ruff]
 line-length = 120

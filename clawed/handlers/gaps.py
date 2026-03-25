@@ -1,6 +1,8 @@
 """Curriculum gap analysis handler. Extracted from tg.py lines 1030-1127."""
 from __future__ import annotations
+
 import logging
+
 from clawed.gateway_response import GatewayResponse
 from clawed.openclaw_plugin import handle_message
 

@@ -1,14 +1,13 @@
 """Tests for the slimmed Telegram transport."""
-import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 from pathlib import Path
+from unittest.mock import MagicMock
 
 from clawed.gateway_response import Button, GatewayResponse
 
 
 class TestTelegramTransport:
     def test_import(self):
-        from clawed.tg import EduAgentTelegramBot, TelegramAPI, run_bot
+        from clawed.tg import EduAgentTelegramBot, TelegramAPI
         assert EduAgentTelegramBot is not None
         assert TelegramAPI is not None
 

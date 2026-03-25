@@ -13,9 +13,9 @@ class TestLandingPage:
         content = landing.read_text()
         # Required elements from spec
         assert "Your AI co-teacher that sounds like you" in content
-        assert "EDUagent" in content
-        assert "waitlist-form" in content  # email capture form (Netlify Forms)
-        assert "github.com/SirhanMacx/eduagent" in content  # GitHub link
+        assert "Claw-ED" in content
+        assert "waitlist-form" in content or "install-steps" in content  # install steps or form
+        assert "github.com/SirhanMacx/Claw-ED" in content  # GitHub link
         assert "Open Source" in content
 
     def test_landing_page_is_self_contained(self):

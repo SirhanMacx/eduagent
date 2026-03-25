@@ -13,7 +13,7 @@ class TestCliChatImport:
     def test_welcome_message_content(self):
         from clawed.cli_chat import _WELCOME
 
-        assert "EDUagent" in _WELCOME
+        assert "Claw-ED" in _WELCOME
         assert "/quit" in _WELCOME
         assert "/status" in _WELCOME
         assert "/clear" in _WELCOME

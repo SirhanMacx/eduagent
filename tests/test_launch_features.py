@@ -59,8 +59,8 @@ class TestLandingPage:
     def test_landing_has_typewriter(self):
         landing = Path(__file__).parent.parent / "clawed" / "landing" / "index.html"
         html = landing.read_text()
-        assert "pip install eduagent" in html
-        assert "eduagent setup" in html
+        assert "pip install clawed" in html
+        assert "clawed setup" in html
 
     def test_landing_has_email_form(self):
         landing = Path(__file__).parent.parent / "clawed" / "landing" / "index.html"
@@ -70,7 +70,7 @@ class TestLandingPage:
     def test_landing_has_github_link(self):
         landing = Path(__file__).parent.parent / "clawed" / "landing" / "index.html"
         html = landing.read_text()
-        assert "github.com/SirhanMacx/eduagent" in html
+        assert "github.com/SirhanMacx/Claw-ED" in html
 
     def test_landing_is_dark_theme(self):
         landing = Path(__file__).parent.parent / "clawed" / "landing" / "index.html"

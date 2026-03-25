@@ -1,6 +1,8 @@
 """Small handlers for demo, persona, settings, progress, model switch."""
 from __future__ import annotations
+
 import logging
+
 from clawed.gateway_response import GatewayResponse
 
 logger = logging.getLogger(__name__)
@@ -26,7 +28,9 @@ class PersonaHandler:
             from clawed.state import TeacherSession
             session = TeacherSession.load(teacher_id)
             if not session.persona:
-                return GatewayResponse(text="No teaching persona yet. Upload some lesson files and I'll learn your style!")
+                return GatewayResponse(
+                    text="No teaching persona yet. Upload some lesson files and I'll learn your style!"
+                )
             p = session.persona
             lines = [
                 "Your teaching persona:",
@@ -74,7 +78,7 @@ class ProgressHandler:
                 f"  Average rating: {stats.get('overall_avg_rating', 0):.1f}/5",
             ]
             return GatewayResponse(text="\n".join(lines))
-        except Exception as e:
+        except Exception:
             return GatewayResponse(text="No progress data yet. Generate some lessons first!")
 
 class ModelSwitchHandler:

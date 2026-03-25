@@ -1,8 +1,10 @@
 """Schedule management handler. Extracted from tg.py lines 948-1026."""
 from __future__ import annotations
+
 import logging
+
 from clawed.gateway_response import GatewayResponse
-from clawed.scheduler import disable_task, load_schedule_config, save_schedule_config
+from clawed.scheduler import disable_task, load_schedule_config
 
 logger = logging.getLogger(__name__)
 

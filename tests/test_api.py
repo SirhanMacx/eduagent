@@ -145,7 +145,7 @@ class TestPageRoutes:
     def test_index_page(self, client):
         resp = client.get("/")
         assert resp.status_code == 200
-        assert "EDUagent" in resp.text
+        assert "Claw-ED" in resp.text
 
     def test_dashboard_page(self, client):
         resp = client.get("/dashboard")
@@ -703,15 +703,15 @@ class TestSettingsPage:
         resp = client.get("/")
         assert resp.status_code == 200
         # New landing page serves the static landing HTML or redirects to dashboard
-        assert "EDUagent" in resp.text
+        assert "Claw-ED" in resp.text
 
     def test_index_shows_dashboard_with_persona(self, client, db):
         tid = db.upsert_teacher("Ms. T", '{"name": "Ms. T"}')
         db.upsert_onboarding(tid, 5)
         resp = client.get("/")
         assert resp.status_code == 200
-        # With persona, shows dashboard or landing — both contain EDUagent
-        assert "EDUagent" in resp.text
+        # With persona, shows dashboard or landing — both contain Claw-ED
+        assert "Claw-ED" in resp.text
 
 
 class TestConfigModule:

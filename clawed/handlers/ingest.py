@@ -1,7 +1,9 @@
 """File and path ingestion handler. Extracted from tg.py lines 1361-1481."""
 from __future__ import annotations
+
 import logging
 from pathlib import Path
+
 from clawed.gateway_response import GatewayResponse
 
 logger = logging.getLogger(__name__)
@@ -15,10 +17,13 @@ async def extract_persona(documents, config=None):
     return await _extract(documents, config)
 
 class IngestHandler:
-    async def handle(self, teacher_id: str, files: list[Path] | None = None, path: str | None = None) -> GatewayResponse:
+    async def handle(
+        self, teacher_id: str, files: list[Path] | None = None, path: str | None = None,
+    ) -> GatewayResponse:
         if not files and not path:
             return GatewayResponse(
-                text="Send me your teaching files (PDF, DOCX, PPTX, TXT) or paste a folder path and I'll learn your teaching style."
+                text="Send me your teaching files (PDF, DOCX, PPTX, TXT) or paste a folder path "
+                "and I'll learn your teaching style."
             )
         target = Path(path).expanduser().resolve() if path else None
         documents = []

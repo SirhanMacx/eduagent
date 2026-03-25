@@ -17,6 +17,7 @@ build/
 *.json
 !examples/**/*.json
 !eduagent/demo/*.json
+!clawed/demo/*.json
 eduagent_output/
 eduagent_data/
 

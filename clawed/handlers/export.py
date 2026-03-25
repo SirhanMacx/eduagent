@@ -75,8 +75,10 @@ class ExportHandler:
 
     async def _do_export(self, lesson, persona, output_dir, fmt) -> Path:
         from clawed.doc_export import (
-            export_lesson_docx, export_lesson_pdf,
-            export_lesson_pptx, export_student_handout,
+            export_lesson_docx,
+            export_lesson_pdf,
+            export_lesson_pptx,
+            export_student_handout,
         )
         if fmt == "slides":
             return export_lesson_pptx(lesson, persona, output_dir)
