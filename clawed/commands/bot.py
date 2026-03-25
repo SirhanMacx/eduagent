@@ -578,6 +578,10 @@ def bot(
 
     # Legacy mode: use python-telegram-bot (supports webhooks, live display)
     if legacy or live or webhook_url:
+        console.print(
+            "[yellow]Note: --legacy mode is deprecated and will be removed in v0.5. "
+            "The default bot (without --legacy) is recommended.[/yellow]\n"
+        )
         try:
             import telegram  # noqa: F401
         except ImportError:

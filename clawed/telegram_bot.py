@@ -1,10 +1,7 @@
-"""Claw-ED Telegram Bot — Standalone, no OpenClaw required.
+"""DEPRECATED: Legacy Telegram bot — will be removed in v0.5.
 
-Teachers set up their own bot via BotFather and run:
-    clawed bot --token YOUR_BOT_TOKEN
-
-That's it. No OpenClaw, no gateway, no extensions.
-Claw-ED is the product.
+Use clawed/transports/telegram.py (the gateway-based transport) instead.
+This module is kept for backward compatibility with --legacy flag only.
 """
 
 from __future__ import annotations
@@ -897,6 +894,15 @@ def run_bot(
         webhook_secret: Optional secret token to verify incoming webhook requests.
         force: If True, remove stale lock and start even if another instance exists.
     """
+    import warnings
+
+    warnings.warn(
+        "The legacy Telegram bot (--legacy) is deprecated and will be removed in v0.5. "
+        "Use 'clawed bot' without --legacy for the gateway-based transport.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+
     bot = EduAgentBot(
         token=token,
         data_dir=data_dir,
