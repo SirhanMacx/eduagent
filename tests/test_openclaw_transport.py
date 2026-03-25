@@ -1,8 +1,9 @@
 """Tests for the OpenClaw transport."""
-import pytest
 from unittest.mock import AsyncMock, patch
 
-from clawed.transports.openclaw import handle_message, handle_callback, _get_gateway
+import pytest
+
+from clawed.transports.openclaw import _get_gateway, handle_callback, handle_message
 
 
 class TestOpenClawTransport:

@@ -21,7 +21,6 @@ from pathlib import Path
 from typing import Optional
 
 from clawed.gateway import Gateway
-from clawed.gateway_response import GatewayResponse
 
 logger = logging.getLogger(__name__)
 
