@@ -31,7 +31,7 @@ jobs:
         run: ruff check .
 
       - name: Run tests
-        run: pytest -x -v --tb=long 2>&1 | tail -100
+        run: pytest -q --tb=short
 
   lint:
     runs-on: ubuntu-latest
