@@ -198,7 +198,7 @@ async def _tool_generate_lesson(
 ) -> str:
     """Generate a lesson -- reuses existing lesson generation."""
     from clawed.lesson import generate_lesson
-    from clawed.models import AppConfig, LessonBrief, TeacherPersona, UnitPlan
+    from clawed.models import AppConfig, LessonBrief, UnitPlan
 
     config = AppConfig.load()
     persona = _load_persona_for_tool(teacher_id)

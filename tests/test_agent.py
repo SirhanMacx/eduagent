@@ -147,7 +147,7 @@ class TestAgentLoop:
 
         with patch("clawed.agent._call_with_ollama_tools", side_effect=mock_call):
             with patch("clawed.agent.execute_tool", side_effect=mock_execute):
-                result = await run_agent(
+                await run_agent(
                     "look up standards and show my persona",
                     system="test", teacher_id="t1", config=_ollama_config(),
                 )
