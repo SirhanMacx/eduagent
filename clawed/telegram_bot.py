@@ -837,30 +837,44 @@ class EduAgentBot:
         print("Claw-ED bot is running. Press Ctrl+C to stop.")
         print(f"   Data directory: {self.data_dir}")
 
-        if effective_webhook:
-            # Webhook mode: Telegram pushes updates to our HTTPS endpoint.
-            # Great for VPS deployments; requires a valid TLS certificate or
-            # a reverse proxy (nginx/Caddy) terminating TLS.
-            print(f"   Mode: webhook → {effective_webhook}")
-            logger.info("Starting in webhook mode: %s", effective_webhook)
+        # Use the async lifecycle methods instead of run_polling()/run_webhook()
+        # to avoid "event loop already running" errors when called from
+        # contexts that already have an event loop (e.g., asyncio.run wrappers).
+        import asyncio
 
-            run_kwargs: dict = {
-                "webhook_url": effective_webhook,
-                "port": effective_port,
-                "drop_pending_updates": True,
-            }
-            # Secret token prevents random POST requests from triggering the bot
-            if effective_secret:
-                run_kwargs["secret_token"] = effective_secret
+        async def _run_async() -> None:
+            await app.initialize()
+            if app.post_init:
+                await app.post_init(app)
+            await app.start()
 
-            app.run_webhook(**run_kwargs)
-        else:
-            # Polling mode: the bot polls Telegram for new updates.
-            # Works everywhere without any public URL — perfect for local dev
-            # and teacher laptops behind NAT/firewalls.
-            print("   Mode: polling")
-            logger.info("Starting in polling mode")
-            app.run_polling(drop_pending_updates=True)
+            if effective_webhook:
+                print(f"   Mode: webhook → {effective_webhook}")
+                logger.info("Starting in webhook mode: %s", effective_webhook)
+                await app.updater.start_webhook(
+                    url_path="webhook",
+                    webhook_url=effective_webhook,
+                    port=effective_port,
+                    drop_pending_updates=True,
+                    secret_token=effective_secret,
+                )
+            else:
+                print("   Mode: polling")
+                logger.info("Starting in polling mode")
+                await app.updater.start_polling(drop_pending_updates=True)
+
+            # Block until interrupted
+            stop_event = asyncio.Event()
+            try:
+                await stop_event.wait()
+            except asyncio.CancelledError:
+                pass
+            finally:
+                await app.updater.stop()
+                await app.stop()
+                await app.shutdown()
+
+        asyncio.run(_run_async())
 
 
 def run_bot(

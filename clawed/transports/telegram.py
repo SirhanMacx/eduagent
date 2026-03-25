@@ -423,10 +423,10 @@ class EduAgentTelegramBot:
             api.send_document(chat_id, file_path)
 
 
-def run_bot(token: str | None = None, force: bool = False) -> None:
+def run_bot(token: str | None = None, force: bool = False, data_dir=None) -> None:
     """Entry point — create and run the bot."""
     if token:
-        bot = EduAgentTelegramBot(token)
+        bot = EduAgentTelegramBot(token, data_dir=data_dir)
     else:
-        bot = EduAgentTelegramBot.from_env()
+        bot = EduAgentTelegramBot.from_env(data_dir=data_dir)
     bot.run(force=force)

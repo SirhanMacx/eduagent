@@ -60,23 +60,36 @@ class TestHandlerRegistration:
         bot = EduAgentBot(token="fake:token")
 
         mock_app_instance = MagicMock()
-        mock_app_instance.run_polling = MagicMock()
+        mock_app_instance.initialize = AsyncMock()
+        mock_app_instance.post_init = None
+        mock_app_instance.start = AsyncMock()
+        mock_app_instance.stop = AsyncMock()
+        mock_app_instance.shutdown = AsyncMock()
+        mock_app_instance.updater = MagicMock()
+        mock_app_instance.updater.start_polling = AsyncMock()
+        mock_app_instance.updater.stop = AsyncMock()
         mock_builder = MagicMock()
         mock_builder.token.return_value = mock_builder
         mock_builder.build.return_value = mock_app_instance
 
-        # Create mock telegram.ext module
         mock_telegram_ext = MagicMock()
         mock_telegram_ext.Application.builder.return_value = mock_builder
         mock_telegram_ext.filters.TEXT = MagicMock()
         mock_telegram_ext.filters.COMMAND = MagicMock()
         mock_telegram_ext.filters.TEXT.__and__ = MagicMock(return_value="text_filter")
 
+        import asyncio
+
+        class _InstantEvent(asyncio.Event):
+            async def wait(self):
+                return
+
         with patch.dict("sys.modules", {
             "telegram": MagicMock(),
             "telegram.ext": mock_telegram_ext,
         }):
-            bot.start()
+            with patch("asyncio.Event", _InstantEvent):
+                bot.start()
 
             # Handlers: start, help, status, join, class, callbacks, message, etc.
             assert mock_app_instance.add_handler.call_count >= 5
@@ -93,7 +106,7 @@ class TestHandlerRegistration:
             assert "help" in cmd_names
             assert "status" in cmd_names
 
-            mock_app_instance.run_polling.assert_called_once()
+            mock_app_instance.updater.start_polling.assert_awaited_once()
 
 
 # ── Message routing ──────────────────────────────────────────────────────

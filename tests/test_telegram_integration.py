@@ -50,6 +50,16 @@ def _extract_handlers(bot: EduAgentBot) -> dict:
 
     mock_app = MagicMock()
     mock_app.run_polling = MagicMock()
+    # Async lifecycle methods used by the new start() implementation
+    mock_app.initialize = AsyncMock()
+    mock_app.post_init = None
+    mock_app.start = AsyncMock()
+    mock_app.stop = AsyncMock()
+    mock_app.shutdown = AsyncMock()
+    mock_app.updater = MagicMock()
+    mock_app.updater.start_polling = AsyncMock()
+    mock_app.updater.start_webhook = AsyncMock()
+    mock_app.updater.stop = AsyncMock()
     mock_builder = MagicMock()
     mock_builder.token.return_value = mock_builder
     mock_builder.build.return_value = mock_app
@@ -87,7 +97,16 @@ def _extract_handlers(bot: EduAgentBot) -> dict:
         "telegram": MagicMock(),
         "telegram.ext": mock_ext,
     }):
-        bot.start()
+        # The new start() uses asyncio.run(_run_async()) which blocks on
+        # stop_event.wait(). Patch asyncio.Event so wait() returns immediately.
+        original_event = asyncio.Event
+
+        class _InstantEvent(asyncio.Event):
+            async def wait(self):
+                return  # Don't block
+
+        with patch("asyncio.Event", _InstantEvent):
+            bot.start()
 
     return handlers
 
@@ -669,15 +688,27 @@ class TestWebhookSupport:
         assert bot.webhook_port == 8080
         assert bot.webhook_secret == "s3cr3t"
 
-    def test_run_webhook_called_in_webhook_mode(self, tmp_path, monkeypatch):
-        """When webhook_url is set, app.run_webhook should be called instead of run_polling."""
+    def _make_mock_app(self):
+        """Create a mock telegram Application with async lifecycle methods."""
         mock_app = MagicMock()
-        mock_app.run_polling = MagicMock()
-        mock_app.run_webhook = MagicMock()
+        mock_app.initialize = AsyncMock()
+        mock_app.post_init = None
+        mock_app.start = AsyncMock()
+        mock_app.stop = AsyncMock()
+        mock_app.shutdown = AsyncMock()
+        mock_app.updater = MagicMock()
+        mock_app.updater.start_polling = AsyncMock()
+        mock_app.updater.start_webhook = AsyncMock()
+        mock_app.updater.stop = AsyncMock()
+        mock_app.add_handler = MagicMock()
+        mock_app.add_error_handler = MagicMock()
+        return mock_app
+
+    def _make_mock_ext(self, mock_app):
+        """Create a mock telegram.ext module."""
         mock_builder = MagicMock()
         mock_builder.token.return_value = mock_builder
         mock_builder.build.return_value = mock_app
-
         mock_ext = MagicMock()
         mock_ext.Application.builder.return_value = mock_builder
         mock_ext.filters.TEXT = MagicMock()
@@ -686,6 +717,12 @@ class TestWebhookSupport:
         mock_ext.CommandHandler = lambda *a, **kw: MagicMock()
         mock_ext.MessageHandler = lambda *a, **kw: MagicMock()
         mock_ext.CallbackQueryHandler = lambda *a, **kw: MagicMock()
+        return mock_ext
+
+    def test_run_webhook_called_in_webhook_mode(self, tmp_path, monkeypatch):
+        """When webhook_url is set, updater.start_webhook should be called."""
+        mock_app = self._make_mock_app()
+        mock_ext = self._make_mock_ext(mock_app)
 
         bot = EduAgentBot(
             token="fake:token",
@@ -693,63 +730,42 @@ class TestWebhookSupport:
             webhook_url="https://example.com/telegram",
         )
 
-        with patch.dict("sys.modules", {
-            "telegram": MagicMock(),
-            "telegram.ext": mock_ext,
-        }):
-            bot.start()
+        class _InstantEvent(asyncio.Event):
+            async def wait(self):
+                return
 
-        mock_app.run_webhook.assert_called_once()
-        mock_app.run_polling.assert_not_called()
+        with patch.dict("sys.modules", {"telegram": MagicMock(), "telegram.ext": mock_ext}):
+            with patch("asyncio.Event", _InstantEvent):
+                bot.start()
 
-        call_kwargs = mock_app.run_webhook.call_args.kwargs
+        mock_app.updater.start_webhook.assert_awaited_once()
+        mock_app.updater.start_polling.assert_not_awaited()
+
+        call_kwargs = mock_app.updater.start_webhook.call_args.kwargs
         assert call_kwargs["webhook_url"] == "https://example.com/telegram"
 
     def test_run_polling_called_in_polling_mode(self, tmp_path):
-        """Without webhook_url, app.run_polling should be called."""
-        mock_app = MagicMock()
-        mock_app.run_polling = MagicMock()
-        mock_app.run_webhook = MagicMock()
-        mock_builder = MagicMock()
-        mock_builder.token.return_value = mock_builder
-        mock_builder.build.return_value = mock_app
-
-        mock_ext = MagicMock()
-        mock_ext.Application.builder.return_value = mock_builder
-        mock_ext.filters.TEXT = MagicMock()
-        mock_ext.filters.COMMAND = MagicMock()
-        mock_ext.filters.TEXT.__and__ = MagicMock(return_value="text_filter")
-        mock_ext.CommandHandler = lambda *a, **kw: MagicMock()
-        mock_ext.MessageHandler = lambda *a, **kw: MagicMock()
-        mock_ext.CallbackQueryHandler = lambda *a, **kw: MagicMock()
+        """Without webhook_url, updater.start_polling should be called."""
+        mock_app = self._make_mock_app()
+        mock_ext = self._make_mock_ext(mock_app)
 
         bot = EduAgentBot(token="fake:token", data_dir=tmp_path)
 
-        with patch.dict("sys.modules", {
-            "telegram": MagicMock(),
-            "telegram.ext": mock_ext,
-        }):
-            bot.start()
+        class _InstantEvent(asyncio.Event):
+            async def wait(self):
+                return
 
-        mock_app.run_polling.assert_called_once()
-        mock_app.run_webhook.assert_not_called()
+        with patch.dict("sys.modules", {"telegram": MagicMock(), "telegram.ext": mock_ext}):
+            with patch("asyncio.Event", _InstantEvent):
+                bot.start()
+
+        mock_app.updater.start_polling.assert_awaited_once()
+        mock_app.updater.start_webhook.assert_not_awaited()
 
     def test_webhook_secret_passed_to_run_webhook(self, tmp_path):
-        """Webhook secret token should be passed to run_webhook."""
-        mock_app = MagicMock()
-        mock_app.run_webhook = MagicMock()
-        mock_builder = MagicMock()
-        mock_builder.token.return_value = mock_builder
-        mock_builder.build.return_value = mock_app
-
-        mock_ext = MagicMock()
-        mock_ext.Application.builder.return_value = mock_builder
-        mock_ext.filters.TEXT = MagicMock()
-        mock_ext.filters.COMMAND = MagicMock()
-        mock_ext.filters.TEXT.__and__ = MagicMock(return_value="text_filter")
-        mock_ext.CommandHandler = lambda *a, **kw: MagicMock()
-        mock_ext.MessageHandler = lambda *a, **kw: MagicMock()
-        mock_ext.CallbackQueryHandler = lambda *a, **kw: MagicMock()
+        """Webhook secret token should be passed to start_webhook."""
+        mock_app = self._make_mock_app()
+        mock_ext = self._make_mock_ext(mock_app)
 
         bot = EduAgentBot(
             token="fake:token",
@@ -758,11 +774,13 @@ class TestWebhookSupport:
             webhook_secret="super-secret",
         )
 
-        with patch.dict("sys.modules", {
-            "telegram": MagicMock(),
-            "telegram.ext": mock_ext,
-        }):
-            bot.start()
+        class _InstantEvent(asyncio.Event):
+            async def wait(self):
+                return
 
-        call_kwargs = mock_app.run_webhook.call_args.kwargs
+        with patch.dict("sys.modules", {"telegram": MagicMock(), "telegram.ext": mock_ext}):
+            with patch("asyncio.Event", _InstantEvent):
+                bot.start()
+
+        call_kwargs = mock_app.updater.start_webhook.call_args.kwargs
         assert call_kwargs.get("secret_token") == "super-secret"

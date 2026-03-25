@@ -291,8 +291,17 @@ class TestTelegramRating:
 
         bot = EduAgentBot(token="fake:token")
 
+        from unittest.mock import AsyncMock
+
         mock_app_instance = MagicMock()
-        mock_app_instance.run_polling = MagicMock()
+        mock_app_instance.initialize = AsyncMock()
+        mock_app_instance.post_init = None
+        mock_app_instance.start = AsyncMock()
+        mock_app_instance.stop = AsyncMock()
+        mock_app_instance.shutdown = AsyncMock()
+        mock_app_instance.updater = MagicMock()
+        mock_app_instance.updater.start_polling = AsyncMock()
+        mock_app_instance.updater.stop = AsyncMock()
         mock_builder = MagicMock()
         mock_builder.token.return_value = mock_builder
         mock_builder.build.return_value = mock_app_instance
@@ -304,11 +313,18 @@ class TestTelegramRating:
         mock_telegram_ext.filters.COMMAND = MagicMock()
         mock_telegram_ext.filters.TEXT.__and__ = MagicMock(return_value="text_filter")
 
+        import asyncio
+
+        class _InstantEvent(asyncio.Event):
+            async def wait(self):
+                return
+
         with patch.dict("sys.modules", {
             "telegram": mock_telegram,
             "telegram.ext": mock_telegram_ext,
         }):
-            bot.start()
+            with patch("asyncio.Event", _InstantEvent):
+                bot.start()
 
             # Handlers: start, help, status, join, class, callback(s), message, etc.
             assert mock_app_instance.add_handler.call_count >= 5
