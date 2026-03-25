@@ -1,5 +1,22 @@
 """Claw-ED — Your teaching files, your AI co-teacher."""
 
+import os
+import sys
+
+# Ensure UTF-8 encoding on all platforms. Windows defaults to cp1252,
+# which crashes on emoji/non-Latin characters from LLM output.
+os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+if hasattr(sys.stderr, "reconfigure"):
+    try:
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 __version__ = "0.5.0"
 __author__ = "Jon Maccarello & Claw-ED contributors"
 __description__ = "Your teaching files, your AI co-teacher"
