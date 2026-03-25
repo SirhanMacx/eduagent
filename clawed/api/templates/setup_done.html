@@ -25,12 +25,10 @@ a.btn{display:block;padding:14px;border-radius:12px;text-decoration:none;font-we
 <body>
 <div class="card">
 <div class="check">✅</div>
-<h1>You're all set, {{ name }}!</h1>
+<h1>You're all set, TEACHER_NAME_PLACEHOLDER!</h1>
 <p>
 Claw-ED is ready to help you plan lessons, build assessments, and generate materials — all in your teaching voice.
-{% if files_ingested > 0 %}
-<br><span class="highlight">{{ files_ingested }} file(s) imported</span> — I'm already learning your style.
-{% endif %}
+FILES_PLACEHOLDER
 </p>
 <div class="buttons">
 <a href="/dashboard" class="btn btn-primary">Open Dashboard</a>

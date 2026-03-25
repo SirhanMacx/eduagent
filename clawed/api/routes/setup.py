@@ -96,18 +96,15 @@ async def handle_setup(
 @router.get("/setup/done", response_class=HTMLResponse)
 async def setup_done(request: Request, name: str = "", files: int = 0):
     html = (_TEMPLATE_DIR / "setup_done.html").read_text(encoding="utf-8")
-    display_name = name or "Teacher"
-    html = html.replace("{{ name }}", display_name)
-    files_block = (
-        f'<span class="highlight">{files} file(s) imported</span>'
-        " — I'm already learning your style." if files > 0 else ""
-    )
-    # Simple template rendering — replace Jinja2 blocks
-    import re
-    html = re.sub(r"\{%.*?%\}", "", html)  # Strip Jinja2 tags
-    html = html.replace("{{ files_ingested }}", str(files))
+    html = html.replace("TEACHER_NAME_PLACEHOLDER", name or "Teacher")
     if files > 0:
-        html = html.replace("</p>", f"<br>{files_block}</p>", 1)
+        files_html = (
+            f'<br><span class="highlight">{files} file(s) imported</span>'
+            " — I'm already learning your style."
+        )
+    else:
+        files_html = ""
+    html = html.replace("FILES_PLACEHOLDER", files_html)
     return HTMLResponse(html)
 
 

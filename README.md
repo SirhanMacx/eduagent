@@ -78,52 +78,22 @@ Every lesson includes differentiation, exit tickets, and homework — all in the
 
 ---
 
-### Step 1 — Check that Python is installed
+### Step 1 — Install Python
 
-Claw-ED runs on Python. Most Macs already have it. Here's how to check:
+Most Macs already have Python. On **Windows**, [download it here](https://www.python.org/downloads/) — click the big yellow button and run the installer.
 
-1. On a **Mac**: press `Cmd + Space`, type `Terminal`, hit Enter
-2. On **Windows**: press the Windows key, type `cmd`, hit Enter
-3. In the window that opens, type this and press Enter:
-   ```
-   python --version
-   ```
-   If you see something like `Python 3.11.2`, you're good. If you see an error, [download Python here](https://www.python.org/downloads/) — click the big yellow button and run the installer.
+### Step 2 — Install and run
 
----
-
-### Step 2 — Install Claw-ED
-
-In the same Terminal window, type this and press Enter:
+Open Terminal (Mac: `Cmd + Space`, type "Terminal") or Command Prompt (Windows: press Windows key, type "cmd"). Then:
 
 ```
 pip install clawed
+clawed
 ```
 
-Wait about 30 seconds. You'll see text scrolling — that's normal. When it stops and you see a `$` again, it worked.
+That's it. **A setup wizard opens in your browser** — pick your subject, grade, and AI provider from dropdown menus, upload your lesson plans, and you're ready to go. No API keys to paste in the terminal, no config files to edit.
 
-> **Upgrading from EDUagent?** Claw-ED is the same project, renamed. `pip install clawed` replaces `pip install eduagent`. All your existing config, lesson files, and API keys continue to work. The `eduagent` command still works too.
-
----
-
-### Step 3 — Get an AI key
-
-Claw-ED needs an AI brain. We recommend **Ollama Cloud** ($20/month flat rate). See [Which AI should I use?](#-which-ai-should-i-use) below for setup, or to try **Anthropic Claude** with $5 free credit:
-
-```
-export ANTHROPIC_API_KEY=sk-ant-your-key-here   # Mac/Linux
-set ANTHROPIC_API_KEY=sk-ant-your-key-here       # Windows
-```
-
----
-
-### Step 4 — Start Claw-ED
-
-```
-clawed chat
-```
-
-That's it. Claw-ED will ask what you teach, learn from your existing files, and start generating in your voice.
+> **Upgrading from EDUagent?** `pip install clawed` replaces `pip install eduagent`. All your existing config and files continue to work.
 
 ---
 
