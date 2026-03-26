@@ -143,12 +143,14 @@ class Gateway:
             self._stats.errors_today += 1
             await self.emit("error", {"teacher_id": teacher_id, "message": str(e)})
 
-            # Teacher-friendly error messages
+            # Teacher-friendly error messages (include debug info for troubleshooting)
             err = str(e).lower()
+            debug_hint = f"\n\n[Debug: {type(e).__name__}: {str(e)[:200]}]"
             if "401" in err or "unauthorized" in err or "api key" in err:
                 return GatewayResponse(
                     text="Your AI provider key doesn't seem to be working. "
                          "Run `clawed setup --reset` to reconfigure it."
+                         + debug_hint
                 )
             if "connection" in err or "connect" in err or "timeout" in err:
                 return GatewayResponse(

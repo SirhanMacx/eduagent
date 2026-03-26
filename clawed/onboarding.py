@@ -532,6 +532,7 @@ def quick_model_setup() -> str:
         tg_token = Prompt.ask("  [bold]Paste your bot token[/bold]")
         if tg_token.strip():
             config.telegram_bot_token = tg_token.strip()
+            set_api_key("telegram", tg_token.strip())
             config.save()
             console.print("\n  [green]\u2713 Bot configured![/green]")
             console.print("  [bold]Starting your bot... Open Telegram and message it![/bold]\n")

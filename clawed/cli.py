@@ -164,6 +164,72 @@ def setup(
     quick_model_setup()
 
 
+@app.command()
+def debug() -> None:
+    """Show diagnostic info — config, API key status, connection test."""
+    import asyncio
+    import json
+
+    from clawed.config import _SECRETS_FILE, get_api_key
+    from clawed.models import AppConfig
+
+    cfg = AppConfig.load()
+    config_path = AppConfig.config_path()
+
+    console.print("[bold]Claw-ED Debug Info[/bold]\n")
+    console.print(f"  Version: {__version__}")
+    console.print(f"  Config path: {config_path}")
+    console.print(f"  Config exists: {config_path.exists()}")
+    console.print(f"  Secrets path: {_SECRETS_FILE}")
+    console.print(f"  Secrets exists: {_SECRETS_FILE.exists()}")
+
+    if _SECRETS_FILE.exists():
+        try:
+            secrets = json.loads(_SECRETS_FILE.read_text(encoding="utf-8"))
+            console.print(f"  Secrets keys: {list(secrets.keys())}")
+        except Exception as e:
+            console.print(f"  Secrets read error: {e}")
+
+    console.print(f"\n  Provider: {cfg.provider.value}")
+    console.print(f"  Model: {cfg.ollama_model}")
+    console.print(f"  Base URL: {cfg.ollama_base_url}")
+    console.print(f"  Agent gateway: {cfg.agent_gateway}")
+
+    # API key status
+    key_from_config = cfg.ollama_api_key
+    key_from_get = get_api_key("ollama")
+    console.print(f"\n  ollama_api_key (config obj): {key_from_config[:12] + '...' if key_from_config else 'NONE'}")
+    console.print(f"  get_api_key('ollama'): {key_from_get[:12] + '...' if key_from_get else 'NONE'}")
+
+    # Telegram
+    console.print(f"\n  Telegram token: {cfg.telegram_bot_token[:12] + '...' if cfg.telegram_bot_token else 'NONE'}")
+
+    # Connection test
+    console.print("\n  [dim]Testing connection...[/dim]")
+    try:
+        from clawed.config import test_llm_connection
+        result = asyncio.run(test_llm_connection(cfg))
+        if result["connected"]:
+            console.print(f"  [green]Connected: {result.get('message', 'OK')}[/green]")
+        else:
+            console.print(f"  [red]Failed: {result.get('error', 'unknown')}[/red]")
+    except Exception as e:
+        console.print(f"  [red]Connection test error: {e}[/red]")
+
+    # Quick LLM test
+    console.print("\n  [dim]Testing LLM call...[/dim]")
+    try:
+        from clawed.gateway import Gateway
+        gw = Gateway(config=cfg)
+        result = asyncio.run(gw.handle("say hello in one word", "debug-test"))
+        if "went wrong" in result.text.lower() or "provider key" in result.text.lower():
+            console.print(f"  [red]LLM test failed: {result.text}[/red]")
+        else:
+            console.print(f"  [green]LLM test passed: {result.text[:80]}[/green]")
+    except Exception as e:
+        console.print(f"  [red]LLM test error: {e}[/red]")
+
+
 # ── Register named sub-app groups ───────────────────────────────────────
 
 app.add_typer(config_app, name="config")
