@@ -109,3 +109,37 @@ class TestDriveAuth:
             token_path=tmp_path / "token.json",
         )
         assert is_authenticated(token_path=tmp_path / "token.json")
+
+
+class TestRateLimiter:
+    def test_allows_initial(self):
+        from clawed.agent_core.drive.client import RateLimiter
+        rl = RateLimiter(max_per_hour=100)
+        assert rl.allow()
+
+    def test_blocks_excess(self):
+        from clawed.agent_core.drive.client import RateLimiter
+        rl = RateLimiter(max_per_hour=2)
+        assert rl.allow()
+        assert rl.allow()
+        assert not rl.allow()
+
+
+class TestDriveClient:
+    @pytest.mark.asyncio
+    async def test_not_authenticated(self, tmp_path):
+        from clawed.agent_core.drive.client import DriveClient
+        client = DriveClient(token_path=tmp_path / "nope.json")
+        with pytest.raises(RuntimeError, match="not authenticated"):
+            await client.list_files()
+
+    @pytest.mark.asyncio
+    async def test_rate_limit_exceeded(self, tmp_path):
+        from clawed.agent_core.drive.auth import save_token
+        from clawed.agent_core.drive.client import DriveClient
+        # Create a token so auth check passes
+        save_token({"access_token": "test", "refresh_token": "test"},
+                   token_path=tmp_path / "token.json")
+        client = DriveClient(token_path=tmp_path / "token.json", max_per_hour=0)
+        with pytest.raises(RuntimeError, match="rate limit"):
+            await client.list_files()
