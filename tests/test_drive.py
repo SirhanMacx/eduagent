@@ -195,3 +195,64 @@ class TestDriveTools:
             or "error" in text
             or "failed" in text
         )
+
+
+class TestDriveExtendedTools:
+    def test_drive_create_slides_schema(self):
+        from clawed.agent_core.tools.drive_create_slides import DriveCreateSlidesTool
+        s = DriveCreateSlidesTool().schema()
+        assert s["function"]["name"] == "drive_create_slides"
+        assert "title" in s["function"]["parameters"]["properties"]
+
+    def test_drive_create_doc_schema(self):
+        from clawed.agent_core.tools.drive_create_doc import DriveCreateDocTool
+        s = DriveCreateDocTool().schema()
+        assert s["function"]["name"] == "drive_create_doc"
+
+    def test_drive_read_schema(self):
+        from clawed.agent_core.tools.drive_read import DriveReadTool
+        s = DriveReadTool().schema()
+        assert s["function"]["name"] == "drive_read"
+        assert "file_id" in s["function"]["parameters"]["properties"]
+
+    @pytest.mark.asyncio
+    async def test_drive_create_slides_not_authenticated(self, tmp_path):
+        from clawed.agent_core.context import AgentContext
+        from clawed.agent_core.tools.drive_create_slides import DriveCreateSlidesTool
+        from clawed.models import AppConfig
+        tool = DriveCreateSlidesTool()
+        ctx = AgentContext(
+            teacher_id="t1", config=AppConfig(),
+            teacher_profile={}, persona=None,
+            session_history=[], improvement_context="",
+        )
+        result = await tool.execute({"title": "Test Slides", "content": "Hello"}, ctx)
+        assert "not authenticated" in result.text.lower() or "failed" in result.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_drive_create_doc_not_authenticated(self, tmp_path):
+        from clawed.agent_core.context import AgentContext
+        from clawed.agent_core.tools.drive_create_doc import DriveCreateDocTool
+        from clawed.models import AppConfig
+        tool = DriveCreateDocTool()
+        ctx = AgentContext(
+            teacher_id="t1", config=AppConfig(),
+            teacher_profile={}, persona=None,
+            session_history=[], improvement_context="",
+        )
+        result = await tool.execute({"title": "Test Doc", "content": "Hello"}, ctx)
+        assert "not authenticated" in result.text.lower() or "failed" in result.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_drive_read_not_authenticated(self, tmp_path):
+        from clawed.agent_core.context import AgentContext
+        from clawed.agent_core.tools.drive_read import DriveReadTool
+        from clawed.models import AppConfig
+        tool = DriveReadTool()
+        ctx = AgentContext(
+            teacher_id="t1", config=AppConfig(),
+            teacher_profile={}, persona=None,
+            session_history=[], improvement_context="",
+        )
+        result = await tool.execute({"file_id": "abc123"}, ctx)
+        assert "not authenticated" in result.text.lower() or "failed" in result.text.lower()

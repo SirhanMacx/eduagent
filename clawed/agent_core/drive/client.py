@@ -143,3 +143,84 @@ class DriveClient:
             .execute()
         )
         return result
+
+    async def create_slides(
+        self,
+        title: str,
+        content: str,
+        folder_id: str = "root",
+    ) -> dict[str, Any]:
+        """Create a native Google Slides presentation."""
+        self._check_auth()
+        self._check_rate()
+        service = self._get_service()
+        file_metadata = {
+            "name": title,
+            "mimeType": "application/vnd.google-apps.presentation",
+            "parents": [folder_id],
+        }
+        result = (
+            service.files()
+            .create(
+                body=file_metadata,
+                fields="id, name, webViewLink",
+            )
+            .execute()
+        )
+        return result
+
+    async def create_doc(
+        self,
+        title: str,
+        content: str,
+        folder_id: str = "root",
+    ) -> dict[str, Any]:
+        """Create a native Google Doc."""
+        self._check_auth()
+        self._check_rate()
+        service = self._get_service()
+        file_metadata = {
+            "name": title,
+            "mimeType": "application/vnd.google-apps.document",
+            "parents": [folder_id],
+        }
+        result = (
+            service.files()
+            .create(
+                body=file_metadata,
+                fields="id, name, webViewLink",
+            )
+            .execute()
+        )
+        return result
+
+    async def read_file(self, file_id: str) -> dict[str, Any]:
+        """Read file metadata and content from Drive."""
+        self._check_auth()
+        self._check_rate()
+        service = self._get_service()
+        metadata = (
+            service.files()
+            .get(
+                fileId=file_id,
+                fields="id, name, mimeType, modifiedTime",
+            )
+            .execute()
+        )
+        # For text-based files, try to export content
+        content = ""
+        mime = metadata.get("mimeType", "")
+        if "document" in mime or "spreadsheet" in mime or "presentation" in mime:
+            try:
+                export = (
+                    service.files()
+                    .export(
+                        fileId=file_id,
+                        mimeType="text/plain",
+                    )
+                    .execute()
+                )
+                content = export.decode("utf-8") if isinstance(export, bytes) else str(export)
+            except Exception:
+                pass
+        return {**metadata, "content": content}
