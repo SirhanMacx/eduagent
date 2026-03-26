@@ -252,13 +252,16 @@ async def _call_with_ollama_tools(
     from clawed.config import get_api_key
 
     base_url = config.ollama_base_url.rstrip("/")
-    api_key = get_api_key("ollama")
+    api_key = config.ollama_api_key or get_api_key("ollama")
 
     headers: dict[str, str] = {"Content-Type": "application/json"}
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
 
-    if "api.ollama.com" in base_url or "ollama.com" in base_url:
+    # Build the URL — avoid doubling /v1/ if base_url already ends with it
+    if base_url.endswith("/v1"):
+        url = f"{base_url}/chat/completions"
+    elif "api.ollama.com" in base_url or "ollama.com" in base_url:
         url = f"{base_url}/chat/completions"
     else:
         url = f"{base_url}/v1/chat/completions"
@@ -287,7 +290,7 @@ async def _call_with_ollama_tools(
             oai_messages.append({"role": m["role"], "content": m["content"]})
 
     try:
-        async with httpx.AsyncClient(timeout=120.0) as client:
+        async with httpx.AsyncClient(timeout=120.0, follow_redirects=True) as client:
             resp = await client.post(
                 url,
                 headers=headers,

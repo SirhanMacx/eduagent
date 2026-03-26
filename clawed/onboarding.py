@@ -382,7 +382,7 @@ def _ask_provider_wizard() -> tuple[LLMProvider, str | None, str | None, str | N
         return (
             LLMProvider.OLLAMA,
             key.strip(),
-            "https://api.ollama.com/v1",
+            "https://ollama.com/v1",
             "minimax-m2.7:cloud",
         )
 
@@ -503,7 +503,7 @@ def quick_model_setup() -> None:
 
     # Provider-specific config
     if choice == "1":
-        config.ollama_base_url = "https://api.ollama.com/v1"
+        config.ollama_base_url = "https://ollama.com/v1"
         config.ollama_model = "minimax-m2.7:cloud"
         config.ollama_api_key = key
 
@@ -603,7 +603,7 @@ def run_setup_wizard(reset: bool = False) -> AppConfig:
 
         # If Ollama Cloud detected via env, set cloud URL/model
         if detected_provider == LLMProvider.OLLAMA and "Cloud" in detect_msg:
-            ollama_base_url = "https://api.ollama.com/v1"
+            ollama_base_url = "https://ollama.com/v1"
             ollama_model = "minimax-m2.7:cloud"
     else:
         # No auto-detection — run the wizard

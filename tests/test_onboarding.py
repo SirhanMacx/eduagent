@@ -333,7 +333,7 @@ class TestSetupWizard:
             config = run_setup_wizard()
 
             assert config.provider == LLMProvider.OLLAMA
-            assert config.ollama_base_url == "https://api.ollama.com/v1"
+            assert config.ollama_base_url == "https://ollama.com/v1"
             assert config.ollama_model == "minimax-m2.7:cloud"
             mock_set_key.assert_any_call("ollama", "ollama-cloud-key-123")
 
