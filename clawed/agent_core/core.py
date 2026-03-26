@@ -87,6 +87,14 @@ class Gateway:
         self._registry = ToolRegistry()
         self._registry.discover(Path(__file__).parent / "tools")
 
+        # Load custom teacher tools from ~/.eduagent/tools/
+        import os
+
+        custom_tools_dir = Path(
+            os.environ.get("EDUAGENT_DATA_DIR", str(Path.home() / ".eduagent"))
+        ) / "tools"
+        self._registry.discover_custom(custom_tools_dir)
+
         # Callback handlers for deterministic paths
         from clawed.handlers.export import ExportHandler
         from clawed.handlers.feedback import FeedbackHandler

@@ -57,6 +57,18 @@ class ToolRegistry:
             logger.error("Tool %s failed: %s", name, e)
             return ToolResult(text=f"Tool {name} failed: {e}")
 
+    def discover_custom(self, dir_path: Path) -> None:
+        """Load custom YAML prompt-template tools from a directory."""
+        if not dir_path.exists():
+            return
+        from clawed.agent_core.custom_tools import YAMLPromptTool
+
+        for yaml_file in sorted(dir_path.glob("*.y*ml")):
+            tool = YAMLPromptTool.from_file(yaml_file)
+            if tool is not None:
+                self.register(tool)
+                logger.debug("Loaded custom tool: %s", yaml_file.name)
+
     def discover(self, package_path: Path) -> None:
         """Auto-discover and register tool classes from a package directory.
 
