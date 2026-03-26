@@ -60,6 +60,49 @@ class TestPromptAssembly:
         assert "Claw-ED" in prompt
         assert "Teacher" in prompt
 
+    def test_builds_prompt_with_custom_agent_name(self):
+        from clawed.agent_core.prompt import build_system_prompt
+        prompt = build_system_prompt(
+            agent_name="Sage",
+            teacher_name="Mr. Johnson",
+            identity_summary="",
+            improvement_context="",
+            tool_names=[],
+        )
+        assert "Sage" in prompt
+
+    def test_builds_prompt_with_default_name(self):
+        from clawed.agent_core.prompt import build_system_prompt
+        prompt = build_system_prompt(
+            teacher_name="Teacher",
+            identity_summary="",
+            improvement_context="",
+            tool_names=[],
+        )
+        assert "Claw-ED" in prompt
+
+    def test_curriculum_kb_context_included(self):
+        from clawed.agent_core.prompt import build_system_prompt
+        prompt = build_system_prompt(
+            teacher_name="Ms. Lee",
+            identity_summary="",
+            improvement_context="",
+            tool_names=[],
+            curriculum_kb_context="From 'Civil War Unit': Key causes...",
+        )
+        assert "From 'Civil War Unit': Key causes..." in prompt
+
+    def test_proactive_suggestions_in_prompt(self):
+        from clawed.agent_core.prompt import build_system_prompt
+        prompt = build_system_prompt(
+            teacher_name="Teacher",
+            identity_summary="",
+            improvement_context="",
+            tool_names=[],
+        )
+        assert "Proactive Suggestions" in prompt
+        assert "Status Updates" in prompt
+
 
 
 class TestAgentGateway:

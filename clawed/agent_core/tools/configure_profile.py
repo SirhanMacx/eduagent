@@ -39,6 +39,11 @@ class ConfigureProfileTool:
                             "description": "US state for state standards (e.g. 'NY')",
                             "default": "",
                         },
+                        "agent_name": {
+                            "type": "string",
+                            "description": "What the teacher wants to call their AI partner (default: Claw-ED)",
+                            "default": "",
+                        },
                     },
                     "required": ["teacher_name", "subject"],
                 },
@@ -55,11 +60,16 @@ class ConfigureProfileTool:
         subject = params["subject"]
         grade_levels_str = params.get("grade_levels", "")
         state = params.get("state", "")
+        agent_name = params.get("agent_name", "")
 
         grades = [g.strip() for g in grade_levels_str.split(",") if g.strip()]
 
         try:
             config = context.config
+
+            if agent_name:
+                config.agent_name = agent_name
+
             config.teacher_profile = TeacherProfile(
                 name=teacher_name,
                 subjects=[subject],

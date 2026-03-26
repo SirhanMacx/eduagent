@@ -320,7 +320,9 @@ class Gateway:
             identity_summary = ", ".join(parts)
 
         # 2. Build system prompt
+        agent_name = self.config.agent_name
         system = build_system_prompt(
+            agent_name=agent_name,
             teacher_name=teacher_name,
             identity_summary=memory_ctx["identity_summary"] or identity_summary,
             improvement_context=memory_ctx["improvement_context"],
@@ -328,6 +330,7 @@ class Gateway:
             relevant_episodes=memory_ctx["relevant_episodes"],
             preferences=memory_ctx.get("preferences_summary", ""),
             autonomy_summary=memory_ctx.get("autonomy_summary", ""),
+            curriculum_kb_context=memory_ctx.get("curriculum_kb_context", ""),
             tool_names=self._registry.tool_names(),
         )
 
@@ -345,6 +348,7 @@ class Gateway:
             persona=persona_dict,
             session_history=session_history,
             improvement_context=memory_ctx["improvement_context"],
+            agent_name=agent_name,
         )
 
         # 4. Get or create LLM adapter
@@ -362,6 +366,7 @@ class Gateway:
             context=context,
             llm=llm,
             registry=self._registry,
+            max_iterations=self.config.max_agent_iterations,
             conversation_history=session_history,
         )
 
