@@ -359,20 +359,17 @@ def _ask_provider_wizard() -> tuple[LLMProvider, str | None, str | None, str | N
     Returns (provider, api_key, ollama_base_url, ollama_model).
     """
     console.print(
-        "\n[bold]Claw-ED needs an AI brain to generate lessons.[/bold]\n"
-        "Here's what we recommend:\n"
+        "\n[bold]Claw-ED needs an AI service to generate your lessons.[/bold]\n"
+        "We recommend Ollama Cloud — one flat monthly fee, unlimited lessons.\n"
     )
     console.print(
-        "  [bold yellow]*[/bold yellow] [bold]Ollama Cloud[/bold] -- $20/month flat rate, great quality, no surprises\n"
-        "    Best choice for most teachers.\n"
-    )
-    console.print(
-        "  Already have an API key? Enter it below.\n"
-        "  Don't have one yet? Go to [cyan]https://ollama.com[/cyan] -> sign up -> Settings -> API Keys\n"
+        "  [bold yellow]\u2605[/bold yellow] [bold]Ollama Cloud[/bold] — $20/month, unlimited lessons, great quality\n"
+        "    Best for daily use. No surprise charges.\n"
+        "    Sign up: [cyan]https://ollama.com[/cyan] \u2192 create account \u2192 Settings \u2192 API Keys\n"
     )
 
     key = Prompt.ask(
-        "[bold]Enter your Ollama API key[/bold]  [dim](or press Enter to choose a different option)[/dim]",
+        "[bold]Paste your Ollama API key[/bold]  [dim](or press Enter to see other options)[/dim]",
         default="",
     )
     if key.strip():
@@ -383,12 +380,27 @@ def _ask_provider_wizard() -> tuple[LLMProvider, str | None, str | None, str | N
             "minimax-m2.7:cloud",
         )
 
-    # Show alternatives
-    console.print("\n[bold]Other options:[/bold]")
-    console.print("  [bold][1][/bold] Anthropic Claude -- best quality, pay per use (~$10-30/month light use)")
-    console.print("  [bold][2][/bold] OpenAI GPT -- widely used, pay per use")
-    console.print("  [bold][3][/bold] Local Ollama -- free but lower quality (runs on your computer)")
-    console.print("  [bold][4][/bold] Skip for now -- I'll set up the AI later")
+    # Show alternatives with plain-English descriptions
+    console.print("\n[bold]Other options:[/bold]\n")
+    console.print(
+        "  [bold][1][/bold] Claude (by Anthropic) — highest quality output, but expensive (~$20+ per lesson)"
+    )
+    console.print(
+        "        Sign up: [cyan]https://console.anthropic.com[/cyan] \u2192 API Keys"
+    )
+    console.print(
+        "  [bold][2][/bold] GPT (by OpenAI) — high quality, also expensive (~$20+ per lesson)"
+    )
+    console.print(
+        "        Sign up: [cyan]https://platform.openai.com/api-keys[/cyan]"
+    )
+    console.print(
+        "  [bold][3][/bold] Local Ollama — free, runs on your computer (requires separate install)"
+    )
+    console.print(
+        "        Install: [cyan]https://ollama.com/download[/cyan]"
+    )
+    console.print("  [bold][4][/bold] Skip for now — I'll set this up later")
 
     while True:
         choice = Prompt.ask(
@@ -397,21 +409,20 @@ def _ask_provider_wizard() -> tuple[LLMProvider, str | None, str | None, str | N
             default="1",
         )
         if choice == "1":
-            akey = Prompt.ask("  [bold]Anthropic API key[/bold]  [dim](sk-ant-...)[/dim]")
+            akey = Prompt.ask("  [bold]Paste your Claude API key[/bold]  [dim](starts with sk-ant-)[/dim]")
             if not akey.strip():
-                console.print("  [red]API key cannot be empty.[/red]")
+                console.print("  [red]API key can't be empty. Try again or pick a different option.[/red]")
                 continue
             return LLMProvider.ANTHROPIC, akey.strip(), None, None
         elif choice == "2":
-            okey = Prompt.ask("  [bold]OpenAI API key[/bold]  [dim](sk-...)[/dim]")
+            okey = Prompt.ask("  [bold]Paste your OpenAI API key[/bold]  [dim](starts with sk-)[/dim]")
             if not okey.strip():
-                console.print("  [red]API key cannot be empty.[/red]")
+                console.print("  [red]API key can't be empty. Try again or pick a different option.[/red]")
                 continue
             return LLMProvider.OPENAI, okey.strip(), None, None
         elif choice == "3":
             return LLMProvider.OLLAMA, None, None, None
         else:
-            # Skip for now
             return None, None, None, None
 
 
@@ -447,16 +458,16 @@ def quick_model_setup() -> None:
     if auto_choice:
         choice = auto_choice
     else:
-        console.print("\n[bold]Which AI should I use to generate your lessons?[/bold]\n")
+        console.print("\n[bold]Which AI service should generate your lessons?[/bold]\n")
         console.print(
-            "  [bold cyan][1][/bold cyan] \u2605 Ollama Cloud \u2014 $20/month flat rate [dim](recommended)[/dim]"
+            "  [bold cyan][1][/bold cyan] \u2605 Ollama Cloud \u2014 $20/month, unlimited lessons "
+            "[dim](recommended)[/dim]"
         )
-        console.print("  [bold cyan][2][/bold cyan] Anthropic Claude \u2014 best quality, pay per use")
-        console.print("  [bold cyan][3][/bold cyan] OpenAI \u2014 widely used, pay per use")
+        console.print("  [bold cyan][2][/bold cyan] Claude (Anthropic) \u2014 highest quality, ~$20+/lesson")
+        console.print("  [bold cyan][3][/bold cyan] GPT (OpenAI) \u2014 high quality, ~$20+/lesson")
         console.print("  [bold cyan][4][/bold cyan] Skip \u2014 I'll set this up later")
         console.print(
-            "\n  [dim]Don't have a key yet? https://ollama.com (recommended), "
-            "https://console.anthropic.com, or https://platform.openai.com[/dim]\n"
+            "\n  [dim]Sign up: ollama.com (recommended), console.anthropic.com, or platform.openai.com[/dim]\n"
         )
         choice = Prompt.ask("Choice", choices=["1", "2", "3", "4"], default="1")
 
@@ -491,18 +502,9 @@ def quick_model_setup() -> None:
         else:
             console.print("  [yellow]Connection failed \u2014 you can fix this later with 'clawed setup'[/yellow]")
 
-    # Optional Telegram token
-    console.print()
-    tg_token = Prompt.ask(
-        "[bold]Telegram bot[/bold] [dim](Want to use Claw-ED from your phone via "
-        "Telegram? Paste your bot token. If not, just press Enter)[/dim]",
-        default="",
-    )
-    if tg_token.strip():
-        config.telegram_bot_token = tg_token.strip()
-
     config.save()
     console.print("\n  [green]\u2713 Ready![/green] Starting Claw-ED...\n")
+    console.print("  [dim]Want to use Claw-ED from your phone? Run 'clawed bot --help' for Telegram setup.[/dim]\n")
 
 
 def run_setup_wizard(reset: bool = False) -> AppConfig:
@@ -614,18 +616,20 @@ def run_setup_wizard(reset: bool = False) -> AppConfig:
         connected = _test_connection(config)
         if not connected:
             retry = Prompt.ask(
-                "  [yellow]Would you like to retry or skip?[/yellow]",
+                "  [yellow]Connection didn't work. Want to try again?[/yellow]",
                 choices=["retry", "skip"],
                 default="skip",
             )
             if retry == "retry":
                 connected = _test_connection(config)
-            if not connected and provider != LLMProvider.OLLAMA:
-                console.print("  [yellow]You can update your key later with:[/yellow]")
-                console.print(f"    [bold]clawed config set-key {provider.value}[/bold]")
+            if not connected:
+                console.print(
+                    "  [yellow]No worries — you can fix this anytime:[/yellow]\n"
+                    "    [bold]clawed setup --reset[/bold]"
+                )
     else:
         console.print(
-            "\n  [yellow]No AI configured yet. You can set one up later with:[/yellow]\n"
+            "\n  [yellow]No AI service configured yet. You can set one up anytime:[/yellow]\n"
             "    [bold]clawed setup[/bold]"
         )
 

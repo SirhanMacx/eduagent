@@ -307,8 +307,21 @@ def serve(
       clawed serve                       # Web server only
     """
     # serve always starts the web server — browser wizard handles first-run onboarding
-    # (skip terminal setup; --skip-setup kept for backward compat but is now a no-op)
     cfg = AppConfig.load()
+
+    # Warn if no AI provider is configured
+    from clawed.config import get_api_key, has_config
+    if not has_config():
+        console.print(
+            "[yellow]No configuration found.[/yellow] Run [bold]clawed setup[/bold] first,\n"
+            "or open [cyan]http://localhost:8000/setup[/cyan] after the server starts."
+        )
+    elif not get_api_key(cfg.provider.value) and cfg.provider.value != "ollama":
+        console.print(
+            f"[yellow]No API key found for {cfg.provider.value}.[/yellow]\n"
+            "Open [cyan]http://localhost:8000/settings[/cyan] to configure, "
+            "or run [bold]clawed setup --reset[/bold]."
+        )
 
     # Resolve token from saved config if not provided
     if not token:
