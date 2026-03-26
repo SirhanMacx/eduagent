@@ -331,9 +331,11 @@ class LLMClient:
                 if system:
                     messages.append({"role": "system", "content": system})
                 messages.append({"role": "user", "content": prompt})
-                async with httpx.AsyncClient(timeout=300.0) as client:
+                async with httpx.AsyncClient(timeout=300.0, follow_redirects=True) as client:
+                    # Append /v1 only if base doesn't already end with it
+                    v1_prefix = "" if base.endswith("/v1") else "/v1"
                     resp = await client.post(
-                        f"{base}/v1/chat/completions",
+                        f"{base}{v1_prefix}/chat/completions",
                         headers=headers,
                         json={
                             "model": model,

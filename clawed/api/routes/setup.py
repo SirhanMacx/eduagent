@@ -54,7 +54,7 @@ async def handle_setup(
     if telegram_token.strip():
         config.telegram_bot_token = telegram_token.strip()
     if provider == "ollama" and api_key.strip():
-        config.ollama_base_url = "https://api.ollama.com/v1"
+        config.ollama_base_url = "https://ollama.com"
         config.ollama_model = "minimax-m2.7:cloud"
     config.save()
 
@@ -123,7 +123,7 @@ async def test_connection(request: Request):
     else:
         config.provider = LLMProvider.OLLAMA
         if api_key:
-            config.ollama_base_url = "https://api.ollama.com/v1"
+            config.ollama_base_url = "https://ollama.com"
             config.ollama_model = "minimax-m2.7:cloud"
             config.ollama_api_key = api_key
     env_map = {"anthropic": "ANTHROPIC_API_KEY", "openai": "OPENAI_API_KEY", "ollama": "OLLAMA_API_KEY"}

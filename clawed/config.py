@@ -142,19 +142,42 @@ async def test_llm_connection(config: Optional[AppConfig] = None) -> dict:
 
     if provider == "ollama":
         import httpx
+        base = cfg.ollama_base_url.rstrip("/")
+        is_cloud = "ollama.com" in base
+        api_key = cfg.ollama_api_key or get_api_key("ollama")
         try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                resp = await client.get(f"{cfg.ollama_base_url}/api/tags")
-                resp.raise_for_status()
-                data = resp.json()
-                models = [m["name"] for m in data.get("models", [])]
-                model_name = cfg.ollama_model
-                connected = any(model_name in m for m in models)
-                if not connected and models:
-                    avail = ", ".join(models[:5])
-                    msg = f"Model '{model_name}' not found. Available: {avail}"
-                    return _result(False, model_name, msg, is_err=True)
-                return _result(connected, model_name, f"{model_name} is ready")
+            if is_cloud:
+                # Cloud: test with a minimal chat completion
+                headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
+                v1_prefix = "" if base.endswith("/v1") else "/v1"
+                async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+                    resp = await client.post(
+                        f"{base}{v1_prefix}/chat/completions",
+                        headers=headers,
+                        json={
+                            "model": cfg.ollama_model,
+                            "messages": [{"role": "user", "content": "hi"}],
+                            "max_tokens": 5,
+                        },
+                    )
+                    if resp.status_code == 401:
+                        return _result(False, cfg.ollama_model, "API key invalid", is_err=True)
+                    resp.raise_for_status()
+                    return _result(True, cfg.ollama_model, f"{cfg.ollama_model} is ready")
+            else:
+                # Local: test with /api/tags
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    resp = await client.get(f"{base}/api/tags")
+                    resp.raise_for_status()
+                    data = resp.json()
+                    models = [m["name"] for m in data.get("models", [])]
+                    model_name = cfg.ollama_model
+                    connected = any(model_name in m for m in models)
+                    if not connected and models:
+                        avail = ", ".join(models[:5])
+                        msg = f"Model '{model_name}' not found. Available: {avail}"
+                        return _result(False, model_name, msg, is_err=True)
+                    return _result(connected, model_name, f"{model_name} is ready")
         except Exception as e:
             return _result(False, cfg.ollama_model, str(e), is_err=True)
 
