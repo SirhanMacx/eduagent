@@ -143,3 +143,55 @@ class TestDriveClient:
         client = DriveClient(token_path=tmp_path / "token.json", max_per_hour=0)
         with pytest.raises(RuntimeError, match="rate limit"):
             await client.list_files()
+
+
+class TestDriveTools:
+    def test_drive_upload_schema(self):
+        from clawed.agent_core.tools.drive_upload import DriveUploadTool
+        tool = DriveUploadTool()
+        s = tool.schema()
+        assert s["function"]["name"] == "drive_upload"
+        assert "file_path" in s["function"]["parameters"]["properties"]
+
+    def test_drive_list_schema(self):
+        from clawed.agent_core.tools.drive_list import DriveListTool
+        tool = DriveListTool()
+        s = tool.schema()
+        assert s["function"]["name"] == "drive_list"
+
+    def test_drive_organize_schema(self):
+        from clawed.agent_core.tools.drive_organize import DriveOrganizeTool
+        tool = DriveOrganizeTool()
+        s = tool.schema()
+        assert s["function"]["name"] == "drive_organize"
+
+    def test_auto_discovery_finds_drive_tools(self):
+        from clawed.agent_core.tools.base import ToolRegistry
+        reg = ToolRegistry()
+        reg.discover(Path(__file__).parent.parent / "clawed" / "agent_core" / "tools")
+        names = reg.tool_names()
+        assert "drive_upload" in names
+        assert "drive_list" in names
+        assert "drive_organize" in names
+        assert len(names) >= 17  # 14 original + 3 drive
+
+    @pytest.mark.asyncio
+    async def test_drive_upload_not_authenticated(self, tmp_path):
+        from clawed.agent_core.context import AgentContext
+        from clawed.agent_core.tools.drive_upload import DriveUploadTool
+        from clawed.models import AppConfig
+
+        tool = DriveUploadTool()
+        ctx = AgentContext(
+            teacher_id="t1", config=AppConfig(),
+            teacher_profile={}, persona=None,
+            session_history=[], improvement_context="",
+        )
+        # Should return error ToolResult, not crash
+        result = await tool.execute({"file_path": "/tmp/nonexistent.pdf"}, ctx)
+        text = result.text.lower()
+        assert (
+            "not authenticated" in text
+            or "error" in text
+            or "failed" in text
+        )
