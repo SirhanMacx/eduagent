@@ -115,3 +115,27 @@ class TestHandleSystemEvent:
         )
         assert result is not None
         assert "could not be processed" in result.text
+
+
+class TestScheduleTaskTool:
+    def test_schema_valid(self):
+        from clawed.agent_core.tools.schedule_task import ScheduleTaskTool
+        tool = ScheduleTaskTool()
+        s = tool.schema()
+        assert s["function"]["name"] == "schedule_task"
+        assert "action" in s["function"]["parameters"]["properties"]
+
+    @pytest.mark.asyncio
+    async def test_list_tasks(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("EDUAGENT_DATA_DIR", str(tmp_path))
+        from clawed.agent_core.context import AgentContext
+        from clawed.agent_core.tools.schedule_task import ScheduleTaskTool
+        from clawed.models import AppConfig
+        tool = ScheduleTaskTool()
+        ctx = AgentContext(
+            teacher_id="t1", config=AppConfig(),
+            teacher_profile={}, persona=None,
+            session_history=[], improvement_context="",
+        )
+        result = await tool.execute({"action": "list"}, ctx)
+        assert "morning-prep" in result.text
