@@ -82,3 +82,30 @@ class TestIngestDriveFolder:
 
         with pytest.raises(ValueError, match="Could not parse"):
             _run(ingest_drive_folder("https://example.com/not-drive"))
+
+
+class TestDriveAuth:
+    def test_token_save_and_load(self, tmp_path):
+        from clawed.agent_core.drive.auth import load_token, save_token
+        token_data = {
+            "access_token": "ya29.abc",
+            "refresh_token": "1//xyz",
+            "expiry": "2026-04-01T00:00:00",
+        }
+        save_token(token_data, token_path=tmp_path / "drive_token.json")
+        loaded = load_token(token_path=tmp_path / "drive_token.json")
+        assert loaded["access_token"] == "ya29.abc"
+
+    def test_load_token_missing(self, tmp_path):
+        from clawed.agent_core.drive.auth import load_token
+        result = load_token(token_path=tmp_path / "nonexistent.json")
+        assert result is None
+
+    def test_is_authenticated(self, tmp_path):
+        from clawed.agent_core.drive.auth import is_authenticated, save_token
+        assert not is_authenticated(token_path=tmp_path / "nope.json")
+        save_token(
+            {"access_token": "test", "refresh_token": "test"},
+            token_path=tmp_path / "token.json",
+        )
+        assert is_authenticated(token_path=tmp_path / "token.json")

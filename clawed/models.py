@@ -714,6 +714,8 @@ class AppConfig(BaseModel):
     include_homework: bool = True
     agent_gateway: bool = False
     export_format: str = "markdown"
+    drive_root_folder: str = ""
+    drive_token_path: str = ""
 
     # Ollama API key (for cloud Ollama)
     ollama_api_key: Optional[str] = None
