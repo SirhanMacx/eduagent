@@ -89,15 +89,35 @@ def main(
                 )
                 needs_setup = True
 
+        interface = "terminal"  # default
+
         if needs_setup:
             from clawed.onboarding import quick_model_setup
             try:
-                quick_model_setup()
+                interface = quick_model_setup()
             except (KeyboardInterrupt, EOFError):
                 console.print("\n[dim]Setup cancelled. Run clawed again anytime.[/dim]")
                 raise typer.Exit()
 
-        # Drop into chat — agent handles onboarding conversationally for new users
+            if interface == "skip":
+                raise typer.Exit()
+
+        if interface == "telegram":
+            # Launch the Telegram bot — teacher continues setup on their phone
+            cfg = AppConfig.load()
+            token = cfg.telegram_bot_token
+            if token:
+                try:
+                    from clawed.transports.telegram import run_bot
+                    run_bot(token=token)
+                except KeyboardInterrupt:
+                    console.print("\n[yellow]Bot stopped.[/yellow]")
+                except Exception as exc:
+                    console.print(f"\n[red]Bot error:[/red] {exc}")
+                    console.print("[dim]Check your bot token and try again.[/dim]")
+            raise typer.Exit()
+
+        # Terminal chat — agent handles onboarding conversationally
         import asyncio
 
         from clawed.transports.cli import run_chat
@@ -106,7 +126,6 @@ def main(
         except (KeyboardInterrupt, EOFError):
             pass
         except Exception as exc:
-            # Teacher-friendly error messages
             err = str(exc).lower()
             if "api key" in err or "unauthorized" in err or "401" in err:
                 console.print("\n[red]Your AI provider key doesn't seem to be working.[/red]")

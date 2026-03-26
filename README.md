@@ -94,8 +94,9 @@ clawed
 That's it. Claw-ED walks you through setup in 30 seconds:
 1. **Pick your AI provider** — we recommend Ollama Cloud ($20/month flat rate, unlimited lessons)
 2. **Paste your API key** — get one from your provider's website
-3. **Connect Telegram** (optional) — paste your bot token to use Claw-ED from your phone
-4. **Start chatting** — the agent introduces itself and learns about you conversationally
+3. **Choose your interface:**
+   - **Telegram bot** (recommended) — paste your bot token, the bot starts immediately. Open Telegram and message it — setup continues on your phone.
+   - **Terminal chat** — stay in the terminal. The agent introduces itself and learns about you conversationally.
 
 ### Other ways to use it
 

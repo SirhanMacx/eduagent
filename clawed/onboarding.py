@@ -440,8 +440,14 @@ def _clear_config() -> None:
         console.print("  [dim]Previous configuration cleared.[/dim]")
 
 
-def quick_model_setup() -> None:
-    """Minimal first-run setup: pick provider, paste key, done. 30 seconds."""
+def quick_model_setup() -> str:
+    """Minimal first-run setup: provider + key + interface choice. 30 seconds.
+
+    Returns:
+        "telegram" — teacher wants to use Telegram (bot should start)
+        "terminal" — teacher wants terminal chat
+        "skip" — teacher skipped setup
+    """
     console.print(Panel(
         "[bold]Welcome to Claw-ED![/bold] \U0001f393\n\n"
         "I need an AI service to generate your lessons.\n"
@@ -449,7 +455,7 @@ def quick_model_setup() -> None:
         border_style="green",
     ))
 
-    # Simple provider menu — no auto-detection, no guessing
+    # ── Step 1: Pick provider ──
     console.print("\n[bold]Which AI service?[/bold]\n")
     console.print(
         "  [bold cyan][1][/bold cyan] \u2605 Ollama Cloud \u2014 $20/month, unlimited lessons "
@@ -474,9 +480,9 @@ def quick_model_setup() -> None:
         config = AppConfig()
         config.save()
         console.print("\n  [yellow]No AI configured. Run 'clawed setup' when you're ready.[/yellow]\n")
-        return
+        return "skip"
 
-    # Get the API key
+    # ── Step 2: Paste API key ──
     key_labels = {
         "1": "Ollama API key",
         "2": "Claude API key (starts with sk-ant-)",
@@ -489,19 +495,16 @@ def quick_model_setup() -> None:
         console.print("  [yellow]No key entered. Run 'clawed setup' when you're ready.[/yellow]\n")
         config = AppConfig()
         config.save()
-        return
+        return "skip"
 
-    # Build config based on choice
+    # Save config
     provider_map = {"1": LLMProvider.OLLAMA, "2": LLMProvider.ANTHROPIC, "3": LLMProvider.OPENAI}
     provider = provider_map[choice]
     config = AppConfig(provider=provider)
-
-    # Save key securely
     key = key.strip()
     set_api_key(provider.value, key)
     console.print(f"  [green]\u2713 Key saved ({key[:8]}...)[/green]")
 
-    # Provider-specific config
     if choice == "1":
         config.ollama_base_url = "https://ollama.com/v1"
         config.ollama_model = "minimax-m2.7:cloud"
@@ -509,25 +512,36 @@ def quick_model_setup() -> None:
 
     config.save()
 
-    # Telegram bot (optional) — lets teacher use Claw-ED from their phone
+    # ── Step 3: Choose interface ──
     console.print(
-        "\n[bold]Telegram bot[/bold] [dim](optional)[/dim]\n"
-        "  Connect a Telegram bot to use Claw-ED from your phone.\n"
-        "  Get a token from @BotFather on Telegram (see docs/BOT_SETUP.md).\n"
+        "\n[bold]How do you want to use Claw-ED?[/bold]\n"
+        "  [bold cyan][1][/bold cyan] \u2605 Telegram bot \u2014 use from your phone "
+        "[dim](recommended)[/dim]\n"
+        "  [bold cyan][2][/bold cyan] Terminal chat \u2014 use right here\n"
     )
-    tg_token = Prompt.ask(
-        "  [bold]Bot token[/bold] [dim](paste token, or Enter to skip)[/dim]",
-        default="",
-    )
-    if tg_token.strip():
-        config.telegram_bot_token = tg_token.strip()
-        config.save()
-        console.print("  [green]\u2713 Telegram bot configured![/green]")
-        console.print(
-            "  [dim]Start it anytime with: clawed bot[/dim]\n"
-        )
+    interface = Prompt.ask("Choice", choices=["1", "2"], default="1")
 
-    console.print("\n  [green]\u2713 Ready![/green] Starting Claw-ED...\n")
+    if interface == "1":
+        # Get Telegram bot token
+        console.print(
+            "\n  Get a bot token from [bold]@BotFather[/bold] on Telegram:\n"
+            "  1. Open Telegram, search for @BotFather\n"
+            "  2. Send /newbot, pick a name and username\n"
+            "  3. Copy the token BotFather gives you\n"
+        )
+        tg_token = Prompt.ask("  [bold]Paste your bot token[/bold]")
+        if tg_token.strip():
+            config.telegram_bot_token = tg_token.strip()
+            config.save()
+            console.print("\n  [green]\u2713 Bot configured![/green]")
+            console.print("  [bold]Starting your bot... Open Telegram and message it![/bold]\n")
+            return "telegram"
+        else:
+            console.print("  [dim]No token entered. Falling back to terminal chat.[/dim]\n")
+            return "terminal"
+
+    console.print("\n  [green]\u2713 Ready![/green]\n")
+    return "terminal"
 
 
 def run_setup_wizard(reset: bool = False) -> AppConfig:

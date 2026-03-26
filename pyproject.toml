@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "clawed"
-version = "0.9.6"
+version = "0.9.7"
 description = "Claw-ED — Your teaching files, your AI co-teacher. Upload curriculum materials, get a digital co-teacher that generates lessons in your voice."
 readme = "README.md"
 license = "MIT"
