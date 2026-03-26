@@ -115,11 +115,24 @@ class Gateway:
             return await self._dispatch(message, teacher_id, files)
 
         except Exception as e:
-            logger.error("Gateway error: %s", e)
+            logger.debug("Gateway error: %s", e)
             self._stats.errors_today += 1
             await self.emit("error", {"teacher_id": teacher_id, "message": str(e)})
+
+            err = str(e).lower()
+            if "401" in err or "unauthorized" in err or "api key" in err:
+                return GatewayResponse(
+                    text="Your AI provider key doesn't seem to be working. "
+                         "Run `clawed setup --reset` to reconfigure it."
+                )
+            if "connection" in err or "connect" in err or "timeout" in err:
+                return GatewayResponse(
+                    text="Can't connect to your AI provider right now. "
+                         "Check your internet connection and try again."
+                )
             return GatewayResponse(
-                text="I ran into an issue processing that. Please try again."
+                text="Something went wrong. Try again, or run "
+                     "`clawed setup --reset` to reconfigure."
             )
 
     async def handle_callback(self, callback_data: str, teacher_id: str) -> GatewayResponse:
