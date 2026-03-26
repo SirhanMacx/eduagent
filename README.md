@@ -235,11 +235,14 @@ Teachers are encouraged to experiment — try different models and see which one
 
 ---
 
-## Privacy
+## Privacy & Compliance
 
-- **Your files stay on your machine** unless you choose a cloud LLM
+- **Your files stay on your machine** unless you choose a cloud LLM provider
 - **API keys stored in OS keychain** when `keyring` is installed, otherwise in `~/.eduagent/` with restrictive permissions
 - **No telemetry, no data collection, no accounts**
+- **Student bot transparency:** The student chatbot is clearly AI-powered. Students should know they are interacting with an AI assistant, not their teacher directly.
+- **Not yet FERPA/COPPA certified.** Claw-ED does not currently have formal compliance certifications. Do not use it with personally identifiable student information (PII), IEP/504 documents containing real student names, or school-issued accounts until district-level compliance controls are implemented (planned for v1.0). Use it with your own lesson materials and generic/anonymized content.
+- **Cloud LLM disclaimer:** When using cloud AI providers (Ollama Cloud, Anthropic, OpenAI), your lesson prompts are sent to their APIs. Review your provider's data handling policy. For maximum privacy, use a local Ollama installation.
 
 ## Contributing
 

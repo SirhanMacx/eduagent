@@ -15,7 +15,7 @@ Claude is widely considered the best AI for writing and nuanced instruction. Two
 
 **Setup:**
 1. Go to [console.anthropic.com](https://console.anthropic.com) and create an account
-2. Add a credit card (you only pay for what you use — no subscription)
+2. Add a credit card (pay-per-use billing — can get expensive with heavy use)
 3. Click **API Keys** in the left sidebar → **Create Key** → copy it
 4. In Terminal: `export ANTHROPIC_API_KEY=sk-ant-your-key-here`
 

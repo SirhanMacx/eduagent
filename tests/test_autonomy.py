@@ -63,14 +63,30 @@ class TestApprovalTracker:
         for i in range(12):
             pa = mgr.create(
                 teacher_id="t1",
-                action_description="Upload",
+                action_description="Generate lesson",
+                action_payload={"action_type": "generate_lesson"},
+                agent_state={}, transport="cli",
+            )
+            mgr.approve(pa.id)
+
+        tracker = ApprovalTracker(approvals_dir=tmp_path)
+        assert tracker.should_offer_auto("generate_lesson") is True
+
+    def test_never_auto_approve_student_facing(self, tmp_path):
+        """Student-facing and Drive actions should never be auto-approved."""
+        from clawed.agent_core.approvals import ApprovalManager
+        mgr = ApprovalManager(base_dir=tmp_path)
+        for i in range(15):
+            pa = mgr.create(
+                teacher_id="t1",
+                action_description="Upload to Drive",
                 action_payload={"action_type": "drive_upload"},
                 agent_state={}, transport="cli",
             )
             mgr.approve(pa.id)
 
         tracker = ApprovalTracker(approvals_dir=tmp_path)
-        assert tracker.should_offer_auto("drive_upload") is True
+        assert tracker.should_offer_auto("drive_upload") is False
 
     def test_should_not_offer_auto_low_rate(self, tmp_path):
         from clawed.agent_core.approvals import ApprovalManager

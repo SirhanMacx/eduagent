@@ -13,6 +13,17 @@ _DEFAULT_DIR = Path.home() / ".eduagent" / "approvals"
 _MIN_SAMPLES = 10
 _AUTO_THRESHOLD = 0.95
 
+# Action types that should NEVER be auto-approved — always require teacher review.
+# Student-facing output and external publishing need human oversight in education.
+_NEVER_AUTO_APPROVE = {
+    "student_publish",
+    "student_bot_config",
+    "drive_upload",
+    "drive_create_slides",
+    "drive_create_doc",
+    "share_with_students",
+}
+
 
 class ApprovalTracker:
     """Tracks approval/rejection rates per action type and offers auto-approval."""
@@ -51,7 +62,13 @@ class ApprovalTracker:
         return rates
 
     def should_offer_auto(self, action_type: str) -> bool:
-        """Check if an action type qualifies for auto-approval offer."""
+        """Check if an action type qualifies for auto-approval offer.
+
+        Student-facing and external-publishing actions are never auto-approved
+        regardless of approval rate — teacher review is always required.
+        """
+        if action_type in _NEVER_AUTO_APPROVE:
+            return False
         rates = self.get_rates()
         if action_type not in rates:
             return False

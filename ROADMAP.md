@@ -1,8 +1,8 @@
 # Roadmap
 
-## v0.1.0 — Core (current)
+## v0.9.0 — Agent Platform (current)
 
-The foundation. Everything a single teacher needs to generate lessons in their own voice.
+Claw-ED is an agentic AI teaching partner. All features below are shipped.
 
 - [x] Persona extraction from curriculum files (PDF, DOCX, PPTX, TXT)
 - [x] Unit planning with essential questions and lesson sequences
@@ -10,48 +10,35 @@ The foundation. Everything a single teacher needs to generate lessons in their o
 - [x] Worksheets, assessments, and rubrics
 - [x] IEP/504 accommodations and differentiation
 - [x] 50-state standards alignment
-- [x] Telegram bot
-- [x] Web dashboard with streaming generation
-- [x] Student chatbot (answers in teacher's voice)
-- [x] Terminal chat and TUI dashboard
-- [x] Ollama support (free, runs locally)
+- [x] Telegram bot, web dashboard, terminal chat, TUI
+- [x] Student chatbot (answers in teacher's voice, with transparency disclosure)
+- [x] Ollama Cloud, Anthropic Claude, OpenAI GPT support
 - [x] MCP server (callable from any AI agent)
-- [x] Subject skill libraries (Social Studies, Math, Science, ELA, History)
-- [x] Self-improvement loop
-
-## v0.2.0 — Hosted Version
-
-No installation. Teachers sign up and start generating immediately.
-
-- [ ] Hosted web app — no `pip install`, no terminal, no API keys
-- [ ] Teacher accounts with saved personas and lesson history
-- [ ] Google Classroom export (personal accounts only)
-- [ ] Shareable lesson links
-- [ ] Collaborative unit planning (multiple teachers)
-- [ ] Usage analytics for teachers ("you generated 47 lessons this month")
-
-## v0.3.0 — Mobile
-
-Claw-ED in your pocket, natively.
-
-- [ ] iOS app
-- [ ] Android app
-- [ ] Push notifications ("your unit plan is ready")
-- [ ] Offline mode with on-device generation
-- [ ] Voice input — describe what you need, get a lesson back
+- [x] Subject skill libraries (13 subjects)
+- [x] Agent-first gateway with 22 typed tools
+- [x] Approval gates for consequential actions
+- [x] 3-layer cognitive memory (identity, curriculum state, episodic)
+- [x] Google Drive integration (OAuth, upload, organize, native Slides/Docs)
+- [x] Proactive scheduling daemon
+- [x] Custom teacher tools (YAML prompt-template)
+- [x] Multi-step planner for complex requests
+- [x] Autonomy progression with approval rate tracking
+- [x] Student insights tool (confusion topic detection)
+- [x] Teacher preference learning from feedback
+- [x] Closed feedback loop (ratings improve future generation)
 
 ## v1.0.0 — District Deployment
 
-Designed for school leaders and district administrators.
+Designed for school leaders and district administrators. **Not yet implemented.**
 
 - [ ] Admin dashboard (usage across teachers, schools, departments)
 - [ ] SSO integration (Google Workspace for Education, Clever, ClassLink)
+- [ ] RBAC — role-based access control (admin, teacher, student)
+- [ ] Multi-tenancy with per-teacher data isolation
 - [ ] District-wide curriculum sharing and standards enforcement
-- [ ] Bulk onboarding (import teacher rosters)
-- [ ] Compliance and audit logging
-- [ ] Multi-language support (Spanish, Mandarin, French, Arabic)
-- [ ] Standards auto-update (live sync with state DOE)
-- [ ] Professional development tracking integration
+- [ ] Audit logging (who did what, when)
+- [ ] FERPA/COPPA compliance controls
+- [ ] Hosted deployment (Docker/Kubernetes, no local install)
 
 ---
 
