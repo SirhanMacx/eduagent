@@ -3,13 +3,15 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from clawed.gateway import Gateway
 from clawed.gateway_response import GatewayResponse
+from clawed.models import AppConfig
 
 
 class TestGatewayHandle:
     def setup_method(self):
-        self.gw = Gateway()
+        from clawed.gateway import Gateway
+        # Explicitly use legacy gateway for these tests
+        self.gw = Gateway(config=AppConfig(agent_gateway=False))
         # Ensure clean onboard state (no leakage from prior tests)
         self.gw._onboard._state.clear()
 
@@ -54,7 +56,8 @@ class TestGatewayHandle:
 
 class TestGatewayStats:
     def setup_method(self):
-        self.gw = Gateway()
+        from clawed.gateway import Gateway
+        self.gw = Gateway(config=AppConfig(agent_gateway=False))
 
     @pytest.mark.asyncio
     async def test_stats_increment(self):
@@ -74,7 +77,8 @@ class TestGatewayStats:
 
 class TestGatewayEventBus:
     def setup_method(self):
-        self.gw = Gateway()
+        from clawed.gateway import Gateway
+        self.gw = Gateway(config=AppConfig(agent_gateway=False))
 
     @pytest.mark.asyncio
     async def test_events_emitted(self):

@@ -3,9 +3,9 @@ from clawed.models import AppConfig
 
 
 class TestFeatureFlag:
-    def test_flag_defaults_to_false(self):
+    def test_flag_defaults_to_true(self):
         cfg = AppConfig()
-        assert cfg.agent_gateway is False
+        assert cfg.agent_gateway is True
 
     def test_legacy_gateway_when_flag_off(self):
         from clawed.gateway import Gateway
@@ -24,7 +24,7 @@ class TestFlagOffParity:
 
     def test_gateway_is_legacy_class(self):
         from clawed.gateway import Gateway
-        gw = Gateway(config=AppConfig())
+        gw = Gateway(config=AppConfig(agent_gateway=False))
         assert gw.__class__.__name__ == "Gateway"
         assert gw.__class__.__module__ == "clawed._legacy_gateway"
 
@@ -34,7 +34,7 @@ class TestFlagOffParity:
         from clawed.gateway import Gateway
         from clawed.gateway_response import GatewayResponse
 
-        gw = Gateway(config=AppConfig())
+        gw = Gateway(config=AppConfig(agent_gateway=False))
         # Patch onboarding + config checks so we reach _dispatch
         with (
             patch.object(gw._onboard, "is_onboarding", return_value=False),

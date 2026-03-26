@@ -73,10 +73,10 @@ def main(
     if ctx.invoked_subcommand is None:
         from clawed.config import has_config
         if not has_config():
-            # Phase 1: Quick model setup in terminal
-            from clawed.onboarding import quick_model_setup
+            # First run: full guided wizard (subject, grade, state, provider, API key)
+            from clawed.onboarding import run_setup_wizard
             try:
-                quick_model_setup()
+                run_setup_wizard()
             except (KeyboardInterrupt, EOFError):
                 console.print("\n[dim]Setup cancelled. Run clawed again anytime.[/dim]")
                 raise typer.Exit()
@@ -90,8 +90,17 @@ def main(
         except (KeyboardInterrupt, EOFError):
             pass
         except Exception as exc:
-            console.print(f"\n[red]Something went wrong:[/red] {exc}")
-            console.print("[dim]Try 'clawed setup --reset' to reconfigure, or 'clawed --help' for commands.[/dim]")
+            # Teacher-friendly error messages
+            err = str(exc).lower()
+            if "api key" in err or "unauthorized" in err or "401" in err:
+                console.print("\n[red]Your AI provider key doesn't seem to be working.[/red]")
+                console.print("[dim]Run 'clawed setup --reset' to reconfigure your API key.[/dim]")
+            elif "connection" in err or "connect" in err or "timeout" in err:
+                console.print("\n[red]Can't connect to your AI provider.[/red]")
+                console.print("[dim]Check your internet connection and try again.[/dim]")
+            else:
+                console.print(f"\n[red]Something went wrong:[/red] {exc}")
+                console.print("[dim]Run 'clawed setup --reset' to reconfigure, or 'clawed --help' for commands.[/dim]")
         raise typer.Exit()
 
 
