@@ -2,7 +2,7 @@
 import pytest
 
 from clawed.agent_core.context import AgentContext, ToolResult
-from clawed.agent_core.tools.base import Tool, ToolRegistry
+from clawed.agent_core.tools.base import ToolRegistry
 
 
 class _DummyTool:
@@ -69,3 +69,35 @@ class TestToolRegistry:
         )
         result = await reg.execute("nonexistent", {}, ctx)
         assert "Unknown tool" in result.text
+
+
+class TestGenerateLessonTool:
+    def test_schema_valid(self):
+        from clawed.agent_core.tools.generate_lesson import GenerateLessonTool
+        tool = GenerateLessonTool()
+        s = tool.schema()
+        assert s["function"]["name"] == "generate_lesson"
+        assert "topic" in s["function"]["parameters"]["properties"]
+
+    @pytest.mark.asyncio
+    async def test_execute_returns_tool_result(self):
+        from unittest.mock import AsyncMock, patch
+
+        from clawed.agent_core.tools.generate_lesson import GenerateLessonTool
+        from clawed.models import AppConfig
+
+        tool = GenerateLessonTool()
+        ctx = AgentContext(
+            teacher_id="t1", config=AppConfig(),
+            teacher_profile={}, persona=None,
+            session_history=[], improvement_context="",
+        )
+        mock_lesson = type(
+            "Lesson", (),
+            {"model_dump": lambda self: {"title": "Fractions", "sections": []}},
+        )()
+        with patch("clawed.lesson.generate_lesson", new_callable=AsyncMock) as mock_gen:
+            mock_gen.return_value = mock_lesson
+            result = await tool.execute({"topic": "fractions"}, ctx)
+        assert isinstance(result, ToolResult)
+        assert "Fractions" in result.text or "fractions" in result.text.lower()
