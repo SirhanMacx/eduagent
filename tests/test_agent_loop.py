@@ -1,7 +1,11 @@
 """Tests for the agent loop with FakeLLM."""
 import pytest
 
+from clawed.agent_core.context import AgentContext, ToolResult
 from clawed.agent_core.fake_llm import FakeLLM, FakeLLMExhaustedError
+from clawed.agent_core.loop import run_agent_loop
+from clawed.agent_core.tools.base import ToolRegistry
+from clawed.models import AppConfig
 
 
 class TestFakeLLM:
@@ -40,11 +44,6 @@ class TestFakeLLM:
         with pytest.raises(FakeLLMExhaustedError):
             await llm.generate(messages=[], tools=None, system="")
 
-
-from clawed.agent_core.context import AgentContext, ToolResult
-from clawed.agent_core.loop import run_agent_loop
-from clawed.agent_core.tools.base import ToolRegistry
-from clawed.models import AppConfig
 
 
 class _EchoTool:

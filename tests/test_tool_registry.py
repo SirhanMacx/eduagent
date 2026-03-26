@@ -609,7 +609,8 @@ class TestAutoDiscovery:
             "from clawed.agent_core.context import AgentContext, ToolResult\n"
             "class GoodTool:\n"
             "    def schema(self):\n"
-            "        return {'type':'function','function':{'name':'good','description':'g','parameters':{'type':'object','properties':{}}}}\n"
+            "        return {'type':'function','function':{'name':'good',"
+            "'description':'g','parameters':{'type':'object','properties':{}}}}\n"
             "    async def execute(self, params, context):\n"
             "        return ToolResult(text='ok')\n"
         )

@@ -1,6 +1,8 @@
 """Tests for agent_core data types."""
 from pathlib import Path
 
+import pytest
+
 from clawed.agent_core.context import AgentContext, ToolResult
 
 
@@ -59,13 +61,12 @@ class TestPromptAssembly:
         assert "Teacher" in prompt
 
 
-import pytest
-
 
 class TestAgentGateway:
     @pytest.mark.asyncio
     async def test_handle_returns_gateway_response(self):
         from unittest.mock import patch
+
         from clawed.agent_core.core import Gateway as AgentGateway
         from clawed.agent_core.fake_llm import FakeLLM
         from clawed.models import AppConfig
@@ -79,10 +80,11 @@ class TestAgentGateway:
     @pytest.mark.asyncio
     async def test_file_routes_to_ingest(self):
         from pathlib import Path
-        from clawed.agent_core.core import Gateway as AgentGateway
-        from clawed.models import AppConfig
         from unittest.mock import AsyncMock, patch
+
+        from clawed.agent_core.core import Gateway as AgentGateway
         from clawed.gateway_response import GatewayResponse
+        from clawed.models import AppConfig
 
         gw = AgentGateway(config=AppConfig(agent_gateway=True))
         with patch.object(gw._ingest, "handle", new_callable=AsyncMock) as mock_ingest:
