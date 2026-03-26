@@ -96,6 +96,7 @@ class ToolRegistry:
                     and hasattr(obj, "schema")
                     and hasattr(obj, "execute")
                     and obj.__module__ == mod.__name__
+                    and not getattr(obj, "_is_protocol", False)
                 ):
                     try:
                         instance = obj()
