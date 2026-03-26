@@ -45,14 +45,13 @@ class _LLMClientAdapter:
         tools: list[dict[str, Any]] | None = None,
         system: str = "",
     ) -> dict[str, Any]:
-        from clawed.agent import _call_with_native_tools, _call_with_ollama_tools
-        from clawed.models import LLMProvider
-
         # The legacy agent functions operate on the global TOOL_DEFINITIONS.
         # We temporarily monkey-patch them so the registry schemas are used
         # instead. Since these functions read TOOL_DEFINITIONS at call time,
         # we swap the module-level list.
         import clawed.agent as _agent_mod
+        from clawed.agent import _call_with_native_tools, _call_with_ollama_tools
+        from clawed.models import LLMProvider
 
         original_defs = _agent_mod.TOOL_DEFINITIONS
         _agent_mod.TOOL_DEFINITIONS = tools or []
