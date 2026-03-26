@@ -305,6 +305,12 @@ class Gateway:
             tool_names=self._registry.tool_names(),
         )
 
+        # 2b. Enhance prompt for multi-step planning requests
+        from clawed.agent_core.planner import build_planning_prompt, is_planning_request
+
+        if is_planning_request(message):
+            system += build_planning_prompt()
+
         # 3. Build AgentContext for tools
         context = AgentContext(
             teacher_id=teacher_id,
