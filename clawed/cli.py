@@ -71,10 +71,25 @@ def main(
 ) -> None:
     """Your teaching files, your AI co-teacher."""
     if ctx.invoked_subcommand is None:
-        from clawed.config import has_config
+        from clawed.config import get_api_key, has_config
+        from clawed.models import AppConfig
+
+        needs_setup = False
         if not has_config():
-            # First run: just get the AI provider configured (30 seconds)
-            # The agent itself handles the rest conversationally
+            needs_setup = True
+        else:
+            # Config exists — but is the API key actually valid?
+            cfg = AppConfig.load()
+            provider = cfg.provider.value
+            key = get_api_key(provider)
+            if not key and provider != "ollama":
+                console.print(
+                    f"[yellow]No API key found for {provider}.[/yellow]\n"
+                    "Let's fix that.\n"
+                )
+                needs_setup = True
+
+        if needs_setup:
             from clawed.onboarding import quick_model_setup
             try:
                 quick_model_setup()

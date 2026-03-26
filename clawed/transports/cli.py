@@ -64,9 +64,22 @@ async def run_chat(teacher_id: str = "local-teacher") -> None:
                 result = await gateway.handle("hello", teacher_id)
             except Exception:
                 result = None
-                response_text = "Hi! I'm Claw-ED, your AI teaching assistant. What do you teach?"
             else:
-                response_text = result.text
+                pass
+
+        if result and result.text and "provider key" not in result.text.lower():
+            response_text = result.text
+        else:
+            # LLM failed or returned an error — show a friendly offline greeting
+            response_text = (
+                "Hi! I'm Claw-ED, your AI teaching assistant.\n\n"
+                "It looks like your AI provider isn't connected yet. "
+                "Exit chat (/quit) and run:\n"
+                "  clawed setup --reset\n\n"
+                "Or if you just want to see what I can do, try:\n"
+                "  clawed demo"
+            )
+
         console.print()
         console.print(
             Panel(
@@ -114,6 +127,21 @@ async def run_chat(teacher_id: str = "local-teacher") -> None:
 
         if text.lower() == "/status":
             text = "show status"
+
+        # Catch common mistakes — teacher typing terminal commands inside chat
+        if text.lower().startswith("clawed "):
+            console.print(
+                "[yellow]That's a terminal command — type it in PowerShell/Terminal, not here.[/yellow]\n"
+                f"[dim]Exit chat first (/quit), then run: {text}[/dim]\n"
+            )
+            continue
+
+        if text.lower() in ("/setup", "setup", "setup --reset"):
+            console.print(
+                "[yellow]To reconfigure, exit chat first (/quit), then run:[/yellow]\n"
+                "[dim]  clawed setup --reset[/dim]\n"
+            )
+            continue
 
         # Show spinner while generating
         with Live(
