@@ -218,14 +218,20 @@ Slides automatically include relevant academic images from Library of Congress, 
 ```
 Teacher's message (Telegram, CLI, TUI, Web, or OpenClaw)
         ↓
-Gateway → Router → Handler (generate, export, feedback, onboard, ...)
+Gateway (agent_core)
+  ├── Control Plane (deterministic: files, callbacks, onboarding)
+  └── Agent Loop (natural language → LLM with tool use)
+        ↓
+Tools (generate_lesson, search_standards, export, ...)
         ↓
 GatewayResponse (text, files, buttons)
         ↓
 Teacher sees the result
 ```
 
-See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full handler and services breakdown.
+The agent decides what to do via tool calling — no regex intent matching. Deterministic operations (file ingestion, onboarding, callbacks) bypass the agent for reliability. Enable with `clawed config set agent-gateway true`.
+
+See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full breakdown.
 
 ## ✅ Features
 
@@ -240,8 +246,12 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full handler and services br
 - [x] Curriculum gap analyzer, voice consistency evaluation
 - [x] Substitute packets, parent communications
 - [x] MCP server (tools callable from any AI agent)
-- [ ] Google Classroom export (coming soon)
-- [ ] Hosted version (coming soon)
+- [x] Agent-first gateway with typed tool registry (v0.6)
+- [x] Approval gates for consequential actions (v0.6)
+- [ ] Google Drive integration (v0.7)
+- [ ] Cognitive memory — learns your patterns over time (v0.7)
+- [ ] Proactive scheduling — preps your week automatically (v0.8)
+- [ ] Google Classroom export (future)
 
 See [FEATURES.md](FEATURES.md) for the full list with details.
 
@@ -257,8 +267,9 @@ See [ROADMAP.md](ROADMAP.md) for the full plan. Highlights:
 
 | Version | What's coming |
 |---------|--------------|
-| **v0.5.0** *(current)* | Conversational agent, tool use, browser setup wizard |
-| **v0.6.0** | Hosted version — no install, no terminal, no API keys |
+| **v0.6.0** *(current)* | Agent-first gateway, typed tool registry, approval gates, feature-flagged rollout |
+| **v0.7.0** | Google Drive integration, cognitive memory (embedding-based) |
+| **v0.8.0** | Proactive scheduling, custom teacher tools, multi-step planner |
 | **v1.0.0** | District deployment with admin dashboard and SSO |
 
 ## 🤝 Contributing

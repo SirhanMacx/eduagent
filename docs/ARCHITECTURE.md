@@ -1,59 +1,78 @@
-# EDUagent Architecture
+# Claw-ED Architecture
 
-This document describes the internal architecture of EDUagent — how messages flow through the system, what each module does, and how components connect.
+This document describes the internal architecture of Claw-ED — how messages flow through the system, what each module does, and how components connect.
+
+**v0.6 architecture:** Agent-first gateway with control-plane pre-router. The legacy regex-based intent router is still available behind a feature flag (`agent_gateway: false`).
 
 ---
 
-## System Overview
+## System Overview (v0.6 — Agent Core)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                           USER INTERFACES                                   │
 │                                                                             │
 │  ┌─────────────┐   ┌──────────────────┐   ┌─────────────┐   ┌───────────┐ │
-│  │  Telegram    │   │  Terminal REPL    │   │  Web UI     │   │  MCP      │ │
-│  │  (OpenClaw)  │   │  (eduagent chat)  │   │  (FastAPI)  │   │  Server   │ │
+│  │  Telegram    │   │  Terminal / TUI   │   │  Web UI     │   │  MCP      │ │
+│  │              │   │  (clawed chat/tui)│   │  (FastAPI)  │   │  Server   │ │
 │  └──────┬──────┘   └────────┬─────────┘   └──────┬──────┘   └─────┬─────┘ │
 │         │                   │                     │                │        │
 └─────────┼───────────────────┼─────────────────────┼────────────────┼────────┘
           │                   │                     │                │
           └───────────────────┼─────────────────────┘                │
                               ▼                                      ▼
-                ┌──────────────────────────┐          ┌──────────────────────┐
-                │   openclaw_plugin.py     │          │   mcp_server.py      │
-                │                          │          │                      │
-                │ ┌──────────────────────┐ │          │ Tools:               │
-                │ │ router.py            │ │          │ • generate_lesson    │
-                │ │ Intent detection &   │ │          │ • generate_unit      │
-                │ │ parameter extraction │ │          │ • ingest_materials   │
-                │ └──────────┬───────────┘ │          │ • student_question   │
-                │            ▼             │          │ • get_standards      │
-                │ ┌──────────────────────┐ │          └──────────┬───────────┘
-                │ │ state.py             │ │                     │
-                │ │ Session load/save    │ │                     │
-                │ │ Conversation context │ │                     │
-                │ └──────────┬───────────┘ │                     │
-                │            ▼             │                     │
-                │      _dispatch()         │◄────────────────────┘
-                │   Route to handler       │
-                └────────────┬─────────────┘
-                             │
-          ┌──────────┬───────┼───────┬──────────┬──────────┐
-          ▼          ▼       ▼       ▼          ▼          ▼
-   ┌───────────┐┌────────┐┌───────┐┌────────┐┌──────────┐┌───────────┐
-   │ ingestor  ││persona ││planner││lesson  ││materials ││student_bot│
-   │           ││        ││       ││        ││          ││           │
-   │ PDF/DOCX/ ││Extract ││Unit   ││Daily   ││Worksheet ││Student Q&A│
-   │ PPTX/ZIP/ ││teaching││plans  ││lesson  ││Quiz      ││in teacher │
-   │ Drive     ││style   ││with   ││plans   ││Rubric    ││voice      │
-   │           ││→ JSON  ││scope  ││with    ││Slides    ││           │
-   │           ││        ││       ││detail  ││IEP notes ││           │
-   └─────┬─────┘└───┬────┘└───┬───┘└───┬────┘└────┬─────┘└─────┬─────┘
-         │          │         │        │          │            │
-         └──────────┴─────────┼────────┴──────────┘            │
-                              ▼                                │
-              ┌─────────────────────────────┐                  │
-              │        llm.py               │◄─────────────────┘
+              ┌──────────────────────────────────┐    ┌──────────────────────┐
+              │   gateway.py (feature-flag shim) │    │   mcp_server.py      │
+              │                                  │    └──────────┬───────────┘
+              │   agent_gateway=true ?           │               │
+              │   ├── YES → agent_core/core.py   │               │
+              │   └── NO  → _legacy_gateway.py   │               │
+              └──────────────┬───────────────────┘               │
+                             │                                    │
+                             ▼                                    │
+              ┌──────────────────────────────────┐               │
+              │   agent_core/core.py (Gateway)   │◄──────────────┘
+              │                                  │
+              │ ┌──────────────────────────────┐ │
+              │ │ Control Plane (deterministic) │ │
+              │ │ • File ingestion → IngestHdlr │ │
+              │ │ • Onboarding → OnboardHandler │ │
+              │ │ • Callbacks → callback_hdlrs  │ │
+              │ │ • Approvals → ApprovalManager │ │
+              │ └──────────────────────────────┘ │
+              │                                  │
+              │ ┌──────────────────────────────┐ │
+              │ │ Agent Loop (LLM-driven)      │ │
+              │ │ • Context loading            │ │
+              │ │ • System prompt assembly     │ │
+              │ │ • Tool-use loop (max 20)     │ │
+              │ └──────────────┬───────────────┘ │
+              └────────────────┼─────────────────┘
+                               │
+              ┌────────────────┼────────────────────────────────┐
+              │                ▼                                │
+              │   agent_core/tools/ (auto-discovered)           │
+              │                                                 │
+              │   generate_lesson  │ generate_unit  │ export    │
+              │   search_standards │ ingest         │ approval  │
+              │   curriculum_map   │ gap_analysis    │ profile   │
+              │   sub_packet       │ parent_comm     │ search    │
+              └────────────────────┼────────────────────────────┘
+                                   │
+          ┌──────────┬─────────────┼──────────┬──────────┐
+          ▼          ▼             ▼          ▼          ▼
+   ┌───────────┐┌────────┐┌───────────┐┌──────────┐┌───────────┐
+   │ ingestor  ││planner ││lesson.py  ││materials ││student_bot│
+   │           ││        ││           ││          ││           │
+   │ PDF/DOCX/ ││Unit    ││Daily      ││Worksheet ││Student Q&A│
+   │ PPTX/ZIP  ││plans   ││lesson     ││Quiz      ││in teacher │
+   │           ││        ││plans      ││Rubric    ││voice      │
+   └─────┬─────┘└───┬────┘└─────┬─────┘└────┬─────┘└─────┬─────┘
+         │          │           │            │            │
+         └──────────┴───────────┼────────────┘            │
+                                ▼                         │
+              ┌─────────────────────────────┐             │
+              │        llm.py               │◄────────────┘
               │   Unified LLM Client        │
               │                             │
               │ ┌─────────────────────────┐ │

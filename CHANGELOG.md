@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.6.0] - 2026-03-25
+
+### Added
+- **Agent-first gateway** — new `clawed/agent_core/` package with control-plane pre-router and LLM-driven tool-use loop. Natural-language messages flow through the agent; deterministic paths (files, callbacks, onboarding) stay deterministic.
+- **Typed tool registry** — 15 tools auto-discovered from `agent_core/tools/`, each wrapping existing generation/export/standards functions with the `Tool` protocol (`schema()` + `execute()`)
+- **Approval gate** — `PendingApproval` persistence model with `ApprovalManager` for pause/resume/expire lifecycle across all transports
+- **FakeLLM test harness** — deterministic LLM mock for testing agent behavior without real API calls
+- **Feature flag** — `agent_gateway` flag in `AppConfig` toggles between legacy and agent gateway. Flag OFF = identical old behavior. Flag ON = agent-first routing.
+- **Compatibility shim** — `clawed/gateway.py` transparently routes to legacy or agent gateway based on flag. All existing imports (`EduAgentGateway`, `ActivityEvent`, `GatewayStats`) continue to work.
+- **System prompt assembly** — `build_system_prompt()` loads teacher context from canonical sources (database, persona, memory engine) into a dynamic system prompt
+- **TUI chat** — `clawed tui` command provides full-screen terminal chat via Textual, connecting to the running gateway over HTTP
+- **`/api/gateway/chat`** endpoint for transport clients
+
+### Changed
+- `clawed serve` now shows the onboarding wizard for new users (not the marketing landing page)
+- Privacy claim updated — clarifies keyring is optional for API key storage
+- Bare `clawed` command now respects `EDUAGENT_DATA_DIR` environment variable
+
+### Fixed
+- TUI pip install hint no longer eaten by Rich markup
+- Dockerfile now copies `clawed/` package (was missing, only had `eduagent/`)
+
 ## [0.5.0] - 2026-03-25
 
 ### Removed

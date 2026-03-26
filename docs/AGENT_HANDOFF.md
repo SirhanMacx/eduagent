@@ -2,8 +2,9 @@
 
 **Date:** 2026-03-25
 **Last commit:** See `git log --oneline -5`
-**Tests:** 1208 passed, 34 skipped
-**PyPI:** v0.5.0 published at pypi.org/project/clawed/
+**Tests:** 1285 passed, 34 skipped
+**PyPI:** v0.6.0
+**Agent Core:** Feature-flagged. Enable with `clawed config set agent-gateway true`
 
 ---
 
