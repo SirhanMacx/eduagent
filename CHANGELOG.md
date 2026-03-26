@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.9.0] - 2026-03-25
+
+### Added
+- **Autonomy progression** — `ApprovalTracker` monitors accept/reject rates per action type. When a teacher approves 95%+ of a specific action (with 10+ samples), the agent offers to auto-approve that action type.
+- **Student insights tool** — `student_insights` queries student question patterns, groups by lesson topic, surfaces top confusion areas for reteaching decisions
+- **Teacher preference learning** — `extract_preferences()` pulls signals from feedback history (ratings, edited sections), memory engine patterns, and approval tracker. Preferences rendered in the system prompt.
+- **Closed feedback loop** — proven end-to-end: generate → feedback → store episode → next generation references the feedback. Rich episode metadata (interaction type, tool calls, message length).
+- **Autonomy context in system prompt** — agent sees approval rate summaries and can offer auto-approval for consistently-approved actions
+- **22 agent tools total** (added student_insights)
+
 ## [0.8.0] - 2026-03-25
 
 ### Added

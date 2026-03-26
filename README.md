@@ -119,7 +119,7 @@ Teacher's message (Telegram, CLI, TUI, Web)
     ├── Control Plane (deterministic: files, callbacks, onboarding)
     └── Agent Loop (LLM decides → calls tools → returns result)
               ↓
-        21 Tools
+        22 Tools
         generate_lesson · generate_unit · generate_materials
         generate_assessment · search_standards · export_document
         ingest_materials · configure_profile · request_approval
@@ -150,13 +150,17 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full breakdown.
 
 ### Agent capabilities
 - Agent-first gateway — LLM decides what tools to call, no hardcoded routing
-- 21 typed tools auto-discovered from the tool registry
+- 22 typed tools auto-discovered from the tool registry
 - Approval gates — agent asks before consequential actions
 - 3-layer cognitive memory — identity, curriculum state, episodic recall
 - Google Drive integration — upload, list, organize, native Slides/Docs, read
 - Proactive scheduling — automated morning prep, weekly planning, feedback digests
 - Custom teacher tools — define your own tools in YAML, no code needed
 - Multi-step planner — "prepare my week" decomposes into sequential tool calls
+- Autonomy progression — auto-approval offers when you consistently approve an action
+- Closed feedback loop — ratings and feedback improve future generation
+- Student insights — surfaces what students are confused about for reteaching
+- Teacher preference learning — adapts to your editing patterns over time
 
 ### Surfaces
 - Terminal chat, full-screen TUI, web dashboard, Telegram bot
@@ -168,8 +172,7 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full breakdown.
 
 | Version | What's coming |
 |---------|--------------|
-| **v0.8.0** *(current)* | Proactive scheduling, custom teacher tools, multi-step planner, native Slides/Docs, 21 tools |
-| **v0.9.0** | Autonomy progression, closed loop (plan → generate → publish → feedback → reteach) |
+| **v0.9.0** *(current)* | Autonomy progression, closed feedback loop, student insights, preference learning, 22 tools |
 | **v1.0.0** | District deployment with admin dashboard and SSO |
 
 ---
