@@ -87,3 +87,39 @@ class TestEmbeddingProvider:
         vecs = embedder.embed_batch(["hello world", "foo bar"])
         assert len(vecs) == 2
         assert all(isinstance(v, list) for v in vecs)
+
+
+class TestEpisodicMemory:
+    def test_store_and_recall(self, tmp_path):
+        from clawed.agent_core.memory.episodes import EpisodicMemory
+        mem = EpisodicMemory(db_path=tmp_path / "episodes.db")
+        mem.store("t1", "I taught photosynthesis today and it went well")
+        mem.store("t1", "Students struggled with the light reactions diagram")
+        mem.store("t1", "The American Revolution unit is starting next week")
+
+        results = mem.recall("t1", "photosynthesis", top_k=2)
+        assert len(results) <= 2
+        assert any("photosynthesis" in r["text"] for r in results)
+
+    def test_recall_empty(self, tmp_path):
+        from clawed.agent_core.memory.episodes import EpisodicMemory
+        mem = EpisodicMemory(db_path=tmp_path / "episodes.db")
+        results = mem.recall("t1", "anything", top_k=5)
+        assert results == []
+
+    def test_store_with_metadata(self, tmp_path):
+        from clawed.agent_core.memory.episodes import EpisodicMemory
+        mem = EpisodicMemory(db_path=tmp_path / "episodes.db")
+        mem.store("t1", "Great lesson on fractions", metadata={"type": "feedback", "rating": 5})
+        results = mem.recall("t1", "fractions")
+        assert len(results) == 1
+        assert results[0]["metadata"]["rating"] == 5
+
+    def test_teacher_isolation(self, tmp_path):
+        from clawed.agent_core.memory.episodes import EpisodicMemory
+        mem = EpisodicMemory(db_path=tmp_path / "episodes.db")
+        mem.store("t1", "Teacher 1 content about science")
+        mem.store("t2", "Teacher 2 content about math")
+        results = mem.recall("t1", "content")
+        assert len(results) == 1
+        assert "Teacher 1" in results[0]["text"]
