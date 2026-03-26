@@ -7,6 +7,11 @@ _PLANNING_KEYWORDS = [
     "prepare next week", "get ready for",
     "unit with materials", "unit plan with",
     "full unit", "complete unit",
+    "plan a unit", "plan a full", "plan the unit",
+    "year-long", "year long", "yearlong",
+    "curriculum map", "pacing guide", "scope and sequence",
+    "plan the semester", "plan the year", "plan next month",
+    "prepare all", "generate all", "build a unit",
 ]
 
 _PLANNING_ADDITION = """
