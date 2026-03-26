@@ -225,9 +225,32 @@ class Gateway:
         self._running = False
         await self.emit("system", {"message": "Gateway stopped"})
 
-    async def handle_system_event(self, event_type: str, data: dict | None = None) -> None:
-        """Handle a system-level event (e.g., from cron or monitoring)."""
-        await self.emit(event_type, data)
+    async def handle_system_event(
+        self,
+        event_type: str,
+        teacher_id: str = "local-teacher",
+        payload: dict | None = None,
+    ) -> GatewayResponse:
+        """Handle a system event (scheduled task, cron trigger, etc.).
+
+        Routes through the agent loop with context about what triggered it.
+        """
+        await self.emit(event_type, payload or {})
+
+        # Build a descriptive message for the agent
+        task_name = (payload or {}).get("task_name", event_type)
+        message = (
+            f"[SYSTEM] Scheduled task '{task_name}' has fired. "
+            "Check what needs to be done and take action."
+        )
+
+        try:
+            return await self._agent_loop(message, teacher_id)
+        except Exception as e:
+            logger.error("System event handling failed: %s", e)
+            return GatewayResponse(
+                text=f"System event '{event_type}' received but could not be processed: {e}",
+            )
 
     # ------------------------------------------------------------------
     # Agent loop — the core reasoning path
