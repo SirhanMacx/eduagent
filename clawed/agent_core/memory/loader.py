@@ -66,9 +66,22 @@ def load_memory_context(teacher_id: str, current_message: str) -> dict[str, Any]
     except Exception as e:
         logger.debug("Improvement context load failed: %s", e)
 
+    # Layer 4: Preferences
+    preferences_summary = ""
+    autonomy_summary = ""
+    try:
+        from clawed.agent_core.memory.preferences import extract_preferences, summarize_preferences
+        prefs = extract_preferences(teacher_id)
+        preferences_summary = summarize_preferences(prefs)
+        autonomy_summary = prefs.get("autonomy_summary", "")
+    except Exception as e:
+        logger.debug("Preference extraction failed: %s", e)
+
     return {
         "identity_summary": identity_summary,
         "curriculum_summary": curriculum_summary,
         "relevant_episodes": relevant_episodes,
         "improvement_context": improvement_context,
+        "preferences_summary": preferences_summary,
+        "autonomy_summary": autonomy_summary,
     }

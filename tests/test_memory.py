@@ -142,3 +142,28 @@ class TestMemoryLoader:
         ctx = load_memory_context("nonexistent", "hello")
         assert isinstance(ctx["identity_summary"], str)
         assert isinstance(ctx["curriculum_summary"], str)
+
+
+class TestPreferenceLearning:
+    def test_extract_preferences_empty(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("EDUAGENT_DATA_DIR", str(tmp_path))
+        from clawed.agent_core.memory.preferences import extract_preferences
+        prefs = extract_preferences("nonexistent")
+        assert isinstance(prefs, dict)
+        assert "positive_patterns" in prefs
+        assert "negative_patterns" in prefs
+
+    def test_summarize_preferences(self):
+        from clawed.agent_core.memory.preferences import summarize_preferences
+        prefs = {
+            "positive_patterns": ["Inquiry-based activities work well"],
+            "negative_patterns": ["Avoid long lectures"],
+            "structural_prefs": ["Teacher edits Do Now section"],
+        }
+        summary = summarize_preferences(prefs)
+        assert "Inquiry-based" in summary
+        assert "Do Now" in summary
+
+    def test_summarize_empty(self):
+        from clawed.agent_core.memory.preferences import summarize_preferences
+        assert summarize_preferences({"positive_patterns": [], "negative_patterns": [], "structural_prefs": []}) == ""

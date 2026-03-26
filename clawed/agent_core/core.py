@@ -302,6 +302,8 @@ class Gateway:
             improvement_context=memory_ctx["improvement_context"],
             curriculum_summary=memory_ctx["curriculum_summary"],
             relevant_episodes=memory_ctx["relevant_episodes"],
+            preferences=memory_ctx.get("preferences_summary", ""),
+            autonomy_summary=memory_ctx.get("autonomy_summary", ""),
             tool_names=self._registry.tool_names(),
         )
 

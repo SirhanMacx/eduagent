@@ -11,6 +11,8 @@ def build_system_prompt(
     tool_names: list[str],
     curriculum_summary: str = "",
     relevant_episodes: str = "",
+    preferences: str = "",
+    autonomy_summary: str = "",
 ) -> str:
     """Assemble the agent's system prompt from canonical context."""
     sections = [
@@ -33,6 +35,12 @@ def build_system_prompt(
 
     if relevant_episodes:
         sections.append(f"\n## Relevant Past Interactions\n{relevant_episodes}")
+
+    if preferences:
+        sections.append(f"\n## Teacher Preferences\n{preferences}")
+
+    if autonomy_summary:
+        sections.append(f"\n## Autonomy\n{autonomy_summary}")
 
     if tool_names:
         sections.append(
