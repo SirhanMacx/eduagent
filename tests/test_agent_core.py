@@ -57,3 +57,74 @@ class TestPromptAssembly:
         )
         assert "Claw-ED" in prompt
         assert "Teacher" in prompt
+
+
+import pytest
+
+
+class TestAgentGateway:
+    @pytest.mark.asyncio
+    async def test_handle_returns_gateway_response(self):
+        from unittest.mock import patch
+        from clawed.agent_core.core import Gateway as AgentGateway
+        from clawed.agent_core.fake_llm import FakeLLM
+        from clawed.models import AppConfig
+
+        llm = FakeLLM([{"type": "text", "content": "Hello teacher!"}])
+        gw = AgentGateway(config=AppConfig(agent_gateway=True), llm=llm)
+        with patch("clawed.agent_core.core.has_config", return_value=True):
+            result = await gw.handle("hi", "t1")
+        assert result.text == "Hello teacher!"
+
+    @pytest.mark.asyncio
+    async def test_file_routes_to_ingest(self):
+        from pathlib import Path
+        from clawed.agent_core.core import Gateway as AgentGateway
+        from clawed.models import AppConfig
+        from unittest.mock import AsyncMock, patch
+        from clawed.gateway_response import GatewayResponse
+
+        gw = AgentGateway(config=AppConfig(agent_gateway=True))
+        with patch.object(gw._ingest, "handle", new_callable=AsyncMock) as mock_ingest:
+            mock_ingest.return_value = GatewayResponse(text="Ingested!")
+            result = await gw.handle("hi", "t1", files=[Path("/tmp/test.pdf")])
+        mock_ingest.assert_called_once()
+        assert result.text == "Ingested!"
+
+    @pytest.mark.asyncio
+    async def test_callback_routes_approval(self):
+        from clawed.agent_core.core import Gateway as AgentGateway
+        from clawed.models import AppConfig
+
+        gw = AgentGateway(config=AppConfig(agent_gateway=True))
+        result = await gw.handle_callback("approve:nonexistent123", "t1")
+        assert result.text  # some response even if approval not found
+
+    def test_has_event_bus(self):
+        from clawed.agent_core.core import Gateway as AgentGateway
+        from clawed.models import AppConfig
+        gw = AgentGateway(config=AppConfig(agent_gateway=True))
+        assert gw.event_bus is not None
+
+    @pytest.mark.asyncio
+    async def test_has_stats(self):
+        from clawed.agent_core.core import Gateway as AgentGateway
+        from clawed.models import AppConfig
+        gw = AgentGateway(config=AppConfig(agent_gateway=True))
+        s = await gw.stats()
+        assert "messages_today" in s
+
+    def test_has_backward_compat_methods(self):
+        from clawed.agent_core.core import Gateway as AgentGateway
+        from clawed.models import AppConfig
+        gw = AgentGateway(config=AppConfig(agent_gateway=True))
+        assert hasattr(gw, "process_message")
+        assert hasattr(gw, "start")
+        assert hasattr(gw, "stop")
+        assert hasattr(gw, "handle_system_event")
+
+    def test_feature_flag_on_routes_here(self):
+        from clawed.gateway import Gateway
+        from clawed.models import AppConfig
+        gw = Gateway(config=AppConfig(agent_gateway=True))
+        assert gw.__class__.__module__ == "clawed.agent_core.core"
