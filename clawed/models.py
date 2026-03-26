@@ -765,12 +765,13 @@ class AppConfig(BaseModel):
         # Honor OLLAMA_URL env var as an alias for ollama_base_url
         import os
         ollama_url_env = os.environ.get("OLLAMA_URL")
-        if ollama_url_env and cfg.ollama_base_url == "http://localhost:11434":
+        if ollama_url_env:
             cfg.ollama_base_url = ollama_url_env
 
         # Auto-fix stale Ollama Cloud URLs from earlier versions
         if "ollama.com" in cfg.ollama_base_url and cfg.ollama_base_url != "https://ollama.com":
             cfg.ollama_base_url = "https://ollama.com"
+            cfg.save()
 
         # Hydrate secrets from secure storage
         from clawed.config import get_api_key

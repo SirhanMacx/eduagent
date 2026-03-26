@@ -99,7 +99,10 @@ async def save_settings(req: SaveSettingsRequest):
     cfg.anthropic_model = req.anthropic_model
     cfg.openai_model = req.openai_model
     cfg.ollama_model = req.ollama_model
-    cfg.ollama_base_url = req.ollama_base_url
+    # Validate and normalize ollama_base_url: strip trailing slashes and paths
+    from urllib.parse import urlparse
+    _parsed = urlparse(req.ollama_base_url)
+    cfg.ollama_base_url = f"{_parsed.scheme}://{_parsed.netloc}".rstrip("/")
     cfg.include_homework = req.include_homework
     cfg.export_format = req.export_format
     cfg.save()

@@ -156,15 +156,18 @@ class Gateway:
                 return GatewayResponse(
                     text="Can't connect to your AI provider right now. "
                          "Check your internet connection and try again."
+                         + debug_hint
                 )
             if "rate limit" in err or "429" in err:
                 return GatewayResponse(
                     text="Your AI provider is temporarily overloaded. "
                          "Wait a minute and try again."
+                         + debug_hint
                 )
             return GatewayResponse(
                 text="Something went wrong. Try again, or run "
                      "`clawed setup --reset` to reconfigure."
+                     + debug_hint
             )
 
     async def handle_callback(self, callback_data: str, teacher_id: str) -> GatewayResponse:

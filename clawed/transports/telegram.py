@@ -352,6 +352,7 @@ class EduAgentTelegramBot:
 
         from clawed.gateway import Gateway
         self.gateway = Gateway()
+        self._loop = asyncio.new_event_loop()
 
     @classmethod
     def from_env(cls, data_dir: Path | None = None) -> EduAgentTelegramBot:
@@ -384,6 +385,12 @@ class EduAgentTelegramBot:
         signal.signal(signal.SIGINT, _signal_handler)
         signal.signal(signal.SIGTERM, _signal_handler)
 
+        # Clear stale webhooks and pending updates
+        try:
+            self.api._call("deleteWebhook", drop_pending_updates=True)
+        except Exception:
+            pass
+
         self.api.set_my_commands(self.COMMANDS)
         me = self.api.get_me()
         bot_name = me.get("username", "unknown")
@@ -392,6 +399,14 @@ class EduAgentTelegramBot:
 
         self._running = True
         offset = 0
+
+        # Drain any pending updates from previous session
+        try:
+            old = self.api._call("getUpdates", offset=-1, timeout=0)
+            if old and isinstance(old, list) and len(old) > 0:
+                offset = old[-1]["update_id"] + 1
+        except Exception:
+            pass
         while self._running:
             try:
                 updates = self.api.get_updates(offset=offset, timeout=30)
@@ -405,6 +420,7 @@ class EduAgentTelegramBot:
 
         print("\nBot stopped.")
         _release_bot_lock()
+        self._loop.close()
         self.api.close()
 
     def _process_update(self, update: dict) -> None:
@@ -416,7 +432,7 @@ class EduAgentTelegramBot:
                 teacher_id = str(cb["from"]["id"])
                 data = cb.get("data", "")
                 self.api.answer_callback_query(cb["id"])
-                response = asyncio.run(
+                response = self._loop.run_until_complete(
                     self.gateway.handle_callback(data, teacher_id)
                 )
                 self._send_response(self.api, chat_id, response)
@@ -448,7 +464,7 @@ class EduAgentTelegramBot:
                 typing_thread.start()
 
                 try:
-                    response = asyncio.run(
+                    response = self._loop.run_until_complete(
                         self.gateway.handle(text, teacher_id, files=files or None)
                     )
                 finally:
@@ -474,7 +490,9 @@ class EduAgentTelegramBot:
             return files
 
         suffix = Path(doc.get("file_name", "file")).suffix or ""
-        local = Path(tempfile.mktemp(suffix=suffix, dir=self.data_dir / "downloads"))
+        fd, tmp_path = tempfile.mkstemp(suffix=suffix, dir=self.data_dir / "downloads")
+        os.close(fd)
+        local = Path(tmp_path)
         local.parent.mkdir(parents=True, exist_ok=True)
         if self.api.download_file(tg_path, local):
             files.append(local)

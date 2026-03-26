@@ -8,6 +8,8 @@ from clawed.gateway_response import GatewayResponse
 
 logger = logging.getLogger(__name__)
 
+MAX_INGEST_FILES = 500
+
 def ingest_path(path, **kwargs):
     from clawed.ingestor import ingest_path as _ingest
     return _ingest(path, **kwargs)
@@ -28,6 +30,26 @@ class IngestHandler:
         target = Path(path).expanduser().resolve() if path else None
         documents = []
         try:
+            # Guard: check total file count before ingesting a directory
+            if target and target.is_dir():
+                all_files = list(target.rglob("*"))
+                all_files = [f for f in all_files if f.is_file()]
+                if len(all_files) > MAX_INGEST_FILES:
+                    logger.warning(
+                        "Ingestion path has %d files, truncating to %d",
+                        len(all_files), MAX_INGEST_FILES,
+                    )
+                    return GatewayResponse(
+                        text=f"Found {len(all_files)} files, which exceeds the "
+                             f"maximum of {MAX_INGEST_FILES}. Please narrow the "
+                             f"folder or split into smaller batches."
+                    )
+            if files and len(files) > MAX_INGEST_FILES:
+                return GatewayResponse(
+                    text=f"Received {len(files)} files, which exceeds the "
+                         f"maximum of {MAX_INGEST_FILES}. Please send fewer files."
+                )
+
             if target and target.exists():
                 documents = ingest_path(str(target))
             elif files:
