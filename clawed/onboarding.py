@@ -456,14 +456,32 @@ def quick_model_setup() -> str:
     ))
 
     # ── Step 1: Pick provider ──
+    # Auto-detect local Ollama
+    local_ollama = False
+    try:
+        import httpx
+        resp = httpx.get("http://localhost:11434/api/tags", timeout=3.0)
+        if resp.status_code == 200:
+            local_ollama = True
+    except Exception:
+        pass
+
     console.print("\n[bold]Which AI service?[/bold]\n")
-    console.print(
-        "  [bold cyan][1][/bold cyan] \u2605 Ollama Cloud \u2014 $20/month, unlimited lessons "
-        "[dim](recommended)[/dim]"
-    )
-    console.print(
-        "        Sign up: [cyan]https://ollama.com[/cyan] \u2192 Settings \u2192 API Keys"
-    )
+    if local_ollama:
+        console.print(
+            "  [bold cyan][1][/bold cyan] \u2605 Local Ollama \u2014 detected on this machine, free "
+            "[dim](recommended)[/dim]"
+        )
+    else:
+        console.print(
+            "  [bold cyan][1][/bold cyan] \u2605 Ollama \u2014 $20/month cloud, or free local install"
+        )
+        console.print(
+            "        Cloud: [cyan]https://ollama.com[/cyan] \u2192 Settings \u2192 API Keys"
+        )
+        console.print(
+            "        Local: [cyan]https://ollama.com/download[/cyan]"
+        )
     console.print("  [bold cyan][2][/bold cyan] Claude (Anthropic) \u2014 highest quality, ~$20+/lesson")
     console.print(
         "        Sign up: [cyan]https://console.anthropic.com[/cyan] \u2192 API Keys"
@@ -482,33 +500,69 @@ def quick_model_setup() -> str:
         console.print("\n  [yellow]No AI configured. Run 'clawed setup' when you're ready.[/yellow]\n")
         return "skip"
 
-    # ── Step 2: Paste API key ──
-    key_labels = {
-        "1": "Ollama API key",
-        "2": "Claude API key (starts with sk-ant-)",
-        "3": "OpenAI API key (starts with sk-)",
-    }
-    console.print("\n  [dim]Paste your key below (it will be visible so you can verify it):[/dim]")
-    key = Prompt.ask(f"  [bold]{key_labels[choice]}[/bold]")
+    # ── Step 2: Get API key (or skip for local Ollama) ──
+    if choice == "1" and local_ollama:
+        # Local Ollama — no API key needed
+        config = AppConfig(provider=LLMProvider.OLLAMA)
+        config.ollama_base_url = "http://localhost:11434"
 
-    if not key.strip():
-        console.print("  [yellow]No key entered. Run 'clawed setup' when you're ready.[/yellow]\n")
-        config = AppConfig()
-        config.save()
-        return "skip"
+        # Check which models are available
+        try:
+            resp = httpx.get("http://localhost:11434/api/tags", timeout=5.0)
+            models = [m["name"] for m in resp.json().get("models", [])]
+            if models:
+                console.print(f"  [green]\u2713 Found {len(models)} models: {', '.join(models[:5])}[/green]")
+                # Pick the best available model
+                preferred = ["minimax-m2.7", "qwen3.5", "llama4", "mistral", "llama3"]
+                picked = models[0]
+                for pref in preferred:
+                    for m in models:
+                        if pref in m:
+                            picked = m
+                            break
+                config.ollama_model = picked
+                console.print(f"  [green]\u2713 Using model: {picked}[/green]")
+            else:
+                console.print("  [yellow]No models found. Pull one with: ollama pull qwen3.5[/yellow]")
+                config.ollama_model = "qwen3.5"
+        except Exception:
+            config.ollama_model = "qwen3.5"
 
-    # Save config
-    provider_map = {"1": LLMProvider.OLLAMA, "2": LLMProvider.ANTHROPIC, "3": LLMProvider.OPENAI}
-    provider = provider_map[choice]
-    config = AppConfig(provider=provider)
-    key = key.strip()
-    set_api_key(provider.value, key)
-    console.print(f"  [green]\u2713 Key saved ({key[:8]}...)[/green]")
-
-    if choice == "1":
+        key = ""  # No key needed for local
+    elif choice == "1" and not local_ollama:
+        # Ollama Cloud — need API key
+        console.print("\n  [dim]Paste your Ollama Cloud API key:[/dim]")
+        key = Prompt.ask("  [bold]Ollama API key[/bold]")
+        if not key.strip():
+            console.print("  [yellow]No key entered. Run 'clawed setup' when ready.[/yellow]\n")
+            config = AppConfig()
+            config.save()
+            return "skip"
+        key = key.strip()
+        config = AppConfig(provider=LLMProvider.OLLAMA)
         config.ollama_base_url = "https://ollama.com"
         config.ollama_model = "minimax-m2.7:cloud"
         config.ollama_api_key = key
+        set_api_key("ollama", key)
+        console.print(f"  [green]\u2713 Key saved ({key[:8]}...)[/green]")
+    else:
+        # Claude or OpenAI
+        key_labels = {
+            "2": "Claude API key (starts with sk-ant-)",
+            "3": "OpenAI API key (starts with sk-)",
+        }
+        console.print("\n  [dim]Paste your key below (it will be visible so you can verify it):[/dim]")
+        key = Prompt.ask(f"  [bold]{key_labels[choice]}[/bold]")
+        if not key.strip():
+            console.print("  [yellow]No key entered. Run 'clawed setup' when ready.[/yellow]\n")
+            config = AppConfig()
+            config.save()
+            return "skip"
+        key = key.strip()
+        provider_map = {"2": LLMProvider.ANTHROPIC, "3": LLMProvider.OPENAI}
+        config = AppConfig(provider=provider_map[choice])
+        set_api_key(config.provider.value, key)
+        console.print(f"  [green]\u2713 Key saved ({key[:8]}...)[/green]")
 
     config.save()
 
