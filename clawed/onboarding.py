@@ -501,10 +501,29 @@ def quick_model_setup() -> None:
     # Provider-specific config
     if choice == "1":
         config.ollama_base_url = "https://api.ollama.com/v1"
-        config.ollama_model = "qwen3.5:cloud"
+        config.ollama_model = "minimax-m2.7:cloud"
         config.ollama_api_key = key.strip()
 
     config.save()
+
+    # Telegram bot (optional) — lets teacher use Claw-ED from their phone
+    console.print(
+        "\n[bold]Telegram bot[/bold] [dim](optional)[/dim]\n"
+        "  Connect a Telegram bot to use Claw-ED from your phone.\n"
+        "  Get a token from @BotFather on Telegram (see docs/BOT_SETUP.md).\n"
+    )
+    tg_token = Prompt.ask(
+        "  [bold]Bot token[/bold] [dim](paste token, or Enter to skip)[/dim]",
+        default="",
+    )
+    if tg_token.strip():
+        config.telegram_bot_token = tg_token.strip()
+        config.save()
+        console.print("  [green]\u2713 Telegram bot configured![/green]")
+        console.print(
+            "  [dim]Start it anytime with: clawed bot[/dim]\n"
+        )
+
     console.print("\n  [green]\u2713 Ready![/green] Starting Claw-ED...\n")
 
 
