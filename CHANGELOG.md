@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.7.0] - 2026-03-25
+
+### Added
+- **3-layer cognitive memory system** — identity (workspace/DB), curriculum state (DB projections), and episodic memory (embedding-based semantic search with TF-IDF fallback)
+- **Episodic memory** stores every agent interaction and recalls relevant past conversations using semantic similarity. Teacher-isolated — each teacher's memory is separate.
+- **Memory context loader** assembles all 3 layers + existing improvement context into a unified system prompt. Graceful degradation if any layer fails.
+- **`[memory]` install extra** — `pip install 'clawed[memory]'` for ONNX-based embeddings (TF-IDF works without it)
+- **Google Drive auth** — OAuth token persistence with 0600 permissions, `is_authenticated()` check, interactive auth flow placeholder
+- **Drive client** with sliding-window rate limiter (configurable max requests/hour), `list_files()`, `upload_file()`, `create_folder()`
+- **3 Drive tools** for the agent: `drive_upload`, `drive_list`, `drive_organize` — auto-discovered by the tool registry (17 tools total)
+- **Drive config** — `drive_root_folder` and `drive_token_path` fields in `AppConfig`
+
+### Changed
+- Agent system prompt now includes curriculum progress and relevant past interactions from episodic memory
+- Each agent interaction is automatically stored as an episode for future recall
+- `build_system_prompt()` accepts `curriculum_summary` and `relevant_episodes` parameters
+
 ## [0.6.0] - 2026-03-25
 
 ### Added

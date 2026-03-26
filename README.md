@@ -119,12 +119,13 @@ Teacher's message (Telegram, CLI, TUI, Web)
     ├── Control Plane (deterministic: files, callbacks, onboarding)
     └── Agent Loop (LLM decides → calls tools → returns result)
               ↓
-        14 Tools
+        17 Tools
         generate_lesson · generate_unit · generate_materials
         generate_assessment · search_standards · export_document
         ingest_materials · configure_profile · request_approval
         search_lessons · curriculum_map · gap_analysis
-        sub_packet · parent_comm
+        sub_packet · parent_comm · drive_upload
+        drive_list · drive_organize
               ↓
     GatewayResponse → Teacher sees the result
 ```
@@ -146,11 +147,12 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full breakdown.
 - Curriculum gap analyzer — find what you haven't covered yet
 - Standards search — look up specific standards by subject and grade
 
-### Agent capabilities (v0.6)
+### Agent capabilities
 - Agent-first gateway — LLM decides what tools to call, no hardcoded routing
-- 14 typed tools auto-discovered from the tool registry
+- 17 typed tools auto-discovered from the tool registry
 - Approval gates — agent asks before consequential actions
-- Feature-flagged rollout with instant rollback
+- 3-layer cognitive memory — identity, curriculum state, episodic recall
+- Google Drive integration — upload, list, organize files with rate limiting
 
 ### Surfaces
 - Terminal chat, full-screen TUI, web dashboard, Telegram bot
@@ -162,8 +164,7 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full breakdown.
 
 | Version | What's coming |
 |---------|--------------|
-| **v0.6.0** *(current)* | Agent-first gateway, typed tool registry, approval gates |
-| **v0.7.0** | Google Drive integration, cognitive memory |
+| **v0.7.0** *(current)* | Cognitive memory (3-layer), Google Drive integration, 17 agent tools |
 | **v0.8.0** | Proactive scheduling, custom teacher tools, multi-step planning |
 | **v1.0.0** | District deployment with admin dashboard and SSO |
 

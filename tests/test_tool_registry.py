@@ -576,7 +576,7 @@ class TestParentCommTool:
 
 class TestAutoDiscovery:
     def test_discover_finds_all_tools(self):
-        """discover() should find all 14 tool classes in the tools package."""
+        """discover() should find all 17 tool classes in the tools package."""
         reg = ToolRegistry()
         tools_dir = Path(__file__).resolve().parent.parent / "clawed" / "agent_core" / "tools"
         reg.discover(tools_dir)
@@ -596,9 +596,12 @@ class TestAutoDiscovery:
             "gap_analysis",
             "sub_packet",
             "parent_comm",
+            "drive_upload",
+            "drive_list",
+            "drive_organize",
         ])
         assert names == expected, f"Expected {expected}, got {names}"
-        assert len(names) == 14
+        assert len(names) == 17
 
     def test_discover_skips_broken_modules(self, tmp_path):
         """discover() should skip modules that fail to import."""

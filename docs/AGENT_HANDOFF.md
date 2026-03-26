@@ -2,9 +2,11 @@
 
 **Date:** 2026-03-25
 **Last commit:** See `git log --oneline -5`
-**Tests:** 1285 passed, 34 skipped
-**PyPI:** v0.6.0
+**Tests:** 1300+ passed, 34 skipped
+**PyPI:** v0.7.0
 **Agent Core:** Feature-flagged. Enable with `clawed config set agent-gateway true`
+**Memory:** 3-layer cognitive memory (identity, curriculum state, episodic with TF-IDF embeddings)
+**Drive:** OAuth token persistence, rate-limited client, 3 agent tools (upload, list, organize)
 
 ---
 
