@@ -29,7 +29,7 @@ Claw-ED:
   → Generates 5 differentiated lessons in your voice
   → Creates worksheets, assessments, and slides
   → Exports to PPTX, DOCX, or PDF
-  → [Coming v0.7] Uploads to your Google Drive
+  → Uploads to your Google Drive
   → Asks: "Period 3 struggled with amendments last week. Want me to add a reteach?"
 ```
 
@@ -91,10 +91,11 @@ pip install clawed
 clawed
 ```
 
-That's it. Claw-ED walks you through setup in 60 seconds:
-1. **Pick your AI provider** — we recommend Ollama Cloud ($20/month flat rate)
-2. **Meet your agent** — it introduces itself and asks about you: name, subject, grade, state
-3. **Share your files** (optional) — point it at a folder and it learns your voice
+That's it. Claw-ED walks you through setup in 30 seconds:
+1. **Pick your AI provider** — we recommend Ollama Cloud ($20/month flat rate, unlimited lessons)
+2. **Paste your API key** — get one from your provider's website
+3. **Connect Telegram** (optional) — paste your bot token to use Claw-ED from your phone
+4. **Start chatting** — the agent introduces itself and learns about you conversationally
 
 ### Other ways to use it
 
@@ -103,7 +104,7 @@ That's it. Claw-ED walks you through setup in 60 seconds:
 | **Terminal chat** | `clawed` or `clawed chat` |
 | **Web dashboard** | `clawed serve` → open `http://localhost:8000` |
 | **Full-screen TUI** | `pip install 'clawed[tui]'` → `clawed serve &` → `clawed tui` |
-| **Telegram bot** | `clawed bot --token YOUR_TOKEN` ([setup guide](docs/BOT_SETUP.md)) |
+| **Telegram bot** | `clawed bot` (token saved during setup, or [setup guide](docs/BOT_SETUP.md)) |
 | **Student bot** | Students join with class codes, ask questions in your voice |
 
 ---
@@ -211,27 +212,26 @@ pip install 'clawed[all]'             # Everything
 
 ### Which AI provider?
 
-Claw-ED works with any provider. The setup wizard walks you through it.
+The setup wizard asks you to pick a provider and paste your API key. That's it.
 
-**We recommend [Ollama Cloud](https://ollama.com)** — $20/month Pro subscription gives you API access to dozens of models with a flat rate. No per-token billing, no surprises. Great for experimenting with different models to find what works best for your subject.
+**We recommend [Ollama Cloud](https://ollama.com)** — $20/month Pro subscription, unlimited lessons, dozens of models. Default model: `minimax-m2.7:cloud`.
 
-| Provider | Best models | Cost | Best for |
+| Provider | Default model | Cost | Best for |
 |----------|------------|------|----------|
-| **Ollama Cloud** (recommended) | qwen3.5, deepseek-v3.2, nemotron, llama4, minimax-m2.7 | $20/month flat | Daily use, experimenting with models |
-| **Anthropic** | Claude Opus 4.6, Claude Sonnet 4.6 | ~$20+/lesson | Best output quality, expensive |
-| **OpenAI** | GPT-5.4, o3 | ~$20+/lesson | Best output quality, expensive |
+| **Ollama Cloud** (recommended) | minimax-m2.7:cloud | $20/month flat | Daily use — unlimited lessons |
+| **Anthropic** | Claude Sonnet 4.6 | ~$20+/lesson | Best output quality, expensive |
+| **OpenAI** | GPT-5.4 | ~$20+/lesson | Best output quality, expensive |
 
-Claude and GPT produce the best lesson output, but frontier model pricing is steep — a single lesson with differentiation and materials can cost $20 or more in API calls. Ollama Cloud lets you generate as much as you want for a fixed $20/month.
+Claude and GPT produce the best lesson output, but frontier model pricing is steep — a single lesson with differentiation and materials can cost $20 or more. Ollama Cloud lets you generate as much as you want for a fixed $20/month.
 
-**Switch models anytime:**
+**Switch providers or models anytime:**
 
 ```bash
-clawed config set-model ollama        # use Ollama Cloud
-clawed config set-model anthropic     # use Claude
-clawed config set-model openai        # use OpenAI
+clawed config set-model ollama        # switch to Ollama Cloud
+clawed config set-model anthropic     # switch to Claude
+clawed config set-model openai        # switch to OpenAI
+clawed setup --reset                  # re-run full setup
 ```
-
-Teachers are encouraged to experiment — try different models and see which one writes lessons closest to your voice.
 
 ---
 
