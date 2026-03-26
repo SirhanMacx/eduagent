@@ -77,6 +77,25 @@ def load_memory_context(teacher_id: str, current_message: str) -> dict[str, Any]
     except Exception as e:
         logger.debug("Preference extraction failed: %s", e)
 
+    # Layer 5: Curriculum Knowledge Base
+    curriculum_kb_context = ""
+    try:
+        from clawed.agent_core.memory.curriculum_kb import CurriculumKB
+
+        kb = CurriculumKB()
+        kb_results = kb.search(teacher_id, current_message, top_k=3)
+        if kb_results:
+            parts = []
+            for r in kb_results:
+                if r.get("similarity", 0) > 0.15:
+                    parts.append(
+                        f"- From '{r['doc_title']}': {r['chunk_text'][:200]}"
+                    )
+            if parts:
+                curriculum_kb_context = "\n".join(parts)
+    except Exception as e:
+        logger.debug("Curriculum KB search failed: %s", e)
+
     return {
         "identity_summary": identity_summary,
         "curriculum_summary": curriculum_summary,
@@ -84,4 +103,5 @@ def load_memory_context(teacher_id: str, current_message: str) -> dict[str, Any]
         "improvement_context": improvement_context,
         "preferences_summary": preferences_summary,
         "autonomy_summary": autonomy_summary,
+        "curriculum_kb_context": curriculum_kb_context,
     }

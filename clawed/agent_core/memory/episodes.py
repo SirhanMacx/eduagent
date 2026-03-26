@@ -74,7 +74,9 @@ class EpisodicMemory:
             conn.row_factory = sqlite3.Row
             rows = conn.execute(
                 "SELECT text, embedding, metadata, created_at "
-                "FROM episodes WHERE teacher_id = ?",
+                "FROM episodes WHERE teacher_id = ? "
+                "AND created_at > date('now', '-90 days') "
+                "ORDER BY created_at DESC LIMIT 200",
                 (teacher_id,),
             ).fetchall()
 

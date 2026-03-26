@@ -70,7 +70,36 @@ class IngestHandler:
             except Exception as e:
                 logger.debug("Persona extraction skipped: %s", e)
                 style_info = ""
-            return GatewayResponse(text=f"Ingested {len(documents)} document(s).{style_info}")
+
+            # Index documents into curriculum knowledge base
+            kb_info = ""
+            try:
+                from clawed.agent_core.memory.curriculum_kb import CurriculumKB
+                kb = CurriculumKB()
+                total_chunks = 0
+                for doc in documents:
+                    doc_type_val = doc.doc_type.value if hasattr(doc.doc_type, "value") else str(doc.doc_type)
+                    chunks_added = kb.index(
+                        teacher_id=teacher_id,
+                        doc_title=doc.title,
+                        source_path=doc.source_path or "",
+                        full_text=doc.content,
+                        metadata={"doc_type": doc_type_val},
+                    )
+                    total_chunks += chunks_added
+                stats = kb.stats(teacher_id)
+                kb_info = (
+                    f"\n\nAdded to your curriculum library — I now have "
+                    f"{stats['doc_count']} document(s) ({stats['chunk_count']} "
+                    f"searchable sections). I'll reference your materials when "
+                    f"creating new content."
+                )
+            except Exception as e:
+                logger.debug("KB indexing skipped: %s", e)
+
+            return GatewayResponse(
+                text=f"Ingested {len(documents)} document(s).{style_info}{kb_info}"
+            )
         except Exception as e:
             logger.error("Ingestion failed: %s", e)
             return GatewayResponse(text=f"Ingestion failed: {e}")
