@@ -482,7 +482,8 @@ def quick_model_setup() -> None:
         "2": "Claude API key (starts with sk-ant-)",
         "3": "OpenAI API key (starts with sk-)",
     }
-    key = Prompt.ask(f"\n  [bold]{key_labels[choice]}[/bold]", password=True)
+    console.print("\n  [dim]Paste your key below (it will be visible so you can verify it):[/dim]")
+    key = Prompt.ask(f"  [bold]{key_labels[choice]}[/bold]")
 
     if not key.strip():
         console.print("  [yellow]No key entered. Run 'clawed setup' when you're ready.[/yellow]\n")
@@ -496,13 +497,15 @@ def quick_model_setup() -> None:
     config = AppConfig(provider=provider)
 
     # Save key securely
-    set_api_key(provider.value, key.strip())
+    key = key.strip()
+    set_api_key(provider.value, key)
+    console.print(f"  [green]\u2713 Key saved ({key[:8]}...)[/green]")
 
     # Provider-specific config
     if choice == "1":
         config.ollama_base_url = "https://api.ollama.com/v1"
         config.ollama_model = "minimax-m2.7:cloud"
-        config.ollama_api_key = key.strip()
+        config.ollama_api_key = key
 
     config.save()
 
