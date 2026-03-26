@@ -708,7 +708,7 @@ class AppConfig(BaseModel):
     provider: LLMProvider = LLMProvider.ANTHROPIC
     anthropic_model: str = "claude-sonnet-4-6"
     openai_model: str = "gpt-4o"
-    ollama_model: str = "llama3.2"
+    ollama_model: str = "qwen3.5:cloud"
     ollama_base_url: str = "http://localhost:11434"
     output_dir: str = "./clawed_output"
     include_homework: bool = True

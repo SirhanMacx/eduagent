@@ -146,7 +146,7 @@ def _detect_available_models() -> tuple[LLMProvider | None, str]:
             data = resp.json()
             models = [m.get("name", "") for m in data.get("models", [])]
             # Prefer these models in order
-            preferred = ["minimax-m2.7", "llama3.2", "mistral"]
+            preferred = ["minimax-m2.7", "qwen3.5", "llama4", "mistral"]
             for pref in preferred:
                 for model in models:
                     if pref in model:
@@ -160,7 +160,7 @@ def _detect_available_models() -> tuple[LLMProvider | None, str]:
     return None, (
         "No LLM backend detected.\n"
         "  Set ANTHROPIC_API_KEY or OPENAI_API_KEY in your environment,\n"
-        "  or install Ollama (https://ollama.ai) and run: ollama pull llama3.2"
+        "  or install Ollama (https://ollama.com/download) and run: ollama pull qwen3.5"
     )
 
 
@@ -441,81 +441,71 @@ def _clear_config() -> None:
 
 
 def quick_model_setup() -> None:
-    """Minimal first-run setup: model selection + API key. Takes 30 seconds."""
+    """Minimal first-run setup: pick provider, paste key, done. 30 seconds."""
     console.print(Panel(
         "[bold]Welcome to Claw-ED![/bold] \U0001f393\n\n"
-        "Let's get you set up. This takes about 30 seconds.",
+        "I need an AI service to generate your lessons.\n"
+        "Pick a provider and paste your API key.",
         border_style="green",
     ))
 
-    # Auto-detect an existing API key in the environment
-    _env_providers = [
-        ("OLLAMA_API_KEY", "Ollama Cloud", "1"),
-        ("ANTHROPIC_API_KEY", "Claude (Anthropic)", "2"),
-        ("OPENAI_API_KEY", "GPT (OpenAI)", "3"),
-    ]
-    auto_choice: str | None = None
-    for env_var, name, ch in _env_providers:
-        if os.environ.get(env_var):
-            use_it = Prompt.ask(
-                f"\n  [green]Found a {name} key in your system.[/green] Use it?",
-                choices=["y", "n"],
-                default="y",
-            )
-            if use_it == "y":
-                auto_choice = ch
-            break
+    # Simple provider menu — no auto-detection, no guessing
+    console.print("\n[bold]Which AI service?[/bold]\n")
+    console.print(
+        "  [bold cyan][1][/bold cyan] \u2605 Ollama Cloud \u2014 $20/month, unlimited lessons "
+        "[dim](recommended)[/dim]"
+    )
+    console.print(
+        "        Sign up: [cyan]https://ollama.com[/cyan] \u2192 Settings \u2192 API Keys"
+    )
+    console.print("  [bold cyan][2][/bold cyan] Claude (Anthropic) \u2014 highest quality, ~$20+/lesson")
+    console.print(
+        "        Sign up: [cyan]https://console.anthropic.com[/cyan] \u2192 API Keys"
+    )
+    console.print("  [bold cyan][3][/bold cyan] GPT (OpenAI) \u2014 high quality, ~$20+/lesson")
+    console.print(
+        "        Sign up: [cyan]https://platform.openai.com/api-keys[/cyan]"
+    )
+    console.print("  [bold cyan][4][/bold cyan] Skip \u2014 I'll set this up later\n")
 
-    if auto_choice:
-        choice = auto_choice
-    else:
-        console.print("\n[bold]Which AI service should generate your lessons?[/bold]\n")
-        console.print(
-            "  [bold cyan][1][/bold cyan] \u2605 Ollama Cloud \u2014 $20/month, unlimited lessons "
-            "[dim](recommended)[/dim]"
-        )
-        console.print("  [bold cyan][2][/bold cyan] Claude (Anthropic) \u2014 highest quality, ~$20+/lesson")
-        console.print("  [bold cyan][3][/bold cyan] GPT (OpenAI) \u2014 high quality, ~$20+/lesson")
-        console.print("  [bold cyan][4][/bold cyan] Skip \u2014 I'll set this up later")
-        console.print(
-            "\n  [dim]Sign up: ollama.com (recommended), console.anthropic.com, or platform.openai.com[/dim]\n"
-        )
-        choice = Prompt.ask("Choice", choices=["1", "2", "3", "4"], default="1")
+    choice = Prompt.ask("Choice", choices=["1", "2", "3", "4"], default="1")
 
+    if choice == "4":
+        config = AppConfig()
+        config.save()
+        console.print("\n  [yellow]No AI configured. Run 'clawed setup' when you're ready.[/yellow]\n")
+        return
+
+    # Get the API key
+    key_labels = {
+        "1": "Ollama API key",
+        "2": "Claude API key (starts with sk-ant-)",
+        "3": "OpenAI API key (starts with sk-)",
+    }
+    key = Prompt.ask(f"\n  [bold]{key_labels[choice]}[/bold]", password=True)
+
+    if not key.strip():
+        console.print("  [yellow]No key entered. Run 'clawed setup' when you're ready.[/yellow]\n")
+        config = AppConfig()
+        config.save()
+        return
+
+    # Build config based on choice
     provider_map = {"1": LLMProvider.OLLAMA, "2": LLMProvider.ANTHROPIC, "3": LLMProvider.OPENAI}
-    provider = provider_map.get(choice, LLMProvider.OLLAMA)
-
+    provider = provider_map[choice]
     config = AppConfig(provider=provider)
 
-    if choice != "4":
-        key_prompts = {
-            "1": ("Ollama API key", "Get one at ollama.com \u2192 Settings \u2192 API Keys"),
-            "2": ("Anthropic API key", "Get one at console.anthropic.com \u2192 API Keys"),
-            "3": ("OpenAI API key", "Get one at platform.openai.com \u2192 API Keys"),
-        }
-        if not auto_choice:
-            label, hint = key_prompts[choice]
-            console.print(f"\n  [dim]{hint}[/dim]")
-            key = Prompt.ask(f"  [bold]{label}[/bold]", password=True)
-        else:
-            key = ""  # Already in environment; no need to prompt
-        if key.strip():
-            prov_key = {1: "ollama", 2: "anthropic", 3: "openai"}[int(choice)]
-            set_api_key(prov_key, key.strip())
-            if choice == "1":
-                config.ollama_base_url = "https://api.ollama.com/v1"
-                config.ollama_model = "minimax-m2.7:cloud"
-                config.ollama_api_key = key.strip()
-        # Test connection
-        connected = _test_connection(config)
-        if connected:
-            console.print("  [green]Great \u2014 you're connected! Let's start teaching.[/green]")
-        else:
-            console.print("  [yellow]Connection failed \u2014 you can fix this later with 'clawed setup'[/yellow]")
+    # Save key securely
+    set_api_key(provider.value, key.strip())
+
+    # Provider-specific config
+    if choice == "1":
+        config.ollama_base_url = "https://api.ollama.com/v1"
+        config.ollama_model = "qwen3.5:cloud"
+        config.ollama_api_key = key.strip()
 
     config.save()
     console.print("\n  [green]\u2713 Ready![/green] Starting Claw-ED...\n")
-    console.print("  [dim]Want to use Claw-ED from your phone? Run 'clawed bot --help' for Telegram setup.[/dim]\n")
 
 
 def run_setup_wizard(reset: bool = False) -> AppConfig:
