@@ -73,10 +73,11 @@ def main(
     if ctx.invoked_subcommand is None:
         from clawed.config import has_config
         if not has_config():
-            # First run: full guided wizard (subject, grade, state, provider, API key)
-            from clawed.onboarding import run_setup_wizard
+            # First run: just get the AI provider configured (30 seconds)
+            # The agent itself handles the rest conversationally
+            from clawed.onboarding import quick_model_setup
             try:
-                run_setup_wizard()
+                quick_model_setup()
             except (KeyboardInterrupt, EOFError):
                 console.print("\n[dim]Setup cancelled. Run clawed again anytime.[/dim]")
                 raise typer.Exit()

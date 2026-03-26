@@ -268,8 +268,9 @@ def _ask_materials() -> tuple[str | None, str | None]:
 
 def _ingest_materials(path_str: str, config: AppConfig) -> None:
     """Run ingestion with a progress bar and show persona summary."""
+    import asyncio
+
     from clawed.ingestor import ingest_path
-    from clawed.persona import build_persona
 
     source = Path(path_str)
 
@@ -295,17 +296,22 @@ def _ingest_materials(path_str: str, config: AppConfig) -> None:
 
     console.print(f"  [green]\u2713 Processed {len(docs)} files.[/green]")
 
-    console.print("  [dim]Extracting teaching style patterns...[/dim]")
-    persona = build_persona(docs)
-
-    console.print(
-        Panel(
-            persona.to_prompt_context(),
-            title="[bold green]Your Teaching Profile[/bold green]",
-            border_style="green",
-            padding=(0, 1),
+    # Extract persona from documents
+    try:
+        from clawed.persona import extract_persona
+        console.print("  [dim]Extracting teaching style patterns...[/dim]")
+        persona = asyncio.run(extract_persona(docs, config))
+        console.print(
+            Panel(
+                persona.to_prompt_context(),
+                title="[bold green]Your Teaching Profile[/bold green]",
+                border_style="green",
+                padding=(0, 1),
+            )
         )
-    )
+    except Exception as e:
+        console.print(f"  [yellow]Could not extract teaching style: {e}[/yellow]")
+        console.print("  [dim]You can try again later with: clawed ingest <path>[/dim]")
     console.print(f"  [green]\u2713 Persona saved — {persona.name or 'Teacher'} profile ready[/green]")
 
     return persona
@@ -444,15 +450,20 @@ def quick_model_setup() -> None:
 
     # Auto-detect an existing API key in the environment
     _env_providers = [
-        ("OLLAMA_API_KEY", "Ollama", "1"),
-        ("ANTHROPIC_API_KEY", "Anthropic", "2"),
-        ("OPENAI_API_KEY", "OpenAI", "3"),
+        ("OLLAMA_API_KEY", "Ollama Cloud", "1"),
+        ("ANTHROPIC_API_KEY", "Claude (Anthropic)", "2"),
+        ("OPENAI_API_KEY", "GPT (OpenAI)", "3"),
     ]
     auto_choice: str | None = None
     for env_var, name, ch in _env_providers:
         if os.environ.get(env_var):
-            console.print(f"\n  [green]Found your {name} API key![/green] Using that.")
-            auto_choice = ch
+            use_it = Prompt.ask(
+                f"\n  [green]Found a {name} key in your system.[/green] Use it?",
+                choices=["y", "n"],
+                default="y",
+            )
+            if use_it == "y":
+                auto_choice = ch
             break
 
     if auto_choice:
