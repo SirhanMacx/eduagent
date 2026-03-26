@@ -210,10 +210,10 @@ Claw-ED works with any provider. The setup wizard walks you through it.
 | Provider | Best models | Cost | Best for |
 |----------|------------|------|----------|
 | **Ollama Cloud** (recommended) | qwen3.5, deepseek-v3.2, nemotron, llama4, minimax-m2.7 | $20/month flat | Daily use, experimenting with models |
-| **Anthropic** | Claude Opus 4.6, Claude Sonnet 4.6 | ~$0.03-0.15/lesson | Best output quality |
-| **OpenAI** | GPT-5.4, o3 | ~$0.03-0.15/lesson | Best output quality |
+| **Anthropic** | Claude Opus 4.6, Claude Sonnet 4.6 | ~$20+/lesson | Best output quality, expensive |
+| **OpenAI** | GPT-5.4, o3 | ~$20+/lesson | Best output quality, expensive |
 
-Claude and GPT produce the best lesson output, but per-token pricing adds up fast if you're generating units and materials daily. Ollama Cloud lets you generate as much as you want for a fixed cost.
+Claude and GPT produce the best lesson output, but frontier model pricing is steep — a single lesson with differentiation and materials can cost $20 or more in API calls. Ollama Cloud lets you generate as much as you want for a fixed $20/month.
 
 **Switch models anytime:**
 
