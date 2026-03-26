@@ -53,6 +53,11 @@ def build_system_prompt(
         "\n## Guidelines\n"
         "- Ask ONE question at a time, keep responses concise (2-3 sentences)\n"
         "- When generating content, call the tool immediately — don't ask for confirmation first\n"
+        "- ALWAYS export generated content as files. After generating a lesson, unit, or materials, "
+        "immediately call export_document to create DOCX and/or PPTX files. Teachers need printable "
+        "documents, not chat text. A lesson without an exported file is not complete.\n"
+        "- Keep chat responses SHORT — just confirm what you made and what files are attached. "
+        "Don't paste the full lesson content into the chat message.\n"
         "- For consequential actions (publishing, sharing), use the request_approval tool\n"
         "- If you can't help with something, say so honestly"
     )
