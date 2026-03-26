@@ -104,47 +104,6 @@ class TestLandingPage:
 # ── Feature 2: ProductHunt Kit ───────────────────────────────────────
 
 
-class TestProductHuntKit:
-    _ph_dir = Path(__file__).parent.parent / "output" / "producthunt"
-
-    def test_launch_checklist_exists(self):
-        assert (self._ph_dir / "launch-checklist.md").exists()
-
-    def test_gallery_screenshots_exists(self):
-        assert (self._ph_dir / "gallery-screenshots.md").exists()
-
-    def test_maker_comment_exists(self):
-        assert (self._ph_dir / "maker-comment.md").exists()
-
-    def test_hunter_outreach_exists(self):
-        assert (self._ph_dir / "hunter-outreach.md").exists()
-
-    def test_communities_exists(self):
-        assert (self._ph_dir / "communities.md").exists()
-
-    def test_launch_checklist_content(self):
-        text = (self._ph_dir / "launch-checklist.md").read_text()
-        assert "Coming Soon" in text
-        assert "Tuesday" in text
-        assert "1270" in text  # screenshot dimensions
-
-    def test_maker_comment_has_story(self):
-        text = (self._ph_dir / "maker-comment.md").read_text()
-        assert "Great Neck South" in text
-        assert "9 year" in text.lower()
-
-    def test_communities_has_15(self):
-        text = (self._ph_dir / "communities.md").read_text()
-        assert "r/Teachers" in text
-        assert "r/edtech" in text
-        assert "r/LocalLLaMA" in text
-        assert "Hacker News" in text or "HN" in text
-
-    def test_hunter_outreach_has_template(self):
-        text = (self._ph_dir / "hunter-outreach.md").read_text()
-        assert "Template" in text or "template" in text
-
-
 # ── Feature 3: Demo Mode ────────────────────────────────────────────
 
 

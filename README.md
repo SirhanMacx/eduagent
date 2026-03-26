@@ -119,13 +119,14 @@ Teacher's message (Telegram, CLI, TUI, Web)
     ├── Control Plane (deterministic: files, callbacks, onboarding)
     └── Agent Loop (LLM decides → calls tools → returns result)
               ↓
-        17 Tools
+        21 Tools
         generate_lesson · generate_unit · generate_materials
         generate_assessment · search_standards · export_document
         ingest_materials · configure_profile · request_approval
         search_lessons · curriculum_map · gap_analysis
-        sub_packet · parent_comm · drive_upload
-        drive_list · drive_organize
+        sub_packet · parent_comm · drive_upload · drive_list
+        drive_organize · drive_create_slides · drive_create_doc
+        drive_read · schedule_task
               ↓
     GatewayResponse → Teacher sees the result
 ```
@@ -149,10 +150,13 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full breakdown.
 
 ### Agent capabilities
 - Agent-first gateway — LLM decides what tools to call, no hardcoded routing
-- 17 typed tools auto-discovered from the tool registry
+- 21 typed tools auto-discovered from the tool registry
 - Approval gates — agent asks before consequential actions
 - 3-layer cognitive memory — identity, curriculum state, episodic recall
-- Google Drive integration — upload, list, organize files with rate limiting
+- Google Drive integration — upload, list, organize, native Slides/Docs, read
+- Proactive scheduling — automated morning prep, weekly planning, feedback digests
+- Custom teacher tools — define your own tools in YAML, no code needed
+- Multi-step planner — "prepare my week" decomposes into sequential tool calls
 
 ### Surfaces
 - Terminal chat, full-screen TUI, web dashboard, Telegram bot
@@ -164,8 +168,8 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full breakdown.
 
 | Version | What's coming |
 |---------|--------------|
-| **v0.7.0** *(current)* | Cognitive memory (3-layer), Google Drive integration, 17 agent tools |
-| **v0.8.0** | Proactive scheduling, custom teacher tools, multi-step planning |
+| **v0.8.0** *(current)* | Proactive scheduling, custom teacher tools, multi-step planner, native Slides/Docs, 21 tools |
+| **v0.9.0** | Autonomy progression, closed loop (plan → generate → publish → feedback → reteach) |
 | **v1.0.0** | District deployment with admin dashboard and SSO |
 
 ---

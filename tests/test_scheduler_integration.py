@@ -103,7 +103,7 @@ class TestHandleSystemEvent:
     @pytest.mark.asyncio
     async def test_system_event_handles_error_gracefully(self):
         from clawed.agent_core.core import Gateway as AgentGateway
-        from clawed.agent_core.fake_llm import FakeLLM, FakeLLMExhaustedError
+        from clawed.agent_core.fake_llm import FakeLLM
         from clawed.models import AppConfig
 
         # FakeLLM with no responses will raise on generate

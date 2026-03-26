@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.8.0] - 2026-03-25
+
+### Added
+- **Proactive scheduling** — `AgentScheduler` wires `EduScheduler` to the agent gateway via `handle_system_event()`. 5 built-in tasks (morning-prep, weekly-plan, feedback-digest, memory-compress, student-digest). Scheduler starts automatically with `clawed serve` when agent gateway is enabled.
+- **Schedule task tool** — agent can create, list, enable, and disable scheduled tasks conversationally
+- **Custom teacher tools** — YAML prompt-template tools loaded from `~/.eduagent/tools/`. Teachers define name, description, parameters, and prompt template in YAML. `ToolRegistry.discover_custom()` auto-loads them alongside built-in tools.
+- **Multi-step planner** — system prompt enhancement for complex requests ("prepare my week"). Detects planning keywords and injects step-by-step execution instructions.
+- **Native Google Slides creation** — `drive_create_slides` tool creates native Google Slides presentations
+- **Native Google Docs creation** — `drive_create_doc` tool creates native Google Docs
+- **Drive file reading** — `drive_read` tool reads file content from Drive for context ingestion
+- **21 agent tools total** (up from 17)
+
+### Removed
+- Stale `output/` directory (old ProductHunt/beta launch marketing files)
+- Stale `skills/eduagent/` directory (old OpenClaw skill file)
+- Stale `docs/internal/` directory (old build prompts and architecture notes)
+- Superseded pre-v0.6 implementation plans
+
 ## [0.7.0] - 2026-03-25
 
 ### Added

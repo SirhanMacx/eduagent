@@ -1,8 +1,7 @@
 """Tests for custom YAML prompt-template tools."""
-import pytest
 import yaml
 
-from clawed.agent_core.context import AgentContext, ToolResult
+from clawed.agent_core.context import AgentContext
 from clawed.models import AppConfig
 
 
@@ -73,7 +72,6 @@ class TestYAMLToolParsing:
 
 class TestCustomToolDiscovery:
     def test_discover_custom_tools(self, tmp_path):
-        from clawed.agent_core.custom_tools import YAMLPromptTool
         from clawed.agent_core.tools.base import ToolRegistry
 
         # Create a custom tool
