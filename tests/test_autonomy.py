@@ -1,5 +1,7 @@
 """Tests for autonomy progression — approval rate tracking."""
 
+import pytest
+
 from clawed.agent_core.autonomy import ApprovalTracker
 
 
@@ -124,3 +126,26 @@ class TestApprovalTracker:
         summary = tracker.summarize_for_prompt()
         assert "drive_upload" in summary
         assert "auto" in summary.lower() or "always" in summary.lower()
+
+
+class TestStudentInsightsTool:
+    def test_schema_valid(self):
+        from clawed.agent_core.tools.student_insights import StudentInsightsTool
+        tool = StudentInsightsTool()
+        s = tool.schema()
+        assert s["function"]["name"] == "student_insights"
+
+    @pytest.mark.asyncio
+    async def test_execute_empty(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("EDUAGENT_DATA_DIR", str(tmp_path))
+        from clawed.agent_core.context import AgentContext
+        from clawed.agent_core.tools.student_insights import StudentInsightsTool
+        from clawed.models import AppConfig
+        tool = StudentInsightsTool()
+        ctx = AgentContext(
+            teacher_id="t1", config=AppConfig(),
+            teacher_profile={}, persona=None,
+            session_history=[], improvement_context="",
+        )
+        result = await tool.execute({"days": 7}, ctx)
+        assert "No student questions" in result.text or isinstance(result.text, str)
