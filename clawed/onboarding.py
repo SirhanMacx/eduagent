@@ -456,7 +456,7 @@ def quick_model_setup() -> str:
     ))
 
     # ── Step 1: Pick provider ──
-    # Auto-detect local Ollama
+    # Check if local Ollama is running
     local_ollama = False
     try:
         import httpx
@@ -467,70 +467,49 @@ def quick_model_setup() -> str:
         pass
 
     console.print("\n[bold]Which AI service?[/bold]\n")
+    console.print(
+        "  [bold cyan][1][/bold cyan] \u2605 Ollama Cloud \u2014 $20/month, unlimited lessons "
+        "[dim](recommended)[/dim]"
+    )
+    console.print(
+        "        Sign up: [cyan]https://ollama.com[/cyan] \u2192 Settings \u2192 API Keys"
+    )
     if local_ollama:
         console.print(
-            "  [bold cyan][1][/bold cyan] \u2605 Local Ollama \u2014 detected on this machine, free "
-            "[dim](recommended)[/dim]"
+            "  [bold cyan][2][/bold cyan] Local Ollama \u2014 detected on this machine, free"
         )
     else:
         console.print(
-            "  [bold cyan][1][/bold cyan] \u2605 Ollama \u2014 $20/month cloud, or free local install"
+            "  [bold cyan][2][/bold cyan] Local Ollama \u2014 free, runs on your computer"
         )
         console.print(
-            "        Cloud: [cyan]https://ollama.com[/cyan] \u2192 Settings \u2192 API Keys"
+            "        Install: [cyan]https://ollama.com/download[/cyan]"
         )
-        console.print(
-            "        Local: [cyan]https://ollama.com/download[/cyan]"
-        )
-    console.print("  [bold cyan][2][/bold cyan] Claude (Anthropic) \u2014 highest quality, ~$20+/lesson")
+    console.print("  [bold cyan][3][/bold cyan] OpenRouter \u2014 many models, pay per use")
+    console.print(
+        "        Sign up: [cyan]https://openrouter.ai/keys[/cyan]"
+    )
+    console.print("  [bold cyan][4][/bold cyan] Claude (Anthropic) \u2014 highest quality, ~$20+/lesson")
     console.print(
         "        Sign up: [cyan]https://console.anthropic.com[/cyan] \u2192 API Keys"
     )
-    console.print("  [bold cyan][3][/bold cyan] GPT (OpenAI) \u2014 high quality, ~$20+/lesson")
+    console.print("  [bold cyan][5][/bold cyan] GPT (OpenAI) \u2014 high quality, ~$20+/lesson")
     console.print(
         "        Sign up: [cyan]https://platform.openai.com/api-keys[/cyan]"
     )
-    console.print("  [bold cyan][4][/bold cyan] Skip \u2014 I'll set this up later\n")
+    console.print("  [bold cyan][6][/bold cyan] Skip \u2014 I'll set this up later\n")
 
-    choice = Prompt.ask("Choice", choices=["1", "2", "3", "4"], default="1")
+    choice = Prompt.ask("Choice", choices=["1", "2", "3", "4", "5", "6"], default="1")
 
-    if choice == "4":
+    if choice == "6":
         config = AppConfig()
         config.save()
         console.print("\n  [yellow]No AI configured. Run 'clawed setup' when you're ready.[/yellow]\n")
         return "skip"
 
-    # ── Step 2: Get API key (or skip for local Ollama) ──
-    if choice == "1" and local_ollama:
-        # Local Ollama — no API key needed
-        config = AppConfig(provider=LLMProvider.OLLAMA)
-        config.ollama_base_url = "http://localhost:11434"
-
-        # Check which models are available
-        try:
-            resp = httpx.get("http://localhost:11434/api/tags", timeout=5.0)
-            models = [m["name"] for m in resp.json().get("models", [])]
-            if models:
-                console.print(f"  [green]\u2713 Found {len(models)} models: {', '.join(models[:5])}[/green]")
-                # Pick the best available model
-                preferred = ["minimax-m2.7", "qwen3.5", "llama4", "mistral", "llama3"]
-                picked = models[0]
-                for pref in preferred:
-                    for m in models:
-                        if pref in m:
-                            picked = m
-                            break
-                config.ollama_model = picked
-                console.print(f"  [green]\u2713 Using model: {picked}[/green]")
-            else:
-                console.print("  [yellow]No models found. Pull one with: ollama pull qwen3.5[/yellow]")
-                config.ollama_model = "qwen3.5"
-        except Exception:
-            config.ollama_model = "qwen3.5"
-
-        key = ""  # No key needed for local
-    elif choice == "1" and not local_ollama:
-        # Ollama Cloud — need API key
+    # ── Step 2: Configure based on choice ──
+    if choice == "1":
+        # Ollama Cloud — API key required
         console.print("\n  [dim]Paste your Ollama Cloud API key:[/dim]")
         key = Prompt.ask("  [bold]Ollama API key[/bold]")
         if not key.strip():
@@ -545,13 +524,61 @@ def quick_model_setup() -> str:
         config.ollama_api_key = key
         set_api_key("ollama", key)
         console.print(f"  [green]\u2713 Key saved ({key[:8]}...)[/green]")
-    else:
+
+    elif choice == "2":
+        # Local Ollama — no API key, detect models
+        config = AppConfig(provider=LLMProvider.OLLAMA)
+        config.ollama_base_url = "http://localhost:11434"
+        if local_ollama:
+            try:
+                resp = httpx.get("http://localhost:11434/api/tags", timeout=5.0)
+                models = [m["name"] for m in resp.json().get("models", [])]
+                if models:
+                    console.print(f"  [green]\u2713 Found models: {', '.join(models[:5])}[/green]")
+                    preferred = ["minimax-m2.7", "qwen3.5", "llama4", "mistral"]
+                    picked = models[0]
+                    for pref in preferred:
+                        for m in models:
+                            if pref in m:
+                                picked = m
+                                break
+                    config.ollama_model = picked
+                    console.print(f"  [green]\u2713 Using model: {picked}[/green]")
+                else:
+                    console.print("  [yellow]No models found. Pull one: ollama pull qwen3.5[/yellow]")
+                    config.ollama_model = "qwen3.5"
+            except Exception:
+                config.ollama_model = "qwen3.5"
+        else:
+            console.print("  [yellow]Ollama not detected. Install it and pull a model first.[/yellow]")
+            config.ollama_model = "qwen3.5"
+        key = ""
+
+    elif choice == "3":
+        # OpenRouter — OpenAI-compatible API
+        console.print("\n  [dim]Paste your OpenRouter API key:[/dim]")
+        key = Prompt.ask("  [bold]OpenRouter API key (starts with sk-or-)[/bold]")
+        if not key.strip():
+            console.print("  [yellow]No key entered. Run 'clawed setup' when ready.[/yellow]\n")
+            config = AppConfig()
+            config.save()
+            return "skip"
+        key = key.strip()
+        config = AppConfig(provider=LLMProvider.OPENAI)
+        config.openai_model = "anthropic/claude-sonnet-4"
+        set_api_key("openai", key)
+        # OpenRouter uses OpenAI-compatible API with a different base URL
+        os.environ["OPENAI_BASE_URL"] = "https://openrouter.ai/api/v1"
+        console.print(f"  [green]\u2713 Key saved ({key[:8]}...)[/green]")
+        console.print("  [dim]Using OpenRouter with Claude Sonnet 4 (change model in config)[/dim]")
+
+    elif choice in ("4", "5"):
         # Claude or OpenAI
         key_labels = {
-            "2": "Claude API key (starts with sk-ant-)",
-            "3": "OpenAI API key (starts with sk-)",
+            "4": "Claude API key (starts with sk-ant-)",
+            "5": "OpenAI API key (starts with sk-)",
         }
-        console.print("\n  [dim]Paste your key below (it will be visible so you can verify it):[/dim]")
+        console.print("\n  [dim]Paste your key below:[/dim]")
         key = Prompt.ask(f"  [bold]{key_labels[choice]}[/bold]")
         if not key.strip():
             console.print("  [yellow]No key entered. Run 'clawed setup' when ready.[/yellow]\n")
@@ -559,7 +586,7 @@ def quick_model_setup() -> str:
             config.save()
             return "skip"
         key = key.strip()
-        provider_map = {"2": LLMProvider.ANTHROPIC, "3": LLMProvider.OPENAI}
+        provider_map = {"4": LLMProvider.ANTHROPIC, "5": LLMProvider.OPENAI}
         config = AppConfig(provider=provider_map[choice])
         set_api_key(config.provider.value, key)
         console.print(f"  [green]\u2713 Key saved ({key[:8]}...)[/green]")
