@@ -535,13 +535,30 @@ def quick_model_setup() -> str:
                 models = [m["name"] for m in resp.json().get("models", [])]
                 if models:
                     console.print(f"  [green]\u2713 Found models: {', '.join(models[:5])}[/green]")
-                    preferred = ["minimax-m2.7", "qwen3.5", "llama4", "mistral"]
-                    picked = models[0]
+                    # Pick most capable model — cloud models first, then by preference
+                    cloud_models = [m for m in models if ":cloud" in m]
+                    preferred = ["minimax-m2.7", "deepseek", "qwen3.5", "llama4", "mistral"]
+                    picked = None
+                    # Try cloud models first (most capable)
                     for pref in preferred:
-                        for m in models:
+                        for m in cloud_models:
                             if pref in m:
                                 picked = m
                                 break
+                        if picked:
+                            break
+                    # Fall back to any preferred model
+                    if not picked:
+                        for pref in preferred:
+                            for m in models:
+                                if pref in m:
+                                    picked = m
+                                    break
+                            if picked:
+                                break
+                    # Last resort — first available
+                    if not picked:
+                        picked = models[0]
                     config.ollama_model = picked
                     console.print(f"  [green]\u2713 Using model: {picked}[/green]")
                 else:
