@@ -20,7 +20,9 @@ def Gateway(*args, **kwargs):  # noqa: N802
 
     if getattr(config, "agent_gateway", False):
         from clawed.agent_core.core import Gateway as AgentGateway
-        return AgentGateway(config=config)
+        # Forward extra kwargs (e.g. llm=) to the agent gateway
+        fwd = {k: v for k, v in kwargs.items() if k != "config"}
+        return AgentGateway(config=config, **fwd)
 
     from clawed._legacy_gateway import Gateway as LegacyGateway
     return LegacyGateway(config=config)
