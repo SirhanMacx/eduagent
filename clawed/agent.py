@@ -258,10 +258,8 @@ async def _call_with_ollama_tools(
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
 
-    # Build the URL — avoid doubling /v1/ if base_url already ends with it
+    # Build the URL — ensure /v1 prefix exactly once
     if base_url.endswith("/v1"):
-        url = f"{base_url}/chat/completions"
-    elif "api.ollama.com" in base_url or "ollama.com" in base_url:
         url = f"{base_url}/chat/completions"
     else:
         url = f"{base_url}/v1/chat/completions"
