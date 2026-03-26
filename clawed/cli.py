@@ -146,19 +146,22 @@ def main(
 def setup(
     reset: bool = typer.Option(False, "--reset", help="Reset existing config and start fresh"),
 ) -> None:
-    """Set up Claw-ED -- guided wizard for new teachers.
+    """Set up Claw-ED — pick your AI provider and get started.
 
     \b
-    Walks you through:
-      1. What you teach (subject, grade, state)
-      2. Choosing an AI model (we recommend one)
-      3. Optionally importing your existing lesson plans
+    Run this to:
+      1. Choose your AI provider (Ollama Cloud, Claude, GPT)
+      2. Paste your API key
+      3. Optionally connect a Telegram bot
 
-    Run this again anytime to change your settings.
+    Run with --reset to start fresh.
     """
-    from clawed.onboarding import run_setup_wizard
+    if reset:
+        from clawed.onboarding import _clear_config
+        _clear_config()
 
-    run_setup_wizard(reset=reset)
+    from clawed.onboarding import quick_model_setup
+    quick_model_setup()
 
 
 # ── Register named sub-app groups ───────────────────────────────────────
