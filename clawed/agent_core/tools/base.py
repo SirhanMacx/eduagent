@@ -1,7 +1,10 @@
 """Tool protocol and registry for the agent core."""
 from __future__ import annotations
 
+import importlib
+import inspect
 import logging
+from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
 from clawed.agent_core.context import AgentContext, ToolResult
@@ -53,3 +56,52 @@ class ToolRegistry:
         except Exception as e:
             logger.error("Tool %s failed: %s", name, e)
             return ToolResult(text=f"Tool {name} failed: {e}")
+
+    def discover(self, package_path: Path) -> None:
+        """Auto-discover and register tool classes from a package directory.
+
+        Scans ``package_path`` for Python modules, imports each one, and
+        registers any class whose name ends with ``Tool`` and that has both
+        ``schema()`` and ``execute()`` methods.
+
+        Broken modules are skipped with a warning.
+        """
+        package_path = Path(package_path)
+        # Determine the dotted package name from the path
+        # e.g. /…/clawed/agent_core/tools → clawed.agent_core.tools
+        parts: list[str] = []
+        cur = package_path
+        while True:
+            init_file = cur / "__init__.py"
+            if not init_file.exists():
+                break
+            parts.insert(0, cur.name)
+            cur = cur.parent
+        package_name = ".".join(parts) if parts else ""
+
+        for py_file in sorted(package_path.glob("*.py")):
+            if py_file.name.startswith("_"):
+                continue
+            module_name = py_file.stem
+            fq_name = f"{package_name}.{module_name}" if package_name else module_name
+            try:
+                mod = importlib.import_module(fq_name)
+            except Exception as exc:
+                logger.warning("Skipping broken tool module %s: %s", fq_name, exc)
+                continue
+
+            for _attr_name, obj in inspect.getmembers(mod, inspect.isclass):
+                if (
+                    _attr_name.endswith("Tool")
+                    and hasattr(obj, "schema")
+                    and hasattr(obj, "execute")
+                    and obj.__module__ == mod.__name__
+                ):
+                    try:
+                        instance = obj()
+                        self.register(instance)
+                        logger.debug("Discovered tool: %s", _attr_name)
+                    except Exception as exc:
+                        logger.warning(
+                            "Failed to instantiate tool %s: %s", _attr_name, exc
+                        )
