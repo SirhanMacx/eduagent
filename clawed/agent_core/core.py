@@ -344,12 +344,18 @@ class Gateway:
         # 6. Save conversation context
         self._save_session_context(teacher_id, message, result.text)
 
-        # 7. Store exchange as episodic memory
+        # 7. Store exchange as episodic memory (with rich metadata)
         try:
             from clawed.agent_core.memory.episodes import EpisodicMemory
 
             mem = EpisodicMemory()
-            mem.store(teacher_id, f"Teacher: {message}\nClaw-ED: {result.text[:500]}")
+            episode_text = f"Teacher: {message}\nClaw-ED: {result.text[:500]}"
+            episode_metadata = {
+                "type": "interaction",
+                "had_tool_calls": bool(result.files),
+                "message_length": len(message),
+            }
+            mem.store(teacher_id, episode_text, metadata=episode_metadata)
         except Exception:
             pass
 
