@@ -1,4 +1,6 @@
-"""Simple API key authentication middleware for hosted mode.
+"""Authentication helpers for LLM providers.
+
+Also contains the simple API key authentication middleware for hosted mode.
 
 Checks the ``Authorization: Bearer <key>`` header against a configured
 set of API keys and resolves the associated teacher_id.

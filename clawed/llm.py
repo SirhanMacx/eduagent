@@ -47,6 +47,8 @@ class LLMClient:
             return await self._openai(prompt, system, temperature, max_tokens)
         elif self.config.provider == LLMProvider.OLLAMA:
             return await self._ollama(prompt, system, temperature, max_tokens)
+        elif self.config.provider == LLMProvider.GOOGLE:
+            return await self._google(prompt, system, temperature, max_tokens)
         raise ValueError(f"Unknown provider: {self.config.provider}")
 
     @staticmethod
@@ -390,3 +392,63 @@ class LLMClient:
                 "Could not connect to Ollama.\n"
                 "Install from https://ollama.com and make sure it's running."
             )
+
+    # ── Google Gemini ────────────────────────────────────────────────────
+
+    async def _google(
+        self, prompt: str, system: str, temperature: float, max_tokens: int
+    ) -> str:
+        from clawed.auth.google_auth import get_google_api_key
+
+        api_key = get_google_api_key()
+        if not api_key:
+            raise EnvironmentError(
+                "No Google API key found. Set GOOGLE_API_KEY or GEMINI_API_KEY, "
+                "or get a free key at https://aistudio.google.com"
+            )
+
+        model = self.config.google_model
+        url = (
+            f"https://generativelanguage.googleapis.com/v1beta/models/"
+            f"{model}:generateContent?key={api_key}"
+        )
+
+        # Build contents: inject system instructions as a user/model
+        # exchange before the real prompt (Gemini REST API basic mode
+        # doesn't have a separate system field).
+        contents: list[dict[str, Any]] = []
+        if system:
+            contents.append({"role": "user", "parts": [{"text": system}]})
+            contents.append({"role": "model", "parts": [{"text": "Understood."}]})
+        contents.append({"role": "user", "parts": [{"text": prompt}]})
+
+        body: dict[str, Any] = {
+            "contents": contents,
+            "generationConfig": {
+                "temperature": temperature,
+                "maxOutputTokens": max_tokens,
+            },
+        }
+
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                resp = await client.post(
+                    url,
+                    headers={"Content-Type": "application/json"},
+                    json=body,
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                return data["candidates"][0]["content"]["parts"][0]["text"]
+        except httpx.ConnectError:
+            raise ConnectionError(
+                "Could not connect to the Google Gemini API.\n"
+                "Check your internet connection and try again."
+            )
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
+                raise EnvironmentError(
+                    "Invalid Google API key. Get a free key at "
+                    "https://aistudio.google.com"
+                )
+            raise

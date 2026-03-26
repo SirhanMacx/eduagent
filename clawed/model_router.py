@@ -53,6 +53,26 @@ DEFAULT_TIER_MODELS: dict[str, str] = {
     "deep": "minimax-m2.7:cloud",
 }
 
+# Per-provider tier defaults (used when the teacher selects a provider).
+PROVIDER_TIER_MODELS: dict[str, dict[str, str]] = {
+    "ollama": DEFAULT_TIER_MODELS,
+    "anthropic": {
+        "fast": "claude-sonnet-4-5-20250514",
+        "work": "claude-sonnet-4-5-20250514",
+        "deep": "claude-opus-4-5-20250514",
+    },
+    "openai": {
+        "fast": "gpt-4o-mini",
+        "work": "gpt-4o",
+        "deep": "gpt-4o",
+    },
+    "google": {
+        "fast": "gemini-2.5-flash",
+        "work": "gemini-2.5-flash",
+        "deep": "gemini-2.5-pro",
+    },
+}
+
 
 def resolve_tier(task_type: str) -> ModelTier:
     """Get the tier for a task. Unknown tasks default to WORK."""
