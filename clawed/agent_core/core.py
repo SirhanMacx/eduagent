@@ -239,7 +239,11 @@ class Gateway:
         teacher_profile = self._load_teacher_profile()
         persona_dict = self._load_persona(teacher_profile)
         session_history = self._load_session_history(teacher_id)
-        improvement_ctx = self._load_improvement_context()
+
+        # 1b. Load 3-layer memory context
+        from clawed.agent_core.memory.loader import load_memory_context
+
+        memory_ctx = load_memory_context(teacher_id, message)
 
         teacher_name = (
             (persona_dict or {}).get("name")
@@ -263,8 +267,10 @@ class Gateway:
         # 2. Build system prompt
         system = build_system_prompt(
             teacher_name=teacher_name,
-            identity_summary=identity_summary,
-            improvement_context=improvement_ctx,
+            identity_summary=memory_ctx["identity_summary"] or identity_summary,
+            improvement_context=memory_ctx["improvement_context"],
+            curriculum_summary=memory_ctx["curriculum_summary"],
+            relevant_episodes=memory_ctx["relevant_episodes"],
             tool_names=self._registry.tool_names(),
         )
 
@@ -275,7 +281,7 @@ class Gateway:
             teacher_profile=teacher_profile or {},
             persona=persona_dict,
             session_history=session_history,
-            improvement_context=improvement_ctx,
+            improvement_context=memory_ctx["improvement_context"],
         )
 
         # 4. Get or create LLM adapter
@@ -298,6 +304,15 @@ class Gateway:
 
         # 6. Save conversation context
         self._save_session_context(teacher_id, message, result.text)
+
+        # 7. Store exchange as episodic memory
+        try:
+            from clawed.agent_core.memory.episodes import EpisodicMemory
+
+            mem = EpisodicMemory()
+            mem.store(teacher_id, f"Teacher: {message}\nClaw-ED: {result.text[:500]}")
+        except Exception:
+            pass
 
         return result
 

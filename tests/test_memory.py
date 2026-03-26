@@ -123,3 +123,22 @@ class TestEpisodicMemory:
         results = mem.recall("t1", "content")
         assert len(results) == 1
         assert "Teacher 1" in results[0]["text"]
+
+
+class TestMemoryLoader:
+    def test_load_full_context(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("EDUAGENT_DATA_DIR", str(tmp_path))
+        from clawed.agent_core.memory.loader import load_memory_context
+        ctx = load_memory_context("test-teacher", "What should I teach tomorrow?")
+        assert isinstance(ctx, dict)
+        assert "identity_summary" in ctx
+        assert "curriculum_summary" in ctx
+        assert "relevant_episodes" in ctx
+        assert "improvement_context" in ctx
+
+    def test_load_memory_context_graceful_on_empty(self, tmp_path, monkeypatch):
+        monkeypatch.setenv("EDUAGENT_DATA_DIR", str(tmp_path))
+        from clawed.agent_core.memory.loader import load_memory_context
+        ctx = load_memory_context("nonexistent", "hello")
+        assert isinstance(ctx["identity_summary"], str)
+        assert isinstance(ctx["curriculum_summary"], str)

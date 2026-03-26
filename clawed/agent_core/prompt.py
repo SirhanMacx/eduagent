@@ -9,6 +9,8 @@ def build_system_prompt(
     identity_summary: str,
     improvement_context: str,
     tool_names: list[str],
+    curriculum_summary: str = "",
+    relevant_episodes: str = "",
 ) -> str:
     """Assemble the agent's system prompt from canonical context."""
     sections = [
@@ -25,6 +27,12 @@ def build_system_prompt(
 
     if improvement_context:
         sections.append(f"\n## What Works for This Teacher\n{improvement_context}")
+
+    if curriculum_summary:
+        sections.append(f"\n## Curriculum Progress\n{curriculum_summary}")
+
+    if relevant_episodes:
+        sections.append(f"\n## Relevant Past Interactions\n{relevant_episodes}")
 
     if tool_names:
         sections.append(
