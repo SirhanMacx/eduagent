@@ -339,6 +339,18 @@ def serve(
                 border_style="green",
             )
         )
+        if cfg.agent_gateway:
+            try:
+                from clawed.scheduler import EduScheduler
+
+                edu_scheduler = EduScheduler()
+                edu_scheduler.register_jobs()
+                edu_scheduler.start()
+                console.print("[dim]Proactive scheduler started[/dim]")
+            except Exception as e:
+                console.print(
+                    f"[dim]Scheduler not started: {e}[/dim]"
+                )
         uvicorn.run(
             "clawed.api.server:app",
             host=host,
@@ -449,6 +461,21 @@ def _serve_gateway_headless(
         # Start the gateway (near-instant — sets _running and emits event)
         await gateway.start()
 
+        # Start proactive scheduler if agent_gateway is enabled
+        edu_scheduler = None
+        if config and config.agent_gateway:
+            try:
+                from clawed.scheduler import EduScheduler
+
+                edu_scheduler = EduScheduler()
+                edu_scheduler.register_jobs()
+                edu_scheduler.start()
+                console.print("[dim]Proactive scheduler started[/dim]")
+            except Exception as e:
+                console.print(
+                    f"[dim]Scheduler not started: {e}[/dim]"
+                )
+
         # Run the web server — this blocks until shutdown
         uv_config = uvicorn.Config(
             "clawed.api.server:app",
@@ -460,6 +487,8 @@ def _serve_gateway_headless(
         try:
             await server.serve()
         finally:
+            if edu_scheduler:
+                edu_scheduler.stop()
             await gateway.stop()
 
     try:
