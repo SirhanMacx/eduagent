@@ -50,12 +50,14 @@ dependencies = [
 google = ["google-api-python-client>=2.0.0", "google-auth-oauthlib>=1.0.0"]
 voice = ["faster-whisper>=0.10.0"]
 tui = ["textual>=0.56.0"]
+memory = ["onnxruntime>=1.16.0"]
 all = [
     "faster-whisper>=0.10.0",
     "textual>=0.56.0",
     "keyring>=24.0.0",
     "uvicorn[standard]>=0.27.0",
     "gunicorn>=21.0.0",
+    "onnxruntime>=1.16.0",
 ]
 hosted = ["uvicorn[standard]>=0.27.0", "gunicorn>=21.0.0"]
 pdf = ["weasyprint>=60.0"]

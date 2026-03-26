@@ -60,3 +60,30 @@ class TestCurriculumStateLayer:
         }
         summary = summarize_curriculum_state(state)
         assert summary == ""
+
+
+class TestEmbeddingProvider:
+    def test_tfidf_embed(self):
+        from clawed.agent_core.memory.embeddings import get_embedder
+        embedder = get_embedder()
+        vec = embedder.embed("photosynthesis is the process of converting light to energy")
+        assert isinstance(vec, list)
+        assert len(vec) > 0
+        assert all(isinstance(x, float) for x in vec)
+
+    def test_tfidf_similarity(self):
+        from clawed.agent_core.memory.embeddings import get_embedder
+        embedder = get_embedder()
+        v1 = embedder.embed("photosynthesis in plants")
+        v2 = embedder.embed("plant energy from sunlight")
+        v3 = embedder.embed("the american revolution war")
+        sim_related = embedder.cosine_similarity(v1, v2)
+        sim_unrelated = embedder.cosine_similarity(v1, v3)
+        assert sim_related > sim_unrelated
+
+    def test_embed_batch(self):
+        from clawed.agent_core.memory.embeddings import get_embedder
+        embedder = get_embedder()
+        vecs = embedder.embed_batch(["hello world", "foo bar"])
+        assert len(vecs) == 2
+        assert all(isinstance(v, list) for v in vecs)
