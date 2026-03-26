@@ -620,6 +620,7 @@ class LLMProvider(str, Enum):
     ANTHROPIC = "anthropic"
     OPENAI = "openai"
     OLLAMA = "ollama"
+    GOOGLE = "google"
 
 
 class TeacherProfile(BaseModel):
@@ -709,6 +710,7 @@ class AppConfig(BaseModel):
     anthropic_model: str = "claude-sonnet-4-6"
     openai_model: str = "gpt-4o"
     ollama_model: str = "minimax-m2.7:cloud"
+    google_model: str = "gemini-2.5-flash"
     ollama_base_url: str = "http://localhost:11434"
     output_dir: str = "./clawed_output"
     include_homework: bool = True
@@ -716,6 +718,9 @@ class AppConfig(BaseModel):
     export_format: str = "markdown"
     drive_root_folder: str = ""
     drive_token_path: str = ""
+
+    # Custom agent name — teacher picks during onboarding
+    agent_name: str = "Claw-ED"
 
     # Ollama API key (for cloud Ollama)
     ollama_api_key: Optional[str] = None
@@ -728,6 +733,12 @@ class AppConfig(BaseModel):
 
     # Tier model overrides (e.g. {"fast": "qwen3.5:cloud", "work": "claude-sonnet-4-6", "deep": "claude-opus-4-6"})
     tier_models: Optional[dict[str, str]] = None
+
+    # Max agent loop iterations (increase for complex curriculum planning)
+    max_agent_iterations: int = 20
+
+    # Web dashboard password (None = no auth, set to enable basic auth)
+    dashboard_password: Optional[str] = None
 
     # Teacher profile — the key to auto-tailoring
     teacher_profile: TeacherProfile = Field(default_factory=TeacherProfile)

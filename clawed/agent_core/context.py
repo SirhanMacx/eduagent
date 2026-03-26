@@ -18,6 +18,7 @@ class AgentContext:
     persona: dict[str, Any] | None
     session_history: list[dict[str, Any]]
     improvement_context: str
+    agent_name: str = "Claw-ED"
 
 
 @dataclass
