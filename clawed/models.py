@@ -712,6 +712,7 @@ class AppConfig(BaseModel):
     ollama_base_url: str = "http://localhost:11434"
     output_dir: str = "./clawed_output"
     include_homework: bool = True
+    agent_gateway: bool = False
     export_format: str = "markdown"
 
     # Ollama API key (for cloud Ollama)

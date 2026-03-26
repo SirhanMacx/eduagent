@@ -15,7 +15,7 @@ class TestGatewayHandle:
 
     @pytest.mark.asyncio
     async def test_handle_returns_gateway_response(self):
-        with patch("clawed.gateway.has_config", return_value=True):
+        with patch("clawed._legacy_gateway.has_config", return_value=True):
             with patch.object(self.gw, "_dispatch", new_callable=AsyncMock) as mock_d:
                 mock_d.return_value = GatewayResponse(text="Hello!")
                 r = await self.gw.handle("hi", "teacher_1")
@@ -24,13 +24,13 @@ class TestGatewayHandle:
 
     @pytest.mark.asyncio
     async def test_new_teacher_enters_onboarding(self):
-        with patch("clawed.gateway.has_config", return_value=False):
+        with patch("clawed._legacy_gateway.has_config", return_value=False):
             r = await self.gw.handle("hello", "new_teacher")
             assert "subject" in r.text.lower() or "teach" in r.text.lower()
 
     @pytest.mark.asyncio
     async def test_existing_teacher_skips_onboarding(self):
-        with patch("clawed.gateway.has_config", return_value=True):
+        with patch("clawed._legacy_gateway.has_config", return_value=True):
             with patch.object(self.gw, "_dispatch", new_callable=AsyncMock) as mock_d:
                 mock_d.return_value = GatewayResponse(text="Lesson response")
                 r = await self.gw.handle("lesson on fractions", "teacher_1")
@@ -39,7 +39,7 @@ class TestGatewayHandle:
 
     @pytest.mark.asyncio
     async def test_onboarding_continues_across_messages(self):
-        with patch("clawed.gateway.has_config", return_value=False):
+        with patch("clawed._legacy_gateway.has_config", return_value=False):
             r1 = await self.gw.handle("hi", "t1")
             assert "subject" in r1.text.lower() or "teach" in r1.text.lower()
             r2 = await self.gw.handle("math", "t1")
@@ -47,7 +47,7 @@ class TestGatewayHandle:
 
     @pytest.mark.asyncio
     async def test_callback_handling(self):
-        with patch("clawed.gateway.has_config", return_value=True):
+        with patch("clawed._legacy_gateway.has_config", return_value=True):
             r = await self.gw.handle_callback("rate:lesson_abc:5", "teacher_1")
             assert isinstance(r, GatewayResponse)
 
@@ -58,7 +58,7 @@ class TestGatewayStats:
 
     @pytest.mark.asyncio
     async def test_stats_increment(self):
-        with patch("clawed.gateway.has_config", return_value=True):
+        with patch("clawed._legacy_gateway.has_config", return_value=True):
             with patch.object(self.gw, "_dispatch", new_callable=AsyncMock) as mock_d:
                 mock_d.return_value = GatewayResponse(text="ok")
                 await self.gw.handle("hello", "t1")
@@ -78,7 +78,7 @@ class TestGatewayEventBus:
 
     @pytest.mark.asyncio
     async def test_events_emitted(self):
-        with patch("clawed.gateway.has_config", return_value=True):
+        with patch("clawed._legacy_gateway.has_config", return_value=True):
             with patch.object(self.gw, "_dispatch", new_callable=AsyncMock) as mock_d:
                 mock_d.return_value = GatewayResponse(text="ok")
                 await self.gw.handle("hi", "t1")
