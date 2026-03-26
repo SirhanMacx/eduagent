@@ -280,7 +280,7 @@ Subject matter experts welcome: if you know how great lessons are structured in 
 
 ## 📄 License
 
-MIT. Build on it, sell it, use it in your classroom. Just don't be evil.
+MIT. Open source.
 
 ---
 
