@@ -32,3 +32,28 @@ class TestAgentContext:
         )
         assert ctx.teacher_id == "t1"
         assert ctx.teacher_profile["name"] == "Ms. Smith"
+
+
+class TestPromptAssembly:
+    def test_builds_prompt_with_teacher_name(self):
+        from clawed.agent_core.prompt import build_system_prompt
+        prompt = build_system_prompt(
+            teacher_name="Ms. Smith",
+            identity_summary="8th grade Science, inquiry-based",
+            improvement_context="Students struggle with graphs",
+            tool_names=["generate_lesson", "search_standards"],
+        )
+        assert "Ms. Smith" in prompt
+        assert "inquiry-based" in prompt
+        assert "graphs" in prompt
+
+    def test_builds_prompt_without_improvement_context(self):
+        from clawed.agent_core.prompt import build_system_prompt
+        prompt = build_system_prompt(
+            teacher_name="Teacher",
+            identity_summary="",
+            improvement_context="",
+            tool_names=[],
+        )
+        assert "Claw-ED" in prompt
+        assert "Teacher" in prompt
