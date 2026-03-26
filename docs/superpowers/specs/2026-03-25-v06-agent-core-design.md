@@ -54,7 +54,8 @@ Before any architectural change, every piece of state has one canonical owner. M
 | Units and lessons (generated content) | `database.py` → `units`, `lessons` tables | Tools, web routes, export |
 | Lesson feedback and ratings | `database.py` → `feedback` table | Agent context, analytics, preference learning |
 | Student questions and chat history | `state.py` → `chat_messages`, `student_questions` tables | Student bot, student_insights tool |
-| Class codes and student registrations | `state.py` → `classes`, `students` tables | Student bot, tools |
+| Class codes | `state.py` → `classes` table | Student bot, tools |
+| Student enrollments | `database.py` → `student_enrollments` table | Student bot, class management |
 | Live conversation state (current session) | `state.py` → `TeacherSession` (in-memory + SQLite) | Agent core, transports |
 | Pending approvals | `agent_core/approvals.py` → `~/.eduagent/approvals/` (JSON files) | Agent core, transports, ApprovalTracker |
 | Approval rates (per-action-type) | Derived from `~/.eduagent/approvals/*.json` by `ApprovalTracker` | Autonomy progression, system prompt |
@@ -144,7 +145,7 @@ For natural-language messages, the agent runs a tool-use loop. This **migrates**
 
 **Flow:**
 
-1. Load teacher context from canonical sources (profile, persona, recent history, improvement context)
+1. Load teacher context from canonical sources (AppConfig.teacher_profile, persona_json from DB, session history, memory layers)
 2. Assemble system prompt with context + tool definitions
 3. Send to LLM with tool-use enabled
 4. Execute tool-use loop (safety limit: 20 iterations)
@@ -155,14 +156,14 @@ For natural-language messages, the agent runs a tool-use loop. This **migrates**
 
 ```
 [Role] You are Claw-ED, a professional AI teaching partner for {teacher_name}.
-[Identity] {from database: teaching style, subjects, grades, standards}
+[Identity] {from AppConfig.teacher_profile: subjects, grades, state + from persona_json: teaching style}
 [Recent Context] {from state.py: recent conversation turns, what was generated recently}
 [Improvement Context] {from memory_engine: feedback patterns, what works for this teacher}
 [Tools] {auto-generated from tool registry}
 [Guidelines] {approval policies, behavioral preferences}
 ```
 
-**v0.6 context loading** reads from existing canonical sources — no new memory stores, no embeddings. The `memory_engine.py` `build_improvement_context()` output is included in the system prompt. The direct `llm.py` injection calls (`inject_workspace_context()`) are removed to avoid double injection.
+**Context loading** (as shipped in v0.9) reads from all canonical sources: `AppConfig.teacher_profile` for structured profile, `persona_json` from the DB, `memory_engine.py` for improvement context, 3-layer cognitive memory (identity, curriculum, episodic), teacher preferences from feedback/approvals, and autonomy summaries from the ApprovalTracker.
 
 ### 2.5 Full Gateway Interface
 
@@ -318,7 +319,9 @@ class PendingApproval:
 agent_gateway: bool = False  # default OFF — old gateway behavior
 ```
 
-Enabled via env var `CLAWED_AGENT_GATEWAY=1` or by setting `agent_gateway: true` in `~/.eduagent/config.json`. (Note: no CLI command for this yet — the existing CLI exposes `set-model` and `set-token` as named commands, not a generic `config set`. Adding `clawed config set-agent-gateway` is a future CLI enhancement.)
+Enabled by setting `"agent_gateway": true` in `~/.eduagent/config.json` (edit the file directly or set it via Python: `AppConfig.load()` → set field → `.save()`).
+
+**Not yet implemented:** env var `CLAWED_AGENT_GATEWAY=1` is documented but `AppConfig.load()` does not currently read it — the flag only works via `config.json`. A CLI command (`clawed config set-agent-gateway`) and env var support are future enhancements.
 
 **Flag OFF:** Old `gateway.py` handles everything. Zero behavior change.
 **Flag ON:** New `agent_core.Gateway` handles everything. Old gateway not loaded.
