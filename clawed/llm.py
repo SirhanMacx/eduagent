@@ -398,24 +398,34 @@ class LLMClient:
     async def _google(
         self, prompt: str, system: str, temperature: float, max_tokens: int
     ) -> str:
-        from clawed.auth.google_auth import get_google_api_key
+        """Call Google Gemini API — supports both API key and OAuth2 token."""
+        from clawed.auth.google_auth import get_google_api_key, get_google_oauth_token
 
         api_key = get_google_api_key()
-        if not api_key:
+        oauth_token = get_google_oauth_token() if not api_key else None
+
+        if not api_key and not oauth_token:
             raise EnvironmentError(
-                "No Google API key found. Set GOOGLE_API_KEY or GEMINI_API_KEY, "
-                "or get a free key at https://aistudio.google.com"
+                "No Google credentials found. Either:\n"
+                "  1. Set GOOGLE_API_KEY (get one at https://aistudio.google.com)\n"
+                "  2. Run `clawed setup --reset` and choose Google with browser sign-in"
             )
 
         model = self.config.google_model
-        url = (
+        base_url = (
             f"https://generativelanguage.googleapis.com/v1beta/models/"
-            f"{model}:generateContent?key={api_key}"
+            f"{model}:generateContent"
         )
 
-        # Build contents: inject system instructions as a user/model
-        # exchange before the real prompt (Gemini REST API basic mode
-        # doesn't have a separate system field).
+        # Auth: API key as query param, or OAuth token as Bearer header
+        params = {}
+        headers: dict[str, str] = {"Content-Type": "application/json"}
+        if api_key:
+            params["key"] = api_key
+        elif oauth_token:
+            headers["Authorization"] = f"Bearer {oauth_token}"
+
+        # Build contents
         contents: list[dict[str, Any]] = []
         if system:
             contents.append({"role": "user", "parts": [{"text": system}]})
@@ -433,9 +443,7 @@ class LLMClient:
         try:
             async with httpx.AsyncClient(timeout=120.0) as client:
                 resp = await client.post(
-                    url,
-                    headers={"Content-Type": "application/json"},
-                    json=body,
+                    base_url, params=params, headers=headers, json=body,
                 )
                 resp.raise_for_status()
                 data = resp.json()
@@ -448,7 +456,7 @@ class LLMClient:
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
                 raise EnvironmentError(
-                    "Invalid Google API key. Get a free key at "
-                    "https://aistudio.google.com"
+                    "Google credentials expired or invalid.\n"
+                    "Run `clawed setup --reset` to re-authenticate."
                 )
             raise
