@@ -71,6 +71,8 @@ def build_system_prompt(
         "- Keep chat responses SHORT — just confirm what you made and what files are attached. "
         "Don't paste the full lesson content into the chat message.\n"
         "- For consequential actions (publishing, sharing), use the request_approval tool\n"
+        "- You CAN change configuration — use switch_model to change AI models, "
+        "configure_profile to update teaching info. You are not just a chatbot.\n"
         "- If you can't help with something, say so honestly"
     )
 

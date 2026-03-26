@@ -383,10 +383,16 @@ class EduAgentTelegramBot:
         {"command": "help", "description": "List all commands"},
         {"command": "lesson", "description": "Generate a daily lesson"},
         {"command": "unit", "description": "Plan a unit"},
-        {"command": "export", "description": "Export last lesson"},
+        {"command": "materials", "description": "Generate worksheets and assessments"},
+        {"command": "export", "description": "Export last lesson (DOCX/PPTX/PDF)"},
+        {"command": "model", "description": "Show or switch AI model"},
+        {"command": "config", "description": "Show current configuration"},
         {"command": "schedule", "description": "Manage reminders"},
         {"command": "gaps", "description": "Curriculum gap analysis"},
+        {"command": "standards", "description": "Search state standards"},
+        {"command": "ingest", "description": "Learn from your lesson files"},
         {"command": "demo", "description": "Show demo lesson"},
+        {"command": "reset", "description": "Reset configuration"},
     ]
 
     def __init__(self, token: str, data_dir: Path | None = None):
