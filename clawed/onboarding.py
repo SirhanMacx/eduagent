@@ -616,7 +616,13 @@ def quick_model_setup() -> str:
             set_api_key("telegram", tg_token.strip())
             config.save()
             console.print("\n  [green]\u2713 Bot configured![/green]")
-            console.print("  [bold]Starting your bot... Open Telegram and message it![/bold]\n")
+            console.print(
+                "\n  [bold]Starting your bot now...[/bold]\n"
+                "  Open Telegram, find your bot, and send it:\n\n"
+                '    [bold cyan]Hello![/bold cyan]\n\n'
+                "  Claw-ED will introduce itself and get to know you.\n"
+                "  [dim]Leave this terminal window open — the bot runs here.[/dim]\n"
+            )
             return "telegram"
         else:
             console.print("  [dim]No token entered. Falling back to terminal chat.[/dim]\n")
