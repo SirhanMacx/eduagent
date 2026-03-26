@@ -203,6 +203,31 @@ class TelegramAPI:
         result = self._call("getUpdates", offset=offset, timeout=timeout)
         return result if isinstance(result, list) else []
 
+    @staticmethod
+    def _split_at_boundary(text: str, max_len: int) -> list[str]:
+        """Split text at paragraph boundaries, not mid-word."""
+        if len(text) <= max_len:
+            return [text]
+        chunks = []
+        while text:
+            if len(text) <= max_len:
+                chunks.append(text)
+                break
+            # Find last double-newline before limit
+            split_at = text.rfind("\n\n", 0, max_len)
+            if split_at == -1:
+                # No paragraph break — try single newline
+                split_at = text.rfind("\n", 0, max_len)
+            if split_at == -1:
+                # No newline at all — split at space
+                split_at = text.rfind(" ", 0, max_len)
+            if split_at == -1:
+                # Give up — hard split
+                split_at = max_len
+            chunks.append(text[:split_at].rstrip())
+            text = text[split_at:].lstrip()
+        return chunks
+
     def send_message(
         self,
         chat_id: int,
@@ -210,26 +235,47 @@ class TelegramAPI:
         parse_mode: str | None = None,
         reply_markup: dict | None = None,
     ) -> dict:
-        # Split long messages
+        # Try Markdown parse mode if not specified
+        if parse_mode is None:
+            parse_mode = "Markdown"
+
+        # Split long messages at paragraph boundaries (not mid-word)
         if len(text) > _MAX_MESSAGE_LENGTH:
-            chunks = [text[i:i + 4000] for i in range(0, len(text), 4000)]
+            chunks = self._split_at_boundary(text, _MAX_MESSAGE_LENGTH - 100)
             result = {}
-            for chunk in chunks:
-                result = self._call(
-                    "sendMessage",
-                    chat_id=chat_id,
-                    text=chunk,
-                    parse_mode=parse_mode,
-                )
+            for i, chunk in enumerate(chunks):
+                kwargs = {
+                    "chat_id": chat_id,
+                    "text": chunk,
+                    "parse_mode": parse_mode,
+                }
+                # Only add reply_markup to the last chunk
+                if i == len(chunks) - 1 and reply_markup:
+                    kwargs["reply_markup"] = reply_markup
+                try:
+                    result = self._call("sendMessage", **kwargs)
+                except Exception:
+                    # Markdown failed — retry without parse_mode
+                    kwargs["parse_mode"] = None
+                    result = self._call("sendMessage", **kwargs)
             return result
 
-        return self._call(
-            "sendMessage",
-            chat_id=chat_id,
-            text=text,
-            parse_mode=parse_mode,
-            reply_markup=reply_markup,
-        )
+        try:
+            return self._call(
+                "sendMessage",
+                chat_id=chat_id,
+                text=text,
+                parse_mode=parse_mode,
+                reply_markup=reply_markup,
+            )
+        except Exception:
+            # Markdown parse failed — retry as plain text
+            return self._call(
+                "sendMessage",
+                chat_id=chat_id,
+                text=text,
+                reply_markup=reply_markup,
+            )
 
     def send_document(
         self,
