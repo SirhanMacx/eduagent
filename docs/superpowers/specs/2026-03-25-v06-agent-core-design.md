@@ -1,8 +1,8 @@
-# Claw-ED v0.6 — Agent Gateway + Tool Registry
+# Claw-ED — Agent Core Architecture Spec
 
-**Date:** 2026-03-25
-**Status:** Revised (R3)
-**Goal:** Put the existing agent loop behind the Gateway contract, wrap existing capabilities as typed tools, add approval persistence, and keep deterministic system paths. Foundation for the full agentic vision — not the full vision itself.
+**Date:** 2026-03-25 (revised 2026-03-26)
+**Status:** Implemented (v0.6-v0.9 shipped)
+**Goal:** Agent-first teaching partner with cognitive memory, Google Drive integration, proactive scheduling, autonomy progression, and closed feedback loop.
 
 ---
 
@@ -10,25 +10,30 @@
 
 A teacher types `pip install clawed && clawed` and gets a colleague — an AI that knows their lessons, their style, their schedule, their standards, and them. It plans, generates, differentiates, publishes to Drive, collects feedback, and improves. It anticipates needs and acts with approval. It gets better every week.
 
-## v0.6 Scope (This Milestone Only)
+## Implementation Status
 
-- Agent gateway with control-plane pre-router
-- Typed tool registry wrapping existing capabilities
-- Approval gate with persistence and resumption
-- Feature-flagged rollout with compatibility shim
-- Fake-LLM test harness
+| Feature | Version | Status |
+|---------|---------|--------|
+| Agent gateway with control-plane pre-router | v0.6 | Shipped |
+| Typed tool registry (22 tools, auto-discovery) | v0.6 | Shipped |
+| Approval gate with persistence and resumption | v0.6 | Shipped |
+| Feature-flagged rollout with compatibility shim | v0.6 | Shipped |
+| FakeLLM test harness | v0.6 | Shipped |
+| 3-layer cognitive memory (identity, curriculum, episodic) | v0.7 | Shipped |
+| TF-IDF embedding search with ONNX upgrade path | v0.7 | Shipped |
+| Google Drive auth (OAuth, token persistence) | v0.7 | Shipped |
+| Drive tools (upload, list, organize) | v0.7 | Shipped |
+| Proactive scheduling daemon | v0.8 | Shipped |
+| Custom teacher YAML tools | v0.8 | Shipped |
+| Multi-step planner | v0.8 | Shipped |
+| Native Google Slides/Docs creation | v0.8 | Shipped |
+| Drive file reading | v0.8 | Shipped |
+| Autonomy progression (approval rate tracking) | v0.9 | Shipped |
+| Student insights tool | v0.9 | Shipped |
+| Teacher preference learning | v0.9 | Shipped |
+| Closed feedback loop | v0.9 | Shipped |
 
-**Deferred to later milestones:**
-
-| Feature | Milestone |
-|---------|-----------|
-| Google Drive integration (OAuth, upload, organize) | v0.7 |
-| Cognitive memory (episodic, embedding-based) | v0.7 |
-| Proactive scheduling daemon | v0.8 |
-| Custom teacher tool creation | v0.8 |
-| Native Google Slides/Docs creation | v0.8 |
-| Planner (multi-step decomposition) | v0.8 |
-| Autonomy progression | v0.9 |
+**Remaining for v1.0:** District deployment, admin dashboard, SSO, multi-tenancy, RBAC.
 
 ## Target User
 
@@ -42,19 +47,28 @@ Before any architectural change, every piece of state has one canonical owner. M
 
 | State | Canonical Owner | Read By |
 |-------|----------------|---------|
-| Teacher profile (name, subjects, grades, state, school) | `database.py` → `teachers` table | Agent context loader, tools |
+| Teacher profile (subjects, grades, state, school) | `models.py` → `AppConfig.teacher_profile` → `~/.eduagent/config.json` | Agent context loader, generation, API routes |
 | Teacher persona (teaching style, voice, preferences) | `database.py` → `teachers.persona_json` | Agent system prompt, generation tools |
+| Teacher name | `database.py` → `teachers.name` (display) + `AppConfig.teacher_profile.name` (config) | Both sources; persona_json takes precedence when available |
 | App config (provider, model, API keys, settings) | `models.py` → `AppConfig` → `~/.eduagent/config.json` | Agent core, tools, transports |
 | Units and lessons (generated content) | `database.py` → `units`, `lessons` tables | Tools, web routes, export |
-| Lesson feedback and ratings | `database.py` → `feedback` table | Agent context, analytics |
-| Student questions and chat history | `state.py` → `chat_messages`, `student_questions` tables | Student bot, agent context |
+| Lesson feedback and ratings | `database.py` → `feedback` table | Agent context, analytics, preference learning |
+| Student questions and chat history | `state.py` → `chat_messages`, `student_questions` tables | Student bot, student_insights tool |
 | Class codes and student registrations | `state.py` → `classes`, `students` tables | Student bot, tools |
 | Live conversation state (current session) | `state.py` → `TeacherSession` (in-memory + SQLite) | Agent core, transports |
-| Pending approvals | `agent_core/approvals.py` → `~/.eduagent/approvals/` (JSON files) | Agent core, transports |
+| Pending approvals | `agent_core/approvals.py` → `~/.eduagent/approvals/` (JSON files) | Agent core, transports, ApprovalTracker |
+| Approval rates (per-action-type) | Derived from `~/.eduagent/approvals/*.json` by `ApprovalTracker` | Autonomy progression, system prompt |
 | Workspace identity | `~/.eduagent/workspace/identity.md` (file) | Agent system prompt |
-| Improvement context (feedback patterns) | `memory_engine.py` → `memory.md` | Agent system prompt (replaces direct `llm.py` injection) |
+| Improvement context (feedback patterns) | `memory_engine.py` → `memory.md` | Agent system prompt |
+| Episodic memory (interactions) | `agent_core/memory/episodes.py` → `~/.eduagent/memory/episodes.db` | Agent context loader (semantic recall) |
+| Curriculum state | Derived projection from `database.py` → `units`, `lessons` | Agent system prompt |
+| Teacher preferences | Derived from feedback + approvals by `agent_core/memory/preferences.py` | Agent system prompt |
+| Scheduled tasks | `~/.eduagent/schedule.json` via `scheduler.py` | AgentScheduler, schedule_task tool |
+| Custom tools | `~/.eduagent/tools/*.yml` via `agent_core/custom_tools.py` | ToolRegistry (auto-discovered) |
 
-**Rule:** Tools read from canonical owners. Tools write to canonical owners. The agent core assembles context from canonical sources into the system prompt. No shadow databases.
+**Note on teacher profile ownership:** The `database.py` `teachers` table has only `id`, `name`, and `persona_json` columns. Structured profile fields (subjects, grades, state, school) live in `AppConfig.teacher_profile` (persisted to `config.json`). This is the current reality — a future migration could consolidate these, but for now both are canonical for their respective scopes.
+
+**Rule:** Tools read from canonical owners. Tools write to canonical owners. The agent core assembles context from canonical sources into the system prompt. Memory layers (episodic, curriculum state, preferences) are derived projections — never primary sources of truth.
 
 ---
 
@@ -304,7 +318,7 @@ class PendingApproval:
 agent_gateway: bool = False  # default OFF — old gateway behavior
 ```
 
-Enabled via `clawed config set agent-gateway true` or env var `CLAWED_AGENT_GATEWAY=1`.
+Enabled via env var `CLAWED_AGENT_GATEWAY=1` or by setting `agent_gateway: true` in `~/.eduagent/config.json`. (Note: no CLI command for this yet — the existing CLI exposes `set-model` and `set-token` as named commands, not a generic `config set`. Adding `clawed config set-agent-gateway` is a future CLI enhancement.)
 
 **Flag OFF:** Old `gateway.py` handles everything. Zero behavior change.
 **Flag ON:** New `agent_core.Gateway` handles everything. Old gateway not loaded.
@@ -410,44 +424,33 @@ FastAPI routes in `clawed/api/routes/` that bypass the Gateway (e.g., `routes/ge
 
 ---
 
-## 7. Future Milestones (Out of v0.6 Scope)
+## 7. Remaining Work (v1.0 — District Deployment)
 
-Documented here for architectural awareness — not for implementation planning.
+Everything below is NOT yet implemented.
 
-### v0.7 — Memory + Drive
-
-- Cognitive memory (3-layer: identity, curriculum state, episodic)
-- Embedding-based episodic memory (ONNX bundled, OpenViking pattern)
-- Replace `memory_engine.py` with new memory system
-- Google Drive integration: single-account OAuth on teacher's real account, teacher picks a root folder, rate limits + backoff + approval gates for consequential uploads
-- Drive tools: `drive_upload`, `drive_list`, `drive_organize`
-
-### v0.8 — Proactive + Extensibility
-
-- Proactive scheduling daemon (via `handle_system_event()`, not synthetic messages)
-- Custom teacher tools (YAML prompt-template only, no arbitrary Python)
-- Planner for multi-step request decomposition
-- Native Google Slides/Docs creation
-- `drive_read` for context ingestion from Drive
-
-### v0.9 — Autonomy + Closed Loop
-
-- Autonomy progression (track approval rates, offer auto-approval)
-- Full closed loop: plan → generate → differentiate → publish → feedback → reteach → improve
-- Student insights tool feeding back into generation
-- Teacher preference learning ("you never use vocabulary lists — stop?")
+- Multi-tenancy with per-teacher data isolation (migrate from SQLite to PostgreSQL or add tenant_id)
+- RBAC — role-based access control with admin/teacher/student roles enforced in routes
+- SSO integration (Google Workspace for Education, Clever, ClassLink)
+- Admin dashboard — school-level analytics, teacher roster, content moderation
+- Audit logging — who did what, when, to which resource
+- FERPA/COPPA posture — data retention policies, consent flows
+- Hosted deployment path — Docker/Kubernetes with proper secrets management
 
 ---
 
-## 8. Success Criteria (v0.6 Only)
+## 8. Success Criteria (v0.9 — Current)
 
-v0.6 is successful when:
+The agent-first individual teacher experience is complete when:
 
-- **Agent handles natural-language messages** — teacher can chat naturally and the agent calls the right tools
-- **Deterministic paths stay deterministic** — file ingestion, onboarding, callbacks work exactly as before
-- **Approval gate works end-to-end** — agent can pause, persist, resume after teacher approval across all transports
-- **All existing functionality preserved** — generation, export, student bot, standards, all transports work through the new architecture
-- **Feature flag works** — flag OFF = identical old behavior, flag ON = new agent behavior
-- **Fake-LLM tests pass** — agent loop, tool calling, error recovery, transport compat all tested without real LLM calls
-- **Graceful degradation** — LLM down → fall back to direct generation with friendly message
-- **Generated file approved and uploaded** is the content delivery outcome (not "editable in Google Slides" — that's v0.8)
+- **Agent handles natural-language messages** — teacher chats naturally, agent calls the right tools (22 tools available)
+- **Deterministic paths stay deterministic** — file ingestion, onboarding, callbacks bypass the agent
+- **Approval gate works end-to-end** — agent pauses, persists, resumes after teacher approval
+- **Memory persists across sessions** — 3-layer cognitive memory (identity, curriculum, episodic)
+- **Drive integration works** — OAuth, upload, list, organize, native Slides/Docs, read
+- **Proactive scheduling fires** — scheduled tasks route through `handle_system_event()`
+- **Custom tools work** — teacher defines YAML prompt-template tools, agent discovers them
+- **Autonomy progression** — approval rates tracked, auto-approval offered at 95%+
+- **Closed loop completes** — feedback from session N influences session N+1 generation
+- **Student insights feed back** — confusion topics from student questions inform reteaching
+- **Feature flag works** — flag OFF = legacy behavior, flag ON = agent behavior
+- **1337 tests pass** — full suite green with FakeLLM harness, no regressions
