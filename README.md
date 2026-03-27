@@ -165,4 +165,4 @@ Custom YAML tools live in `~/.eduagent/tools/`. Define a name, description, para
 
 ---
 
-Built by Mr. Mac -- 9 years teaching Social Studies in Long Island, NY.
+Built by Mr. Mac — Social Studies Educator — Long Island, NY

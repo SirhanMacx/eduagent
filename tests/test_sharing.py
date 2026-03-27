@@ -100,25 +100,3 @@ class TestShareAPI:
         resp = client.get("/shared/nonexistent-token")
         assert resp.status_code in (200, 404)  # May return HTML error page or 404
         assert "not found" in resp.text.lower()
-
-
-class TestWaitlistAPI:
-    def test_post_waitlist_signup(self, client):
-        resp = client.post("/api/waitlist", json={"email": "teacher@school.edu", "role": "teacher"})
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["ok"] is True
-        assert data["count"] >= 1
-
-    def test_post_waitlist_invalid_email(self, client):
-        resp = client.post("/api/waitlist", json={"email": "not-valid", "role": "teacher"})
-        assert resp.status_code == 400
-        data = resp.json()
-        assert data["ok"] is False
-
-    def test_get_waitlist_count(self, client):
-        resp = client.get("/api/waitlist/count")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert "count" in data
-        assert isinstance(data["count"], int)

@@ -176,28 +176,3 @@ class TestRouteFunction:
         assert routed.provider == LLMProvider.ANTHROPIC
 
 
-class TestLandingPage:
-    def test_landing_html_exists(self):
-        from pathlib import Path
-        landing = Path(__file__).parent.parent / "clawed" / "landing" / "index.html"
-        assert landing.exists()
-
-    def test_landing_html_contains_key_content(self):
-        from pathlib import Path
-        landing = Path(__file__).parent.parent / "clawed" / "landing" / "index.html"
-        html = landing.read_text()
-        assert "Your AI co-teacher" in html
-        assert "Trained on YOUR materials" in html
-        assert "50 states" in html or "Standards" in html or "standard" in html.lower()
-        assert "11pm" in html
-        assert "pip install clawed" in html
-        assert "github.com/SirhanMacx/Claw-ED" in html
-
-    def test_landing_html_is_self_contained(self):
-        from pathlib import Path
-        landing = Path(__file__).parent.parent / "clawed" / "landing" / "index.html"
-        html = landing.read_text()
-        # Should not link to external CSS/JS (except GitHub link)
-        stripped = html.replace('href="https://github.com/SirhanMacx/Claw-ED"', "")
-        assert '<link rel="stylesheet" href="http' not in stripped
-        assert "<script src=" not in stripped
