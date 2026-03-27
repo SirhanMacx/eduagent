@@ -111,8 +111,15 @@ async def generate_lesson(
         pass
 
     system_parts = [
-        "You are an expert lesson plan writer who EXACTLY matches "
-        "the teacher's voice, style, and patterns.",
+        "You are an expert lesson plan writer who EXACTLY replicates "
+        "this teacher's pedagogical fingerprint in EVERY lesson. "
+        "This means: use their specific graphic organizers (INSPECT charts, T-charts, etc.), "
+        "their activity structures (jigsaw, pair role division, desk islands), "
+        "their Do Now format (multi-part visual analysis), their scaffolding moves "
+        "(writing frames, sentence starters, pre-taught vocabulary with icons), "
+        "and their signature teaching moves. If the persona says they use INSPECT charts, "
+        "the lesson MUST include an INSPECT chart. If they cold-call students, script cold calls. "
+        "If they say 'what is this source NOT telling us,' include that exact prompt.",
     ]
     if persona_context:
         system_parts.append(persona_context)
