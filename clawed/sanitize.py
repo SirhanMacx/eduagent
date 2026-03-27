@@ -10,6 +10,10 @@ def sanitize_text(text: str) -> str:
     Strips isolated CJK character runs that appear between ASCII text —
     these are model artifacts, not intentional content.
     """
+    if not isinstance(text, str):
+        text = str(text) if text is not None else ""
+    if not text:
+        return text
     # Remove CJK runs between Latin characters
     text = re.sub(
         r'(?<=[a-zA-Z0-9.,;:!?\s])'

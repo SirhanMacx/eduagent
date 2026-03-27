@@ -287,11 +287,14 @@ def export_lesson_docx(
     if diff:
         doc.add_heading("Differentiation", level=2)
         if diff.struggling:
-            doc.add_paragraph(f"Struggling learners: {sanitize_text(diff.struggling)}")
+            text = ", ".join(diff.struggling) if isinstance(diff.struggling, list) else str(diff.struggling)
+            doc.add_paragraph(f"Struggling learners: {sanitize_text(text)}")
         if diff.advanced:
-            doc.add_paragraph(f"Advanced learners: {sanitize_text(diff.advanced)}")
+            text = ", ".join(diff.advanced) if isinstance(diff.advanced, list) else str(diff.advanced)
+            doc.add_paragraph(f"Advanced learners: {sanitize_text(text)}")
         if diff.ell:
-            doc.add_paragraph(f"ELL support: {sanitize_text(diff.ell)}")
+            text = ", ".join(diff.ell) if isinstance(diff.ell, list) else str(diff.ell)
+            doc.add_paragraph(f"ELL support: {sanitize_text(text)}")
 
     # Homework
     if _s_homework:
