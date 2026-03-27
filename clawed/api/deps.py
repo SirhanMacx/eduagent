@@ -1,17 +1,24 @@
 """Shared dependencies for API routes — breaks the server <-> routes circular import.
 
-Route modules import get_db and limiter from here (not from server.py).
+Route modules import get_db from here (not from server.py).
 server.py also imports from here for its lifespan handler.
 """
 from __future__ import annotations
 
-from slowapi import Limiter
-from slowapi.util import get_remote_address
-
 from clawed.database import Database
 
-# Rate limiter (shared across the app)
-limiter = Limiter(key_func=get_remote_address)
+
+class _NoOpLimiter:
+    """No-op rate limiter. Personal agent doesn't need rate limiting."""
+
+    def limit(self, *args, **kwargs):
+        """Return a decorator that does nothing."""
+        def decorator(func):
+            return func
+        return decorator
+
+
+limiter = _NoOpLimiter()
 
 # Shared database connection
 _db: Database | None = None

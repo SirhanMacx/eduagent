@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
 import typer
 from rich.panel import Panel
@@ -17,7 +16,6 @@ from clawed.commands.config import (
     skills_app,
     standards_app,
     templates_app,
-    waitlist_app,
 )
 
 # ── Persona commands ─────────────────────────────────────────────────────
@@ -616,50 +614,3 @@ def class_qr(
         console.print(f"[yellow]qrcode package not installed. Link saved to {out_path}[/yellow]")
         console.print("[dim]Install with: pip install qrcode[pil][/dim]")
 
-
-# ── Waitlist commands ─────────────────────────────────────────────────
-
-
-@waitlist_app.callback(invoke_without_command=True)
-def waitlist_default(
-    ctx: typer.Context,
-    count: bool = typer.Option(
-        False, "--count", help="Show total signup count"
-    ),
-    export: Optional[str] = typer.Option(
-        None, "--export", help="Export waitlist to CSV file"
-    ),
-):
-    """Manage the early access waitlist."""
-    if ctx.invoked_subcommand is not None:
-        return
-    from clawed.waitlist import WaitlistManager
-
-    wl = WaitlistManager()
-    if export:
-        out = Path(export).expanduser().resolve()
-        wl.export_csv(out)
-        console.print(f"[green]Waitlist exported:[/green] {out}")
-    elif count:
-        console.print(
-            f"[bold]{wl.count()}[/bold] signups on the waitlist"
-        )
-    else:
-        total = wl.count()
-        console.print(
-            f"[bold]{total}[/bold] signups on the waitlist"
-        )
-        if total > 0:
-            signups = wl.list_all()
-            table = Table(title="Recent Signups")
-            table.add_column("Email", style="bold")
-            table.add_column("Role")
-            table.add_column("Date", style="dim")
-            for s in signups[:20]:
-                table.add_row(
-                    s["email"],
-                    s["role"],
-                    str(s.get("created_at", ""))[:16],
-                )
-            console.print(table)
-    wl.close()

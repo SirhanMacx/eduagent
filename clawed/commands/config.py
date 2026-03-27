@@ -1,4 +1,4 @@
-"""Config, persona, standards, templates, skills, school, stats, waitlist, and status commands.
+"""Config, persona, standards, templates, skills, school, stats, and status commands.
 
 This module is the registration hub: it creates all Typer sub-apps, defines the
 register_stats / register_status helpers, then imports the split command modules
@@ -22,7 +22,6 @@ skills_app = typer.Typer(help="Browse subject-specific pedagogy skills.")
 school_app = typer.Typer(
     help="Multi-teacher school deployment and shared curriculum."
 )
-waitlist_app = typer.Typer(help="Manage the early access waitlist.")
 class_app = typer.Typer(help="Manage student class codes.")
 
 

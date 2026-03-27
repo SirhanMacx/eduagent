@@ -14,10 +14,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from slowapi import _rate_limit_exceeded_handler
-from slowapi.errors import RateLimitExceeded
 
-from clawed.api.deps import get_db, limiter, set_db
+from clawed.api.deps import get_db, set_db
 from clawed.database import Database
 
 logger = logging.getLogger(__name__)
@@ -50,10 +48,6 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # Rate limiting middleware
-    app.state.limiter = limiter
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-
     # CORS middleware — restrict origins in production via EDUAGENT_CORS_ORIGINS env var
     cors_origins_raw = os.environ.get("EDUAGENT_CORS_ORIGINS", "")
     cors_origins = [o.strip() for o in cors_origins_raw.split(",") if o.strip()] if cors_origins_raw else ["*"]
@@ -83,7 +77,6 @@ def create_app() -> FastAPI:
     from clawed.api.routes.school import router as school_router
     from clawed.api.routes.settings import router as settings_router
     from clawed.api.routes.tools import router as tools_router
-    from clawed.api.routes.waitlist import router as waitlist_router
 
     app.include_router(ingest_router, prefix="/api")
     app.include_router(generate_router, prefix="/api")
@@ -94,16 +87,9 @@ def create_app() -> FastAPI:
     app.include_router(school_router, prefix="/api")
     app.include_router(lessons_router, prefix="/api")
     app.include_router(tools_router, prefix="/api")
-    app.include_router(waitlist_router, prefix="/api")
     app.include_router(gateway_chat_router, prefix="/api")
 
-    from clawed.api.routes.setup import router as setup_router
-    app.include_router(setup_router)
-
     # ── Page routes (server-side rendered) ───────────────────────────
-
-    # Landing page path
-    landing_dir = Path(__file__).parent.parent / "landing"
 
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request):
@@ -133,14 +119,6 @@ def create_app() -> FastAPI:
             "persona": persona_data,
             "active_nav": "home",
         })
-
-    @app.get("/landing", response_class=HTMLResponse)
-    async def landing_page():
-        """Always serve the landing page (bypasses redirect)."""
-        landing_file = landing_dir / "index.html"
-        if landing_file.exists():
-            return HTMLResponse(landing_file.read_text(encoding="utf-8"))
-        return HTMLResponse("<h1>Landing page not found</h1>", status_code=404)
 
     @app.get("/dashboard", response_class=HTMLResponse)
     async def dashboard(request: Request):

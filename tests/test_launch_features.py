@@ -1,4 +1,4 @@
-"""Tests for launch prep features: landing page, demo mode, waitlist, shareable URLs."""
+"""Tests for demo mode and shareable URLs."""
 
 import json
 from pathlib import Path
@@ -39,72 +39,7 @@ def client(app):
 # ── Feature 1: Landing Page ──────────────────────────────────────────
 
 
-class TestLandingPage:
-    def test_landing_file_exists(self):
-        landing = Path(__file__).parent.parent / "clawed" / "landing" / "index.html"
-        assert landing.exists()
-
-    def test_landing_has_headline(self):
-        landing = Path(__file__).parent.parent / "clawed" / "landing" / "index.html"
-        html = landing.read_text()
-        assert "Your AI co-teacher that sounds like you" in html
-
-    def test_landing_has_value_props(self):
-        landing = Path(__file__).parent.parent / "clawed" / "landing" / "index.html"
-        html = landing.read_text()
-        assert "Trained on YOUR materials" in html
-        assert "Generates in your voice" in html
-        assert "Students get you at 11pm" in html
-
-    def test_landing_has_typewriter(self):
-        landing = Path(__file__).parent.parent / "clawed" / "landing" / "index.html"
-        html = landing.read_text()
-        assert "pip install clawed" in html
-        assert "clawed setup" in html
-
-    def test_landing_has_email_form(self):
-        landing = Path(__file__).parent.parent / "clawed" / "landing" / "index.html"
-        html = landing.read_text()
-        assert "install-steps" in html or "try-now" in html or "pip install" in html
-
-    def test_landing_has_github_link(self):
-        landing = Path(__file__).parent.parent / "clawed" / "landing" / "index.html"
-        html = landing.read_text()
-        assert "github.com/SirhanMacx/Claw-ED" in html
-
-    def test_landing_is_dark_theme(self):
-        landing = Path(__file__).parent.parent / "clawed" / "landing" / "index.html"
-        html = landing.read_text()
-        assert "#0f0f1a" in html or "#1a1a2e" in html  # dark background
-
-    def test_landing_is_mobile_responsive(self):
-        landing = Path(__file__).parent.parent / "clawed" / "landing" / "index.html"
-        html = landing.read_text()
-        assert "@media" in html
-
-    def test_root_serves_wizard_when_no_persona(self, client):
-        resp = client.get("/", follow_redirects=False)
-        assert resp.status_code == 200
-        # New users see the onboarding wizard, not the marketing landing page
-        assert "wizard" in resp.text.lower() or "Claw-ED" in resp.text
-
-    def test_root_redirects_when_persona_exists(self, client, db):
-        db.upsert_teacher("Ms. T", '{"name": "Ms. T"}')
-        db.upsert_onboarding("default", 5)
-        resp = client.get("/", follow_redirects=False)
-        assert resp.status_code == 302
-        assert "/dashboard" in resp.headers.get("location", "")
-
-    def test_landing_route(self, client):
-        resp = client.get("/landing")
-        assert resp.status_code == 200
-        assert "Your AI co-teacher" in resp.text
-
-
-# ── Feature 2: ProductHunt Kit ───────────────────────────────────────
-
-
-# ── Feature 3: Demo Mode ────────────────────────────────────────────
+# ── Demo Mode ────────────────────────────────────────────────────────
 
 
 class TestDemoMode:
@@ -193,80 +128,7 @@ class TestDemoMode:
         assert data["assessment_type"] == "dbq"
 
 
-# ── Feature 4: Email Capture / Waitlist ──────────────────────────────
-
-
-class TestWaitlist:
-    def test_add_signup(self, tmp_path):
-        from clawed.waitlist import WaitlistManager
-        wl = WaitlistManager(tmp_path / "wl.db")
-        wl.add_signup("teacher@school.edu", "teacher", "loves science")
-        assert wl.count() == 1
-        wl.close()
-
-    def test_add_duplicate_ignored(self, tmp_path):
-        from clawed.waitlist import WaitlistManager
-        wl = WaitlistManager(tmp_path / "wl.db")
-        wl.add_signup("teacher@school.edu")
-        wl.add_signup("teacher@school.edu")
-        assert wl.count() == 1
-        wl.close()
-
-    def test_invalid_email_rejected(self, tmp_path):
-        from clawed.waitlist import WaitlistManager
-        wl = WaitlistManager(tmp_path / "wl.db")
-        with pytest.raises(ValueError):
-            wl.add_signup("not-an-email")
-        assert wl.count() == 0
-        wl.close()
-
-    def test_export_csv(self, tmp_path):
-        from clawed.waitlist import WaitlistManager
-        wl = WaitlistManager(tmp_path / "wl.db")
-        wl.add_signup("a@b.com")
-        wl.add_signup("c@d.com")
-        csv_path = tmp_path / "out.csv"
-        wl.export_csv(csv_path)
-        assert csv_path.exists()
-        content = csv_path.read_text()
-        assert "a@b.com" in content
-        assert "c@d.com" in content
-        wl.close()
-
-    def test_list_all(self, tmp_path):
-        from clawed.waitlist import WaitlistManager
-        wl = WaitlistManager(tmp_path / "wl.db")
-        wl.add_signup("x@y.com", "admin")
-        signups = wl.list_all()
-        assert len(signups) == 1
-        assert signups[0]["email"] == "x@y.com"
-        assert signups[0]["role"] == "admin"
-        wl.close()
-
-
-class TestWaitlistAPI:
-    def test_post_waitlist(self, client):
-        resp = client.post("/api/waitlist", json={"email": "test@school.edu"})
-        assert resp.status_code == 200
-        data = resp.json()
-        assert data["ok"] is True
-        assert data["count"] >= 1
-
-    def test_post_waitlist_invalid_email(self, client):
-        resp = client.post("/api/waitlist", json={"email": "bad"})
-        assert resp.status_code == 400
-        data = resp.json()
-        assert data["ok"] is False
-
-    def test_get_waitlist_count(self, client):
-        resp = client.get("/api/waitlist/count")
-        assert resp.status_code == 200
-        data = resp.json()
-        assert "count" in data
-        assert isinstance(data["count"], int)
-
-
-# ── Feature 5: Shareable Lesson URLs ─────────────────────────────────
+# ── Shareable Lesson URLs ─────────────────────────────────────────────
 
 
 class TestShareableURLs:

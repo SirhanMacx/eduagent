@@ -29,7 +29,6 @@ from clawed.commands.config import (
     skills_app,
     standards_app,
     templates_app,
-    waitlist_app,
 )
 from clawed.commands.export import (
     _DEMO_HTML,
@@ -238,7 +237,6 @@ app.add_typer(standards_app, name="standards")
 app.add_typer(templates_app, name="templates")
 app.add_typer(skills_app, name="skills")
 app.add_typer(school_app, name="school")
-app.add_typer(waitlist_app, name="waitlist")
 app.add_typer(class_app, name="class")
 app.add_typer(queue_app, name="queue")
 app.add_typer(workspace_app, name="workspace")

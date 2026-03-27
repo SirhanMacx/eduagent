@@ -41,7 +41,6 @@ dependencies = [
     "sse-starlette>=1.6.0",
     "mcp>=1.0.0",
     "json-repair>=0.30.0",
-    "slowapi>=0.1.9,<1.0",
     "pyyaml>=6.0,<7.0",
     "apscheduler>=3.10.0,<4.0",
 ]
@@ -56,10 +55,8 @@ all = [
     "textual>=0.56.0",
     "keyring>=24.0.0",
     "uvicorn[standard]>=0.27.0",
-    "gunicorn>=21.0.0",
     "onnxruntime>=1.16.0",
 ]
-hosted = ["uvicorn[standard]>=0.27.0", "gunicorn>=21.0.0"]
 pdf = ["weasyprint>=60.0"]
 keyring = ["keyring>=24.0.0"]
 dev = ["pytest>=7.0.0", "pytest-asyncio>=0.21.0", "ruff>=0.1.0", "apscheduler>=3.10.0,<4.0", "faster-whisper>=0.10.0"]
