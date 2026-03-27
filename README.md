@@ -1,7 +1,7 @@
 <p align="center">
   <h1 align="center">Claw-ED</h1>
   <p align="center"><strong>Your AI teaching partner.</strong></p>
-  <p align="center">An agentic AI that learns your teaching style, generates lessons in your voice, and handles the work so you can focus on your students.</p>
+  <p align="center">An agentic AI that learns your curriculum, generates lessons in your voice, and works alongside you — not just for you.</p>
 </p>
 
 <p align="center">
@@ -17,70 +17,53 @@
 
 ---
 
+## Your curriculum files are the database
+
+Most AI tools for teachers generate content from scratch. Claw-ED does something different: **your uploaded lesson plans, handouts, and materials become a searchable knowledge base that the agent consults every time it generates.**
+
+Upload your files once. The embedding model chunks every document into searchable sections and stores them in a local semantic database. When you ask for a lesson on the Civil War, Claw-ED doesn't start from nothing — it searches your own prior work first, finds your 2024 unit plan, references your vocabulary choices, and builds on what you've already created.
+
+```
+Your files (PDFs, DOCX, PPTX, TXT)
+        |
+        v
+  Embedding model chunks + indexes every document
+  (Ollama mxbai-embed-large, or TF-IDF fallback)
+        |
+        v
+  Curriculum Knowledge Base (local SQLite)
+  -- 500-word chunks with semantic embeddings
+  -- Deduplicated, searchable by topic
+  -- Teacher-isolated (your files, your data)
+        |
+        v
+  Agent searches YOUR materials before every generation
+  "Found 3 related lessons from your files. Building on those now..."
+```
+
+**This is the difference.** Your AI partner knows your curriculum because it has read every file you've shared.
+
+---
+
 ## What is Claw-ED?
 
-Claw-ED is an AI agent for teachers. Not a chatbot. Not a template library. An agent that knows your teaching style, your standards, your students — and acts on that knowledge.
+Not a chatbot. Not a template library. A teaching colleague that lives inside your computer — one that knows your style, your standards, your students, and takes initiative.
 
 ```
 You: "Prep my week"
 
 Claw-ED:
-  → Checks your curriculum map (8th grade Civics, Week 3: Bill of Rights)
-  → Generates 5 differentiated lessons in your voice
-  → Creates worksheets, assessments, and slides
-  → Exports to PPTX, DOCX, or PDF
-  → Uploads to your Google Drive
-  → Asks: "Period 3 struggled with amendments last week. Want me to add a reteach?"
+  Searching your curriculum files for Week 3 content...
+  Found your Civics pacing guide and last year's Bill of Rights unit.
+  Generating 5 lessons grounded in your materials...
+  Exporting to PPTX and DOCX...
+  Done! 5 lesson plans + slides attached.
+
+  I noticed you don't have an assessment for this unit yet.
+  Want me to create a quiz covering amendments 1-10?
 ```
 
-It learns from your existing lesson plans, aligns to your state's standards, and gets better every time you give feedback.
-
----
-
-## How it works
-
-```
-Your lesson plans (PDFs, DOCX, PPTX, TXT)
-        ↓
-Claw-ED reads them and learns your teaching fingerprint:
-  • Teaching style (inquiry-based, direct instruction, Socratic...)
-  • Structural preferences (Do Nows, exit tickets, AIM questions...)
-  • Vocabulary level and tone
-  • Assessment approach
-        ↓
-You talk to it naturally — it decides what tools to use:
-  • "Plan a 2-week unit on WWI for my 10th graders"
-  • "Make a quiz on chapter 5"
-  • "Export yesterday's lesson as slides"
-  • "What standards haven't I covered yet?"
-        ↓
-Claw-ED acts — generates content, searches standards, exports files
-        ↓
-You teach. You give feedback. It improves.
-```
-
-### Real output
-
-Generated for an 8th grade Social Studies class studying the American Revolution:
-
-**Unit plan:**
-
-```
-Unit: "Liberty and Loyalty: The American Revolution"
-Duration: 2 weeks (10 lessons)
-
-Essential Questions:
-  1. Was war inevitable?
-  2. What defines freedom?
-  3. How do ideas change the world?
-  4. When is rebellion justified?
-```
-
-**Lesson 1 — Do Now (verbatim from generation):**
-
-> Alright, friends, as you settle in, I want you to take out your notebook and answer this question on the board: 'What does freedom mean to you? Is there ever a time when following the rules is more important than being free?' Take 5 minutes to jot down your honest thoughts. There are no wrong answers here; I just want to hear your voice.
-
-Every lesson includes differentiation, exit tickets, and homework — all in the teacher's voice.
+You name it. You teach it your style. It gets better every week.
 
 ---
 
@@ -91,47 +74,114 @@ pip install clawed
 clawed
 ```
 
-That's it. Claw-ED walks you through setup in 30 seconds:
-1. **Pick your AI provider** — we recommend Ollama Cloud ($20/month flat rate, unlimited lessons)
-2. **Paste your API key** — get one from your provider's website
-3. **Choose your interface:**
-   - **Telegram bot** (recommended) — paste your bot token, the bot starts immediately. Open Telegram and message it — setup continues on your phone.
-   - **Terminal chat** — stay in the terminal. The agent introduces itself and learns about you conversationally.
+Setup takes 30 seconds:
+1. **Pick your AI provider** — Ollama Cloud, Google Gemini, Claude, or GPT
+2. **Authenticate** — paste an API key, or sign in with your Google account (browser OAuth)
+3. **Choose your interface** — Telegram bot (recommended), terminal, or web dashboard
+4. **Name your agent** — it goes by Claw-ED, but you can call it anything: Sage, Coach, your department mascot
 
-### Other ways to use it
+Then send it your lesson plans. It learns your voice and builds your curriculum knowledge base.
+
+### Which AI provider?
+
+| Provider | Auth | Cost | Best for |
+|----------|------|------|----------|
+| **Ollama Cloud** (recommended) | API key | $20/month flat | Daily use — unlimited lessons |
+| **Google Gemini** | API key or browser sign-in | Free tier / pay-as-you-go | Teachers with Google accounts |
+| **Anthropic Claude** | API key | ~$20+/lesson | Best output quality |
+| **OpenAI GPT** | API key | ~$20+/lesson | Best output quality |
+| **Local Ollama** | None (free) | Free | Privacy-first, runs on your machine |
+
+**Switch providers anytime:** `clawed setup --reset`
+
+### Interfaces
 
 | Method | Command |
 |--------|---------|
 | **Terminal chat** | `clawed` or `clawed chat` |
-| **Web dashboard** | `clawed serve` → open `http://localhost:8000` |
-| **Full-screen TUI** | `pip install 'clawed[tui]'` → `clawed serve &` → `clawed tui` |
-| **Telegram bot** | `clawed bot` (token saved during setup, or [setup guide](docs/BOT_SETUP.md)) |
+| **Web dashboard** | `clawed serve` |
+| **Telegram bot** | `clawed bot` (token saved during setup) |
+| **Full-screen TUI** | `pip install 'clawed[tui]'` then `clawed tui` |
 | **Student bot** | Students join with class codes, ask questions in your voice |
+| **MCP server** | Expose tools to any AI agent |
+| **REST API** | Custom integrations via `clawed serve` |
+
+---
+
+## How it works
+
+### 1. Upload your curriculum
+
+Send Claw-ED your lesson plans, handouts, unit plans, slides — anything you've created. It reads them and learns two things:
+
+- **Your teaching fingerprint** — style, tone, vocabulary, structure, assessment preferences
+- **Your curriculum content** — every document gets chunked, embedded, and indexed into a searchable knowledge base
+
+### 2. Talk naturally
+
+Tell it what you need. The agent decides which tools to call:
+
+- "Plan a 2-week unit on WWI for my 10th graders"
+- "Make a quiz on chapter 5"
+- "What standards haven't I covered yet?"
+- "Find what I taught about photosynthesis last year"
+
+### 3. It works, you teach
+
+The agent searches your files, generates content grounded in your materials, exports professional DOCX/PPTX files, and suggests what to do next. You give feedback. It gets better.
 
 ---
 
 ## Architecture
 
-Claw-ED is agent-first. Every natural-language message goes through an LLM that decides which tools to call. Deterministic operations (file ingestion, onboarding, button callbacks) bypass the agent for reliability.
+Claw-ED is agent-first. Natural-language messages go through an LLM that decides which tools to call. Deterministic operations (file ingestion, onboarding, approvals) bypass the agent for reliability.
 
 ```
 Teacher's message (Telegram, CLI, TUI, Web)
-        ↓
+        |
     Gateway
-    ├── Control Plane (deterministic: files, callbacks, onboarding)
-    └── Agent Loop (LLM decides → calls tools → returns result)
-              ↓
-        22 Tools
-        generate_lesson · generate_unit · generate_materials
-        generate_assessment · search_standards · export_document
-        ingest_materials · configure_profile · request_approval
-        search_lessons · curriculum_map · gap_analysis
-        sub_packet · parent_comm · drive_upload · drive_list
-        drive_organize · drive_create_slides · drive_create_doc
-        drive_read · schedule_task
-              ↓
-    GatewayResponse → Teacher sees the result
+    |-- Control Plane (deterministic: files, callbacks, onboarding)
+    |-- Agent Loop (LLM decides -> calls tools -> returns result)
+              |
+        25 Tools (auto-discovered)
+              |
+        Curriculum KB     Memory (3-layer)     Standards (50 states)
+        search_my_materials  identity             CCSS, NGSS, C3
+        ingest_materials     curriculum state      state-specific
+                             episodic (embeddings)  gap analysis
+              |
+    Professional exports (DOCX, PPTX, PDF, Google Slides/Docs)
 ```
+
+### 25 agent tools
+
+| Category | Tools |
+|----------|-------|
+| **Curriculum KB** | `search_my_materials`, `ingest_materials` |
+| **Generation** | `generate_lesson`, `generate_unit`, `generate_materials`, `generate_assessment` |
+| **Standards** | `search_standards`, `curriculum_map`, `gap_analysis` |
+| **Export** | `export_document` |
+| **Google Drive** | `drive_upload`, `drive_create_slides`, `drive_create_doc`, `drive_list`, `drive_organize`, `drive_read` |
+| **Profile** | `configure_profile`, `switch_model` |
+| **Safety** | `request_approval`, `schedule_task` |
+| **Student** | `student_insights` |
+| **Communication** | `parent_comm`, `sub_packet`, `search_lessons` |
+
+### 3-layer cognitive memory
+
+| Layer | What it stores | Powered by |
+|-------|---------------|------------|
+| **Identity** | Teaching style, subject, grades, voice samples | Persona extraction |
+| **Curriculum** | Current unit, pacing state, what's been covered | SQLite |
+| **Episodic** | Past interactions, semantic recall | Embedding model (Ollama / TF-IDF) |
+| **Curriculum KB** | Every uploaded file, chunked and searchable | Embedding model + SQLite |
+
+### Safety guardrails
+
+- **Approval gates** for consequential actions (publishing, sharing with students)
+- **Never auto-approved:** Student-facing output, Drive publishing — always requires teacher review
+- **Autonomy progression:** After 10+ consistent approvals, agent offers to auto-approve routine actions
+- Closed feedback loop: ratings improve future generation
 
 See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full breakdown.
 
@@ -139,43 +189,26 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full breakdown.
 
 ## What it can do
 
-### Generation
-- Unit plans, daily lessons, worksheets, assessments, rubrics — all in your voice
+### Generation — in your voice
+- Unit plans, daily lessons, worksheets, assessments, rubrics
 - IEP/504 accommodations and differentiation (struggling, advanced, ELL)
 - Substitute teacher packets and parent communications
-- PPTX slides with academic images, DOCX handouts, PDF exports
+- Professional PPTX slides with academic images and section dividers
+- Polished DOCX with headers, footers, and IEP/ELL callout boxes
 
-### Standards
-- 50-state standards alignment (CCSS, NGSS, C3, state-specific frameworks)
-- Curriculum gap analyzer — find what you haven't covered yet
-- Standards search — look up specific standards by subject and grade
+### Standards — 50 states
+- CCSS, NGSS, C3, and state-specific frameworks
+- Curriculum gap analyzer
+- Standards search by subject and grade
 
-### Agent capabilities
-- Agent-first gateway — LLM decides what tools to call, no hardcoded routing
-- 22 typed tools auto-discovered from the tool registry
-- Approval gates — agent asks before consequential actions
-- 3-layer cognitive memory — identity, curriculum state, episodic recall
-- Google Drive integration — upload, list, organize, native Slides/Docs, read
-- Proactive scheduling — automated morning prep, weekly planning, feedback digests
-- Custom teacher tools — define your own tools in YAML, no code needed
-- Multi-step planner — "prepare my week" decomposes into sequential tool calls
-- Autonomy progression — auto-approval offers when you consistently approve an action
-- Closed feedback loop — ratings and feedback improve future generation
-- Student insights — surfaces what students are confused about for reteaching
-- Teacher preference learning — adapts to your editing patterns over time
-
-### Surfaces
-- Terminal chat, full-screen TUI, web dashboard, Telegram bot
-- Student chatbot — students join with class codes, ask questions, get answers in your voice
-- MCP server — expose tools to any AI agent
-- REST API for custom integrations
-
-### Coming next
-
-| Version | What's coming |
-|---------|--------------|
-| **v0.9.0** *(current)* | Autonomy progression, closed feedback loop, student insights, preference learning, 22 tools |
-| **v1.0.0** | District deployment with admin dashboard and SSO |
+### Agent behavior
+- **Search-first:** Agent searches your curriculum files before generating
+- **Status narration:** "Searching your files... Found 3 related lessons. Generating now..."
+- **Proactive suggestions:** "I made your lesson. Want me to create a matching worksheet?"
+- **Custom naming:** Your agent, your name — Sage, Coach, whatever feels right
+- Multi-step planner for complex requests ("prepare my week")
+- Custom teacher tools via YAML — no code needed
+- Proactive scheduling — morning prep, weekly planning, feedback digests
 
 ---
 
@@ -183,18 +216,18 @@ See [ARCHITECTURE.md](docs/ARCHITECTURE.md) for the full breakdown.
 
 | Command | What it does |
 |---------|-------------|
-| `clawed` | First run: setup. Returning: drops into chat with your agent |
+| `clawed` | First run: setup. Returning: chat with your agent |
 | `clawed chat` | Terminal chat |
-| `clawed tui` | Full-screen TUI chat (connects to running gateway) |
-| `clawed serve` | Web server — dashboard, onboarding wizard, API |
-| `clawed bot --token TOKEN` | Telegram bot |
-| `clawed ingest <path>` | Learn from your lesson plans |
+| `clawed serve` | Web dashboard |
+| `clawed bot` | Telegram bot |
+| `clawed ingest <path>` | Add files to your curriculum knowledge base |
 | `clawed unit "Topic" -g 8 -s "Subject"` | Generate a unit plan |
-| `clawed lesson "Topic" -g 8 -s "Subject"` | Generate a single lesson |
-| `clawed lesson "Topic" --format pptx` | Export as PowerPoint, Word, or PDF |
-| `clawed standards list -g 8 -s math` | Browse your state's standards |
+| `clawed lesson "Topic" -g 8 -s "Subject"` | Generate a lesson |
+| `clawed lesson "Topic" --format pptx` | Export as PowerPoint |
+| `clawed standards list -g 8 -s math` | Browse standards |
 | `clawed gap-analyze -s "Math" -g 8` | Find curriculum gaps |
 | `clawed demo` | See example output (no API key needed) |
+| `clawed setup --reset` | Re-run setup wizard |
 
 Run `clawed --help` for the full list.
 
@@ -204,34 +237,12 @@ Run `clawed --help` for the full list.
 
 ```bash
 pip install clawed                    # Everything you need
-pip install 'clawed[tui]'             # + Full-screen terminal chat (Textual)
+pip install 'clawed[tui]'             # + Full-screen terminal chat
 pip install 'clawed[voice]'           # + Voice note transcription
+pip install 'clawed[google]'          # + Google Drive integration
 pip install 'clawed[all]'             # Everything
 
 # Requires Python 3.10+
-```
-
-### Which AI provider?
-
-The setup wizard asks you to pick a provider and paste your API key. That's it.
-
-**We recommend [Ollama Cloud](https://ollama.com)** — $20/month Pro subscription, unlimited lessons, dozens of models. Default model: `minimax-m2.7:cloud`.
-
-| Provider | Default model | Cost | Best for |
-|----------|------------|------|----------|
-| **Ollama Cloud** (recommended) | minimax-m2.7:cloud | $20/month flat | Daily use — unlimited lessons |
-| **Anthropic** | Claude Sonnet 4.6 | ~$20+/lesson | Best output quality, expensive |
-| **OpenAI** | GPT-5.4 | ~$20+/lesson | Best output quality, expensive |
-
-Claude and GPT produce the best lesson output, but frontier model pricing is steep — a single lesson with differentiation and materials can cost $20 or more. Ollama Cloud lets you generate as much as you want for a fixed $20/month.
-
-**Switch providers or models anytime:**
-
-```bash
-clawed config set-model ollama        # switch to Ollama Cloud
-clawed config set-model anthropic     # switch to Claude
-clawed config set-model openai        # switch to OpenAI
-clawed setup --reset                  # re-run full setup
 ```
 
 ---
@@ -239,11 +250,26 @@ clawed setup --reset                  # re-run full setup
 ## Privacy & Compliance
 
 - **Your files stay on your machine** unless you choose a cloud LLM provider
-- **API keys stored in OS keychain** when `keyring` is installed, otherwise in `~/.eduagent/` with restrictive permissions
+- **Curriculum knowledge base is local** — SQLite database on your disk, never uploaded
+- **API keys stored in OS keychain** (macOS Keychain, Linux Secret Service, Windows Credential Manager)
+- **OAuth tokens stored with restrictive permissions** (0600)
 - **No telemetry, no data collection, no accounts**
-- **Student bot transparency:** The student chatbot is clearly AI-powered. Students should know they are interacting with an AI assistant, not their teacher directly.
-- **Not yet FERPA/COPPA certified.** Claw-ED does not currently have formal compliance certifications. Do not use it with personally identifiable student information (PII), IEP/504 documents containing real student names, or school-issued accounts until district-level compliance controls are implemented (planned for v1.0). Use it with your own lesson materials and generic/anonymized content.
-- **Cloud LLM disclaimer:** When using cloud AI providers (Ollama Cloud, Anthropic, OpenAI), your lesson prompts are sent to their APIs. Review your provider's data handling policy. For maximum privacy, use a local Ollama installation.
+- **Student bot transparency:** Clearly labeled as AI — students know they're talking to an assistant
+- **Not yet FERPA/COPPA certified.** Do not use with real student PII until district-level controls ship (v1.0). Use with your own lesson materials and anonymized content.
+- **Cloud disclaimer:** When using cloud AI providers, lesson prompts are sent to their APIs. Review your provider's data policy. For maximum privacy, use local Ollama.
+
+---
+
+## Roadmap
+
+| Version | Status | What's in it |
+|---------|--------|-------------|
+| **v0.9.20** | **Current** | Curriculum knowledge base, custom agent naming, Google Gemini + browser OAuth, professional exports, agentic personality, 25 tools |
+| **v1.0.0** | Planned | District deployment — admin dashboard, SSO, RBAC, FERPA/COPPA compliance |
+
+See [ROADMAP.md](ROADMAP.md) for details.
+
+---
 
 ## Contributing
 
@@ -251,11 +277,13 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Subject matter experts welcome — if yo
 
 ## License
 
-MIT. Open source.
+MIT. Open source. Free forever.
 
 ---
 
 **Built by a teacher.** Claw-ED was created by **Mr. Mac** — 9 years teaching Social Studies in Long Island, NY. Not a startup's idea of what teachers need. A tool built by someone who writes lesson plans every week and got tired of starting from scratch.
+
+**This is bigger than one teacher.** Every educator deserves an AI partner that knows their curriculum and respects their craft. Claw-ED is the agentic layer for education — open source, teacher-owned, and built to scale to every classroom in the world.
 
 <p align="center">
   <strong>If Claw-ED saves you time, <a href="https://github.com/SirhanMacx/Claw-ED/stargazers">star it on GitHub</a></strong> so other teachers can find it.

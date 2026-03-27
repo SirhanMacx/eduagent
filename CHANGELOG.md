@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.9.20] - 2026-03-26
+
+### Added
+- **Curriculum Knowledge Base** — uploaded files are chunked, embedded, and stored as a local semantic database. The agent searches your materials before every generation, grounding output in your own prior work. Powered by Ollama embeddings (mxbai-embed-large) with TF-IDF fallback.
+- **search_my_materials tool** — agent explicitly searches teacher's uploaded curriculum files by topic, returning ranked excerpts with source attribution
+- **Custom agent naming** — teachers name their AI partner during onboarding (Sage, Coach, or anything). Agent refers to itself by the chosen name in all interactions.
+- **Google Gemini provider** — use your existing Google account. Supports API key auth and full browser OAuth2 flow (local callback server, token auto-refresh).
+- **Professional export templates** — DOCX exports with headers (teacher name, subject, date), footers (page numbers, agent branding), and consistent Calibri typography. PPTX exports with section divider slides between lesson phases.
+- **IEP/ELL callout boxes** — differentiation sections in DOCX use shaded backgrounds for visual distinction
+- **Post-generation export guarantee** — if the LLM forgets to call export_document, files are still delivered
+- **Configurable max agent iterations** — `AppConfig.max_agent_iterations` (default 20) for complex curriculum planning
+- **Web dashboard basic auth** — optional `dashboard_password` in config
+- **25 agent tools** (added search_my_materials, configure_profile gains agent_name)
+
+### Changed
+- **System prompt rewritten** — search-first behavior (always check curriculum KB), status narration ("Searching your files..."), proactive suggestions ("Want me to create a worksheet?"), colleague personality
+- **Approval tracker migrated to SQLite** — single GROUP BY query replaces per-file JSON globbing
+- **Episodic memory recall bounded** — 90-day recency filter + LIMIT 200 in SQL before cosine ranking
+- **LLM adapter cleaned up** — no more monkey-patching of global TOOL_DEFINITIONS
+- **Ingest handler enriched** — returns curriculum library stats after indexing ("I now have 15 documents, 230 searchable sections")
+- **Memory loader** — new curriculum_kb_context layer injected into system prompt
+
+### Fixed
+- Episodic memory O(n) scaling for teachers with hundreds of interactions
+- Approval tracking performance with large approval histories
+
 ## [0.9.0] - 2026-03-25
 
 ### Added
