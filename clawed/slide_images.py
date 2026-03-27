@@ -190,7 +190,7 @@ def _build_search_query(topic: str, subject: str = "") -> str:
         'solving linear equations mathematics education'
     """
     # Clean up the topic: strip punctuation, lower-case
-    cleaned = re.sub(r"[^a-zA-Z0-9\\s]", "", topic).strip().lower()
+    cleaned = re.sub(r"[^a-zA-Z0-9\s]", "", topic).strip().lower()
 
     # Remove very common filler words to keep query focused
     stopwords = {"the", "a", "an", "of", "in", "on", "for", "and", "to", "is", "are"}
@@ -354,7 +354,8 @@ async def _fetch_wikimedia(
     }
 
     try:
-        async with httpx.AsyncClient(timeout=_FETCH_TIMEOUT) as client:
+        headers = {"User-Agent": "ClawED/1.0 (https://github.com/SirhanMacx/Claw-ED; educational)"}
+        async with httpx.AsyncClient(timeout=_FETCH_TIMEOUT, headers=headers) as client:
             resp = await client.get(url, params=params)
             resp.raise_for_status()
             data = resp.json()
