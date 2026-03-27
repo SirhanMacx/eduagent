@@ -18,7 +18,8 @@ def _simple_stem(word: str) -> str:
     if len(word) <= 3:
         return word
     for suffix in ("ation", "tion", "sion", "ness", "ment", "ible", "able",
-                   "ing", "ies", "ous", "ive", "ful", "ess", "ize",
+                   "ical", "ism", "ist", "ity", "ure", "ous",
+                   "ing", "ies", "ive", "ful", "ess", "ize",
                    "ed", "ly", "er", "al", "es", "s"):
         if word.endswith(suffix) and len(word) - len(suffix) >= 3:
             return word[: -len(suffix)]

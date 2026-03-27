@@ -49,7 +49,10 @@ def build_system_prompt(
             "3. Where their teaching files are -- a folder path or Google Drive link\n\n"
             "Call configure_profile immediately when you have name/subject/grade/state. "
             "Call ingest_materials immediately when they give a file path. "
-            "Do NOT ask their name twice. Do NOT ask what to call you."
+            "Do NOT ask their name twice.\n\n"
+            "After getting to know them, offer to let them name you — "
+            "'I go by Claw-ED by default, but you can call me whatever feels right.' "
+            "Use configure_profile with agent_name to save their choice.\n"
         )
 
     # Curriculum KB context (retrieved evidence -- show raw, don't summarize)

@@ -137,6 +137,11 @@ def generate_reading_report(
         sorted(topic_counts.items(), key=lambda x: x[1], reverse=True)
     )
 
+    # Guess primary subject from topic coverage
+    if topic_counts:
+        report["teacher_details"]["subject_guess"] = "Social Studies"
+    # Future: detect Science, Math, ELA from their respective topic patterns
+
     # Strengths = topics with significant coverage
     if topic_counts:
         sorted_topics = sorted(topic_counts.items(), key=lambda x: x[1], reverse=True)

@@ -158,8 +158,42 @@ class IngestMaterialsTool:
             except Exception as e:
                 logger.debug("SOUL.md update failed: %s", e)
 
+            # Auto-populate teacher profile from reading report
+            try:
+                from clawed.models import AppConfig
+                config = AppConfig.load()
+                details = report.get("teacher_details", {})
+                updated_fields = []
+
+                if details.get("name_used") and (
+                    not config.teacher_profile.name
+                    or config.teacher_profile.name == ""
+                ):
+                    config.teacher_profile.name = details["name_used"]
+                    updated_fields.append(f"name: {details['name_used']}")
+
+                if details.get("school") and not config.teacher_profile.school:
+                    config.teacher_profile.school = details["school"]
+                    updated_fields.append(f"school: {details['school']}")
+
+                if details.get("subject_guess") and not config.teacher_profile.subjects:
+                    config.teacher_profile.subjects = [details["subject_guess"]]
+                    updated_fields.append(f"subject: {details['subject_guess']}")
+
+                if updated_fields:
+                    config.save()
+                    profile_update = (
+                        "\n\nBased on your files, I've updated your profile: "
+                        + ", ".join(updated_fields) + "."
+                    )
+                else:
+                    profile_update = ""
+            except Exception as e:
+                logger.debug("Auto-profile failed: %s", e)
+                profile_update = ""
+
             return ToolResult(
-                text=summary,
+                text=summary + profile_update,
                 data={"files_ingested": len(docs)},
                 side_effects=[f"Ingested {len(docs)} files from {raw_path}"],
             )

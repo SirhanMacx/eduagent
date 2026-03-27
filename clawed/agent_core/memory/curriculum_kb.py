@@ -141,7 +141,7 @@ class CurriculumKB:
             rows = conn.execute(
                 "SELECT doc_title, source_path, chunk_text, embedding, metadata, created_at "
                 "FROM chunks WHERE teacher_id = ? "
-                "ORDER BY created_at DESC LIMIT 200",
+                "LIMIT 2000",
                 (teacher_id,),
             ).fetchall()
 
@@ -161,6 +161,8 @@ class CurriculumKB:
                 "similarity": sim,
             })
 
+        scored = [s for s in scored if s["similarity"] > 0.05]
+        logger.debug("KB search '%s': %d chunks scored, %d above threshold", query, len(rows), len(scored))
         scored.sort(key=lambda x: x["similarity"], reverse=True)
         return scored[:top_k]
 
