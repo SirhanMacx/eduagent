@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.1] - 2026-03-27
+
+Pedagogical fingerprint — "teacher voice" means how you teach, not just how you sound.
+
+### Changed
+- **TeacherPersona model expanded** — 7 new fields: `source_types`, `activity_patterns`, `scaffolding_moves`, `grouping_preferences`, `do_now_style`, `exit_ticket_style`, `signature_moves`
+- **Persona extraction prompt rewritten** — Now extracts detailed pedagogical patterns: what sources the teacher uses, how they run activities, how they scaffold, their Do Now and exit ticket formats, and signature classroom moves
+- **`to_prompt_context()` expanded** — Pedagogical fingerprint fields serialized as structured sections with explicit instructions (e.g. "Use these TYPES of sources", "replicate these structures")
+- **Lesson generation prompt updated** — Explicit instructions to match source types, activity patterns, scaffolding moves, Do Now style, exit ticket format, and signature moves — not just tone/vocabulary
+
+### Fixed
+- "Teacher voice" was only surface-level (catchphrases, tone) — now captures the full pedagogical fingerprint
+- Images working on Sirhan (LOC timeout is expected, Wikimedia fallback succeeds)
+
 ## [2.0.0] - 2026-03-27
 
 The Real Teaching Agent — clean output, real voice matching, knowledge base integration.

@@ -167,6 +167,40 @@ class TeacherPersona(BaseModel):
     voice_sample: str = ""
     voice_examples: list[str] = Field(default_factory=list)
 
+    # ── Pedagogical fingerprint (v2.0) ────────────────────────────────
+    # These fields capture HOW a teacher teaches, not just how they sound.
+    source_types: list[str] = Field(default_factory=list)
+    """Types of primary sources this teacher uses (e.g. 'political speeches',
+    'historical maps', 'data tables', 'poetry excerpts', 'court documents')."""
+
+    activity_patterns: list[str] = Field(default_factory=list)
+    """Detailed descriptions of recurring activity structures, e.g.
+    'Uses jigsaw with 4-person expert groups rotating every 10 minutes',
+    'Do Nows are always analogy-based scenarios, never recall questions'."""
+
+    scaffolding_moves: list[str] = Field(default_factory=list)
+    """How this teacher scaffolds for access, e.g. 'Always provides writing
+    frames with sentence starters', 'Uses T-charts before open-ended analysis',
+    'Pre-teaches 3 vocabulary words with visual icons'."""
+
+    grouping_preferences: str = ""
+    """How students are typically grouped (e.g. 'pairs for turn-and-talk,
+    table groups of 4 for document analysis, whole class for Socratic seminar')."""
+
+    do_now_style: str = ""
+    """Pattern for warm-ups/do-nows (e.g. 'analogy or scenario that previews the
+    lesson concept without naming it — never a content recall question')."""
+
+    exit_ticket_style: str = ""
+    """Pattern for exit tickets (e.g. 'always 3 questions progressing
+    recall → application → analysis, written on half-sheets')."""
+
+    signature_moves: list[str] = Field(default_factory=list)
+    """Distinctive teaching moves unique to this teacher, e.g.
+    'Reads primary sources aloud with dramatic emphasis before analysis',
+    'Always ends DI with "here is where it gets interesting"',
+    'Uses physical movement — students walk to corners for opinion spectrums'."""
+
     def to_prompt_context(self) -> str:
         """Serialize persona into a string for LLM prompt injection."""
         lines = [
@@ -183,6 +217,39 @@ class TeacherPersona(BaseModel):
             f"- Grade Levels: {', '.join(self.grade_levels) or 'Not specified'}",
             f"- Voice Sample: {self.voice_sample[:2000] if self.voice_sample else 'None'}",
         ]
+
+        # Pedagogical fingerprint — how this teacher actually teaches
+        if self.source_types:
+            lines.append("\n=== Source Types This Teacher Uses ===")
+            for src in self.source_types:
+                lines.append(f"- {src}")
+            lines.append("Use these TYPES of sources in generated lessons.")
+
+        if self.activity_patterns:
+            lines.append("\n=== Activity Patterns (replicate these structures) ===")
+            for pat in self.activity_patterns:
+                lines.append(f"- {pat}")
+
+        if self.scaffolding_moves:
+            lines.append("\n=== Scaffolding Moves ===")
+            for move in self.scaffolding_moves:
+                lines.append(f"- {move}")
+
+        if self.do_now_style:
+            lines.append(f"\n=== Do Now Style ===\n{self.do_now_style}")
+            lines.append("Generate Do Nows that follow this pattern.")
+
+        if self.exit_ticket_style:
+            lines.append(f"\n=== Exit Ticket Style ===\n{self.exit_ticket_style}")
+
+        if self.grouping_preferences:
+            lines.append(f"\n=== Grouping ===\n{self.grouping_preferences}")
+
+        if self.signature_moves:
+            lines.append("\n=== Signature Teaching Moves (MUST include) ===")
+            for move in self.signature_moves:
+                lines.append(f"- {move}")
+
         if self.voice_examples:
             lines.append("")
             lines.append("=== Voice Examples (write like this) ===")
@@ -190,8 +257,10 @@ class TeacherPersona(BaseModel):
                 lines.append(f'Example {i}: "{example}"')
             lines.append("")
             lines.append(
-                "Your writing MUST match the voice and style shown in the Voice Examples above. "
-                "Use the same vocabulary, sentence structure, and tone."
+                "Your writing MUST match the voice, style, lesson structure, "
+                "and activity choices shown above. "
+                "Use the same vocabulary, sentence structure, source types, "
+                "scaffolding patterns, and activity formats."
             )
         return "\n".join(lines) + "\n"
 
