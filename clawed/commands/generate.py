@@ -246,6 +246,30 @@ def lesson(
         )
         lesson_num = 1
 
+    # ── Search curriculum KB for teacher's existing materials ──────
+    kb_prompt_section = ""
+    try:
+        from clawed.agent_core.memory.curriculum_kb import CurriculumKB
+        kb = CurriculumKB()
+        kb_results = kb.search("default", topic, top_k=3)
+        if kb_results:
+            kb_parts = [r for r in kb_results if r.get("similarity", 0) > 0.1]
+            if kb_parts:
+                kb_prompt_section = (
+                    "Teacher's Existing Materials on This Topic\n"
+                    "The teacher has created content on this topic before. "
+                    "Reference and build on their existing work:\n\n"
+                    + "\n\n".join(
+                        f"From \"{r['doc_title']}\":\n{r['chunk_text'][:500]}"
+                        for r in kb_parts
+                    )
+                    + "\n\nUse these materials as a foundation. Reference the teacher's existing "
+                    "lessons, reuse their graphic organizer formats, build on their approach."
+                )
+                console.print(f"[dim]Found {len(kb_parts)} existing materials on this topic[/dim]")
+    except Exception:
+        pass
+
     with _safe_progress(console=console) as progress:
         task = progress.add_task(
             f"Generating lesson {lesson_num}...", total=None
@@ -256,6 +280,7 @@ def lesson(
                 unit=unit_plan,
                 persona=persona,
                 include_homework=homework,
+                teacher_materials=kb_prompt_section,
             )
         )
         progress.update(task, description="Lesson plan complete!")
