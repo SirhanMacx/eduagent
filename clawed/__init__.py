@@ -1,4 +1,4 @@
-"""Claw-ED — Your teaching files, your AI co-teacher."""
+"""Claw-ED — Personal AI teaching agent. Learns your voice, works while you sleep."""
 
 import os
 import sys
@@ -17,9 +17,9 @@ if hasattr(sys.stderr, "reconfigure"):
     except Exception:
         pass
 
-__version__ = "0.9.20"
+__version__ = "1.0.0"
 __author__ = "Jon Maccarello & Claw-ED contributors"
-__description__ = "Your teaching files, your AI co-teacher"
+__description__ = "Personal AI teaching agent. Learns your voice, works while you sleep."
 
 # Central I/O — re-exported for convenience
 from clawed.io import output_dir as output_dir  # noqa: F401

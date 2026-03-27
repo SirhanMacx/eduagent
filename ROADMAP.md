@@ -1,15 +1,15 @@
 # Roadmap
 
-## v0.9.20 — Curriculum Knowledge Base (current)
+## v1.0.0 -- Agent Core (current)
 
-Your files become the agent's brain. Every feature below is shipped.
+Claw-ED is a personal AI teaching agent. Everything below is shipped.
 
-- [x] **Curriculum Knowledge Base** — uploaded files chunked, embedded, searchable
-- [x] **search_my_materials tool** — agent searches your files before generating
-- [x] **Custom agent naming** — teachers name their AI partner during onboarding
+- [x] **Curriculum Knowledge Base** -- uploaded files chunked, embedded, searchable
+- [x] **search_my_materials tool** -- agent searches your files before generating
+- [x] **Custom agent naming** -- teachers name their AI partner during onboarding
 - [x] **Google Gemini provider** with full browser OAuth2
-- [x] **Professional exports** — DOCX headers/footers, PPTX section dividers
-- [x] **Agentic personality** — search-first, status narration, proactive suggestions
+- [x] **Professional exports** -- DOCX headers/footers, PPTX section dividers
+- [x] **Autonomous personality** -- search-first, status narration, proactive suggestions
 - [x] Persona extraction from curriculum files (PDF, DOCX, PPTX, TXT)
 - [x] Unit planning with essential questions and lesson sequences
 - [x] Daily lesson generation (AIM, Do Now, instruction, exit ticket)
@@ -33,28 +33,41 @@ Your files become the agent's brain. Every feature below is shipped.
 - [x] Teacher preference learning from feedback
 - [x] Closed feedback loop (ratings improve future generation)
 
-## v0.10.0 — Beautiful Materials
+## v1.1.0 -- Better Memory
+
+Deeper understanding of your teaching over time.
+
+- [ ] Long-term memory compression -- summarize old episodes, keep what matters
+- [ ] Cross-session context threading -- pick up where you left off across days
+- [ ] Preference drift detection -- notice when your style evolves and adapt
+- [ ] Improved curriculum state tracking -- unit-level progress, not just lesson-level
+
+## v1.2.0 -- Beautiful Materials
 
 Polished, teacher-selectable visual themes for all exports.
 
 - [ ] Theme selection during onboarding (clean modern, elementary colorful, high school formal)
 - [ ] PPTX: full themed slide masters with consistent branding
 - [ ] DOCX: themed headers, callout styles, rubric tables
-- [ ] Template marketplace — share and download community themes
-- [ ] Full browser OAuth for Anthropic and OpenAI (pending their API support)
+- [ ] Template sharing -- share and download community themes
 
-## v1.0.0 — District Deployment
+## v1.3.0 -- Multi-Agent Collaboration
 
-Designed for school leaders and district administrators. **Not yet implemented.**
+Claw-ED talks to other agents.
 
-- [ ] Admin dashboard (usage across teachers, schools, departments)
-- [ ] SSO integration (Google Workspace for Education, Clever, ClassLink)
-- [ ] RBAC — role-based access control (admin, teacher, student)
-- [ ] Multi-tenancy with per-teacher data isolation
-- [ ] District-wide curriculum sharing and standards enforcement
-- [ ] Audit logging (who did what, when)
-- [ ] FERPA/COPPA compliance controls
-- [ ] Hosted deployment (Docker/Kubernetes, no local install)
+- [ ] Department-level agent coordination -- share curriculum maps across teachers
+- [ ] Agent-to-agent handoff -- your agent talks to a department lead's agent
+- [ ] Shared memory pools for team planning
+- [ ] MCP interop with other OpenClaw agents
+
+## v1.4.0 -- Classroom Automation
+
+The agent manages more of the operational load.
+
+- [ ] Automated pacing guide adherence -- agent flags when you are behind or ahead
+- [ ] Smart assignment sequencing -- scaffolded difficulty progression
+- [ ] Parent communication automation -- progress updates drafted on schedule
+- [ ] Grade-book integration (read-only) for data-informed generation
 
 ---
 

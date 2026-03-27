@@ -1,132 +1,94 @@
-# Features
+# Agent Capabilities
 
-Claw-ED learns your teaching voice and generates lessons, units, worksheets, and assessments that sound like *you* wrote them.
-
----
-
-## Persona Extraction
-
-Claw-ED reads your existing lesson plans and builds a profile of your teaching fingerprint — your style, structure, vocabulary, and pedagogical approach.
-
-<!-- Screenshot: Terminal showing persona extraction from ~/Documents/Teaching/ -->
-![Persona Extraction](docs/screenshots/persona-extraction.png)
+Claw-ED is a personal AI teaching agent. These are the things it can do.
 
 ---
 
-## Unit Planning
+## Curriculum Knowledge Base
 
-Generate multi-week unit plans with essential questions, daily lesson sequences, and assessment plans — all aligned to your state standards.
+Feed the agent your lesson plans, handouts, unit plans, and slides. It chunks every document into searchable sections and stores them in a local semantic database. When you ask for anything, it searches your materials first -- grounding every generation in your own prior work.
 
-```
-Unit: "Chain Reaction: Unpacking the Causes of World War I"
-Essential Questions:
-  • Was WWI inevitable, or could it have been prevented?
-  • How do alliances protect nations versus provoke conflict?
-  • What role did nationalism play in the outbreak of WWI?
-
-Daily Lessons (10):
-  1. Nationalism in Europe
-  2. The Alliance System
-  3. Imperialism and Rivalries
-  4. Militarism and Arms Race
-  5. Assassination of Franz Ferdinand
-  6. July Crisis and Ultimatums
-  7. Chain Reaction: War Spread
-  8. Perspectives: Who Was to Blame?
-  9. Document-Based Investigation
-  10. Unit Assessment and Reflection
-```
+Powered by Ollama embeddings (mxbai-embed-large) with TF-IDF fallback for offline use.
 
 ---
 
-## Daily Lesson Generation
+## Voice Learning
 
-Each lesson includes a Do Now, direct instruction, guided practice, independent work, exit ticket, homework, and differentiation — written in your voice.
-
-<!-- Screenshot: Terminal showing a generated lesson -->
-![Lesson Generation](docs/screenshots/lesson-generation.png)
-
-**Real output from Claw-ED** (American Revolution unit, 8th grade Social Studies):
-
-> **Do-Now / Warm-Up (5 min)**
->
-> Alright, friends, as you settle in, I want you to take out your notebook and answer this question on the board: 'What does freedom mean to you? Is there ever a time when following the rules is more important than being free?' Take 5 minutes to jot down your honest thoughts. There are no wrong answers here; I just want to hear your voice.
-
-> **Direct Instruction**
->
-> Alright, friends, today we're starting one of my favorite units in all of history. We're going to answer a question that sounds simple but is actually incredible: How did ordinary people decide to risk everything for freedom? I want you to really sit with this for a second.
+The agent reads your files and extracts your teaching fingerprint -- style, tone, vocabulary, structure, assessment preferences. Generated content sounds like you wrote it, not like a generic AI template.
 
 ---
 
-## Worksheets and Assessments
+## Generation -- in your voice
 
-Generate worksheets, quizzes, rubrics, and DBQ prompts that match your unit's scope and sequence.
-
-<!-- Screenshot: Generated worksheet output -->
-![Materials Generation](docs/screenshots/materials-generation.png)
-
----
-
-## Student Chatbot
-
-Students message the bot and get answers in your teaching voice — like having you available 24/7. The bot stays within the scope of what you've taught.
-
-<!-- Screenshot: Student bot conversation on Telegram -->
-![Student Bot](docs/screenshots/student-bot.png)
+- Unit plans with essential questions and daily lesson sequences
+- Daily lessons (AIM, Do Now, instruction, guided practice, exit ticket)
+- Worksheets, quizzes, rubrics, and DBQ prompts
+- IEP/504 accommodations and differentiation (struggling, advanced, ELL)
+- Substitute teacher packets and parent communications
+- Professional PPTX slides with section dividers
+- Polished DOCX with headers, footers, and IEP/ELL callout boxes
 
 ---
 
-## Telegram Bot
+## Standards Alignment -- 50 states
 
-Your co-teacher lives in your pocket. Message your bot on Telegram to generate lessons, get unit ideas, or prep materials — from anywhere.
-
-<!-- Screenshot: Telegram bot conversation -->
-![Telegram Bot](docs/screenshots/telegram-bot.png)
-
----
-
-## Web Dashboard
-
-Full-featured web interface with streaming generation, lesson history, analytics, and profile management.
-
-<!-- Screenshot: Web dashboard showing lesson generation -->
-![Web Dashboard](docs/screenshots/web-dashboard.png)
+- CCSS, NGSS, C3, and state-specific frameworks
+- Curriculum gap analyzer -- find what you have not covered yet
+- Standards search by subject and grade
 
 ---
 
-## TUI Dashboard
+## Autonomous Behavior
 
-Rich terminal interface for power users who prefer the command line.
+The agent does not just respond to commands. It takes initiative:
 
-<!-- Screenshot: TUI dashboard -->
-![TUI Dashboard](docs/screenshots/tui-dashboard.png)
-
----
-
-## Standards Alignment
-
-Automatic alignment to your state's learning standards. Supports all 50 states with auto-detection.
+- **Search-first:** Searches your curriculum files before every generation
+- **Status narration:** "Searching your files... Found 3 related lessons. Generating now..."
+- **Proactive suggestions:** "I made your lesson. Want me to create a matching worksheet?"
+- **Scheduled tasks:** Morning prep, weekly planning, feedback digests -- configurable in HEARTBEAT.md
+- **Multi-step planning:** Complex requests like "prepare my week" trigger a step-by-step execution plan
+- **Autonomy progression:** After consistent approvals, the agent offers to auto-approve routine actions
 
 ---
 
-## Differentiation
+## Interfaces
 
-Every lesson includes differentiation for:
-- **Struggling learners** — scaffolded materials, sentence starters, graphic organizers
-- **Advanced learners** — extension activities, deeper analysis prompts
-- **ELL students** — bilingual word banks, visual supports, translation tools
-
----
-
-## IEP/504 Accommodations
-
-Generate accommodation modifications aligned to specific IEP goals and 504 plans.
+| Method | How to use it |
+|--------|--------------|
+| **Terminal chat** | `clawed` or `clawed chat` |
+| **Telegram bot** | `clawed bot --token TOKEN` |
+| **Web dashboard** | `clawed serve` |
+| **Full-screen TUI** | `pip install 'clawed[tui]'` then `clawed tui` |
+| **Student bot** | Students join with class codes, ask questions in your voice |
+| **MCP server** | Expose tools to any AI agent |
 
 ---
 
-## Privacy First
+## 3-Layer Cognitive Memory
+
+| Layer | What it stores | How it works |
+|-------|---------------|-------------|
+| **Identity** | Teaching style, subject, grades, voice | Persona extraction from your files |
+| **Curriculum** | Current unit, pacing state, coverage | SQLite projections |
+| **Episodic** | Past interactions, semantic recall | Embedding model (Ollama / TF-IDF) |
+
+Memory improves over time. Ratings, edits, and approvals all feed back into future generations.
+
+---
+
+## Safety Guardrails
+
+- Approval gates for consequential actions (publishing, sharing with students)
+- Student-facing output always requires teacher review
+- Closed feedback loop: ratings improve future generation
+- Custom teacher tools via YAML -- no code needed, full agent integration
+
+---
+
+## Privacy
 
 - Your files never leave your machine (unless you choose a cloud LLM)
+- Curriculum knowledge base is local SQLite -- never uploaded
 - API keys stored in OS keychain
 - No telemetry, no tracking, no data collection
-- Works fully offline with Ollama
+- Works fully offline with local Ollama

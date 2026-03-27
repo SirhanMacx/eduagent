@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.0] - 2026-03-26
+
+Claw-ED is a personal AI teaching agent, not a product.
+
+### Removed
+- Waitlist system (email capture, waitlist API routes)
+- Hosted/multi-tenant deployment mode (gunicorn, rate limiting, API key middleware)
+- Landing pages and marketing assets
+- Browser-based setup wizard (replaced by terminal-first onboarding)
+- slowapi rate limiting dependency
+
+### Changed
+- README rewritten as agent documentation, not product page
+- pyproject.toml description updated to reflect agent identity
+- First-run simplified: workspace templates, no browser wizard
+- Identity: "personal AI teaching agent" not "AI co-teacher product"
+
+### Kept
+- All 25 agent tools, generation pipeline, memory system, export pipeline
+- Standards alignment (50 states), subject skills (13 subjects)
+- Google Drive integration, Telegram bot, student chatbot
+- Curriculum Knowledge Base (v0.9.20 feature, carried forward)
+- Custom agent naming, Google Gemini provider, professional exports
+
 ## [0.9.20] - 2026-03-26
 
 ### Added
