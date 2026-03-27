@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import re
 from datetime import date
 from pathlib import Path
 from typing import TYPE_CHECKING, Optional
@@ -177,6 +178,7 @@ def export_lesson_pptx(
     persona: "TeacherPersona",
     output_dir: Path | None = None,
     agent_name: str = "Claw-ED",
+    include_images: bool = False,
 ) -> Path:
     """Generate a professional PowerPoint presentation from a lesson plan.
 
@@ -235,7 +237,10 @@ def export_lesson_pptx(
             (lesson.direct_instruction, lesson.title, "instruction"),
         )
 
-    images = _try_fetch_content_images(image_items, subject, max_images=3)
+    if include_images:
+        images = _try_fetch_content_images(image_items, subject, max_images=3)
+    else:
+        images = {}
 
     # ── Shared layout helpers ─────────────────────────────────────────
     slide_num = [0]
@@ -530,65 +535,175 @@ def export_lesson_pptx(
         _add_footer(slide, slide_num[0])
 
     # ═══════════════════════════════════════════════════════════════════
-    # SLIDES 4+: DIRECT INSTRUCTION
-    # Numbered section badge, key concept heading, side image
+    # SLIDE 4: DIRECT INSTRUCTION (student-facing summary)
+    # Full script goes into speaker notes; slide face shows brief summary.
+    # Additional slides for vocabulary terms and source excerpts if found.
     # ═══════════════════════════════════════════════════════════════════
     if lesson.direct_instruction:
-        text = lesson.direct_instruction
-        chunks = _split_text(text, max_len=550) if len(text) > 600 else [text]
+        di_text = lesson.direct_instruction
 
-        for i, chunk in enumerate(chunks, 1):
+        # ── Summary slide ──────────────────────────────────────────
+        slide = _next_slide()
+        _white_bg(slide)
+
+        # "Direct Instruction" badge (subject color, rounded)
+        badge = _rounded_card(
+            slide,
+            Inches(0.8), Inches(0.6),
+            Inches(4.5), Inches(0.7),
+            theme["primary"],
+        )
+        badge_tf = badge.text_frame
+        badge_tf.paragraphs[0].alignment = PP_ALIGN.CENTER
+        run = badge_tf.paragraphs[0].add_run()
+        run.text = "Direct Instruction"
+        _set_text_props(run, 22, theme["text_light"], bold=True)
+
+        # Side accent bar
+        _bar(slide, Inches(0.6), Inches(1.7), Inches(0.06), Inches(5.0), theme["secondary"])
+
+        # Sidebar image if available
+        img_path = images.get("instruction")
+        text_width = slide_w - Inches(2.0)
+        if img_path:
+            text_width = int(slide_w * 0.60)
+            from clawed.slide_images import _extract_key_concepts
+            concepts = _extract_key_concepts(di_text)
+            caption = ", ".join(concepts[:2]) if concepts else ""
+            _add_sidebar_image(slide, img_path, caption=caption)
+
+        # Brief summary on the slide face (first sentence or ~150 chars)
+        first_sentence_match = re.match(r"^(.+?[.!?])\s", di_text)
+        if first_sentence_match and len(first_sentence_match.group(1)) <= 200:
+            summary_text = first_sentence_match.group(1)
+        else:
+            summary_text = di_text[:150].rsplit(" ", 1)[0] + " ..."
+
+        tb = slide.shapes.add_textbox(
+            Inches(1.0), Inches(1.8), text_width, Inches(4.5),
+        )
+        tf = tb.text_frame
+        tf.word_wrap = True
+        p = tf.paragraphs[0]
+        p.line_spacing = Pt(36)
+        run = p.add_run()
+        run.text = summary_text
+        _set_text_props(run, 26, theme["text_dark"])
+
+        # Full DI script in speaker notes
+        notes_slide = slide.notes_slide
+        notes_tf = notes_slide.notes_text_frame
+        notes_tf.text = di_text
+
+        _add_footer(slide, slide_num[0])
+
+        # ── Vocabulary slide (if terms detected) ───────────────────
+        vocab_patterns = re.findall(
+            r"\*\*([^*]+)\*\*[:\s]*([^*\n]{10,100})",
+            di_text,
+        )
+        if not vocab_patterns:
+            vocab_patterns = re.findall(
+                r"(\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s*[-\u2014:]\s*([^\n]{10,100})",
+                di_text,
+            )
+
+        if vocab_patterns:
             slide = _next_slide()
             _white_bg(slide)
 
-            # Numbered circle badge (subject color)
-            circle = slide.shapes.add_shape(
-                MSO_SHAPE.OVAL,
+            # "Key Vocabulary" badge
+            badge = _rounded_card(
+                slide,
                 Inches(0.8), Inches(0.6),
-                Inches(0.8), Inches(0.8),
+                Inches(3.5), Inches(0.7),
+                theme["secondary"],
             )
-            circle.line.fill.background()
-            _add_shape_fill(circle, theme["primary"])
-            circle.text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
-            run = circle.text_frame.paragraphs[0].add_run()
-            run.text = str(i)
-            _set_text_props(run, 24, theme["text_light"], bold=True)
+            badge_tf = badge.text_frame
+            badge_tf.paragraphs[0].alignment = PP_ALIGN.CENTER
+            run = badge_tf.paragraphs[0].add_run()
+            run.text = "Key Vocabulary"
+            _set_text_props(run, 22, theme["text_light"], bold=True)
 
-            # Heading -- 32pt bold
-            suffix = f"  ({i} of {len(chunks)})" if len(chunks) > 1 else ""
+            # Left accent bar
+            _bar(slide, Inches(0.6), Inches(1.7), Inches(0.06), Inches(5.0), theme["primary"])
+
+            # Vocabulary terms in large readable font
             tb = slide.shapes.add_textbox(
-                Inches(2.0), Inches(0.65),
-                slide_w - Inches(3.0), Inches(0.8),
+                Inches(1.0), Inches(1.8), slide_w - Inches(2.0), Inches(5.0),
             )
-            p = tb.text_frame.paragraphs[0]
-            run = p.add_run()
-            run.text = f"Direct Instruction{suffix}"
-            _set_text_props(run, 32, theme["text_dark"], bold=True)
+            tf = tb.text_frame
+            tf.word_wrap = True
 
-            # Side accent bar
-            _bar(slide, Inches(0.6), Inches(1.7), Inches(0.06), Inches(5.0), theme["secondary"])
+            for idx, (term, definition) in enumerate(vocab_patterns[:8]):
+                p = tf.paragraphs[0] if idx == 0 else tf.add_paragraph()
+                p.space_before = Pt(10)
+                p.line_spacing = Pt(36)
+                # Bold term
+                run_term = p.add_run()
+                run_term.text = term.strip()
+                _set_text_props(run_term, 24, theme["primary"], bold=True)
+                # Definition
+                run_def = p.add_run()
+                run_def.text = f"  \u2014  {definition.strip()}"
+                _set_text_props(run_def, 24, theme["text_dark"])
 
-            # Sidebar image (right 35%) on first chunk, with caption
-            img_path = images.get("instruction") if i == 1 else None
-            text_width = slide_w - Inches(2.0)
-            if img_path:
-                text_width = int(slide_w * 0.60)
-                from clawed.slide_images import _extract_key_concepts
-                concepts = _extract_key_concepts(chunk)
-                caption = ", ".join(concepts[:2]) if concepts else ""
-                _add_sidebar_image(slide, img_path, caption=caption)
+            _add_footer(slide, slide_num[0])
 
-            # Body text -- 20pt with 1.5x line spacing
+        # ── Source excerpt slides (if quoted passages detected) ─────
+        source_quotes = re.findall(
+            r"\u201c([^\u201d]{50,500})\u201d[^\u201d]*?(?:[-\u2014]\s*(.+?)(?:\n|$))",
+            di_text,
+        )
+        if not source_quotes:
+            source_quotes = re.findall(
+                r'"([^"]{50,500})"[^"]*?(?:[-\u2014]\s*(.+?)(?:\n|$))',
+                di_text,
+            )
+
+        for quote_text, attribution in source_quotes[:3]:
+            slide = _next_slide()
+            _tinted_bg(slide, theme["accent"])
+
+            # "Source Excerpt" badge
+            badge = _rounded_card(
+                slide,
+                Inches(0.8), Inches(0.6),
+                Inches(3.5), Inches(0.7),
+                theme["primary"],
+            )
+            badge_tf = badge.text_frame
+            badge_tf.paragraphs[0].alignment = PP_ALIGN.CENTER
+            run = badge_tf.paragraphs[0].add_run()
+            run.text = "Source Excerpt"
+            _set_text_props(run, 22, theme["text_light"], bold=True)
+
+            # Quoted text in large italic font
             tb = slide.shapes.add_textbox(
-                Inches(1.0), Inches(1.7), text_width, Inches(5.0),
+                Inches(1.5), Inches(2.0), slide_w - Inches(3.0), Inches(3.5),
             )
             tf = tb.text_frame
             tf.word_wrap = True
             p = tf.paragraphs[0]
-            p.line_spacing = Pt(30)
+            p.alignment = PP_ALIGN.LEFT
+            p.line_spacing = Pt(36)
             run = p.add_run()
-            run.text = chunk
-            _set_text_props(run, 20, theme["text_dark"])
+            run.text = f"\u201c{quote_text.strip()}\u201d"
+            _set_text_props(run, 24, theme["text_dark"])
+            run.font.italic = True
+
+            # Attribution below
+            if attribution and attribution.strip():
+                tb_attr = slide.shapes.add_textbox(
+                    Inches(1.5), Inches(5.8), slide_w - Inches(3.0), Inches(0.6),
+                )
+                p_attr = tb_attr.text_frame.paragraphs[0]
+                p_attr.alignment = PP_ALIGN.RIGHT
+                run_attr = p_attr.add_run()
+                run_attr.text = f"\u2014 {attribution.strip()}"
+                _set_text_props(run_attr, 18, "666666")
+
+            _add_footer(slide, slide_num[0])
 
             _add_footer(slide, slide_num[0])
 
