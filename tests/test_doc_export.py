@@ -662,9 +662,9 @@ class TestSlideCountMatchesContent:
 
         path = export_lesson_pptx(sample_lesson, sample_persona, output_dir=tmp_path)
         prs = Presentation(str(path))
-        # Title + Objectives + DoNow + DirectInstruction + GuidedPractice
-        # + IndependentWork + ExitTicket + Closing = 8
-        assert len(prs.slides) == 8
+        # Title + Objectives + DoNow + DirectInstruction + Divider
+        # + GuidedPractice + IndependentWork + Divider + ExitTicket + Closing = 10
+        assert len(prs.slides) == 10
 
     def test_minimal_lesson_slide_count(self, minimal_lesson, sample_persona, tmp_path):
         """A minimal lesson (title + objective only) should produce 3 slides."""
@@ -696,8 +696,8 @@ class TestSlideCountMatchesContent:
         )
         path = export_lesson_pptx(lesson, sample_persona, output_dir=tmp_path)
         prs = Presentation(str(path))
-        # Title + Objectives + DoNow + DI + GP + IW + Closing = 7
-        assert len(prs.slides) == 7
+        # Title + Objectives + DoNow + DI + Divider + GP + IW + Closing = 8
+        assert len(prs.slides) == 8
 
 
 # ── Student handout export ─────────────────────────────────────────
