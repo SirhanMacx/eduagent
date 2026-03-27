@@ -489,17 +489,15 @@ class LLMClient:
     async def _google(
         self, prompt: str, system: str, temperature: float, max_tokens: int
     ) -> str:
-        """Call Google Gemini API — supports both API key and OAuth2 token."""
-        from clawed.auth.google_auth import get_google_api_key, get_google_oauth_token
+        """Call Google Gemini API via API key."""
+        from clawed.auth.google_auth import get_google_api_key
 
         api_key = get_google_api_key()
-        oauth_token = get_google_oauth_token() if not api_key else None
-
-        if not api_key and not oauth_token:
+        if not api_key:
             raise EnvironmentError(
-                "No Google credentials found. Either:\n"
-                "  1. Set GOOGLE_API_KEY (get one at https://aistudio.google.com)\n"
-                "  2. Run `clawed setup --reset` and choose Google with browser sign-in"
+                "No Google API key found. Get a free key at "
+                "https://aistudio.google.com/apikey and set GOOGLE_API_KEY, "
+                "or run `clawed setup --reset` to configure."
             )
 
         model = self.config.google_model
@@ -508,13 +506,8 @@ class LLMClient:
             f"{model}:generateContent"
         )
 
-        # Auth: API key as query param, or OAuth token as Bearer header
-        params = {}
+        params = {"key": api_key}
         headers: dict[str, str] = {"Content-Type": "application/json"}
-        if api_key:
-            params["key"] = api_key
-        elif oauth_token:
-            headers["Authorization"] = f"Bearer {oauth_token}"
 
         # Build contents
         contents: list[dict[str, Any]] = []

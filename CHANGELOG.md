@@ -35,7 +35,7 @@ Claw-ED is a personal AI teaching agent, not a product.
 - **Curriculum Knowledge Base** — uploaded files are chunked, embedded, and stored as a local semantic database. The agent searches your materials before every generation, grounding output in your own prior work. Powered by Ollama embeddings (mxbai-embed-large) with TF-IDF fallback.
 - **search_my_materials tool** — agent explicitly searches teacher's uploaded curriculum files by topic, returning ranked excerpts with source attribution
 - **Custom agent naming** — teachers name their AI partner during onboarding (Sage, Coach, or anything). Agent refers to itself by the chosen name in all interactions.
-- **Google Gemini provider** — use your existing Google account. Supports API key auth and full browser OAuth2 flow (local callback server, token auto-refresh).
+- **Google Gemini provider** — use your Google AI Studio API key (free at https://aistudio.google.com/apikey). Gemini Flash for fast tasks, Gemini Pro for deep generation.
 - **Professional export templates** — DOCX exports with headers (teacher name, subject, date), footers (page numbers, agent branding), and consistent Calibri typography. PPTX exports with section divider slides between lesson phases.
 - **IEP/ELL callout boxes** — differentiation sections in DOCX use shaded backgrounds for visual distinction
 - **Post-generation export guarantee** — if the LLM forgets to call export_document, files are still delivered

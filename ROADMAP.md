@@ -7,7 +7,7 @@ Claw-ED is a personal AI teaching agent. Everything below is shipped.
 - [x] **Curriculum Knowledge Base** -- uploaded files chunked, embedded, searchable
 - [x] **search_my_materials tool** -- agent searches your files before generating
 - [x] **Custom agent naming** -- teachers name their AI partner during onboarding
-- [x] **Google Gemini provider** with full browser OAuth2
+- [x] **Google Gemini provider** via API key
 - [x] **Professional exports** -- DOCX headers/footers, PPTX section dividers
 - [x] **Autonomous personality** -- search-first, status narration, proactive suggestions
 - [x] Persona extraction from curriculum files (PDF, DOCX, PPTX, TXT)
