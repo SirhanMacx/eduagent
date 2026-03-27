@@ -7,10 +7,18 @@ def _make_doc(content: str, doc_type: DocType = DocType.DOCX) -> Document:
     return Document(title="test", content=content, doc_type=doc_type)
 
 
-def test_detect_teacher_name():
-    docs = [_make_doc("Mr. MacPherson's US History class will begin today.")]
-    report = generate_reading_report(docs)
-    assert report["teacher_details"]["name"] == "Mr. MacPherson"
+def test_detects_teacher_name():
+    doc = _make_doc("Teacher: Mr. Mac\n\nDo Now: Alright friends, today we study Dr. King's legacy.")
+    report = generate_reading_report([doc])
+    assert report["teacher_details"].get("name_used", "") == "Mr. Mac"
+    # Should NOT detect "Dr. King" from body content
+
+
+def test_excludes_historical_figures():
+    doc = _make_doc("Dr. King gave a famous speech. Dr. King changed history. Dr. King was born in Atlanta.")
+    report = generate_reading_report([doc])
+    # "Dr. King" is a historical figure in body text, not the teacher
+    assert "King" not in report["teacher_details"].get("name_used", "")
 
 
 def test_detect_address_terms():

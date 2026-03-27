@@ -54,17 +54,57 @@ def generate_reading_report(
         "by_type": dict(type_counts.most_common()),
     }
 
-    # ── Teacher name detection ───────────────────────────────────────
-    name_pattern = re.compile(
-        r"\b(Mr\.|Ms\.|Mrs\.|Dr\.)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)\b"
-    )
-    name_matches = name_pattern.findall(all_text)
-    if name_matches:
-        name_counter: Counter[str] = Counter()
-        for prefix, surname in name_matches:
-            name_counter[f"{prefix} {surname}"] += 1
-        most_common_name, name_count = name_counter.most_common(1)[0]
-        report["teacher_details"]["name"] = most_common_name
+    # ── Teacher name detection (headers/footers only) ──────────────────
+    # Only look in document headers/footers to avoid matching historical
+    # figures in content (e.g., "Dr. King" from MLK lessons)
+    historical_surnames = {
+        "King", "Lincoln", "Washington", "Jefferson", "Roosevelt", "Kennedy",
+        "Obama", "Trump", "Gandhi", "Churchill", "Hitler", "Napoleon",
+        "Caesar", "Alexander", "Columbus", "Martin", "Luther", "Franklin",
+        "Adams", "Hamilton", "Madison", "Monroe", "Jackson", "Grant", "Lee",
+        "Sherman", "Douglass", "Tubman", "Parks", "Malcolm", "Mandela",
+    }
+
+    _title_name = r"((?:Mr\.|Ms\.|Mrs\.|Dr\.)[ ]+[A-Z][a-z]+(?:[ ]+[A-Z][a-z]+)?)"
+    header_name_patterns = [
+        re.compile(
+            r"(?:Teacher|By|Prepared by|Created by)[:\s]+" + _title_name,
+            re.IGNORECASE,
+        ),
+        re.compile(r"^" + _title_name + r"\s*[-—|]"),
+        re.compile(
+            _title_name + r"(?:'s)?\s+(?:Class|Period|Lesson|Grade)",
+            re.IGNORECASE,
+        ),
+    ]
+
+    header_name_counter: Counter[str] = Counter()
+    for doc in documents:
+        lines = doc.content.split("\n")
+        # Only check first 5 and last 5 lines of each document
+        header_lines = lines[:5] + lines[-5:]
+        header_text = "\n".join(header_lines)
+        for pattern in header_name_patterns:
+            matches = pattern.findall(header_text)
+            for name in matches:
+                surname = name.split()[-1] if name else ""
+                if surname not in historical_surnames:
+                    header_name_counter[name] += 1
+
+    # Fallback: general name pattern in headers only (not body text)
+    if not header_name_counter:
+        general_name = re.compile(r"\b(Mr\.|Ms\.|Mrs\.|Dr\.)[ ]+([A-Z][a-z]+(?:[ ]+[A-Z][a-z]+)?)\b")
+        for doc in documents:
+            lines = doc.content.split("\n")
+            header_text = "\n".join(lines[:5] + lines[-5:])
+            for prefix, name in general_name.findall(header_text):
+                surname = name.split()[-1]
+                if surname not in historical_surnames:
+                    header_name_counter[f"{prefix} {name}"] += 1
+
+    if header_name_counter:
+        most_common_name, name_count = header_name_counter.most_common(1)[0]
+        report["teacher_details"]["name_used"] = most_common_name
         report["teacher_details"]["name_occurrences"] = name_count
 
     # School name detection
@@ -87,6 +127,23 @@ def generate_reading_report(
         re.IGNORECASE,
     )
     openers = do_now_pattern.findall(all_text)
+
+    teacher_greeting_starters = {
+        "alright", "friends", "ok", "okay", "good morning", "good afternoon",
+        "scholars", "today", "let's", "welcome", "take out", "turn to",
+        "historians", "scientists", "mathematicians", "class", "everyone",
+        "hey", "hello", "hi", "team",
+    }
+
+    if openers:
+        filtered_openers = []
+        for opener in openers:
+            first_words = opener.strip().lower().split()[:3]
+            first_phrase = " ".join(first_words)
+            if any(first_phrase.startswith(starter) for starter in teacher_greeting_starters):
+                filtered_openers.append(opener)
+        openers = filtered_openers
+
     if openers:
         unique_openers = list(dict.fromkeys(openers[:10]))
         report["voice_patterns"].append(
@@ -209,8 +266,8 @@ def generate_reading_report(
         )
 
     if persona and persona.name and persona.name != "My Teaching Persona":
-        if report["teacher_details"].get("name"):
-            detected = report["teacher_details"]["name"]
+        if report["teacher_details"].get("name_used"):
+            detected = report["teacher_details"]["name_used"]
             if detected.split()[-1] != persona.name.split()[-1]:
                 report["interesting_finds"].append(
                     f"Your files reference {detected} — is that you, or a co-teacher?"
@@ -241,7 +298,7 @@ def format_reading_report(report: dict[str, Any]) -> str:
     )
 
     # Teacher name
-    teacher_name = report.get("teacher_details", {}).get("name")
+    teacher_name = report.get("teacher_details", {}).get("name_used")
     if teacher_name:
         lines.append(f"Your students know you as {teacher_name}.")
 
