@@ -85,7 +85,7 @@ async def generate_lesson(
         prompt_template
         .replace("{persona}", persona.to_prompt_context())
         .replace("{unit_title}", unit.title)
-        .replace("{unit_overview}", unit.overview[:500])
+        .replace("{unit_overview}", unit.overview[:1500])
         .replace("{essential_questions}", "\n".join(f"- {q}" for q in unit.essential_questions))
         .replace("{lesson_number}", str(lesson_number))
         .replace("{total_lessons}", str(len(unit.daily_lessons)))

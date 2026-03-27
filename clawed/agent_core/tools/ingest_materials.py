@@ -101,6 +101,34 @@ class IngestMaterialsTool:
                 else:
                     summary += " (Could not extract style patterns.)"
 
+            # Index documents into curriculum knowledge base
+            try:
+                from clawed.agent_core.memory.curriculum_kb import CurriculumKB
+
+                kb = CurriculumKB()
+                total_chunks = 0
+                for doc in docs:
+                    doc_type_val = (
+                        doc.doc_type.value
+                        if hasattr(doc.doc_type, "value")
+                        else str(doc.doc_type)
+                    )
+                    total_chunks += kb.index(
+                        teacher_id=context.teacher_id,
+                        doc_title=doc.title,
+                        source_path=doc.source_path or "",
+                        full_text=doc.content,
+                        metadata={"doc_type": doc_type_val},
+                    )
+                kb_stats = kb.stats(context.teacher_id)
+                summary += (
+                    f"\n\nIndexed into your curriculum knowledge base: "
+                    f"{kb_stats['doc_count']} documents, "
+                    f"{kb_stats['chunk_count']} searchable sections."
+                )
+            except Exception as e:
+                logger.debug("KB indexing failed: %s", e)
+
             # Update SOUL.md with what we learned
             try:
                 soul_path = Path.home() / ".eduagent" / "workspace" / "SOUL.md"
