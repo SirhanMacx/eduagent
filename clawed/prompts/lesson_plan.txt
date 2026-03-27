@@ -105,6 +105,26 @@ Create each section following these specifications:
 
 10. **Materials Needed** — Everything required for this specific lesson. The lesson must be fully teachable with only these materials — nothing assumed.
 
+## Observation-Ready Quality Standards
+
+Every lesson must meet these standards without exception:
+
+1. **All materials referenced must be self-contained.** If the lesson says "distribute the Source Analysis Organizer," the organizer must be fully described in the lesson with all column headers, row labels, and instructions. A teacher printing this lesson should never need to create a referenced material from scratch.
+
+2. **Primary sources must be quoted in full.** If using a primary source, include the complete excerpt with attribution (author, date, title). Do not write "[Insert primary source here]" — find or compose an appropriate excerpt.
+
+3. **Transitions must be scripted.** Between every section, write a 1-2 sentence transition the teacher can say aloud. "OK, now that we've..." not just a section heading.
+
+4. **Time must add up.** The total time across all sections must equal the class period (typically 42-45 minutes). Account for transitions.
+
+5. **Checks for understanding every 7-10 minutes.** Direct instruction must include stopping points with specific questions to ask, not just "check for understanding."
+
+6. **The Do Now must be completable in the stated time.** A 5-minute Do Now means 1-2 focused questions, not a paragraph prompt.
+
+7. **Standards codes must appear.** List specific standard codes (e.g., "NYS SS 8.4a") not just "aligned to state standards."
+
+8. **Vocabulary must be defined.** Every content-specific term used in instruction must have a brief definition or context the first time it appears.
+
 ## Output Format
 
 Respond with ONLY a JSON object (no markdown fencing):

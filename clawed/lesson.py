@@ -46,6 +46,19 @@ async def generate_lesson(
             f"Unit has {len(unit.daily_lessons)} lessons."
         )
 
+    # Auto-populate unit standards from teacher profile if missing
+    if not unit.standards:
+        try:
+            config = config or AppConfig.load()
+            if config.teacher_profile and config.teacher_profile.state:
+                from clawed.standards import get_standards
+                results = get_standards(unit.subject, unit.grade_level)
+                unit.standards = [
+                    f"{code}: {desc}" for code, desc, _ in results[:5]
+                ]
+        except Exception:
+            pass
+
     # Pull few-shot examples from the corpus for this subject/grade
     few_shot_context = get_few_shot_context(
         content_type="lesson_plan",
