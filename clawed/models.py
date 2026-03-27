@@ -181,7 +181,7 @@ class TeacherPersona(BaseModel):
             f"- Favorite Strategies: {', '.join(self.favorite_strategies) or 'None specified'}",
             f"- Subject Area: {self.subject_area or 'General'}",
             f"- Grade Levels: {', '.join(self.grade_levels) or 'Not specified'}",
-            f"- Voice Sample: {self.voice_sample[:500] if self.voice_sample else 'None'}",
+            f"- Voice Sample: {self.voice_sample[:2000] if self.voice_sample else 'None'}",
         ]
         if self.voice_examples:
             lines.append("")

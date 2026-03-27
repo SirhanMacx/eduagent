@@ -106,6 +106,7 @@ class GenerateLessonBundleTool:
 
         # ── Search curriculum KB for relevant prior work ───────────────
         kb_context = ""
+        kb_prompt_section = ""
         try:
             from clawed.agent_core.memory.curriculum_kb import CurriculumKB
             kb = CurriculumKB()
@@ -114,13 +115,28 @@ class GenerateLessonBundleTool:
                 kb_parts = []
                 for r in kb_results:
                     if r.get("similarity", 0) > 0.1:
-                        kb_parts.append(
-                            f"From '{r['doc_title']}': {r['chunk_text'][:200]}"
-                        )
+                        kb_parts.append(r)
                 if kb_parts:
                     kb_context = (
                         "\n\nRelevant materials from the teacher's files:\n"
-                        + "\n".join(kb_parts)
+                        + "\n".join(
+                            f"From '{r['doc_title']}': {r['chunk_text'][:200]}"
+                            for r in kb_parts
+                        )
+                    )
+                    # Build structured prompt section for the LLM
+                    kb_prompt_section = (
+                        "Teacher's Existing Materials on This Topic\n"
+                        "The teacher has created content on this topic before. "
+                        "Reference and build on their existing work:\n\n"
+                        + "\n\n".join(
+                            f"From \"{r['doc_title']}\":\n{r['chunk_text'][:500]}"
+                            for r in kb_parts
+                        )
+                        + "\n\nUse these materials as a foundation. Reference the teacher's existing "
+                        "lessons, reuse their graphic organizer formats, build on their approach. "
+                        "If the teacher has taught this topic before, extend their work — don't "
+                        "start from scratch."
                     )
                     logger.info("KB search found %d relevant chunks for '%s'", len(kb_parts), topic)
         except Exception as e:
@@ -151,6 +167,10 @@ class GenerateLessonBundleTool:
         )
 
         # ── Generate the lesson ──────────────────────────────────────
+        logger.info(
+            "Generating lesson bundle for '%s' (grade=%s, subject=%s, images=%s)",
+            topic, grade, subject, include_images,
+        )
         try:
             lesson = await generate_lesson(
                 lesson_number=1,
@@ -158,6 +178,7 @@ class GenerateLessonBundleTool:
                 persona=persona,
                 config=config,
                 state=state,
+                teacher_materials=kb_prompt_section,
             )
         except Exception as e:
             return ToolResult(text=f"Failed to generate lesson: {e}")

@@ -13,6 +13,18 @@ Built on the OpenClaw agent framework. Open source. MIT license.
 
 ---
 
+## What's new in v2.0
+
+**Clean output.** Zero XML tags, zero markdown artifacts, zero `<teacher prompt>` gibberish in your printed documents. Every text field in every export (DOCX, PPTX, handout) passes through a rewritten sanitization pipeline that strips LLM formatting artifacts before they reach the page.
+
+**Your voice, for real.** The lesson generation LLM now receives your full persona, your SOUL.md, and up to 2000 characters of your voice sample in the system prompt. Lessons actually sound like you wrote them -- not a generic "expert lesson plan writer."
+
+**Your files matter.** When you say "make me a lesson on absolutism," the agent searches your knowledge base, finds your existing materials, and injects them as structured context into the generation prompt. The LLM sees your prior work and builds on it instead of starting from scratch.
+
+**Images on by default.** Slideshows now include academic images (Library of Congress, Wikimedia) without needing `--images`. Logging added to diagnose fetch failures.
+
+---
+
 ## What is this?
 
 Claw-ED is a personal AI agent for teachers. It uses the same architecture as other OpenClaw agents -- SOUL.md for identity, layered memory, a workspace, pulse jobs, tool use, and autonomous operation. The difference is what it knows: your lesson plans, your teaching style, your standards, your students.

@@ -134,11 +134,11 @@ class TestPersonaToPromptContext:
         assert "General" in ctx
 
     def test_prompt_context_truncates_voice_sample(self):
-        persona = TeacherPersona(voice_sample="x" * 1000)
+        persona = TeacherPersona(voice_sample="x" * 3000)
         ctx = persona.to_prompt_context()
-        # Voice sample should be truncated to 500 chars
-        assert "x" * 500 in ctx
-        assert "x" * 501 not in ctx
+        # Voice sample should be truncated to 2000 chars
+        assert "x" * 2000 in ctx
+        assert "x" * 2001 not in ctx
 
 
 # ── Ingest path validation ──────────────────────────────────────────
@@ -334,7 +334,7 @@ class TestVersion:
     def test_version_string(self):
         from clawed import __version__
 
-        assert __version__ == "1.0.13"
+        assert __version__ == "2.0.0"
 
 
 # ── Standards module ───────────────────────────────────────────────

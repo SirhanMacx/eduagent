@@ -25,6 +25,12 @@ Generate a detailed, classroom-ready daily lesson plan for:
 {standards}
 The generated lesson MUST include a "Standards Addressed" section with specific standard codes from above.
 
+{teacher_materials}
+
+CRITICAL: Do NOT use XML tags, angle brackets, or pseudo-markup in your response.
+Do NOT wrap content in tags like <teacher prompt>, <transition>, <script>, etc.
+Write plain text only. The JSON values must contain clean, readable prose.
+
 ## Requirements
 
 Create a COMPLETE, OBSERVATION-QUALITY lesson plan. This means every section is detailed enough that an administrator walking in could see exactly what is happening, why, and what students are producing. Follow these principles:

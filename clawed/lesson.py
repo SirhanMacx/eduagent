@@ -20,6 +20,7 @@ async def generate_lesson(
     config: AppConfig | None = None,
     task_type: str = "lesson_plan",
     state: str = "",
+    teacher_materials: str = "",
 ) -> DailyLesson:
     """Generate a complete daily lesson plan for a specific lesson in a unit.
 
@@ -96,7 +97,32 @@ async def generate_lesson(
         .replace("{include_homework}", "Yes" if include_homework else "No — do not include homework")
         .replace("{few_shot_context}", few_shot_context)
         .replace("{standards}", standards_text)
+        .replace("{teacher_materials}", teacher_materials)
     )
+
+    # Build rich system prompt with persona and voice context
+    persona_context = persona.to_prompt_context() if persona else ""
+    soul_context = ""
+    try:
+        soul_path = Path.home() / ".eduagent" / "workspace" / "SOUL.md"
+        if soul_path.exists():
+            soul_context = soul_path.read_text(encoding="utf-8")[:2000]
+    except Exception:
+        pass
+
+    system_parts = [
+        "You are an expert lesson plan writer who EXACTLY matches "
+        "the teacher's voice, style, and patterns.",
+    ]
+    if persona_context:
+        system_parts.append(persona_context)
+    if soul_context:
+        system_parts.append(soul_context)
+    system_parts.append(
+        "Respond only with valid JSON matching the specified format. "
+        "Do NOT use XML tags, angle brackets, or markdown formatting in the JSON values."
+    )
+    system = "\n\n".join(system_parts)
 
     if task_type and config:
         config = route_model(task_type, config)
@@ -104,10 +130,7 @@ async def generate_lesson(
     return await client.safe_generate_json(
         prompt=prompt,
         model_class=DailyLesson,
-        system=(
-            "You are an expert lesson plan writer. "
-            "Respond only with valid JSON matching the specified format."
-        ),
+        system=system,
         temperature=0.6,
         max_tokens=12000,
     )

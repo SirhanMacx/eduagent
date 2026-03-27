@@ -219,7 +219,7 @@ def export_lesson_pptx(
     persona: "TeacherPersona",
     output_dir: Path | None = None,
     agent_name: str = "Claw-ED",
-    include_images: bool = False,
+    include_images: bool = True,
 ) -> Path:
     """Generate a professional PowerPoint presentation from a lesson plan.
 
@@ -236,6 +236,23 @@ def export_lesson_pptx(
     from pptx.enum.shapes import MSO_SHAPE
     from pptx.enum.text import PP_ALIGN
     from pptx.util import Emu, Inches, Pt
+
+    from clawed.sanitize import sanitize_text
+
+    # Sanitize all lesson text fields before rendering to slides
+    lesson.title = sanitize_text(lesson.title)
+    lesson.objective = sanitize_text(lesson.objective)
+    lesson.do_now = sanitize_text(lesson.do_now) if lesson.do_now else ""
+    lesson.direct_instruction = sanitize_text(lesson.direct_instruction) if lesson.direct_instruction else ""
+    lesson.guided_practice = sanitize_text(lesson.guided_practice) if lesson.guided_practice else ""
+    lesson.independent_work = sanitize_text(lesson.independent_work) if lesson.independent_work else ""
+    if lesson.homework:
+        lesson.homework = sanitize_text(lesson.homework)
+    for q in lesson.exit_ticket:
+        q.question = sanitize_text(q.question)
+        q.expected_response = sanitize_text(q.expected_response)
+    lesson.standards = [sanitize_text(s) for s in lesson.standards]
+    lesson.materials_needed = [sanitize_text(m) for m in lesson.materials_needed]
 
     # Resolve teacher display name
     teacher_display_name = ""
@@ -280,8 +297,14 @@ def export_lesson_pptx(
             image_items = [("", lesson.title, "title")]
 
         images = _try_fetch_content_images(image_items, subject, max_images=5)
+        logger.info(
+            "Image fetch: %d items requested, %d returned",
+            len(image_items),
+            len([v for v in images.values() if v]),
+        )
     else:
         images = {}
+        logger.info("Generating PPTX with include_images=%s", include_images)
 
     # ── Shared layout helpers ─────────────────────────────────────────
     slide_num = [0]

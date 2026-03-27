@@ -453,7 +453,19 @@ def export_student_handout(
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.shared import Inches, Pt, RGBColor
 
+    from clawed.sanitize import sanitize_text
+
     doc = Document()
+
+    # Sanitize all lesson text fields for the handout
+    lesson.title = sanitize_text(lesson.title)
+    lesson.objective = sanitize_text(lesson.objective)
+    lesson.do_now = sanitize_text(lesson.do_now) if lesson.do_now else ""
+    lesson.direct_instruction = sanitize_text(lesson.direct_instruction) if lesson.direct_instruction else ""
+    lesson.guided_practice = sanitize_text(lesson.guided_practice) if lesson.guided_practice else ""
+    lesson.independent_work = sanitize_text(lesson.independent_work) if lesson.independent_work else ""
+    for q in lesson.exit_ticket:
+        q.question = sanitize_text(q.question)
 
     # ── Page setup ────────────────────────────────────────────────────
     for section in doc.sections:

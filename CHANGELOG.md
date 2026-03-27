@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.0.0] - 2026-03-27
+
+The Real Teaching Agent — clean output, real voice matching, knowledge base integration.
+
+### Changed
+- **Sanitization rewrite** — `sanitize_text()` now strips XML tags (`<teacher prompt>`, `<transition>`, etc.), markdown formatting (`##`, `**`, `*`), HTML entities, and CJK leakage. Pre-compiled regexes for performance.
+- **Voice injection** — Lesson generation system prompt now includes full persona context, SOUL.md (up to 2000 chars), and voice sample (cap raised from 500 to 2000 chars). No more generic "expert lesson plan writer."
+- **KB results as structured context** — Teacher's existing materials injected as a dedicated `{teacher_materials}` section in the lesson prompt with 500-char excerpts and explicit instruction to build on prior work.
+- **Images on by default** — `export_lesson_pptx()` default changed from `include_images=False` to `True`.
+- **Anti-XML prompt instruction** — Lesson prompt template now explicitly tells the LLM to not use XML tags or pseudo-markup.
+- **Sanitization everywhere** — All three export pipelines (DOCX lesson, DOCX handout, PPTX) now sanitize every text field before rendering.
+- **Image pipeline logging** — PPTX export logs image fetch request/success counts for diagnosing failures.
+
+### Fixed
+- MiniMax M2.7 XML tag artifacts (`<teacher prompt>`, `<transition>`, `<activity structure>`) appearing in printed documents
+- Persona/SOUL.md context never reaching the lesson generation LLM call
+- KB search results buried in unit overview instead of structured prompt context
+- Voice sample truncated to 500 chars (now 2000)
+
 ## [1.0.8] - 2026-03-27
 
 Fix the foundations — reading report, KB search, image sourcing.
