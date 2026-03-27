@@ -104,6 +104,28 @@ class GenerateLessonBundleTool:
             topic=topic,
         )
 
+        # ── Search curriculum KB for relevant prior work ───────────────
+        kb_context = ""
+        try:
+            from clawed.agent_core.memory.curriculum_kb import CurriculumKB
+            kb = CurriculumKB()
+            kb_results = kb.search(context.teacher_id, topic, top_k=3)
+            if kb_results:
+                kb_parts = []
+                for r in kb_results:
+                    if r.get("similarity", 0) > 0.1:
+                        kb_parts.append(
+                            f"From '{r['doc_title']}': {r['chunk_text'][:200]}"
+                        )
+                if kb_parts:
+                    kb_context = (
+                        "\n\nRelevant materials from the teacher's files:\n"
+                        + "\n".join(kb_parts)
+                    )
+                    logger.info("KB search found %d relevant chunks for '%s'", len(kb_parts), topic)
+        except Exception as e:
+            logger.debug("KB search failed: %s", e)
+
         # ── Build a UnitPlan with standards ──────────────────────────
         description = f"Introduction to {topic}"
         if activity_type and activity_type != "general":
@@ -117,7 +139,7 @@ class GenerateLessonBundleTool:
             grade_level=grade,
             topic=topic,
             duration_weeks=1,
-            overview=f"A lesson on {topic}.",
+            overview=f"A lesson on {topic}.{kb_context}",
             standards=standards_list,
             daily_lessons=[
                 LessonBrief(
@@ -254,6 +276,8 @@ class GenerateLessonBundleTool:
             lines.append("Files created:")
             for f in generated_files:
                 lines.append(f"  - {f}")
+        if kb_context:
+            lines.append("\nReferenced your existing materials on this topic.")
         if errors:
             lines.append("\nErrors:")
             for err in errors:
