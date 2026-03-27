@@ -65,6 +65,47 @@ def _split_text(text: str, max_len: int = 550) -> list[str]:
     return chunks or [text]
 
 
+def _section_divider(prs, slide_num, text, theme, slide_w, slide_h):
+    """Create a clean section divider slide with accent background."""
+    from pptx.enum.text import PP_ALIGN
+    from pptx.util import Inches, Pt
+
+    slide_num[0] += 1
+    layout = prs.slide_layouts[6]  # blank layout
+    slide = prs.slides.add_slide(layout)
+
+    # Accent background
+    bg = slide.background
+    fill = bg.fill
+    fill.solid()
+    fill.fore_color.rgb = _hex_to_rgb(theme["accent"])
+
+    # Large centered text
+    tb = slide.shapes.add_textbox(
+        Inches(1.5), Inches(2.5), slide_w - Inches(3.0), Inches(2.5),
+    )
+    tf = tb.text_frame
+    tf.word_wrap = True
+    p = tf.paragraphs[0]
+    p.alignment = PP_ALIGN.CENTER
+    run = p.add_run()
+    run.text = text
+    run.font.size = Pt(44)
+    run.font.color.rgb = _hex_to_rgb(theme["primary"])
+    run.font.bold = True
+    run.font.name = "Calibri"
+
+    # Footer with slide number
+    left = slide_w - Inches(1.5)
+    top = slide_h - Inches(0.45)
+    tb_footer = slide.shapes.add_textbox(left, top, Inches(1.2), Inches(0.3))
+    p_f = tb_footer.text_frame.paragraphs[0]
+    p_f.alignment = PP_ALIGN.RIGHT
+    run_f = p_f.add_run()
+    run_f.text = str(slide_num[0])
+    _set_text_props(run_f, 10, "999999")
+
+
 # ── Image fetching ────────────────────────────────────────────────────
 
 
@@ -386,6 +427,8 @@ def export_lesson_pptx(
         fill = bg.fill
         fill.solid()
         fill.fore_color.rgb = _hex_to_rgb(theme.get("bg_dark", theme["primary"]))
+        # Gradient effect: lighter bar at bottom
+        _bar(slide, Emu(0), int(slide_h * 0.7), slide_w, int(slide_h * 0.3), theme["primary"])
 
     # Lesson title -- 44pt white bold, centered
     tb = slide.shapes.add_textbox(
@@ -608,6 +651,12 @@ def export_lesson_pptx(
                 di_text,
             )
 
+        # Exclude instructional script fragments that aren't vocabulary
+        EXCLUDE_VOCAB = {"check for", "minutes", "ask students", "call on", "facilitate",
+                         "discussion", "transition", "responses", "briefly", "excellent"}
+        vocab_patterns = [(t, d) for t, d in vocab_patterns
+                          if not any(excl in t.lower() for excl in EXCLUDE_VOCAB)]
+
         if vocab_patterns:
             slide = _next_slide()
             _white_bg(slide)
@@ -706,6 +755,12 @@ def export_lesson_pptx(
             _add_footer(slide, slide_num[0])
 
             _add_footer(slide, slide_num[0])
+
+    # ═══════════════════════════════════════════════════════════════════
+    # SECTION DIVIDER: "Let's Practice Together"
+    # ═══════════════════════════════════════════════════════════════════
+    if lesson.guided_practice:
+        _section_divider(prs, slide_num, "Let's Practice Together", theme, slide_w, slide_h)
 
     # ═══════════════════════════════════════════════════════════════════
     # GUIDED PRACTICE -- "Your Turn" header
@@ -811,6 +866,12 @@ def export_lesson_pptx(
         _set_text_props(run_t, 16, theme["text_dark"])
 
         _add_footer(slide, slide_num[0])
+
+    # ═══════════════════════════════════════════════════════════════════
+    # SECTION DIVIDER: "Show What You Know"
+    # ═══════════════════════════════════════════════════════════════════
+    if lesson.exit_ticket:
+        _section_divider(prs, slide_num, "Show What You Know", theme, slide_w, slide_h)
 
     # ═══════════════════════════════════════════════════════════════════
     # EXIT TICKET -- distinctive assessment design

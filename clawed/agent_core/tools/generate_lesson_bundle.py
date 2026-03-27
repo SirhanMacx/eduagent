@@ -58,6 +58,11 @@ class GenerateLessonBundleTool:
                             ],
                             "default": "general",
                         },
+                        "include_images": {
+                            "type": "boolean",
+                            "description": "Include academic images in the slideshow (default: true)",
+                            "default": True,
+                        },
                     },
                     "required": ["topic"],
                 },
@@ -76,6 +81,7 @@ class GenerateLessonBundleTool:
         grade = params.get("grade", "8")
         subject = params.get("subject", "General")
         activity_type = params.get("activity_type", "general")
+        include_images = params.get("include_images", True)
 
         # ── Load config & persona from context ───────────────────────
         config = context.config
@@ -235,7 +241,7 @@ class GenerateLessonBundleTool:
         try:
             from clawed.export_pptx import export_lesson_pptx
 
-            pptx_path = export_lesson_pptx(lesson, persona, output_dir)
+            pptx_path = export_lesson_pptx(lesson, persona, output_dir, include_images=include_images)
             generated_files.append(pptx_path)
             side_effects.append(f"Slideshow PPTX: {pptx_path.name}")
         except Exception as e:

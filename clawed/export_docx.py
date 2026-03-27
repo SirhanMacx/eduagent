@@ -109,6 +109,59 @@ def _docx_add_content_image(
     return False
 
 
+# ── Callout box helper ────────────────────────────────────────────────
+
+
+def _add_callout_box(doc, label, text, bg_hex, border_hex):
+    """Add a colored callout box for differentiation notes."""
+    from docx.enum.table import WD_TABLE_ALIGNMENT
+    from docx.oxml.ns import qn
+    from docx.shared import Inches, Pt, RGBColor
+
+    table = doc.add_table(rows=1, cols=2)
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+
+    # Left cell: narrow colored label
+    left_cell = table.rows[0].cells[0]
+    left_cell.width = Inches(1.2)
+    left_cell.text = ""
+    lp = left_cell.paragraphs[0]
+    lr = lp.add_run(label)
+    lr.bold = True
+    lr.font.size = Pt(10)
+    lr.font.name = "Calibri"
+    # Set cell background
+    tc = left_cell._tc
+    tcPr = tc.get_or_add_tcPr()
+    shading = tcPr.makeelement(qn("w:shd"), {
+        qn("w:val"): "clear",
+        qn("w:color"): "auto",
+        qn("w:fill"): border_hex,
+    })
+    tcPr.append(shading)
+    lr.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+
+    # Right cell: content with light background
+    right_cell = table.rows[0].cells[1]
+    right_cell.text = ""
+    rp = right_cell.paragraphs[0]
+    rr = rp.add_run(text)
+    rr.font.size = Pt(10)
+    rr.font.name = "Calibri"
+    # Light background
+    tc2 = right_cell._tc
+    tcPr2 = tc2.get_or_add_tcPr()
+    shading2 = tcPr2.makeelement(qn("w:shd"), {
+        qn("w:val"): "clear",
+        qn("w:color"): "auto",
+        qn("w:fill"): bg_hex,
+    })
+    tcPr2.append(shading2)
+
+    # Add spacing after table
+    doc.add_paragraph("")
+
+
 # ── Main lesson DOCX export ──────────────────────────────────────────
 
 
@@ -252,6 +305,37 @@ def export_lesson_docx(
         for m in lesson.materials_needed:
             doc.add_paragraph(m, style="List Bullet")
 
+    # Lesson-at-a-Glance timing table
+    doc.add_heading("Lesson at a Glance", level=2)
+    timing_table = doc.add_table(rows=1, cols=2)
+    timing_table.style = "Light Grid Accent 1"
+    hdr = timing_table.rows[0].cells
+    hdr[0].text = "Section"
+    hdr[1].text = "Time"
+
+    timing_sections = [
+        ("Do Now / Warm-Up", lesson.time_estimates.get("do_now", 5)),
+        ("Direct Instruction", lesson.time_estimates.get("direct_instruction", 20)),
+        ("Guided Practice", lesson.time_estimates.get("guided_practice", 15)),
+        ("Independent Work", lesson.time_estimates.get("independent_work", 10)),
+        ("Exit Ticket", 5),
+    ]
+    total = 0
+    for section_name, minutes in timing_sections:
+        if minutes:
+            row = timing_table.add_row().cells
+            row[0].text = section_name
+            row[1].text = f"{minutes} min"
+            total += minutes
+    # Total row
+    total_row = timing_table.add_row().cells
+    total_row[0].text = "Total"
+    total_row[1].text = f"{total} min"
+    for cell in timing_table.rows[-1].cells:
+        for p in cell.paragraphs:
+            for r in p.runs:
+                r.bold = True
+
     # Lesson Sections — add relevant images to instruction sections
     sections = [
         ("Do Now / Warm-Up", _s_do_now, False),
@@ -288,13 +372,13 @@ def export_lesson_docx(
         doc.add_heading("Differentiation", level=2)
         if diff.struggling:
             text = ", ".join(diff.struggling) if isinstance(diff.struggling, list) else str(diff.struggling)
-            doc.add_paragraph(f"Struggling learners: {sanitize_text(text)}")
+            _add_callout_box(doc, "Struggling\nLearners", sanitize_text(text), "FFF3CD", "D4A017")
         if diff.advanced:
             text = ", ".join(diff.advanced) if isinstance(diff.advanced, list) else str(diff.advanced)
-            doc.add_paragraph(f"Advanced learners: {sanitize_text(text)}")
+            _add_callout_box(doc, "Advanced\nLearners", sanitize_text(text), "D1ECF1", "2B7A98")
         if diff.ell:
             text = ", ".join(diff.ell) if isinstance(diff.ell, list) else str(diff.ell)
-            doc.add_paragraph(f"ELL support: {sanitize_text(text)}")
+            _add_callout_box(doc, "ELL\nSupport", sanitize_text(text), "D4EDDA", "2D8B4E")
 
     # Homework
     if _s_homework:

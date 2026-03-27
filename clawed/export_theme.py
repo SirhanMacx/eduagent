@@ -148,9 +148,11 @@ def _hex_to_rgb(hex_str: str):
 
 
 def _resolve_output(output_dir: Path | None, lesson: "DailyLesson", ext: str) -> Path:
-    """Build the output file path."""
+    """Build the output file path using the lesson title."""
     if output_dir is None:
         output_dir = Path("clawed_output").resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
-    safe = f"lesson_{lesson.lesson_number:02d}"
+    # Use lesson title for filename, fallback to number
+    title = getattr(lesson, 'title', '') or f"lesson_{getattr(lesson, 'lesson_number', 0):02d}"
+    safe = "".join(c for c in title[:50] if c.isalnum() or c in " _-").strip().replace(" ", "_") or "lesson"
     return output_dir / f"{safe}{ext}"
