@@ -307,7 +307,8 @@ async def _fetch_loc(
                 # Prefer image_url (list of URLs)
                 urls = item.get("image_url", [])
                 if urls:
-                    image_url = urls[0]
+                    # Take highest resolution (last URL), strip fragment
+                    image_url = urls[-1].split("#")[0]
                     break
                 # Fallback to thumb_gallery
                 thumb = item.get("thumb_gallery")

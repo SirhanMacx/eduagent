@@ -641,21 +641,37 @@ def export_lesson_pptx(
         _add_footer(slide, slide_num[0])
 
         # ── Vocabulary slide (if terms detected) ───────────────────
-        # Extract vocabulary from DI text — strict pattern to avoid script leakage
+        # Try multiple patterns for vocabulary extraction
+        di_text_raw = lesson.direct_instruction or ""
+        vocab_patterns: list[tuple[str, str]] = []
+
+        # Pattern 1: **Bold Term** — definition
         vocab_patterns = re.findall(
-            r'\*\*([A-Z][^*]{2,30})\*\*\s*[-—:]+\s*([^*\n]{15,150})',
-            lesson.direct_instruction or ""
+            r'\*\*([A-Z][^*]{2,30})\*\*\s*[-—:]+\s*([^*\n]{15,200})',
+            di_text_raw,
         )
+        # Pattern 2: KEY TERM: definition or Term: definition (capitalized)
+        if not vocab_patterns:
+            vocab_patterns = re.findall(
+                r'(?:^|\n)\s*\*?\*?([A-Z][a-z]+(?:\s+[A-Za-z]+){0,3})\*?\*?\s*[-—:]+\s+'
+                r'([A-Za-z][^\n]{15,200})',
+                di_text_raw,
+            )
+
+        # Filter out instructional directions and non-vocabulary content
         INSTRUCTIONAL_WORDS = {
             "check", "ask", "call", "facilitate", "transition", "minutes",
             "discuss", "display", "distribute", "brief", "move", "moved",
-            "western", "eastern", "students", "responses", "excellent",
+            "students", "responses", "excellent", "turn", "now", "let",
+            "today", "good", "morning", "scholars", "friends", "class",
+            "next", "first", "take", "look", "read", "write", "complete",
         }
         vocab_patterns = [
             (term.strip(), defn.strip()) for term, defn in vocab_patterns
-            if len(term.split()) <= 4
+            if 1 <= len(term.split()) <= 4
+            and len(defn.split()) >= 3
             and not any(w in defn.lower().split()[:3] for w in INSTRUCTIONAL_WORDS)
-            and not any(w in term.lower() for w in INSTRUCTIONAL_WORDS)
+            and not any(w in term.lower().split() for w in INSTRUCTIONAL_WORDS)
         ]
 
         if vocab_patterns:
@@ -701,16 +717,18 @@ def export_lesson_pptx(
             _add_footer(slide, slide_num[0])
 
         # ── Source excerpt slides (if quoted passages detected) ─────
-        source_quotes = re.findall(
-            r"\u201c([^\u201d]{50,500})\u201d[^\u201d]*?(?:[-\u2014]\s*(.+?)(?:\n|$))",
-            di_text,
-        )
-        if not source_quotes:
-            source_quotes = re.findall(
-                r'"([^"]{50,500})"[^"]*?(?:[-\u2014]\s*(.+?)(?:\n|$))',
-                di_text,
-            )
+        # Try multiple quote patterns: curly quotes, straight quotes, markdown bold
+        source_quotes: list[tuple[str, str]] = []
+        for pattern in [
+            r'\u201c([^\u201d]{30,500})\u201d[^\n]*?(?:[-\u2014]\s*(.+?)(?:\n|$))',
+            r'"([^"]{30,500})"[^\n]*?(?:[-\u2014]\s*(.+?)(?:\n|$))',
+            r"['\u2018]([^'\u2019]{30,500})['\u2019][^\n]*?(?:[-\u2014]\s*(.+?)(?:\n|$))",
+        ]:
+            source_quotes = re.findall(pattern, di_text)
+            if source_quotes:
+                break
 
+        source_img_idx = 3  # Start from entity_3 for source slides
         for quote_text, attribution in source_quotes[:3]:
             slide = _next_slide()
             _tinted_bg(slide, theme["accent"])
@@ -728,9 +746,17 @@ def export_lesson_pptx(
             run.text = "Source Excerpt"
             _set_text_props(run, 22, theme["text_light"], bold=True)
 
+            # Add image if available (use remaining entity images)
+            src_img = images.get(f"entity_{source_img_idx}")
+            text_width = slide_w - Inches(2.0)
+            if src_img:
+                text_width = int(slide_w * 0.58)
+                _add_sidebar_image(slide, src_img)
+            source_img_idx += 1
+
             # Quoted text in large italic font
             tb = slide.shapes.add_textbox(
-                Inches(1.5), Inches(2.0), slide_w - Inches(3.0), Inches(3.5),
+                Inches(1.5), Inches(2.0), text_width, Inches(3.5),
             )
             tf = tb.text_frame
             tf.word_wrap = True
@@ -745,15 +771,13 @@ def export_lesson_pptx(
             # Attribution below
             if attribution and attribution.strip():
                 tb_attr = slide.shapes.add_textbox(
-                    Inches(1.5), Inches(5.8), slide_w - Inches(3.0), Inches(0.6),
+                    Inches(1.5), Inches(5.8), text_width, Inches(0.6),
                 )
                 p_attr = tb_attr.text_frame.paragraphs[0]
                 p_attr.alignment = PP_ALIGN.RIGHT
                 run_attr = p_attr.add_run()
                 run_attr.text = f"\u2014 {attribution.strip()}"
                 _set_text_props(run_attr, 18, "666666")
-
-            _add_footer(slide, slide_num[0])
 
             _add_footer(slide, slide_num[0])
 
