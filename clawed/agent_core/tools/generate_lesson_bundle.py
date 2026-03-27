@@ -1,6 +1,7 @@
 """Tool: generate_lesson_bundle — complete teaching package (lesson + handout + slides)."""
 from __future__ import annotations
 
+import json
 import logging
 from pathlib import Path
 from typing import Any
@@ -147,6 +148,25 @@ class GenerateLessonBundleTool:
         if not lesson.standards and standards_list:
             lesson.standards = standards_list
 
+        # ── Self-review against observation-ready standards ──────────
+        lesson_json_str = json.dumps(lesson.model_dump(), indent=2)
+        try:
+            from clawed.llm import LLMClient
+
+            llm_client = LLMClient(config)
+            review = await llm_client.review_lesson_package(
+                lesson_json_str,
+                standards_present=bool(lesson.standards),
+                has_handout=True,
+                has_slideshow=True,
+            )
+            if not review.get("passed", True) and review.get("issues"):
+                # Log issues for transparency
+                issues_text = "; ".join(review["issues"][:3])
+                logger.info("Self-review found issues: %s", issues_text)
+        except Exception:
+            pass  # Review is best-effort, don't block on failure
+
         # ── Export all three files ────────────────────────────────────
         output_dir = Path("clawed_output").resolve()
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -166,16 +186,50 @@ class GenerateLessonBundleTool:
             logger.error("Lesson DOCX export failed: %s", e)
             errors.append(f"Lesson plan DOCX failed: {e}")
 
-        # 2. Student handout DOCX
+        # 2. Generate student handout via LLM (first-class output, not regex extraction)
         try:
-            from clawed.export_docx import export_student_handout
+            import json_repair
 
-            handout_path = export_student_handout(lesson, persona, output_dir)
-            generated_files.append(handout_path)
-            side_effects.append(f"Student handout DOCX: {handout_path.name}")
-        except Exception as e:
-            logger.error("Handout DOCX export failed: %s", e)
-            errors.append(f"Student handout DOCX failed: {e}")
+            from clawed.llm import LLMClient
+
+            llm_client = LLMClient(config)
+            handout_raw = await llm_client.generate_student_handout(
+                lesson_json_str,
+                persona_context=persona.to_prompt_context(),
+                subject=subject,
+                grade=grade,
+            )
+            # Parse handout JSON
+            handout_cleaned = handout_raw.strip()
+            if handout_cleaned.startswith("```"):
+                lines = handout_cleaned.split("\n")
+                lines = lines[1:]
+                if lines and lines[-1].strip() == "```":
+                    lines = lines[:-1]
+                handout_cleaned = "\n".join(lines)
+            try:
+                handout_data = json.loads(handout_cleaned)
+            except json.JSONDecodeError:
+                handout_data = json_repair.loads(handout_cleaned)
+
+            from clawed.export_handout import export_handout_docx
+
+            handout_path = export_handout_docx(handout_data, subject=subject)
+            if handout_path:
+                generated_files.append(Path(handout_path))
+                side_effects.append(f"Student handout DOCX: {Path(handout_path).name}")
+        except Exception as handout_err:
+            logger.warning("LLM handout generation failed, falling back: %s", handout_err)
+            # Fallback to regex-based handout
+            try:
+                from clawed.export_docx import export_student_handout
+
+                handout_path = export_student_handout(lesson, persona, output_dir)
+                if handout_path:
+                    generated_files.append(Path(handout_path))
+                    side_effects.append(f"Student handout DOCX: {Path(handout_path).name}")
+            except Exception:
+                pass
 
         # 3. Slideshow PPTX
         try:

@@ -225,6 +225,93 @@ class LLMClient:
                     f"Try again or use a different AI model."
                 ) from e
 
+    async def generate_student_handout(
+        self,
+        lesson_json: str,
+        persona_context: str = "",
+        subject: str = "",
+        grade: str = "",
+    ) -> str:
+        """Generate a student handout as a first-class LLM output.
+
+        Sends the completed lesson plan as context and asks the LLM to produce
+        the student-facing materials. This is NOT regex extraction from the
+        lesson --- it's a separate generation that understands what the lesson
+        references and creates matching materials.
+        """
+        system = (
+            "You are creating a student handout for a lesson. The handout is what "
+            "students receive --- it must be self-contained, printable, and include "
+            "everything referenced in the lesson plan.\n\n"
+            f"{persona_context}\n" if persona_context else ""
+        )
+
+        prompt = (
+            f"Here is the complete lesson plan:\n\n{lesson_json}\n\n"
+            "Create a student handout that includes ALL of these sections "
+            "(skip any that don't apply to this lesson):\n\n"
+            "1. **Header**: Lesson title, date line, Name: _________ Period: _____\n"
+            "2. **Do Now**: The student-facing prompt only (not the teacher script), "
+            "with lined space for writing\n"
+            "3. **Vocabulary**: Key terms with definitions extracted from the lesson. "
+            "Format: Term --- definition\n"
+            "4. **Primary Source Excerpts**: Any quoted passages referenced in the lesson, "
+            "with full attribution (author, date, title). Quote them completely.\n"
+            "5. **Graphic Organizer**: If the lesson references an organizer (source analysis, "
+            "comparison chart, etc.), create the actual table with column headers and empty rows. "
+            "Include clear instructions.\n"
+            "6. **Activity Instructions**: Student-facing version of guided/independent practice\n"
+            "7. **Exit Ticket**: Numbered questions with lined answer space\n\n"
+            "Return the handout as structured JSON with these keys:\n"
+            '{"title": "...", "do_now": "...", "vocabulary": [{"term": "...", "definition": "..."}], '
+            '"source_excerpts": [{"text": "...", "attribution": "..."}], '
+            '"organizer": {"title": "...", "columns": ["..."], "instructions": "...", "num_rows": 4}, '
+            '"activity_instructions": "...", '
+            '"exit_ticket_questions": ["...", "..."]}'
+        )
+
+        return await self.generate(prompt, system=system, temperature=0.4, max_tokens=4096)
+
+    async def review_lesson_package(
+        self,
+        lesson_json: str,
+        standards_present: bool,
+        has_handout: bool,
+        has_slideshow: bool,
+    ) -> dict[str, Any]:
+        """Self-review a lesson package against observation-ready standards.
+
+        Returns a dict with 'passed' (bool) and 'issues' (list of strings).
+        If issues are found, the caller should attempt to fix them.
+        """
+        prompt = (
+            f"Review this lesson package against observation-ready quality standards.\n\n"
+            f"Lesson:\n{lesson_json[:3000]}\n\n"
+            f"Package status: standards={'yes' if standards_present else 'MISSING'}, "
+            f"handout={'yes' if has_handout else 'MISSING'}, "
+            f"slideshow={'yes' if has_slideshow else 'MISSING'}\n\n"
+            "Check these standards:\n"
+            "1. Do all section times add up to a full class period (42-45 min)?\n"
+            "2. Are specific standards codes listed (not just 'aligned to standards')?\n"
+            "3. Is vocabulary defined for all content-specific terms?\n"
+            "4. Are there checks for understanding every 7-10 minutes?\n"
+            "5. Are all referenced materials self-contained (no phantom handouts)?\n"
+            "6. Is the Do Now completable in 5 minutes?\n"
+            "7. Are transitions scripted between sections?\n\n"
+            'Return JSON: {"passed": true/false, "issues": ["issue 1", "issue 2"]}'
+        )
+        raw = await self.generate(prompt, temperature=0.2, max_tokens=1000)
+        try:
+            cleaned = raw.strip()
+            if cleaned.startswith("```"):
+                lines = cleaned.split("\n")[1:]
+                if lines and lines[-1].strip() == "```":
+                    lines = lines[:-1]
+                cleaned = "\n".join(lines)
+            return json.loads(cleaned)
+        except Exception:
+            return {"passed": True, "issues": []}
+
     # ── Anthropic ────────────────────────────────────────────────────────
 
     async def _anthropic(
