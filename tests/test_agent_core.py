@@ -42,12 +42,36 @@ class TestPromptAssembly:
         prompt = build_system_prompt(
             teacher_name="Ms. Smith",
             identity_summary="8th grade Science, inquiry-based",
-            improvement_context="Students struggle with graphs",
+            improvement_context="",
             tool_names=["generate_lesson", "search_standards"],
         )
         assert "Ms. Smith" in prompt
+        assert "SOUL.md" in prompt
+        assert "HEARTBEAT.md" in prompt
+        assert "read_workspace" in prompt
+
+    def test_identity_summary_included_without_soul_context(self):
+        from clawed.agent_core.prompt import build_system_prompt
+        prompt = build_system_prompt(
+            teacher_name="Ms. Smith",
+            identity_summary="8th grade Science, inquiry-based",
+            improvement_context="",
+            tool_names=[],
+        )
         assert "inquiry-based" in prompt
-        assert "graphs" in prompt
+
+    def test_identity_summary_hidden_when_soul_context_present(self):
+        from clawed.agent_core.prompt import build_system_prompt
+        prompt = build_system_prompt(
+            teacher_name="Ms. Smith",
+            identity_summary="8th grade Science, inquiry-based",
+            improvement_context="",
+            tool_names=[],
+            soul_context="My voice is warm and direct.",
+        )
+        assert "My voice is warm and direct." in prompt
+        # identity_summary should NOT appear when soul_context is provided
+        assert "Teacher profile" not in prompt
 
     def test_builds_prompt_without_improvement_context(self):
         from clawed.agent_core.prompt import build_system_prompt
@@ -92,16 +116,41 @@ class TestPromptAssembly:
         )
         assert "From 'Civil War Unit': Key causes..." in prompt
 
-    def test_proactive_suggestions_in_prompt(self):
+    def test_workspace_references_in_prompt(self):
+        from clawed.agent_core.prompt import build_system_prompt
+        prompt = build_system_prompt(
+            teacher_name="Teacher",
+            identity_summary="",
+            improvement_context="",
+            tool_names=["read_workspace", "update_soul"],
+        )
+        assert "SOUL.md" in prompt
+        assert "HEARTBEAT.md" in prompt
+        assert "read_workspace" in prompt
+        assert "update_soul" in prompt
+
+    def test_new_user_first_interaction(self):
         from clawed.agent_core.prompt import build_system_prompt
         prompt = build_system_prompt(
             teacher_name="Teacher",
             identity_summary="",
             improvement_context="",
             tool_names=[],
+            is_new_user=True,
         )
-        assert "Proactive Suggestions" in prompt
-        assert "Status Updates" in prompt
+        assert "First Interaction" in prompt
+        assert "configure_profile" in prompt
+
+    def test_tool_names_listed(self):
+        from clawed.agent_core.prompt import build_system_prompt
+        prompt = build_system_prompt(
+            teacher_name="Teacher",
+            identity_summary="",
+            improvement_context="",
+            tool_names=["generate_lesson", "search_standards", "read_workspace"],
+        )
+        assert "3 available" in prompt
+        assert "generate_lesson" in prompt
 
 
 

@@ -333,6 +333,15 @@ class Gateway:
         except Exception:
             pass
 
+        # 2a. Load SOUL.md if available
+        soul_context = ""
+        try:
+            soul_path = Path.home() / ".eduagent" / "workspace" / "SOUL.md"
+            if soul_path.exists():
+                soul_context = soul_path.read_text(encoding="utf-8")[:2000]
+        except Exception:
+            pass
+
         # 2b. Build system prompt
         agent_name = self.config.agent_name
         is_new_user = teacher_name == "Teacher" and not persona_dict
@@ -349,6 +358,7 @@ class Gateway:
             tool_names=self._registry.tool_names(),
             is_new_user=is_new_user,
             reading_report=reading_report_context,
+            soul_context=soul_context,
         )
 
         # 2c. Enhance prompt for multi-step planning requests

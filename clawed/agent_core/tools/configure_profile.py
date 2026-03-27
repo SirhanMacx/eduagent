@@ -1,9 +1,13 @@
 """Tool: configure_profile — wraps teacher profile configuration."""
 from __future__ import annotations
 
+import logging
+from pathlib import Path
 from typing import Any
 
 from clawed.agent_core.context import AgentContext, ToolResult
+
+logger = logging.getLogger(__name__)
 
 
 class ConfigureProfileTool:
@@ -105,6 +109,40 @@ class ConfigureProfileTool:
                 init_workspace(persona, config)
             except Exception:
                 pass
+
+            # Update SOUL.md "Who I Am" section with identity
+            try:
+                soul_path = Path.home() / ".eduagent" / "workspace" / "SOUL.md"
+                soul_path.parent.mkdir(parents=True, exist_ok=True)
+
+                identity_parts = [f"Name: {teacher_name}", f"Subject: {subject}"]
+                if grades:
+                    identity_parts.append(f"Grades: {', '.join(grades)}")
+                if state:
+                    identity_parts.append(f"State: {state}")
+                identity_text = "\n" + "\n".join(f"- {p}" for p in identity_parts) + "\n"
+
+                from clawed.agent_core.tools.update_soul import SOUL_TEMPLATE
+
+                if soul_path.exists():
+                    current = soul_path.read_text(encoding="utf-8")
+                    if "## Who I Am" in current:
+                        current = current.replace(
+                            "## Who I Am", f"## Who I Am{identity_text}", 1
+                        )
+                    else:
+                        current = f"## Who I Am{identity_text}\n" + current
+                    soul_path.write_text(current, encoding="utf-8")
+                else:
+                    content = SOUL_TEMPLATE.replace(
+                        "## Who I Am",
+                        f"## Who I Am{identity_text}",
+                        1,
+                    )
+                    soul_path.write_text(content, encoding="utf-8")
+                side_effects.append("Updated SOUL.md with teacher identity")
+            except Exception as e:
+                logger.debug("SOUL.md identity update failed: %s", e)
 
             return ToolResult(
                 text=f"Profile saved: {teacher_name}, {subject}"

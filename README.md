@@ -100,13 +100,15 @@ clawed serve        # web dashboard
 
 ## Configuring your agent
 
-Three plain text files control the agent's behavior:
+The agent's intelligence lives in its workspace files, not in a static prompt. Two plain text files and automatic memory control everything:
 
-**`~/.eduagent/workspace/SOUL.md`** -- The agent's identity. Your teaching philosophy, subject expertise, grade levels, communication style. Edit this to shape how the agent thinks and writes.
+**`~/.eduagent/workspace/SOUL.md`** -- A living document the agent co-authors with you. It starts as a template, then evolves: when you feed the agent your files, it writes what it learned about your voice, strategies, and signature moves. When you set up your profile, it records your identity. You can read and edit SOUL.md at any time -- full transparency. The agent reads it at the start of every important interaction to remember who you are and how you work.
 
-**`~/.eduagent/workspace/HEARTBEAT.md`** -- Autonomous task schedule. What the agent does on its own: morning prep, weekly planning, feedback digests. Edit to add or remove scheduled behaviors.
+**`~/.eduagent/workspace/HEARTBEAT.md`** -- Autonomous task schedule. What the agent does on its own: morning prep, weekly planning, feedback digests. Edit to add or remove scheduled behaviors. The agent reads this to know what it should be doing without being asked.
 
 **Memory (automatic)** -- Three-layer cognitive memory that builds over time. Identity layer (your teaching fingerprint), curriculum state (what you've covered), and episodic memory (past interactions recalled by semantic similarity). You do not edit this directly -- it learns from your usage.
+
+The system prompt is thin -- it points to workspace files instead of carrying all context inline. This means more token budget goes to actual lesson generation, and the agent's identity can grow without hitting prompt limits.
 
 ---
 
@@ -133,6 +135,8 @@ Run `clawed --help` for the full list.
 
 ## Architecture
 
+The agent's intelligence lives in its workspace files, not in a static prompt. SOUL.md defines identity and evolves over time. HEARTBEAT.md defines the schedule. The system prompt is a thin pointer -- the workspace is the brain.
+
 Claw-ED is agent-first. Natural-language messages go through an LLM that decides which tools to call. Deterministic operations (file ingestion, onboarding, approvals) bypass the agent for reliability.
 
 ```
@@ -141,18 +145,22 @@ Teacher's message (Telegram, CLI, TUI, Web)
     Gateway
     |-- Control Plane (deterministic: files, callbacks, onboarding)
     |-- Agent Loop (LLM decides -> calls tools -> returns result)
-              |
-        25 Tools (auto-discovered)
-              |
-        Curriculum KB     Memory (3-layer)     Standards (50 states)
-        search_materials  identity              CCSS, NGSS, C3
-        ingest_materials  curriculum state      state-specific
-                          episodic (embeddings)  gap analysis
+              |                         |
+        28 Tools (auto-discovered)   Workspace (the brain)
+              |                       SOUL.md (identity, evolves)
+        Curriculum KB                 HEARTBEAT.md (schedule)
+        search_materials              reading_report.md
+        ingest_materials              |
+              |                   Memory (3-layer)
+        Standards (50 states)     identity
+        CCSS, NGSS, C3           curriculum state
+        state-specific           episodic (embeddings)
+        gap analysis
               |
     Professional exports (DOCX, PPTX, PDF, Google Slides/Docs)
 ```
 
-Custom YAML tools live in `~/.eduagent/tools/`. Define a name, description, parameters, and prompt template -- no code needed. The tool registry auto-discovers them alongside the 25 built-in tools.
+Custom YAML tools live in `~/.eduagent/tools/`. Define a name, description, parameters, and prompt template -- no code needed. The tool registry auto-discovers them alongside the built-in tools.
 
 ---
 
