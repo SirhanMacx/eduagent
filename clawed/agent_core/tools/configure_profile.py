@@ -60,11 +60,23 @@ class ConfigureProfileTool:
         from clawed.models import TeacherPersona, TeacherProfile
         from clawed.state import TeacherSession
 
-        teacher_name = params["teacher_name"]
-        subject = params["subject"]
-        grade_levels_str = params.get("grade_levels", "")
+        # Accept both "teacher_name" and "name" — LLMs sometimes use either key
+        teacher_name = (
+            params.get("teacher_name")
+            or params.get("name")
+            or params.get("teacher")
+            or ""
+        )
+        subject = params.get("subject", "")
+        grade_levels_str = params.get("grade_levels", params.get("grades", ""))
         state = params.get("state", "")
         agent_name = params.get("agent_name", "")
+
+        if not teacher_name:
+            return ToolResult(
+                text="I need the teacher's name to save the profile. "
+                     "Please ask the teacher their name first."
+            )
 
         grades = [g.strip() for g in grade_levels_str.split(",") if g.strip()]
 

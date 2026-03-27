@@ -55,7 +55,13 @@ class ToolRegistry:
             return await tool.execute(params, context)
         except Exception as e:
             logger.error("Tool %s failed: %s", name, e)
-            return ToolResult(text=f"Tool {name} failed: {e}")
+            return ToolResult(
+                text=f"ERROR: Tool '{name}' failed and did NOT complete. "
+                     f"Reason: {e}. "
+                     f"Do NOT tell the teacher this action succeeded — it did not. "
+                     f"Either retry with corrected parameters or tell the teacher "
+                     f"what went wrong."
+            )
 
     def discover_custom(self, dir_path: Path) -> None:
         """Load custom YAML prompt-template tools from a directory."""
