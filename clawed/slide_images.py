@@ -109,6 +109,68 @@ _SUBJECT_QUERY_STYLE: dict[str, str] = {
 }
 
 
+def extract_image_subjects(lesson) -> list[dict]:
+    """Extract specific people, places, and artifacts from lesson content for targeted image search.
+
+    Instead of searching for generic lesson titles ("Age of Absolutism"),
+    extracts specific entities like "Louis XIV", "Palace of Versailles",
+    "Treaty of Westphalia" that produce relevant image results.
+    """
+    subjects: list[dict] = []
+    all_text = " ".join(filter(None, [
+        getattr(lesson, 'title', ''),
+        getattr(lesson, 'objective', ''),
+        getattr(lesson, 'do_now', ''),
+        getattr(lesson, 'direct_instruction', ''),
+        getattr(lesson, 'guided_practice', ''),
+    ]))
+
+    # Named historical figures (with titles or multi-word names)
+    people_patterns = [
+        r"((?:King |Queen |Emperor |Empress |President |Pope |Tsar |Czar )"
+        r"[A-Z][a-z]+(?: [A-Z][a-z]+)*(?: the Great| [IVX]+)?)",
+        r"((?:Louis|Peter|Frederick|Catherine|Elizabeth|Napoleon|Alexander) (?:the Great|[IVX]+|[A-Z][a-z]+))",
+    ]
+    people_found: set[str] = set()
+    for pattern in people_patterns:
+        for match in re.findall(pattern, all_text):
+            if match.strip() and len(match) > 5:
+                people_found.add(match.strip())
+    for person in list(people_found)[:4]:
+        subjects.append({"query": f"{person} portrait painting", "type": "person", "label": person})
+
+    # Named places/buildings
+    place_patterns = re.findall(
+        r"((?:Palace|Castle|Cathedral|Battle|Siege|Fort) of [A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)",
+        all_text,
+    )
+    for place in set(place_patterns[:3]):
+        subjects.append({"query": f"{place} historical", "type": "place", "label": place})
+
+    # Named places without "of" (e.g., "Versailles", "Bastille")
+    famous_places = re.findall(
+        r"\b(Versailles|Bastille|Kremlin|Vatican|Parliament|Westminster|Colosseum|Parthenon|Stonehenge)\b",
+        all_text,
+    )
+    for place in set(famous_places[:2]):
+        subjects.append({"query": f"{place} historical photograph", "type": "place", "label": place})
+
+    # Historical documents/treaties
+    doc_patterns = re.findall(
+        r"((?:Treaty|Declaration|Constitution|Bill|Act|Edict|Manifesto|Charter) of [A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)",
+        all_text,
+    )
+    for doc_name in set(doc_patterns[:2]):
+        subjects.append({"query": f"{doc_name} historical document", "type": "document", "label": doc_name})
+
+    # Fallback: lesson title
+    if not subjects:
+        title = getattr(lesson, 'title', 'lesson')
+        subjects.append({"query": title, "type": "topic", "label": title})
+
+    return subjects
+
+
 def _build_search_query(topic: str, subject: str = "") -> str:
     """Convert a lesson topic into a good image search query.
 

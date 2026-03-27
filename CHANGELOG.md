@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.8] - 2026-03-27
+
+Fix the foundations — reading report, KB search, image sourcing.
+
+### Fixed
+- Reading report no longer hallucinates teacher name from content (e.g., "Dr. King" from MLK lessons). Name detection now searches only document headers/footers, with historical figure exclusion.
+- Voice pattern detection filters out lesson content ("Life in the Trench") — only keeps actual teacher greetings.
+- Curriculum KB searched automatically before every lesson generation — no longer depends on the model remembering to call search_my_materials.
+- Image sourcing uses entity extraction (Louis XIV, Palace of Versailles) instead of generic lesson title queries.
+- More slides get images (up to 5 instead of 3).
+- Vocabulary slide filters instructional directions more aggressively.
+
 ## [1.0.7] - 2026-03-27
 
 Superhuman materials — output that competes with commercial curriculum.

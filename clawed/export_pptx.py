@@ -262,24 +262,24 @@ def export_lesson_pptx(
     slide_w = prs.slide_width
     slide_h = prs.slide_height
 
-    # ── Try to fetch images asynchronously (per-slide content queries) ─
-    # Each slide gets its OWN image query based on that slide's content.
-    # Max 3-4 images per deck to avoid slow generation.
+    # ── Try to fetch images asynchronously (entity-based queries) ────
+    # Extracts named entities (people, places, documents) from lesson content
+    # and searches for those specifically. Up to 5 images per deck.
     # Images on: Title (bg), Do Now (accent), Direct Instruction (sidebar)
     # No images on: Objectives, Guided Practice, Exit Ticket, Closing
-    image_items: list[tuple[str, str, str]] = [
-        # (content_text, fallback_topic, key)
-        ("", lesson.title, "title"),  # title slide: topic-based
-    ]
-    if lesson.do_now:
-        image_items.append((lesson.do_now, lesson.title, "do_now"))
-    if lesson.direct_instruction:
-        image_items.append(
-            (lesson.direct_instruction, lesson.title, "instruction"),
-        )
-
     if include_images:
-        images = _try_fetch_content_images(image_items, subject, max_images=3)
+        from clawed.slide_images import extract_image_subjects
+        entities = extract_image_subjects(lesson)
+        image_items: list[tuple[str, str, str]] = []
+        for i, entity in enumerate(entities[:5]):
+            key = f"entity_{i}"
+            image_items.append((entity["query"], entity["query"], key))
+
+        # Ensure we have at least a title image
+        if not image_items:
+            image_items = [("", lesson.title, "title")]
+
+        images = _try_fetch_content_images(image_items, subject, max_images=5)
     else:
         images = {}
 
@@ -419,7 +419,7 @@ def export_lesson_pptx(
     # ═══════════════════════════════════════════════════════════════════
     slide = _next_slide()
 
-    title_image = images.get("title")
+    title_image = images.get("entity_0")
     if title_image:
         _add_bg_image(slide, title_image, overlay_alpha="30000")  # 70% dark overlay
     else:
@@ -544,7 +544,7 @@ def export_lesson_pptx(
 
         # Question / prompt text -- 28pt, dark, good line spacing
         # Do Now uses accent image (small, bottom-right) not sidebar
-        do_now_img = images.get("do_now")
+        do_now_img = images.get("entity_1")
 
         tb = slide.shapes.add_textbox(
             Inches(0.8), Inches(1.8), slide_w - Inches(2.0), Inches(3.2),
@@ -606,7 +606,7 @@ def export_lesson_pptx(
         _bar(slide, Inches(0.6), Inches(1.7), Inches(0.06), Inches(5.0), theme["secondary"])
 
         # Sidebar image if available
-        img_path = images.get("instruction")
+        img_path = images.get("entity_2")
         text_width = slide_w - Inches(2.0)
         if img_path:
             text_width = int(slide_w * 0.60)
@@ -641,21 +641,22 @@ def export_lesson_pptx(
         _add_footer(slide, slide_num[0])
 
         # ── Vocabulary slide (if terms detected) ───────────────────
+        # Extract vocabulary from DI text — strict pattern to avoid script leakage
         vocab_patterns = re.findall(
-            r"\*\*([^*]+)\*\*[:\s]*([^*\n]{10,100})",
-            di_text,
+            r'\*\*([A-Z][^*]{2,30})\*\*\s*[-—:]+\s*([^*\n]{15,150})',
+            lesson.direct_instruction or ""
         )
-        if not vocab_patterns:
-            vocab_patterns = re.findall(
-                r"(\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s*[-\u2014:]\s*([^\n]{10,100})",
-                di_text,
-            )
-
-        # Exclude instructional script fragments that aren't vocabulary
-        EXCLUDE_VOCAB = {"check for", "minutes", "ask students", "call on", "facilitate",
-                         "discussion", "transition", "responses", "briefly", "excellent"}
-        vocab_patterns = [(t, d) for t, d in vocab_patterns
-                          if not any(excl in t.lower() for excl in EXCLUDE_VOCAB)]
+        INSTRUCTIONAL_WORDS = {
+            "check", "ask", "call", "facilitate", "transition", "minutes",
+            "discuss", "display", "distribute", "brief", "move", "moved",
+            "western", "eastern", "students", "responses", "excellent",
+        }
+        vocab_patterns = [
+            (term.strip(), defn.strip()) for term, defn in vocab_patterns
+            if len(term.split()) <= 4
+            and not any(w in defn.lower().split()[:3] for w in INSTRUCTIONAL_WORDS)
+            and not any(w in term.lower() for w in INSTRUCTIONAL_WORDS)
+        ]
 
         if vocab_patterns:
             slide = _next_slide()
