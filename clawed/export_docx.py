@@ -126,7 +126,24 @@ def export_lesson_docx(
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.shared import Pt, RGBColor
 
+    from clawed.sanitize import sanitize_text
+
     doc = Document()
+
+    # ── Resolve teacher display name ─────────────────────────────────
+    teacher_display_name = ""
+    if persona and persona.name and persona.name != "My Teaching Persona":
+        teacher_display_name = persona.name
+    else:
+        try:
+            from clawed.models import AppConfig as _AppConfig
+            _cfg = _AppConfig.load()
+            if _cfg.teacher_profile and _cfg.teacher_profile.name:
+                teacher_display_name = _cfg.teacher_profile.name
+        except Exception:
+            pass
+    if not teacher_display_name:
+        teacher_display_name = "Teacher"
 
     # ── Professional header ──────────────────────────────────────────
     header_section = doc.sections[0]
@@ -134,7 +151,7 @@ def export_lesson_docx(
     header_para = header.paragraphs[0]
     header_para.alignment = WD_ALIGN_PARAGRAPH.RIGHT
     header_run = header_para.add_run(
-        f"{persona.name or 'Teacher'}  |  "
+        f"{teacher_display_name}  |  "
         f"{persona.subject_area or 'Education'}  |  "
         f"{date.today().strftime('%B %d, %Y')}"
     )
@@ -151,13 +168,22 @@ def export_lesson_docx(
     footer_run.font.size = Pt(8)
     footer_run.font.color.rgb = RGBColor(0x99, 0x99, 0x99)
 
+    # Sanitize all text content before writing to the document
+    _s_title = sanitize_text(lesson.title)
+    _s_objective = sanitize_text(lesson.objective)
+    _s_do_now = sanitize_text(lesson.do_now) if lesson.do_now else ""
+    _s_direct = sanitize_text(lesson.direct_instruction) if lesson.direct_instruction else ""
+    _s_guided = sanitize_text(lesson.guided_practice) if lesson.guided_practice else ""
+    _s_independent = sanitize_text(lesson.independent_work) if lesson.independent_work else ""
+    _s_homework = sanitize_text(lesson.homework) if lesson.homework else ""
+
     # Resolve subject for image searches
     subject = persona.subject_area or ""
 
     # Title
-    doc.add_heading(lesson.title, level=0)
+    doc.add_heading(_s_title, level=0)
     doc.add_paragraph(
-        f"Teacher: {persona.name or 'Teacher'}  |  "
+        f"Teacher: {teacher_display_name}  |  "
         f"Lesson {lesson.lesson_number}  |  "
         f"{date.today().strftime('%B %d, %Y')}"
     )
@@ -165,8 +191,8 @@ def export_lesson_docx(
     # Try to add a header image relevant to the lesson content
     _docx_add_content_image(
         doc,
-        content_text=lesson.title + " " + lesson.objective,
-        fallback_topic=lesson.title,
+        content_text=_s_title + " " + _s_objective,
+        fallback_topic=_s_title,
         subject=subject,
         width_inches=5.5,
     )
@@ -184,7 +210,7 @@ def export_lesson_docx(
 
     # Objective
     doc.add_heading("Objective (SWBAT)", level=2)
-    doc.add_paragraph(lesson.objective)
+    doc.add_paragraph(_s_objective)
 
     # Materials
     if lesson.materials_needed:
@@ -194,10 +220,10 @@ def export_lesson_docx(
 
     # Lesson Sections — add relevant images to instruction sections
     sections = [
-        ("Do Now / Warm-Up", lesson.do_now, False),
-        ("Direct Instruction", lesson.direct_instruction, True),
-        ("Guided Practice", lesson.guided_practice, False),
-        ("Independent Work", lesson.independent_work, False),
+        ("Do Now / Warm-Up", _s_do_now, False),
+        ("Direct Instruction", _s_direct, True),
+        ("Guided Practice", _s_guided, False),
+        ("Independent Work", _s_independent, False),
     ]
     for heading, content, add_img in sections:
         if content:
@@ -211,7 +237,7 @@ def export_lesson_docx(
                 _docx_add_content_image(
                     doc,
                     content_text=content,
-                    fallback_topic=lesson.title,
+                    fallback_topic=_s_title,
                     subject=subject,
                     width_inches=4.0,
                 )
@@ -220,23 +246,23 @@ def export_lesson_docx(
     if lesson.exit_ticket:
         doc.add_heading("Exit Ticket", level=2)
         for i, q in enumerate(lesson.exit_ticket, 1):
-            doc.add_paragraph(f"{i}. {q.question}")
+            doc.add_paragraph(f"{i}. {sanitize_text(q.question)}")
 
     # Differentiation
     diff = lesson.differentiation
     if diff:
         doc.add_heading("Differentiation", level=2)
         if diff.struggling:
-            doc.add_paragraph(f"Struggling learners: {diff.struggling}")
+            doc.add_paragraph(f"Struggling learners: {sanitize_text(diff.struggling)}")
         if diff.advanced:
-            doc.add_paragraph(f"Advanced learners: {diff.advanced}")
+            doc.add_paragraph(f"Advanced learners: {sanitize_text(diff.advanced)}")
         if diff.ell:
-            doc.add_paragraph(f"ELL support: {diff.ell}")
+            doc.add_paragraph(f"ELL support: {sanitize_text(diff.ell)}")
 
     # Homework
-    if lesson.homework:
+    if _s_homework:
         doc.add_heading("Homework", level=2)
-        doc.add_paragraph(lesson.homework)
+        doc.add_paragraph(_s_homework)
 
     # Footer
     doc.add_paragraph("")
@@ -301,8 +327,23 @@ def export_student_handout(
 
     meta_para = doc.add_paragraph()
     meta_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    # Resolve teacher display name for handout
+    _handout_teacher_name = ""
+    if persona and persona.name and persona.name != "My Teaching Persona":
+        _handout_teacher_name = persona.name
+    else:
+        try:
+            from clawed.models import AppConfig as _AppConfig
+            _cfg = _AppConfig.load()
+            if _cfg.teacher_profile and _cfg.teacher_profile.name:
+                _handout_teacher_name = _cfg.teacher_profile.name
+        except Exception:
+            pass
+    if not _handout_teacher_name:
+        _handout_teacher_name = "Teacher"
+
     meta_run = meta_para.add_run(
-        f"{persona.name or 'Teacher'}  |  {date.today().strftime('%B %d, %Y')}"
+        f"{_handout_teacher_name}  |  {date.today().strftime('%B %d, %Y')}"
     )
     meta_run.font.size = Pt(10)
     meta_run.font.color.rgb = RGBColor(0x66, 0x66, 0x66)

@@ -41,15 +41,19 @@ class LLMClient:
         # Inject workspace context into system prompt
         system = self._enrich_system_prompt(system, prompt=prompt)
 
+        from clawed.sanitize import sanitize_text
+
         if self.config.provider == LLMProvider.ANTHROPIC:
-            return await self._anthropic(prompt, system, temperature, max_tokens)
+            raw = await self._anthropic(prompt, system, temperature, max_tokens)
         elif self.config.provider == LLMProvider.OPENAI:
-            return await self._openai(prompt, system, temperature, max_tokens)
+            raw = await self._openai(prompt, system, temperature, max_tokens)
         elif self.config.provider == LLMProvider.OLLAMA:
-            return await self._ollama(prompt, system, temperature, max_tokens)
+            raw = await self._ollama(prompt, system, temperature, max_tokens)
         elif self.config.provider == LLMProvider.GOOGLE:
-            return await self._google(prompt, system, temperature, max_tokens)
-        raise ValueError(f"Unknown provider: {self.config.provider}")
+            raw = await self._google(prompt, system, temperature, max_tokens)
+        else:
+            raise ValueError(f"Unknown provider: {self.config.provider}")
+        return sanitize_text(raw)
 
     @staticmethod
     def _demo_response(prompt: str) -> str:

@@ -324,7 +324,16 @@ class Gateway:
                     parts.append(style.replace("_", " "))
             identity_summary = ", ".join(parts)
 
-        # 2. Build system prompt
+        # 2. Load reading report if available
+        reading_report_context = ""
+        try:
+            report_path = Path.home() / ".eduagent" / "workspace" / "reading_report.md"
+            if report_path.exists():
+                reading_report_context = report_path.read_text(encoding="utf-8")[:1500]
+        except Exception:
+            pass
+
+        # 2b. Build system prompt
         agent_name = self.config.agent_name
         is_new_user = teacher_name == "Teacher" and not persona_dict
         system = build_system_prompt(
@@ -339,9 +348,10 @@ class Gateway:
             curriculum_kb_context=memory_ctx.get("curriculum_kb_context", ""),
             tool_names=self._registry.tool_names(),
             is_new_user=is_new_user,
+            reading_report=reading_report_context,
         )
 
-        # 2b. Enhance prompt for multi-step planning requests
+        # 2c. Enhance prompt for multi-step planning requests
         from clawed.agent_core.planner import build_planning_prompt, is_planning_request
 
         if is_planning_request(message):

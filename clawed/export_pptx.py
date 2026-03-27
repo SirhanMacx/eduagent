@@ -194,6 +194,21 @@ def export_lesson_pptx(
     from pptx.enum.text import PP_ALIGN
     from pptx.util import Emu, Inches, Pt
 
+    # Resolve teacher display name
+    teacher_display_name = ""
+    if persona and persona.name and persona.name != "My Teaching Persona":
+        teacher_display_name = persona.name
+    else:
+        try:
+            from clawed.models import AppConfig as _AppConfig
+            _cfg = _AppConfig.load()
+            if _cfg.teacher_profile and _cfg.teacher_profile.name:
+                teacher_display_name = _cfg.teacher_profile.name
+        except Exception:
+            pass
+    if not teacher_display_name:
+        teacher_display_name = "Teacher"
+
     subject = _detect_subject(persona)
     theme = get_color_theme(subject)
 
@@ -390,7 +405,7 @@ def export_lesson_pptx(
     run2 = p2.add_run()
     run2.text = (
         f"Lesson {lesson.lesson_number}  |  "
-        f"{persona.name or 'Teacher'}  |  "
+        f"{teacher_display_name}  |  "
         f"{date.today().strftime('%B %d, %Y')}"
     )
     _set_text_props(run2, 20, "DDDDDD")
@@ -810,7 +825,7 @@ def export_lesson_pptx(
     p = tb.text_frame.paragraphs[0]
     p.alignment = PP_ALIGN.CENTER
     run = p.add_run()
-    run.text = f"{persona.name or 'Teacher'}  |  {teacher_subject}"
+    run.text = f"{teacher_display_name}  |  {teacher_subject}"
     _set_text_props(run, 14, "888888")
 
     # Watermark

@@ -78,6 +78,23 @@ class ConfigureProfileTool:
             )
             config.save()
 
+            # Auto-index state standards when state is provided
+            side_effects = [f"Saved profile for {teacher_name}"]
+            if state:
+                try:
+                    from clawed.state_standards import get_standards_context_for_prompt
+                    standards_context = get_standards_context_for_prompt(
+                        state,
+                        [subject] if subject else [],
+                        grades,
+                    )
+                    if standards_context:
+                        side_effects.append(
+                            f"Loaded {state} state standards for {subject}"
+                        )
+                except Exception:
+                    pass
+
             persona = TeacherPersona(name=teacher_name, subject_area=subject)
             session = TeacherSession.load(context.teacher_id or "local-teacher")
             session.persona = persona
@@ -98,7 +115,7 @@ class ConfigureProfileTool:
                     "grade_levels": grades,
                     "state": state,
                 },
-                side_effects=["Updated teacher profile and persona"],
+                side_effects=side_effects,
             )
         except Exception as e:
             return ToolResult(text=f"Failed to configure profile: {e}")
