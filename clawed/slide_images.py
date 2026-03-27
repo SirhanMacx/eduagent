@@ -125,19 +125,42 @@ def extract_image_subjects(lesson) -> list[dict]:
         getattr(lesson, 'guided_practice', ''),
     ]))
 
-    # Named historical figures (with titles or multi-word names)
+    # Named historical figures
+    # Pattern 1: Titled names (King Louis, President Lincoln, etc.)
+    # Pattern 2: Known first names of historical figures
+    # Pattern 3: Any "Firstname Lastname" that appears near historical context
+    common_non_names = {
+        "The", "This", "That", "These", "Those", "When", "Where", "What",
+        "How", "Why", "Each", "Every", "Your", "Their", "Some", "Many",
+        "Most", "Both", "Other", "Such", "More", "Less", "New", "Old",
+        "First", "Last", "Next", "Direct", "Independent", "Guided",
+        "Exit", "Essential", "Key", "Primary", "Source", "Document",
+        "Group", "Social", "Studies", "Grade", "Unit", "Lesson",
+        "Common", "American", "English", "French", "British", "European",
+        "Civil", "World", "Cold", "Middle", "South", "North", "West", "East",
+        "Analyze", "Compare", "Evaluate", "Describe", "Explain", "Identify",
+        "Test", "Review", "Movement", "Act", "Age", "Era", "Period",
+    }
     people_patterns = [
         r"((?:King |Queen |Emperor |Empress |President |Pope |Tsar |Czar )"
         r"[A-Z][a-z]+(?: [A-Z][a-z]+)*(?: the Great| [IVX]+)?)",
-        r"((?:Louis|Peter|Frederick|Catherine|Elizabeth|Napoleon|Alexander) (?:the Great|[IVX]+|[A-Z][a-z]+))",
+        r"((?:Louis|Peter|Frederick|Catherine|Elizabeth|Napoleon|Alexander)"
+        r" (?:the Great|[IVX]+|[A-Z][a-z]+))",
+        # General: Firstname Lastname (two+ capitalized words, not common English)
+        r"\b([A-Z][a-z]{2,12} [A-Z][a-z]{2,15})\b",
+        # Three-word names (Martin Luther King, John Quincy Adams)
+        r"\b([A-Z][a-z]{2,12} [A-Z][a-z]{2,12} [A-Z][a-z]{2,12})\b",
     ]
     people_found: set[str] = set()
     for pattern in people_patterns:
         for match in re.findall(pattern, all_text):
-            if match.strip() and len(match) > 5:
-                people_found.add(match.strip())
-    for person in list(people_found)[:4]:
-        subjects.append({"query": f"{person} portrait painting", "type": "person", "label": person})
+            name = match.strip()
+            if len(name) > 5:
+                first_word = name.split()[0]
+                if first_word not in common_non_names:
+                    people_found.add(name)
+    for person in list(people_found)[:5]:
+        subjects.append({"query": f"{person} portrait", "type": "person", "label": person})
 
     # Named places/buildings
     place_patterns = re.findall(
