@@ -4,8 +4,6 @@ from __future__ import annotations
 import tempfile
 from pathlib import Path
 
-import pytest
-
 from clawed.agent_core.memory.curriculum_kb import CurriculumKB
 
 

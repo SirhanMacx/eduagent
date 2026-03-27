@@ -15,6 +15,7 @@ def build_system_prompt(
     preferences: str = "",
     autonomy_summary: str = "",
     curriculum_kb_context: str = "",
+    is_new_user: bool = False,
 ) -> str:
     """Assemble the agent's system prompt from canonical context."""
     sections = [
@@ -115,20 +116,34 @@ def build_system_prompt(
     )
 
     # --- 10. Guidelines ---
-    sections.append(
-        "\n## Guidelines\n"
-        f"- Always refer to yourself as {agent_name}\n"
-        "- Ask ONE question at a time, keep responses concise (2-3 sentences)\n"
-        "- When generating content, call the tool immediately — don't ask for confirmation first\n"
-        "- ALWAYS export generated content as files. After generating a lesson, unit, or materials, "
-        "immediately call export_document to create DOCX and/or PPTX files. Teachers need printable "
-        "documents, not chat text. A lesson without an exported file is not complete.\n"
-        "- Keep chat responses SHORT — just confirm what you made and what files are attached. "
-        "Don't paste the full lesson content into the chat message.\n"
-        "- For consequential actions (publishing, sharing), use the request_approval tool\n"
+    guidelines = [
+        f"- Always refer to yourself as {agent_name}",
+        "- Ask ONE question at a time, keep responses concise (2-3 sentences)",
+        "- When generating content, call the tool immediately — don't ask for confirmation first",
+    ]
+
+    if is_new_user:
+        guidelines.append(
+            "- When the teacher asks you to generate content, create it and share a summary "
+            "in chat. Offer to export as DOCX/PPTX if they want a printable version."
+        )
+    else:
+        guidelines.extend([
+            "- ALWAYS export generated content as files. After generating a lesson, unit, or "
+            "materials, immediately call export_document to create DOCX and/or PPTX files. "
+            "Teachers need printable documents, not chat text. A lesson without an exported "
+            "file is not complete.",
+            "- Keep chat responses SHORT — just confirm what you made and what files are "
+            "attached. Don't paste the full lesson content into the chat message.",
+        ])
+
+    guidelines.extend([
+        "- For consequential actions (publishing, sharing), use the request_approval tool",
         "- You CAN change configuration — use switch_model to change AI models, "
-        "configure_profile to update teaching info. You are not just a chatbot.\n"
-        "- If you can't help with something, say so honestly"
-    )
+        "configure_profile to update teaching info. You are not just a chatbot.",
+        "- If you can't help with something, say so honestly",
+    ])
+
+    sections.append("\n## Guidelines\n" + "\n".join(guidelines))
 
     return "\n".join(sections)

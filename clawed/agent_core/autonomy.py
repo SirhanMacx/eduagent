@@ -82,7 +82,8 @@ class ApprovalTracker:
                     payload = json.dumps(data.get("action_payload", {}))
                     created_at = data.get("created_at", datetime.now().isoformat())
                     conn.execute(
-                        "INSERT INTO approvals (action_type, status, action_payload, teacher_id, created_at, resolved_at) "
+                        "INSERT INTO approvals "
+                        "(action_type, status, action_payload, teacher_id, created_at, resolved_at) "
                         "VALUES (?, ?, ?, ?, ?, ?)",
                         (action_type, status, payload, teacher_id, created_at, datetime.now().isoformat()),
                     )

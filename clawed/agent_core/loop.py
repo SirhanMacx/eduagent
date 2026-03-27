@@ -101,19 +101,8 @@ async def run_agent_loop(
                 })
             continue
 
-    # ── Export guarantee tracking ────────────────────────────────────
-    # Check if generation tools were called but export wasn't
-    _GENERATION_TOOLS = {"generate_lesson", "generate_unit", "generate_materials", "generate_assessment"}
-    generation_called = False
-    export_called = False
-    for msg in messages:
-        if isinstance(msg, dict) and msg.get("tool_calls"):
-            for tc in msg["tool_calls"]:
-                name = tc.get("name", "")
-                if name in _GENERATION_TOOLS:
-                    generation_called = True
-                if name == "export_document":
-                    export_called = True
+    # TODO: export guarantee — detect when generation tools were called
+    # without a follow-up export_document call, and nudge the agent to export.
 
     # Safety limit reached
     return GatewayResponse(

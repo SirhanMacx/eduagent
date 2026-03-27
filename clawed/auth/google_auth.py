@@ -151,7 +151,7 @@ def run_google_oauth_flow(client_id: str | None = None) -> str:
     thread.start()
 
     # Open browser
-    print(f"\nOpening your browser to sign in with Google...")
+    print("\nOpening your browser to sign in with Google...")
     print(f"If the browser doesn't open, visit:\n{auth_url}\n")
     webbrowser.open(auth_url)
 

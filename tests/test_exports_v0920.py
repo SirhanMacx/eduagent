@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 import pytest
-from clawed.export_templates import PROFESSIONAL_DOCX, PROFESSIONAL_PPTX, DocxTheme, PptxTheme
+
+from clawed.export_templates import PROFESSIONAL_DOCX, PROFESSIONAL_PPTX
 
 
 class TestExportTemplates:

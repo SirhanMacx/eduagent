@@ -45,6 +45,11 @@ class _LLMClientAdapter:
         tools: list[dict[str, Any]] | None = None,
         system: str = "",
     ) -> dict[str, Any]:
+        # WARNING: This monkey-patches a module-level variable, which is NOT
+        # safe under concurrent requests. For v1.0 (hosted/multi-teacher),
+        # refactor the legacy agent functions to accept tool definitions as
+        # a parameter instead of reading from the module global.
+        #
         # The legacy agent functions operate on the global TOOL_DEFINITIONS.
         # We temporarily monkey-patch them so the registry schemas are used
         # instead. Since these functions read TOOL_DEFINITIONS at call time,
@@ -321,6 +326,7 @@ class Gateway:
 
         # 2. Build system prompt
         agent_name = self.config.agent_name
+        is_new_user = teacher_name == "Teacher" and not persona_dict
         system = build_system_prompt(
             agent_name=agent_name,
             teacher_name=teacher_name,
@@ -332,6 +338,7 @@ class Gateway:
             autonomy_summary=memory_ctx.get("autonomy_summary", ""),
             curriculum_kb_context=memory_ctx.get("curriculum_kb_context", ""),
             tool_names=self._registry.tool_names(),
+            is_new_user=is_new_user,
         )
 
         # 2b. Enhance prompt for multi-step planning requests
