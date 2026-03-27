@@ -192,6 +192,25 @@ def export_handout_docx(
             r.font.size = Pt(11)
             _add_lines(3)
 
+    # Image descriptions (visual cues for the teacher)
+    img_descs = handout_data.get("image_descriptions", [])
+    if img_descs:
+        _section_heading("Visual Materials")
+        for desc in img_descs:
+            description = sanitize_text(desc.get("description", ""))
+            context = sanitize_text(desc.get("context", ""))
+            p = doc.add_paragraph()
+            r = p.add_run(f"[Visual: {description}")
+            r.italic = True
+            r.font.size = Pt(10)
+            r.font.color.rgb = RGBColor(0x66, 0x66, 0x66)
+            if context:
+                r2 = p.add_run(f" — {context}")
+                r2.italic = True
+                r2.font.size = Pt(9)
+                r2.font.color.rgb = RGBColor(0x88, 0x88, 0x88)
+            p.add_run("]")
+
     # Footer
     doc.add_paragraph("")
     footer = doc.add_paragraph()

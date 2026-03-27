@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.7] - 2026-03-27
+
+Superhuman materials — output that competes with commercial curriculum.
+
+### Changed
+- Images re-enabled in slideshow by default (smarter academic sourcing)
+- Section divider slides ("Let's Practice Together", "Show What You Know")
+- Differentiation in DOCX uses colored callout boxes (yellow/blue/green)
+- Lesson-at-a-glance timing table at top of lesson plan
+- File names include lesson topic (not generic lesson_01)
+- Vocabulary slide filters out instructional directions
+- Title slide gradient effect when no image available
+- Agent narrates before long-running tools ("Building your package now...")
+- Handout includes visual material descriptions where images are referenced
+
+### Fixed
+- Vocabulary slide script leakage (CHECK FOR UNDERSTANDING appearing as vocab term)
+- Handout silently dropping image references
+- include_images=False hardcoded in bundle tool
+
 ## [1.0.0] - 2026-03-26
 
 Claw-ED is a personal AI teaching agent, not a product.

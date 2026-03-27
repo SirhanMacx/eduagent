@@ -267,7 +267,11 @@ class LLMClient:
             '"source_excerpts": [{"text": "...", "attribution": "..."}], '
             '"organizer": {"title": "...", "columns": ["..."], "instructions": "...", "num_rows": 4}, '
             '"activity_instructions": "...", '
-            '"exit_ticket_questions": ["...", "..."]}'
+            '"exit_ticket_questions": ["...", "..."]}\n\n'
+            "If the lesson references visual materials (paintings, maps, diagrams, "
+            "charts, images), include an 'image_descriptions' key:\n"
+            '"image_descriptions": [{"description": "...", "context": "where this appears in the lesson"}]\n'
+            "These help the teacher know what to display on the projector."
         )
 
         return await self.generate(prompt, system=system, temperature=0.4, max_tokens=4096)

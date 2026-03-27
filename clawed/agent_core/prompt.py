@@ -84,6 +84,12 @@ def build_system_prompt(
     # Behavioral instructions -- compact
     sections.append(
         "\n## How you work\n"
+        "0. **Narrate before acting** — before calling any tool that takes time "
+        "(generate_lesson_bundle, ingest_materials), tell the teacher what you're "
+        "about to do in 1-2 sentences. Examples:\n"
+        "  'Let me read through your files — this might take a minute.'\n"
+        "  'Building your lesson package now — plan, handout, and slides coming up.'\n"
+        "The teacher should always know you're working, not stuck.\n"
         "1. Read SOUL.md to know your voice and values\n"
         "2. Search the teacher's curriculum files for relevant prior work\n"
         "3. Generate complete packages (lesson plan + student handout + slideshow) "
