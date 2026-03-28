@@ -479,13 +479,18 @@ class TestPPTXThemeIntegration:
 
 
 class TestAcademicImageSources:
-    """Tests for the multi-source image routing in slide_images.py."""
+    """Tests for the multi-source image routing in slide_images.py.
+
+    As of v2.1.0, teacher_files is always first (asset registry takes priority),
+    followed by subject-appropriate external sources.
+    """
 
     def test_history_prefers_loc(self):
         from clawed.slide_images import _select_sources
 
         sources = _select_sources("History")
-        assert sources[0] == "loc"
+        assert sources[0] == "teacher_files"
+        assert "loc" in sources
         assert "wikimedia" in sources
         assert "unsplash" in sources
 
@@ -493,37 +498,43 @@ class TestAcademicImageSources:
         from clawed.slide_images import _select_sources
 
         sources = _select_sources("Social Studies")
-        assert sources[0] == "loc"
+        assert sources[0] == "teacher_files"
+        assert "loc" in sources
 
     def test_civics_prefers_loc(self):
         from clawed.slide_images import _select_sources
 
         sources = _select_sources("Civics")
-        assert sources[0] == "loc"
+        assert sources[0] == "teacher_files"
+        assert "loc" in sources
 
     def test_science_prefers_wikimedia(self):
         from clawed.slide_images import _select_sources
 
         sources = _select_sources("Science")
-        assert sources[0] == "wikimedia"
+        assert sources[0] == "teacher_files"
+        assert "wikimedia" in sources
 
     def test_biology_prefers_wikimedia(self):
         from clawed.slide_images import _select_sources
 
         sources = _select_sources("Biology")
-        assert sources[0] == "wikimedia"
+        assert sources[0] == "teacher_files"
+        assert "wikimedia" in sources
 
     def test_art_prefers_wikimedia(self):
         from clawed.slide_images import _select_sources
 
         sources = _select_sources("Art")
-        assert sources[0] == "wikimedia"
+        assert sources[0] == "teacher_files"
+        assert "wikimedia" in sources
 
     def test_math_prefers_loc(self):
         from clawed.slide_images import _select_sources
 
         sources = _select_sources("Math")
-        assert sources[0] == "loc"
+        assert sources[0] == "teacher_files"
+        assert "loc" in sources
         assert "wikimedia" in sources
         assert "unsplash" in sources
 
@@ -531,7 +542,7 @@ class TestAcademicImageSources:
         from clawed.slide_images import _select_sources
 
         sources = _select_sources("Underwater Basket Weaving")
-        assert sources[0] == "loc"
+        assert sources[0] == "teacher_files"
         assert "unsplash" in sources
 
 
