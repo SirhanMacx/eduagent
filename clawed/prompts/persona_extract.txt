@@ -83,6 +83,15 @@ Carefully read ALL provided documents and identify:
    - "Every transition includes a 'connection question' that links the previous section to the next"
    - "Ends every class with 'one word — what's the one word you're taking away from today?'"
 
+19. **Handout Style** — Describe how this teacher's student-facing handouts/worksheets are structured. What format do students receive? Look for patterns like:
+   - Dense text packets with primary source excerpts and marginal annotations
+   - Fill-in-the-blank guided notes that track the lecture
+   - Graphic organizer-heavy layouts with minimal text
+   - Station-based packets with documents and analysis questions
+   - Simple question-and-answer worksheets
+   - Creative/visual layouts with image hooks
+   If the materials don't reveal a clear handout style, leave this as an empty string.
+
 ## Output Format
 
 Respond with ONLY a JSON object (no markdown fencing, no explanation):
@@ -126,7 +135,8 @@ Respond with ONLY a JSON object (no markdown fencing, no explanation):
         "Reads primary sources aloud with dramatic emphasis before analysis",
         "Uses 'connection questions' between every section to link ideas",
         "Ends class with 'one word takeaway' — every student says one word as they walk out"
-    ]
+    ],
+    "handout_style": "Station-based packets with 2-4 primary source documents, context paragraphs, and scaffolded analysis questions building from identify to evaluate"
 }
 
 ## Documents to Analyze

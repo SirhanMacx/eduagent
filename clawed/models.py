@@ -201,6 +201,11 @@ class TeacherPersona(BaseModel):
     'Always ends DI with "here is where it gets interesting"',
     'Uses physical movement — students walk to corners for opinion spectrums'."""
 
+    handout_style: str = ""
+    """Description of the teacher's handout/worksheet style, e.g.
+    'Dense text packets with primary source excerpts and marginal annotations'
+    or 'Graphic organizer-heavy with minimal text, always includes an image hook'."""
+
     def to_prompt_context(self) -> str:
         """Serialize persona into a string for LLM prompt injection."""
         lines = [
@@ -249,6 +254,10 @@ class TeacherPersona(BaseModel):
             lines.append("\n=== Signature Teaching Moves (MUST include) ===")
             for move in self.signature_moves:
                 lines.append(f"- {move}")
+
+        if self.handout_style:
+            lines.append(f"\n=== Handout Style ===\n{self.handout_style}")
+            lines.append("Student packets must match this format.")
 
         if self.voice_examples:
             lines.append("")

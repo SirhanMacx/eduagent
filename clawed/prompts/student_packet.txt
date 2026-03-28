@@ -8,6 +8,9 @@ The packet should be 4-6 pages when printed. Every section has generous response
 ## Teacher Persona
 {persona}
 
+## Handout Style
+{handout_style_block}
+
 ## Instructions
 
 Create a student packet with these sections IN ORDER:

@@ -293,10 +293,36 @@ class LLMClient:
 
         prompt_path = Path(__file__).parent / "prompts" / "student_packet.txt"
         prompt_template = prompt_path.read_text(encoding="utf-8")
+
+        # Build handout style block from persona context
+        import re as _re
+        handout_style = ""
+        if persona_context:
+            hs_match = _re.search(
+                r"=== Handout Style ===\n(.+?)(?:\n===|\Z)",
+                persona_context, _re.DOTALL,
+            )
+            if hs_match:
+                handout_style = hs_match.group(1).strip()
+
+        if handout_style:
+            handout_style_block = (
+                f"This teacher's handout style: {handout_style}. "
+                "Match this format. If the teacher uses guided notes, include them. "
+                "If they use graphic organizers, lead with those. If they prefer "
+                "dense source packets, make the sources the centerpiece. "
+                "Don't impose a format the teacher wouldn't recognize as their own."
+            )
+        else:
+            handout_style_block = (
+                "No specific handout style detected — use the default format below."
+            )
+
         prompt = (
             prompt_template
             .replace("{lesson_json}", lesson_json[:6000])
             .replace("{persona}", persona_context)
+            .replace("{handout_style_block}", handout_style_block)
         )
 
         system = (
