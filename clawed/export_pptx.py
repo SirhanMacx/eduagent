@@ -455,7 +455,7 @@ def export_lesson_pptx(
 
     # Lesson title -- 44pt white bold, centered
     tb = slide.shapes.add_textbox(
-        Inches(1.5), Inches(2.0), slide_w - Inches(3.0), Inches(2.5),
+        Inches(1.5), Inches(1.5), slide_w - Inches(3.0), Inches(2.5),
     )
     tf = tb.text_frame
     tf.word_wrap = True
@@ -465,9 +465,30 @@ def export_lesson_pptx(
     run.text = lesson.title
     _set_text_props(run, 44, theme["text_light"], bold=True)
 
-    # Subtitle: "Lesson N | Teacher Name | Date" -- 20pt white
+    # Aim -- the driving question, centered below title
+    aim_text = lesson.objective
+    if aim_text and not aim_text.lower().startswith("students will"):
+        aim_display = f"Aim: {aim_text}"
+    elif aim_text:
+        aim_display = aim_text
+    else:
+        aim_display = ""
+    if aim_display:
+        tb_aim = slide.shapes.add_textbox(
+            Inches(1.5), Inches(4.0), slide_w - Inches(3.0), Inches(1.0),
+        )
+        tf_aim = tb_aim.text_frame
+        tf_aim.word_wrap = True
+        p_aim = tf_aim.paragraphs[0]
+        p_aim.alignment = PP_ALIGN.CENTER
+        run_aim = p_aim.add_run()
+        run_aim.text = aim_display
+        _set_text_props(run_aim, 20, "EEEEEE")
+        run_aim.font.italic = True
+
+    # Subtitle: "Teacher Name | Date" -- 16pt
     tb2 = slide.shapes.add_textbox(
-        Inches(1.5), Inches(4.8), slide_w - Inches(3.0), Inches(1.0),
+        Inches(1.5), Inches(5.2), slide_w - Inches(3.0), Inches(0.8),
     )
     tf2 = tb2.text_frame
     tf2.word_wrap = True
@@ -475,11 +496,10 @@ def export_lesson_pptx(
     p2.alignment = PP_ALIGN.CENTER
     run2 = p2.add_run()
     run2.text = (
-        f"Lesson {lesson.lesson_number}  |  "
         f"{teacher_display_name}  |  "
         f"{date.today().strftime('%B %d, %Y')}"
     )
-    _set_text_props(run2, 20, "DDDDDD")
+    _set_text_props(run2, 16, "BBBBBB")
 
     # Bottom accent bar in subject color
     _bar(slide, Emu(0), slide_h - Inches(0.15), slide_w, Inches(0.15), theme["secondary"])
@@ -663,41 +683,45 @@ def export_lesson_pptx(
 
         _add_footer(slide, slide_num[0])
 
-        # ── Vocabulary slide (if terms detected) ───────────────────
-        # Try multiple patterns for vocabulary extraction
-        di_text_raw = lesson.direct_instruction or ""
-        vocab_patterns: list[tuple[str, str]] = []
+        # ── Vocabulary slide ───────────────────────────────────────
+        # Prefer structured vocabulary from v2.3 model fields
+        vocab_pairs: list[tuple[str, str]] = []
+        if hasattr(lesson, "vocabulary") and lesson.vocabulary:
+            for vt in lesson.vocabulary:
+                term = getattr(vt, "term", "") if hasattr(vt, "term") else vt.get("term", "")
+                defn = getattr(vt, "definition", "") if hasattr(vt, "definition") else vt.get("definition", "")
+                if term and defn:
+                    vocab_pairs.append((term, defn))
 
-        # Pattern 1: **Bold Term** — definition
-        vocab_patterns = re.findall(
-            r'\*\*([A-Z][^*]{2,30})\*\*\s*[-—:]+\s*([^*\n]{15,200})',
-            di_text_raw,
-        )
-        # Pattern 2: KEY TERM: definition or Term: definition (capitalized)
-        if not vocab_patterns:
+        # Fallback: regex extraction from DI text
+        if not vocab_pairs:
+            di_text_raw = lesson.direct_instruction or ""
             vocab_patterns = re.findall(
-                r'(?:^|\n)\s*\*?\*?([A-Z][a-z]+(?:\s+[A-Za-z]+){0,3})\*?\*?\s*[-—:]+\s+'
-                r'([A-Za-z][^\n]{15,200})',
+                r'\*\*([A-Z][^*]{2,30})\*\*\s*[-—:]+\s*([^*\n]{15,200})',
                 di_text_raw,
             )
+            if not vocab_patterns:
+                vocab_patterns = re.findall(
+                    r'(?:^|\n)\s*\*?\*?([A-Z][a-z]+(?:\s+[A-Za-z]+){0,3})\*?\*?\s*[-—:]+\s+'
+                    r'([A-Za-z][^\n]{15,200})',
+                    di_text_raw,
+                )
+            INSTRUCTIONAL_WORDS = {
+                "check", "ask", "call", "facilitate", "transition", "minutes",
+                "discuss", "display", "distribute", "brief", "move", "moved",
+                "students", "responses", "excellent", "turn", "now", "let",
+                "today", "good", "morning", "scholars", "friends", "class",
+                "next", "first", "take", "look", "read", "write", "complete",
+            }
+            vocab_pairs = [
+                (term.strip(), defn.strip()) for term, defn in vocab_patterns
+                if 1 <= len(term.split()) <= 4
+                and len(defn.split()) >= 3
+                and not any(w in defn.lower().split()[:3] for w in INSTRUCTIONAL_WORDS)
+                and not any(w in term.lower().split() for w in INSTRUCTIONAL_WORDS)
+            ]
 
-        # Filter out instructional directions and non-vocabulary content
-        INSTRUCTIONAL_WORDS = {
-            "check", "ask", "call", "facilitate", "transition", "minutes",
-            "discuss", "display", "distribute", "brief", "move", "moved",
-            "students", "responses", "excellent", "turn", "now", "let",
-            "today", "good", "morning", "scholars", "friends", "class",
-            "next", "first", "take", "look", "read", "write", "complete",
-        }
-        vocab_patterns = [
-            (term.strip(), defn.strip()) for term, defn in vocab_patterns
-            if 1 <= len(term.split()) <= 4
-            and len(defn.split()) >= 3
-            and not any(w in defn.lower().split()[:3] for w in INSTRUCTIONAL_WORDS)
-            and not any(w in term.lower().split() for w in INSTRUCTIONAL_WORDS)
-        ]
-
-        if vocab_patterns:
+        if vocab_pairs:
             slide = _next_slide()
             _white_bg(slide)
 
@@ -724,7 +748,7 @@ def export_lesson_pptx(
             tf = tb.text_frame
             tf.word_wrap = True
 
-            for idx, (term, definition) in enumerate(vocab_patterns[:8]):
+            for idx, (term, definition) in enumerate(vocab_pairs[:8]):
                 p = tf.paragraphs[0] if idx == 0 else tf.add_paragraph()
                 p.space_before = Pt(10)
                 p.line_spacing = Pt(36)
@@ -808,7 +832,11 @@ def export_lesson_pptx(
     # SECTION DIVIDER: "Let's Practice Together"
     # ═══════════════════════════════════════════════════════════════════
     if lesson.guided_practice:
-        _section_divider(prs, slide_num, "Let's Practice Together", theme, slide_w, slide_h)
+        gp_min = lesson.time_estimates.get("guided_practice", 15)
+        _section_divider(
+            prs, slide_num, f"Let's Practice Together\n({gp_min} minutes)",
+            theme, slide_w, slide_h,
+        )
 
     # ═══════════════════════════════════════════════════════════════════
     # GUIDED PRACTICE -- "Your Turn" header
@@ -832,7 +860,16 @@ def export_lesson_pptx(
 
         # No image on Guided Practice -- keep clean for readability
 
-        # Activity instructions -- 24pt
+        # Brief student-facing instructions on slide face (first 2-3 sentences)
+        gp_text = lesson.guided_practice
+        gp_summary = gp_text
+        if len(gp_text) > 250:
+            cutoff = gp_text[:250].rfind(". ")
+            if cutoff > 80:
+                gp_summary = gp_text[:cutoff + 1]
+            else:
+                gp_summary = gp_text[:250].rsplit(" ", 1)[0] + "..."
+
         tb = slide.shapes.add_textbox(
             Inches(0.8), Inches(1.8), slide_w - Inches(2.0), Inches(4.5),
         )
@@ -841,8 +878,13 @@ def export_lesson_pptx(
         p = tf.paragraphs[0]
         p.line_spacing = Pt(34)
         run = p.add_run()
-        run.text = lesson.guided_practice
+        run.text = gp_summary
         _set_text_props(run, 24, theme["text_dark"])
+
+        # Full guided practice in speaker notes
+        notes_slide = slide.notes_slide
+        notes_tf = notes_slide.notes_text_frame
+        notes_tf.text = gp_text
 
         # Time estimate
         minutes = lesson.time_estimates.get("guided_practice", 15)
@@ -883,7 +925,16 @@ def export_lesson_pptx(
 
         # No image on Independent Work -- keep clean for readability
 
-        # Task description -- 24pt
+        # Brief student-facing instructions on slide face
+        iw_text = lesson.independent_work
+        iw_summary = iw_text
+        if len(iw_text) > 250:
+            cutoff = iw_text[:250].rfind(". ")
+            if cutoff > 80:
+                iw_summary = iw_text[:cutoff + 1]
+            else:
+                iw_summary = iw_text[:250].rsplit(" ", 1)[0] + "..."
+
         tb = slide.shapes.add_textbox(
             Inches(1.0), Inches(1.8), slide_w - Inches(2.0), Inches(4.5),
         )
@@ -892,8 +943,13 @@ def export_lesson_pptx(
         p = tf.paragraphs[0]
         p.line_spacing = Pt(34)
         run = p.add_run()
-        run.text = lesson.independent_work
+        run.text = iw_summary
         _set_text_props(run, 24, theme["text_dark"])
+
+        # Full independent work in speaker notes
+        notes_slide = slide.notes_slide
+        notes_tf = notes_slide.notes_text_frame
+        notes_tf.text = iw_text
 
         # Time estimate in corner
         minutes = lesson.time_estimates.get("independent_work", 10)
@@ -919,7 +975,7 @@ def export_lesson_pptx(
     # SECTION DIVIDER: "Show What You Know"
     # ═══════════════════════════════════════════════════════════════════
     if lesson.exit_ticket:
-        _section_divider(prs, slide_num, "Show What You Know", theme, slide_w, slide_h)
+        _section_divider(prs, slide_num, "Show What You Know\n(Exit Ticket)", theme, slide_w, slide_h)
 
     # ═══════════════════════════════════════════════════════════════════
     # EXIT TICKET -- distinctive assessment design

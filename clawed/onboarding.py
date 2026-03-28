@@ -73,22 +73,35 @@ def _ask_provider() -> tuple[LLMProvider, str | None]:
     table.add_column("Provider")
     table.add_column("Cost")
     table.add_column("Notes")
-    table.add_row("1", "Anthropic (Claude)", "Pay per token", "Best quality")
-    table.add_row("2", "OpenAI (GPT-4o)", "Pay per token", "Widely used")
-    table.add_row("3", "Ollama", "Free", "Runs locally \u2014 no API key needed")
+    table.add_row("1", "Google Gemini", "Free tier available", "Best for getting started \u2014 generous free quota")
+    table.add_row("2", "Anthropic (Claude)", "Pay per token", "Highest quality")
+    table.add_row("3", "OpenAI (GPT-4o)", "Pay per token", "Widely used")
+    table.add_row("4", "Ollama (local)", "Free", "Runs on your machine \u2014 no internet needed")
     console.print()
     console.print(table)
 
     while True:
-        choice = Prompt.ask("\n[bold]Pick a provider[/bold]", choices=["1", "2", "3"], default="1")
+        choice = Prompt.ask(
+            "\n[bold]Pick a provider[/bold]", choices=["1", "2", "3", "4"], default="1",
+        )
         if choice == "1":
+            provider = LLMProvider.GOOGLE
+            console.print(
+                "\n  [dim]Get a free API key at: https://aistudio.google.com/apikey[/dim]",
+            )
+            key = Prompt.ask("  [bold]Google AI API key[/bold]  [dim](AIza...)[/dim]")
+            if not key.strip():
+                console.print("  [red]API key cannot be empty.[/red]")
+                continue
+            return provider, key.strip()
+        elif choice == "2":
             provider = LLMProvider.ANTHROPIC
             key = Prompt.ask("  [bold]Anthropic API key[/bold]  [dim](sk-ant-...)[/dim]")
             if not key.strip():
                 console.print("  [red]API key cannot be empty.[/red]")
                 continue
             return provider, key.strip()
-        elif choice == "2":
+        elif choice == "3":
             provider = LLMProvider.OPENAI
             key = Prompt.ask("  [bold]OpenAI API key[/bold]  [dim](sk-...)[/dim]")
             if not key.strip():
@@ -126,6 +139,10 @@ def _detect_available_models() -> tuple[LLMProvider | None, str]:
     and Ollama running locally.
     Returns (provider, description) or (None, message).
     """
+    # Check Google Gemini (free tier)
+    if os.environ.get("GOOGLE_API_KEY"):
+        return LLMProvider.GOOGLE, "Google Gemini API key found in environment"
+
     # Check Anthropic
     if os.environ.get("ANTHROPIC_API_KEY"):
         return LLMProvider.ANTHROPIC, "Anthropic API key found in environment"
