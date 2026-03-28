@@ -555,7 +555,7 @@ def export_lesson_pptx(
         run.text = "Standards Addressed"
         _set_text_props(run, 16, "888888", bold=True)
 
-        for std in lesson.standards[:5]:
+        for std in lesson.standards[:3]:
             p = tf.add_paragraph()
             p.space_before = Pt(6)
             run = p.add_run()
@@ -597,8 +597,21 @@ def export_lesson_pptx(
         p = tf.paragraphs[0]
         p.line_spacing = Pt(38)
         run = p.add_run()
-        run.text = lesson.do_now
+        # Brief prompt on slide face, full text in speaker notes
+        dn_text = lesson.do_now
+        if len(dn_text) > 250:
+            cutoff = dn_text[:250].rfind(". ")
+            dn_display = dn_text[:cutoff + 1] if cutoff > 80 else dn_text[:250].rsplit(" ", 1)[0] + "..."
+        else:
+            dn_display = dn_text
+        run.text = dn_display
         _set_text_props(run, 28, theme["text_dark"])
+
+        # Full Do Now in speaker notes
+        if len(dn_text) > 250:
+            notes_slide = slide.notes_slide
+            notes_tf = notes_slide.notes_text_frame
+            notes_tf.text = dn_text
 
         if do_now_img:
             from clawed.slide_images import _extract_key_concepts
@@ -1028,7 +1041,11 @@ def export_lesson_pptx(
             tf = tb.text_frame
             tf.word_wrap = True
             run = tf.paragraphs[0].add_run()
-            run.text = q.question
+            # Truncate long questions for slide readability
+            q_text = q.question
+            if len(q_text) > 120:
+                q_text = q_text[:120].rsplit(" ", 1)[0] + "..."
+            run.text = q_text
             _set_text_props(run, 20, theme["text_dark"])
 
             q_top += Inches(1.3)
@@ -1081,8 +1098,19 @@ def export_lesson_pptx(
         p = tf.paragraphs[0]
         p.line_spacing = Pt(30)
         run = p.add_run()
-        run.text = lesson.homework
+        # Brief homework summary on slide, full in notes
+        hw_text = lesson.homework
+        if len(hw_text) > 200:
+            cutoff = hw_text[:200].rfind(". ")
+            hw_display = hw_text[:cutoff + 1] if cutoff > 60 else hw_text[:200].rsplit(" ", 1)[0] + "..."
+        else:
+            hw_display = hw_text
+        run.text = hw_display
         _set_text_props(run, 22, "DDDDDD")
+        if len(hw_text) > 200:
+            notes_slide = slide.notes_slide
+            notes_tf = notes_slide.notes_text_frame
+            notes_tf.text = f"HOMEWORK (full text):\n{hw_text}"
     else:
         # "Key Takeaway" or "Questions?"
         tb = slide.shapes.add_textbox(
