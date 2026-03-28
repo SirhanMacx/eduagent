@@ -133,6 +133,7 @@ def ingest(
     out = save_persona(persona, _output_dir())
 
     # Index documents into curriculum knowledge base for KB search
+    kb_msg = ""
     try:
         from clawed.agent_core.memory.curriculum_kb import CurriculumKB
         kb = CurriculumKB()
@@ -152,19 +153,48 @@ def ingest(
             f"{stats['chunk_count']} searchable sections"
         )
     except Exception:
-        kb_msg = ""
+        pass
 
-    console.print(
-        Panel(
-            f"[green]Persona saved to {out}[/green]\n\n"
-            f"[bold]Style:[/bold] {persona.teaching_style.value.replace('_', ' ').title()}\n"
-            f"[bold]Tone:[/bold] {persona.tone}\n"
-            f"[bold]Subject:[/bold] {persona.subject_area}\n"
-            f"[bold]Format:[/bold] {persona.preferred_lesson_format}"
-            + (f"\n{kb_msg}" if kb_msg else ""),
-            title="Teacher Persona",
-        )
-    )
+    # Register assets (file-level metadata, images, YouTube links)
+    asset_msg = ""
+    try:
+        from clawed.asset_registry import AssetRegistry
+        registry = AssetRegistry()
+        asset_count = 0
+        for doc in documents:
+            doc_type_val = doc.doc_type.value if hasattr(doc.doc_type, "value") else str(doc.doc_type)
+            asset_id = registry.register_asset(
+                teacher_id="default",
+                source_path=doc.source_path or "",
+                title=doc.title,
+                doc_type=doc_type_val,
+                text=doc.content,
+            )
+            if asset_id:
+                asset_count += 1
+        stats = registry.stats("default")
+        parts = [f"{stats['asset_count']} files indexed"]
+        if stats['link_count']:
+            parts.append(f"{stats['link_count']} links catalogued")
+        if stats['image_count']:
+            parts.append(f"{stats['image_count']} images extracted")
+        asset_msg = f"[bold]Asset registry:[/bold] {', '.join(parts)}"
+    except Exception:
+        pass
+
+    info_parts = [
+        f"[green]Persona saved to {out}[/green]\n",
+        f"[bold]Style:[/bold] {persona.teaching_style.value.replace('_', ' ').title()}",
+        f"[bold]Tone:[/bold] {persona.tone}",
+        f"[bold]Subject:[/bold] {persona.subject_area}",
+        f"[bold]Format:[/bold] {persona.preferred_lesson_format}",
+    ]
+    if kb_msg:
+        info_parts.append(kb_msg)
+    if asset_msg:
+        info_parts.append(asset_msg)
+
+    console.print(Panel("\n".join(info_parts), title="Teacher Persona"))
 
 
 # ── Transcribe command ───────────────────────────────────────────────────
@@ -270,8 +300,28 @@ def lesson(
         )
         lesson_num = 1
 
-    # ── Search curriculum KB for teacher's existing materials ──────
+    # ── Search for teacher's existing materials (assets + KB) ──────
     kb_prompt_section = ""
+
+    # Asset-level search (files, YouTube links, images)
+    try:
+        from clawed.asset_registry import AssetRegistry
+        registry = AssetRegistry()
+        assets = registry.search_assets("default", topic, top_k=5)
+        yt_links = registry.get_youtube_links("default", topic, top_k=3)
+        if assets or yt_links:
+            asset_summary = registry.format_asset_summary(assets, yt_links)
+            kb_prompt_section = asset_summary
+            # Show teacher what was found
+            for a in assets:
+                type_label = a["material_type"].replace("_", " ").title()
+                console.print(f"[dim]Found [{type_label}] \"{a['title']}\"[/dim]")
+            for link in yt_links:
+                console.print(f"[dim]Found YouTube: {link['url']}[/dim]")
+    except Exception:
+        pass
+
+    # KB chunk-level search (supplements asset search)
     try:
         from clawed.agent_core.memory.curriculum_kb import CurriculumKB
         kb = CurriculumKB()
@@ -279,18 +329,21 @@ def lesson(
         if kb_results:
             kb_parts = [r for r in kb_results if r.get("similarity", 0) > 0.1]
             if kb_parts:
-                kb_prompt_section = (
-                    "Teacher's Existing Materials on This Topic\n"
-                    "The teacher has created content on this topic before. "
-                    "Reference and build on their existing work:\n\n"
-                    + "\n\n".join(
-                        f"From \"{r['doc_title']}\":\n{r['chunk_text'][:500]}"
-                        for r in kb_parts
-                    )
-                    + "\n\nUse these materials as a foundation. Reference the teacher's existing "
-                    "lessons, reuse their graphic organizer formats, build on their approach."
+                chunk_section = "\n\n".join(
+                    f"From \"{r['doc_title']}\":\n{r['chunk_text'][:500]}"
+                    for r in kb_parts
                 )
-                console.print(f"[dim]Found {len(kb_parts)} existing materials on this topic[/dim]")
+                if kb_prompt_section:
+                    kb_prompt_section += "\n\n" + chunk_section
+                else:
+                    kb_prompt_section = (
+                        "Teacher's Existing Materials on This Topic\n"
+                        "The teacher has created content on this topic before. "
+                        "Reference and build on their existing work:\n\n"
+                        + chunk_section
+                    )
+                if not assets:
+                    console.print(f"[dim]Found {len(kb_parts)} related materials in knowledge base[/dim]")
     except Exception:
         pass
 
