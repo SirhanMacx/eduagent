@@ -139,7 +139,7 @@ class TestAskProvider:
     def test_anthropic_selection(self):
         from clawed.onboarding import _ask_provider
 
-        with patch("clawed.onboarding.Prompt.ask", side_effect=["1", "sk-ant-test-key"]):
+        with patch("clawed.onboarding.Prompt.ask", side_effect=["2", "sk-ant-test-key"]):
             provider, key = _ask_provider()
             assert provider == LLMProvider.ANTHROPIC
             assert key == "sk-ant-test-key"
@@ -147,7 +147,7 @@ class TestAskProvider:
     def test_openai_selection(self):
         from clawed.onboarding import _ask_provider
 
-        with patch("clawed.onboarding.Prompt.ask", side_effect=["2", "sk-test-key"]):
+        with patch("clawed.onboarding.Prompt.ask", side_effect=["3", "sk-test-key"]):
             provider, key = _ask_provider()
             assert provider == LLMProvider.OPENAI
             assert key == "sk-test-key"
@@ -155,7 +155,7 @@ class TestAskProvider:
     def test_ollama_selection_no_key(self):
         from clawed.onboarding import _ask_provider
 
-        with patch("clawed.onboarding.Prompt.ask", return_value="3"):
+        with patch("clawed.onboarding.Prompt.ask", return_value="4"):
             provider, key = _ask_provider()
             assert provider == LLMProvider.OLLAMA
             assert key is None

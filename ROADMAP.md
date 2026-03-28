@@ -40,7 +40,23 @@ Deeper understanding of your teaching over time.
 - [x] Long-term memory compression -- summarize old episodes, keep what matters
 - [x] Cross-session context threading -- pick up where you left off across days
 - [x] Preference drift detection -- notice when your style evolves and adapt
+- [x] Voice validation after generation -- automatic checks for address terms, Do Now style, structure
+- [x] Pedagogical fingerprint evolution -- persona updates when new files are ingested or rating patterns shift
 - [ ] Improved curriculum state tracking -- unit-level progress, not just lesson-level
+
+## v2.3.3 -- Quality Layer
+
+Output trustworthy enough to hand directly to students.
+
+- [x] LLM-enhanced reading report -- qualitative observations alongside regex data
+- [x] Student packet matches teacher's handout style (new persona field)
+- [x] Pedagogical fingerprint evolves with new evidence
+- [x] Voice validation after generation (address terms, Do Now style, structure)
+- [x] SOUL.md consolidation -- deduplicates observations, stays concise
+- [x] Honest error reporting -- teacher sees what succeeded and what failed
+- [x] Lesson quality tests -- automated checks for time, standards, differentiation
+- [x] Smarter image reuse -- searches slide context text, not just document titles
+- [x] Subject-conditional prompts -- math gets worked examples, science gets lab procedures
 
 ## v1.2.0 -- Beautiful Materials
 
