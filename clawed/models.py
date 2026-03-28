@@ -328,6 +328,72 @@ class IEPProfile(BaseModel):
     goals: list[str] = Field(default_factory=list)
 
 
+# ── Structured lesson components (v2.3) ────────────────────────────────
+
+
+class VocabularyTerm(BaseModel):
+    """A key vocabulary term with definition."""
+
+    term: str
+    definition: str
+
+
+class PrimarySourceDocument(BaseModel):
+    """A primary source for station-based or jigsaw activities."""
+
+    document_label: str = ""
+    title: str = ""
+    author: str = ""
+    date: str = ""
+    context: str = ""
+    full_text: str = ""
+    analysis_questions: list[str] = Field(default_factory=list)
+
+
+class GuidedNotesBlank(BaseModel):
+    """A fill-in-the-blank item within guided notes."""
+
+    sentence_with_blank: str = ""
+    answer: str = ""
+
+
+class GraphicOrganizerSpec(BaseModel):
+    """Schema for a table-based graphic organizer."""
+
+    title: str = ""
+    instructions: str = ""
+    columns: list[str] = Field(default_factory=list)
+    num_rows: int = 4
+
+
+class ImageSpec(BaseModel):
+    """Specification for an image to include in materials."""
+
+    description: str = ""
+    search_query: str = ""
+    placement: str = ""
+    size: str = "large"
+
+
+class LessonSectionDetail(BaseModel):
+    """Per-section detail for the administrator lesson plan."""
+
+    section_name: str = ""
+    timing_minutes: int = 0
+    teacher_actions: str = ""
+    student_actions: str = ""
+    observer_look_fors: str = ""
+    differentiation: str = ""
+
+
+class AnticipatedResponse(BaseModel):
+    """Expected student response or misconception."""
+
+    response_or_misconception: str = ""
+    is_misconception: bool = False
+    teacher_correction: str = ""
+
+
 class DailyLesson(BaseModel):
     """A complete daily lesson plan."""
 
@@ -351,6 +417,57 @@ class DailyLesson(BaseModel):
             "independent_work": 10,
         }
     )
+
+    # Structured fields (v2.3) — all optional for backward compatibility
+    vocabulary: list[VocabularyTerm] = Field(default_factory=list)
+    primary_sources: list[PrimarySourceDocument] = Field(default_factory=list)
+    graphic_organizer: Optional[GraphicOrganizerSpec] = None
+    teacher_content_knowledge: str = ""
+    image_specs: list[ImageSpec] = Field(default_factory=list)
+
+
+class StudentPacket(BaseModel):
+    """LLM-generated student packet — the primary student-facing deliverable.
+
+    This is the document students actually work through in class: fill-in-the-blank
+    guided notes, station sections with primary source text and analysis questions,
+    graphic organizer tables, and exit ticket with sentence starters.
+    """
+
+    title: str = ""
+    aim: str = ""
+    do_now_prompt: str = ""
+    do_now_response_lines: int = 4
+    vocabulary: list[VocabularyTerm] = Field(default_factory=list)
+    guided_notes: list[GuidedNotesBlank] = Field(default_factory=list)
+    stations: list[PrimarySourceDocument] = Field(default_factory=list)
+    graphic_organizer: Optional[GraphicOrganizerSpec] = None
+    exit_ticket_questions: list[str] = Field(default_factory=list)
+    sentence_starters: list[str] = Field(default_factory=list)
+    image_specs: list[ImageSpec] = Field(default_factory=list)
+
+
+class AdminLessonPlan(BaseModel):
+    """Enriched lesson plan for administrator observation.
+
+    Structured as a multi-column table with per-section teacher actions,
+    student actions, observer look-fors, and differentiation. Includes
+    anticipated student responses and teacher content knowledge.
+    """
+
+    teacher_name: str = ""
+    course: str = ""
+    date: str = ""
+    unit_title: str = ""
+    topic: str = ""
+    grade_level: str = ""
+    duration_minutes: int = 40
+    aim: str = ""
+    standards: list[str] = Field(default_factory=list)
+    materials: list[str] = Field(default_factory=list)
+    sections: list[LessonSectionDetail] = Field(default_factory=list)
+    anticipated_responses: list[AnticipatedResponse] = Field(default_factory=list)
+    teacher_content_knowledge: str = ""
 
 
 class WorksheetItem(BaseModel):

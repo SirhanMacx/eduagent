@@ -276,6 +276,84 @@ class LLMClient:
 
         return await self.generate(prompt, system=system, temperature=0.4, max_tokens=4096)
 
+    async def generate_student_packet(
+        self,
+        lesson_json: str,
+        persona_context: str = "",
+    ):
+        """Generate a structured student packet from a completed lesson.
+
+        Returns a validated StudentPacket model with fill-in-the-blank guided
+        notes, station sections with primary source text and analysis questions,
+        graphic organizer tables, and exit ticket with sentence starters.
+        """
+        from pathlib import Path
+
+        from clawed.models import StudentPacket
+
+        prompt_path = Path(__file__).parent / "prompts" / "student_packet.txt"
+        prompt_template = prompt_path.read_text(encoding="utf-8")
+        prompt = (
+            prompt_template
+            .replace("{lesson_json}", lesson_json[:6000])
+            .replace("{persona}", persona_context)
+        )
+
+        system = (
+            "You are creating a student packet — a 4-6 page workbook that students "
+            "complete during class. It must include fill-in-the-blank guided notes, "
+            "full primary source texts with analysis questions, a graphic organizer "
+            "table, and an exit ticket with sentence starters.\n"
+            "Respond only with valid JSON. Do NOT use XML tags or markdown."
+        )
+
+        return await self.safe_generate_json(
+            prompt=prompt,
+            model_class=StudentPacket,
+            system=system,
+            temperature=0.4,
+            max_tokens=8192,
+        )
+
+    async def generate_admin_plan(
+        self,
+        lesson_json: str,
+        persona_context: str = "",
+    ):
+        """Generate an administrator-ready lesson plan from a completed lesson.
+
+        Returns a validated AdminLessonPlan with per-section teacher/student
+        actions, observer look-fors, anticipated responses, and teacher
+        content knowledge.
+        """
+        from pathlib import Path
+
+        from clawed.models import AdminLessonPlan
+
+        prompt_path = Path(__file__).parent / "prompts" / "admin_lesson_plan.txt"
+        prompt_template = prompt_path.read_text(encoding="utf-8")
+        prompt = (
+            prompt_template
+            .replace("{lesson_json}", lesson_json[:6000])
+            .replace("{persona}", persona_context)
+        )
+
+        system = (
+            "You are creating an observation-ready lesson plan for an administrator. "
+            "It must include per-section teacher actions (with scripted language), "
+            "student actions, observer look-fors, differentiation, anticipated "
+            "student responses and misconceptions, and teacher content knowledge.\n"
+            "Respond only with valid JSON. Do NOT use XML tags or markdown."
+        )
+
+        return await self.safe_generate_json(
+            prompt=prompt,
+            model_class=AdminLessonPlan,
+            system=system,
+            temperature=0.3,
+            max_tokens=6000,
+        )
+
     async def review_lesson_package(
         self,
         lesson_json: str,

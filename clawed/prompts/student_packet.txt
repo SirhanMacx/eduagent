@@ -1,0 +1,87 @@
+You are creating a STUDENT PACKET — the document students actually work through during class. This is NOT a lesson summary. It is a structured workbook with blank spaces, primary source texts, analysis questions, and graphic organizers.
+
+The packet should be 4-6 pages when printed. Every section has generous response space. Students should be able to complete the entire class using ONLY this packet and a pen.
+
+## Lesson Context
+{lesson_json}
+
+## Teacher Persona
+{persona}
+
+## Instructions
+
+Create a student packet with these sections IN ORDER:
+
+1. **Do Now** — The hook/warm-up prompt. Include the exact question or scenario students respond to. Specify how many response lines (3-6).
+
+2. **Key Vocabulary** — 3-6 essential terms with clear, student-friendly definitions. These are terms students need for today's lesson.
+
+3. **Guided Notes** — 8-15 fill-in-the-blank statements that students complete DURING the direct instruction. Each statement has ONE blank (shown as ________) where a key word or phrase goes. The teacher says the word aloud; students write it in. These track the flow of the lecture.
+   Example: "The three branches of government are the legislative, executive, and ________."
+   Answer: "judicial"
+
+4. **Station Documents / Primary Sources** — 2-4 stations, each with:
+   - A label (e.g., "STATION A: The Economist" or "DOCUMENT 1: Declaration of Sentiments")
+   - A CONTEXT paragraph (2-3 sentences explaining who wrote this, when, and why it matters)
+   - The FULL PRIMARY SOURCE TEXT in quotation marks (a real or historically accurate excerpt, 3-8 sentences)
+   - 3-4 analysis questions that build in complexity (identify → analyze → evaluate)
+   - Each question needs 4-5 response lines
+
+5. **Graphic Organizer** — A table students fill in as they work through the stations or discussion. Define the column headers and number of rows. Common formats:
+   - Document / Author's Claim / Evidence / Significance
+   - Cause / Event / Effect
+   - Compare column A / Compare column B / Similarities
+
+6. **Exit Ticket** — 2-3 questions that assess the lesson objective. Include sentence starters to scaffold struggling writers.
+   Example starters: "Based on Document [A/B/C], one argument was...", "The relationship between X and Y is significant because..."
+
+7. **Image Specifications** — Describe 1-3 images that should appear in the packet (e.g., "Political cartoon showing women's suffrage march, 1913" or "Map of trans-Saharan trade routes"). Include where each should be placed (after Do Now, beside Station B, etc.) and a search query for finding the image.
+
+## Output Format
+
+Respond with ONLY a JSON object (no markdown fencing):
+
+{
+    "title": "Lesson Title — Student Packet",
+    "aim": "How did [topic] affect [outcome]?",
+    "do_now_prompt": "The exact prompt students see and respond to...",
+    "do_now_response_lines": 4,
+    "vocabulary": [
+        {"term": "Term", "definition": "Student-friendly definition"}
+    ],
+    "guided_notes": [
+        {"sentence_with_blank": "The ________ was the first...", "answer": "Constitution"}
+    ],
+    "stations": [
+        {
+            "document_label": "STATION A: The Economist",
+            "title": "Document Title",
+            "author": "Author Name",
+            "date": "c. 1340",
+            "context": "Who wrote this and why it matters...",
+            "full_text": "The complete source excerpt in quotation marks...",
+            "analysis_questions": ["Question 1?", "Question 2?", "Question 3?"]
+        }
+    ],
+    "graphic_organizer": {
+        "title": "Organizer Title",
+        "instructions": "As you analyze each document, fill in one row...",
+        "columns": ["Document", "Main Argument", "Evidence", "Significance"],
+        "num_rows": 4
+    },
+    "exit_ticket_questions": ["Question 1?", "Question 2?"],
+    "sentence_starters": [
+        "Based on Document [A/B/C], one argument was...",
+        "This is significant because..."
+    ],
+    "image_specs": [
+        {
+            "description": "Map of trans-Saharan trade routes",
+            "search_query": "trans-Saharan trade routes map gold salt",
+            "placement": "after_do_now",
+            "size": "large"
+        }
+    ]
+}
+
+CRITICAL: Do NOT use XML tags or markdown formatting in the JSON values. Write plain text only. The primary source texts must be substantive (3-8 sentences each), not one-line summaries.

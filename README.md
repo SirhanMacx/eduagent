@@ -13,15 +13,17 @@ Built on the OpenClaw agent framework. Open source. MIT license.
 
 ---
 
-## What's new in v2.1
+## What's new in v2.3
 
-**Your files are first-class.** When you ingest curriculum, Claw-ED now extracts images from your PPTX/DOCX files, catalogues YouTube links, and classifies every file (slideshow, handout, assessment, lesson plan). When you generate a new lesson, the agent tells you what you already have: "Found [Slideshow] Reconstruction Era (32 slides, 5 images, 2 YouTube links)."
+**Three documents, not one.** Every lesson now generates three professional files in parallel:
 
-**Your images come first.** The image pipeline now checks your own extracted images before hitting Library of Congress or Wikimedia. If you used a Raphael painting in a prior Renaissance deck, that same image appears in new Renaissance lessons.
+1. **Student Packet** (4-6 page DOCX workbook) — Fill-in-the-blank guided notes, station sections with full primary source text and analysis questions, graphic organizer tables, exit ticket with sentence starters. This is what students hold in their hands.
+2. **Admin Lesson Plan** (observation-ready DOCX) — Multi-column table with per-section teacher actions (scripted language), student actions, observer look-fors, and differentiation. Anticipated student responses and misconceptions with teacher corrections. Teacher content knowledge appendix.
+3. **Slideshow** (PPTX) — Subject-themed slides with academic images from your own files first, then Library of Congress and Wikimedia. Vocabulary, source quotes, and section dividers on dedicated slides.
 
-**Pedagogical fingerprint.** "Teacher voice" means how you teach, not just how you sound. The persona now captures source types, activity patterns (jigsaw with desk islands, pair role division), scaffolding moves (INSPECT charts, T-charts, writing frames), Do Now style, exit ticket format, and signature moves. Generated lessons replicate your actual teaching structure.
+**Your files are first-class.** Ingestion extracts images from your PPTX/DOCX files, catalogues YouTube links, and classifies every file by type. The agent tells you what you already have before generating.
 
-**Zero artifacts.** Every text field in every export passes through sanitization that strips XML tags, markdown formatting, and HTML entities. Tested across 5 topics, 3 grade levels, all 3 export formats.
+**Pedagogical fingerprint.** "Teacher voice" means how you teach, not just how you sound. The persona captures source types, activity patterns, scaffolding moves, Do Now style, exit ticket format, and signature moves.
 
 ---
 

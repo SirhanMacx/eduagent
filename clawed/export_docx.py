@@ -170,11 +170,20 @@ def export_lesson_docx(
     persona: "TeacherPersona",
     output_dir: Path | None = None,
     agent_name: str = "Claw-ED",
+    admin_plan: Any = None,
 ) -> Path:
     """Generate a Word document from a lesson plan with embedded academic images.
 
+    If an AdminLessonPlan is provided, generates an observation-ready document
+    with per-section teacher/student actions, observer look-fors, anticipated
+    responses, and teacher content knowledge.
+
     Returns the path to the saved .docx file.
     """
+    # If we have an admin plan, use the enriched export
+    if admin_plan is not None:
+        return _export_admin_lesson_docx(lesson, persona, admin_plan, output_dir, agent_name)
+
     from docx import Document
     from docx.enum.text import WD_ALIGN_PARAGRAPH
     from docx.shared import Pt, RGBColor
@@ -813,3 +822,203 @@ def _remove_table_borders(table: Any) -> None:
         )
         borders.append(element)
     tblPr.append(borders)
+
+
+# ── Admin lesson plan export ──────────────────────────────────────────
+
+
+def _export_admin_lesson_docx(
+    lesson: "DailyLesson",
+    persona: "TeacherPersona",
+    admin_plan: Any,
+    output_dir: Path | None = None,
+    agent_name: str = "Claw-ED",
+) -> Path:
+    """Generate an observation-ready lesson plan DOCX with multi-column tables.
+
+    This produces the format administrators expect: per-section teacher actions,
+    student actions, observer look-fors, and differentiation in a table layout,
+    plus anticipated responses and teacher content knowledge sections.
+    """
+    from docx import Document
+    from docx.enum.table import WD_TABLE_ALIGNMENT
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.oxml.ns import qn
+    from docx.shared import Inches, Pt, RGBColor
+
+    from clawed.sanitize import sanitize_text
+
+    doc = Document()
+
+    # Page setup
+    for section in doc.sections:
+        section.top_margin = Inches(0.6)
+        section.bottom_margin = Inches(0.5)
+        section.left_margin = Inches(0.75)
+        section.right_margin = Inches(0.75)
+
+    style = doc.styles["Normal"]
+    style.font.name = "Calibri"
+    style.font.size = Pt(10)
+
+    theme = get_color_theme(persona.subject_area or "")
+    primary_hex = theme["primary"]
+    primary_rgb = RGBColor(int(primary_hex[:2], 16), int(primary_hex[2:4], 16), int(primary_hex[4:6], 16))
+
+    def _shade(cell, hex_color):
+        tc = cell._tc
+        tcPr = tc.get_or_add_tcPr()
+        shading = tcPr.makeelement(
+            qn("w:shd"), {qn("w:val"): "clear", qn("w:color"): "auto", qn("w:fill"): hex_color},
+        )
+        tcPr.append(shading)
+
+    # ── I. Header ─────────────────────────────────────────────────────
+    title_para = doc.add_paragraph()
+    title_para.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    r = title_para.add_run("LESSON PLAN")
+    r.bold = True
+    r.font.size = Pt(18)
+    r.font.color.rgb = primary_rgb
+
+    # Overview table
+    teacher_name = getattr(admin_plan, "teacher_name", "") or persona.name or "Teacher"
+    overview_data = [
+        ("Teacher", sanitize_text(teacher_name)),
+        ("Course", sanitize_text(getattr(admin_plan, "course", persona.subject_area or ""))),
+        ("Date", sanitize_text(getattr(admin_plan, "date", ""))),
+        ("Topic", sanitize_text(getattr(admin_plan, "topic", lesson.title))),
+        ("Grade Level", sanitize_text(getattr(admin_plan, "grade_level", ""))),
+        ("Duration", f"{getattr(admin_plan, 'duration_minutes', 40)} Minutes"),
+        ("Aim", sanitize_text(getattr(admin_plan, "aim", lesson.objective))),
+    ]
+    standards = getattr(admin_plan, "standards", []) or lesson.standards
+    if standards:
+        overview_data.append(("Standards", sanitize_text(", ".join(standards[:3]))))
+    materials = getattr(admin_plan, "materials", []) or lesson.materials_needed
+    if materials:
+        overview_data.append(("Materials", sanitize_text(", ".join(materials[:6]))))
+
+    overview_table = doc.add_table(rows=len(overview_data), cols=2)
+    overview_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    for i, (label, value) in enumerate(overview_data):
+        label_cell = overview_table.rows[i].cells[0]
+        value_cell = overview_table.rows[i].cells[1]
+        label_cell.text = ""
+        lp = label_cell.paragraphs[0]
+        lr = lp.add_run(label)
+        lr.bold = True
+        lr.font.size = Pt(10)
+        _shade(label_cell, theme.get("bg_light", "F5F5F5").lstrip("#"))
+        value_cell.text = value
+        for p in value_cell.paragraphs:
+            for run in p.runs:
+                run.font.size = Pt(10)
+    _set_table_borders(overview_table)
+
+    # ── II. Section-by-Section Breakdown ──────────────────────────────
+    sections = getattr(admin_plan, "sections", [])
+    if sections:
+        doc.add_paragraph("")
+        h = doc.add_heading("Lesson Plan & Pacing", level=2)
+        for run in h.runs:
+            run.font.color.rgb = primary_rgb
+
+        # 5-column table: Section | Teacher Actions | Student Actions | Look-Fors | Differentiation
+        col_headers = [
+            "Section & Timing", "Teacher Actions", "Student Actions",
+            "Observer Look-Fors", "Differentiation",
+        ]
+        section_table = doc.add_table(rows=1 + len(sections), cols=5)
+        section_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+
+        # Header row
+        for ci, header in enumerate(col_headers):
+            cell = section_table.rows[0].cells[ci]
+            cell.text = ""
+            p = cell.paragraphs[0]
+            r = p.add_run(header)
+            r.bold = True
+            r.font.size = Pt(9)
+            r.font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+            _shade(cell, primary_hex)
+
+        # Data rows
+        for ri, sec in enumerate(sections):
+            row = section_table.rows[ri + 1]
+            if hasattr(sec, "section_name"):
+                fields = [
+                    f"{sec.section_name}\n({sec.timing_minutes} min)",
+                    sanitize_text(sec.teacher_actions),
+                    sanitize_text(sec.student_actions),
+                    sanitize_text(sec.observer_look_fors),
+                    sanitize_text(sec.differentiation),
+                ]
+            else:
+                fields = [str(sec)] + [""] * 4
+            for ci, text in enumerate(fields):
+                cell = row.cells[ci]
+                cell.text = text
+                for p in cell.paragraphs:
+                    for run in p.runs:
+                        run.font.size = Pt(9)
+            # Alternate row shading
+            if ri % 2 == 0:
+                for cell in row.cells:
+                    _shade(cell, "F9F9F9")
+
+        _set_table_borders(section_table)
+
+    # ── III. Anticipated Responses & Misconceptions ───────────────────
+    responses = getattr(admin_plan, "anticipated_responses", [])
+    if responses:
+        doc.add_paragraph("")
+        h = doc.add_heading("Anticipated Student Responses & Misconceptions", level=2)
+        for run in h.runs:
+            run.font.color.rgb = primary_rgb
+
+        for resp in responses:
+            is_mis = getattr(resp, "is_misconception", False) if hasattr(resp, "is_misconception") else False
+            text = sanitize_text(getattr(resp, "response_or_misconception", str(resp)))
+            correction = sanitize_text(getattr(resp, "teacher_correction", ""))
+
+            p = doc.add_paragraph()
+            prefix = "MISCONCEPTION: " if is_mis else "EXPECTED: "
+            pr = p.add_run(prefix)
+            pr.bold = True
+            pr.font.size = Pt(10)
+            pr.font.color.rgb = RGBColor(0xCC, 0x33, 0x33) if is_mis else RGBColor(0x33, 0x99, 0x33)
+            tr = p.add_run(f'"{text}"')
+            tr.italic = True
+            tr.font.size = Pt(10)
+
+            if correction:
+                cp = doc.add_paragraph()
+                cp.paragraph_format.left_indent = Inches(0.3)
+                cr = cp.add_run(f"Redirect: {correction}")
+                cr.font.size = Pt(9)
+                cr.font.color.rgb = RGBColor(0x44, 0x44, 0x44)
+
+    # ── IV. Teacher Content Knowledge ─────────────────────────────────
+    tck = sanitize_text(getattr(admin_plan, "teacher_content_knowledge", ""))
+    if tck:
+        doc.add_paragraph("")
+        h = doc.add_heading("Teacher Content Knowledge", level=2)
+        for run in h.runs:
+            run.font.color.rgb = primary_rgb
+        p = doc.add_paragraph(tck)
+        p.paragraph_format.space_after = Pt(6)
+        for run in p.runs:
+            run.font.size = Pt(10)
+
+    # ── Footer ────────────────────────────────────────────────────────
+    doc.add_paragraph("")
+    gen_footer = doc.add_paragraph()
+    gen_footer.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    fr = gen_footer.add_run(f"Generated by {agent_name}")
+    fr.font.size = Pt(8)
+    fr.font.color.rgb = RGBColor(0x99, 0x99, 0x99)
+
+    out = _resolve_output(output_dir, lesson, ".docx")
+    doc.save(str(out))
+    return out

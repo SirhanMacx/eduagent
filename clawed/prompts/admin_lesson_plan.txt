@@ -1,0 +1,69 @@
+You are creating an ADMINISTRATOR-READY LESSON PLAN — the document a principal or observer uses during a classroom visit. It must show exactly what happens minute-by-minute, what the teacher says, what students do, and what an observer should see.
+
+## Lesson Context
+{lesson_json}
+
+## Teacher Persona
+{persona}
+
+## Instructions
+
+Create a structured observation-ready lesson plan with these sections:
+
+1. **Header Information** — teacher name, course, date, unit title, topic, grade level, duration, aim (as a question), standards addressed, and materials needed.
+
+2. **Section-by-Section Breakdown** — For EACH lesson section (Arrival/Setup, Hook/Do Now, Direct Instruction, Guided Practice, Independent Work, Exit Ticket/Closing), provide:
+   - **Section name and timing** (e.g., "Hook / Do Now (4 min)")
+   - **Teacher Actions** — What the teacher says and does. Include SCRIPTED LANGUAGE in quotes. Be specific: "Say: 'Take a look at this image. This was drawn in 1375 by a European who had never been to Africa.'"
+   - **Student Actions** — What students are doing. "Students analyze image, type observations into digital packet. A few share ideas aloud."
+   - **Observer Look-Fors** — What an administrator walking in should see. "100% student engagement. Students writing and thinking critically from the first minute."
+   - **Differentiation** — How this section is adapted for different learners. "Sentence starters for struggling writers. Challenge question for advanced students."
+
+3. **Anticipated Student Responses & Misconceptions** — For each major activity, predict:
+   - 2-3 expected student responses (the good answers you hope to hear)
+   - 1-2 common misconceptions students might have
+   - How the teacher should redirect each misconception (use analogies when possible)
+
+4. **Teacher Content Knowledge** — 2-3 paragraphs of background information the teacher should know about the topic beyond what's in the lesson. This is the "expert knowledge" section — historical context, historiographic debates, connections to other units.
+
+## Output Format
+
+Respond with ONLY a JSON object (no markdown fencing):
+
+{
+    "teacher_name": "Teacher Name",
+    "course": "Grade Level Subject",
+    "date": "",
+    "unit_title": "Unit Name",
+    "topic": "Lesson Topic",
+    "grade_level": "9",
+    "duration_minutes": 40,
+    "aim": "How did [topic] affect [outcome]?",
+    "standards": ["Standard 1", "Standard 2"],
+    "materials": ["Material 1", "Material 2"],
+    "sections": [
+        {
+            "section_name": "Hook / Do Now (4 min)",
+            "timing_minutes": 4,
+            "teacher_actions": "Project Slide 1. Say: 'Good morning. Take a look at this image...'",
+            "student_actions": "Students analyze image, write observations in packet Part I.",
+            "observer_look_fors": "100% engagement from minute one. Students writing independently.",
+            "differentiation": "Sentence starters provided: 'I observe...', 'This might mean...'"
+        }
+    ],
+    "anticipated_responses": [
+        {
+            "response_or_misconception": "He's holding a big nugget of gold — he looks rich and powerful.",
+            "is_misconception": false,
+            "teacher_correction": ""
+        },
+        {
+            "response_or_misconception": "The mapmaker actually met this king in person.",
+            "is_misconception": true,
+            "teacher_correction": "Emphasize the date (1375) and geography — the mapmaker was in Spain. Ask: 'How do you think he learned about this king without Google or phones?' Lead to the role of traders as information carriers."
+        }
+    ],
+    "teacher_content_knowledge": "Two to three paragraphs of expert background knowledge..."
+}
+
+CRITICAL: Do NOT use XML tags or markdown formatting in the JSON values. Write plain text only. Teacher actions should include actual scripted language in quotes.

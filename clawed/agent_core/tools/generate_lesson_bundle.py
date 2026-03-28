@@ -232,6 +232,44 @@ class GenerateLessonBundleTool:
         except Exception:
             pass  # Review is best-effort, don't block on failure
 
+        # ── Generate student packet + admin plan in parallel ──────────
+        import asyncio
+
+        from clawed.llm import LLMClient
+
+        llm_client = LLMClient(config)
+        persona_ctx = persona.to_prompt_context()
+        student_packet = None
+        admin_plan = None
+
+        async def _gen_packet():
+            return await llm_client.generate_student_packet(
+                lesson_json_str, persona_context=persona_ctx,
+            )
+
+        async def _gen_admin():
+            return await llm_client.generate_admin_plan(
+                lesson_json_str, persona_context=persona_ctx,
+            )
+
+        try:
+            results = await asyncio.gather(
+                _gen_packet(), _gen_admin(), return_exceptions=True,
+            )
+            if not isinstance(results[0], Exception):
+                student_packet = results[0]
+                logger.info("Student packet generated: %d stations, %d guided notes",
+                            len(student_packet.stations), len(student_packet.guided_notes))
+            else:
+                logger.warning("Student packet generation failed: %s", results[0])
+            if not isinstance(results[1], Exception):
+                admin_plan = results[1]
+                logger.info("Admin lesson plan generated: %d sections", len(admin_plan.sections))
+            else:
+                logger.warning("Admin plan generation failed: %s", results[1])
+        except Exception as e:
+            logger.warning("Parallel generation failed: %s", e)
+
         # ── Export all three files ────────────────────────────────────
         output_dir = Path("clawed_output").resolve()
         output_dir.mkdir(parents=True, exist_ok=True)
@@ -240,61 +278,39 @@ class GenerateLessonBundleTool:
         side_effects: list[str] = []
         errors: list[str] = []
 
-        # 1. Lesson plan DOCX
+        # 1. Admin lesson plan DOCX (or fallback to basic lesson plan)
         try:
             from clawed.export_docx import export_lesson_docx
 
-            docx_path = export_lesson_docx(lesson, persona, output_dir)
+            docx_path = export_lesson_docx(
+                lesson, persona, output_dir, admin_plan=admin_plan,
+            )
             generated_files.append(docx_path)
-            side_effects.append(f"Lesson plan DOCX: {docx_path.name}")
+            label = "Admin lesson plan" if admin_plan else "Lesson plan"
+            side_effects.append(f"{label} DOCX: {docx_path.name}")
         except Exception as e:
             logger.error("Lesson DOCX export failed: %s", e)
             errors.append(f"Lesson plan DOCX failed: {e}")
 
-        # 2. Generate student handout via LLM (first-class output, not regex extraction)
+        # 2. Student packet DOCX (structured) or fallback to old handout
         try:
-            import json_repair
+            from clawed.export_handout import export_student_packet_docx
 
-            from clawed.llm import LLMClient
-
-            llm_client = LLMClient(config)
-            handout_raw = await llm_client.generate_student_handout(
-                lesson_json_str,
-                persona_context=persona.to_prompt_context(),
-                subject=subject,
-                grade=grade,
-            )
-            # Parse handout JSON
-            handout_cleaned = handout_raw.strip()
-            if handout_cleaned.startswith("```"):
-                lines = handout_cleaned.split("\n")
-                lines = lines[1:]
-                if lines and lines[-1].strip() == "```":
-                    lines = lines[:-1]
-                handout_cleaned = "\n".join(lines)
-            try:
-                handout_data = json.loads(handout_cleaned)
-            except json.JSONDecodeError:
-                handout_data = json_repair.loads(handout_cleaned)
-
-            from clawed.export_handout import export_handout_docx
-
-            handout_path = export_handout_docx(handout_data, subject=subject)
-            if handout_path:
-                generated_files.append(Path(handout_path))
-                side_effects.append(f"Student handout DOCX: {Path(handout_path).name}")
-        except Exception as handout_err:
-            logger.warning("LLM handout generation failed, falling back: %s", handout_err)
-            # Fallback to regex-based handout
-            try:
+            if student_packet:
+                packet_path = export_student_packet_docx(
+                    student_packet, subject=subject, output_dir=output_dir,
+                )
+            else:
+                # Fallback: build minimal packet from lesson data
                 from clawed.export_docx import export_student_handout
+                packet_path = export_student_handout(lesson, persona, output_dir)
 
-                handout_path = export_student_handout(lesson, persona, output_dir)
-                if handout_path:
-                    generated_files.append(Path(handout_path))
-                    side_effects.append(f"Student handout DOCX: {Path(handout_path).name}")
-            except Exception:
-                pass
+            if packet_path:
+                generated_files.append(Path(packet_path))
+                side_effects.append(f"Student packet DOCX: {Path(packet_path).name}")
+        except Exception as e:
+            logger.warning("Student packet export failed: %s", e)
+            errors.append(f"Student packet failed: {e}")
 
         # 3. Slideshow PPTX
         try:
