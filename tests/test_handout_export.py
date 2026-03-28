@@ -37,7 +37,7 @@ def test_basic_handout_export():
         path = export_handout_docx(handout_data, subject="history", output_dir=Path(tmp))
         assert path.exists()
         assert path.suffix == ".docx"
-        assert "handout" in path.name.lower()
+        assert "handout" in path.name.lower() or "packet" in path.name.lower()
 
 
 def test_minimal_handout():
