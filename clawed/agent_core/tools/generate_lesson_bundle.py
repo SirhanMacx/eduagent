@@ -232,6 +232,23 @@ class GenerateLessonBundleTool:
         except Exception:
             pass  # Review is best-effort, don't block on failure
 
+        # ── Voice validation ──────────────────────────────────────────
+        voice_notes: list[str] = []
+        try:
+            from clawed.voice_check import check_voice_match
+
+            voice_result = check_voice_match(
+                persona=persona,
+                do_now=lesson.do_now,
+                direct_instruction_opening=lesson.direct_instruction[:500] if lesson.direct_instruction else "",
+            )
+            if not voice_result.passed:
+                for issue in voice_result.issues:
+                    voice_notes.append(issue)
+                    logger.info("Voice check issue: %s", issue)
+        except Exception as e:
+            logger.debug("Voice check failed: %s", e)
+
         # ── Generate student packet + admin plan in parallel ──────────
         import asyncio
 
@@ -335,6 +352,12 @@ class GenerateLessonBundleTool:
             lines.append("\nErrors:")
             for err in errors:
                 lines.append(f"  - {err}")
+
+        if voice_notes:
+            lines.append("\nVoice match notes:")
+            for note in voice_notes:
+                lines.append(f"  - {note}")
+            lines.append("Want me to adjust the lesson to better match your voice?")
 
         return ToolResult(
             text="\n".join(lines),
