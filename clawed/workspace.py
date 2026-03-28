@@ -14,6 +14,7 @@ Mirrors the OpenClaw agent workspace pattern, adapted for teachers:
 
 from __future__ import annotations
 
+import logging
 import os
 import re
 from datetime import date, datetime, timezone
@@ -21,6 +22,8 @@ from pathlib import Path
 from typing import Optional
 
 from clawed.models import AppConfig, TeacherPersona
+
+logger = logging.getLogger(__name__)
 
 # ── Paths ──────────────────────────────────────────────────────────────
 
@@ -350,6 +353,113 @@ Edit it to customize your autonomous assistant's behavior.
 - Summarize student bot interactions for the week.
 - Draft next week's lesson plans based on unit pacing.
 """
+
+
+# ── Soul deduplication & consolidation ────────────────────────────────
+
+_DATE_PREFIX_RE = re.compile(r"\(\d{4}-\d{2}-\d{2}\)\s*")
+
+# Minimum SOUL.md size (chars) before consolidation is triggered.
+_CONSOLIDATION_THRESHOLD = 3000
+
+
+def _deduplicate_entry(content: str, new_entry: str, section_header: str) -> bool:
+    """Check if a substantially similar entry already exists in a section.
+
+    Returns True if a duplicate is found (entry should NOT be appended).
+    """
+    # Locate the section in the content
+    idx = content.find(section_header)
+    if idx == -1:
+        return False
+
+    # Extract text from the section header to the next section or end
+    section_start = idx + len(section_header)
+    next_section = re.search(r"\n## ", content[section_start:])
+    if next_section:
+        section_text = content[section_start: section_start + next_section.start()]
+    else:
+        section_text = content[section_start:]
+
+    # Strip date prefixes for comparison
+    clean_new = _DATE_PREFIX_RE.sub("", new_entry).strip()
+    clean_section = _DATE_PREFIX_RE.sub("", section_text)
+
+    # 1. Exact substring match (ignoring dates)
+    if clean_new and clean_new in clean_section:
+        return True
+
+    # 2. >70% word overlap with any existing line
+    new_words = set(clean_new.lower().split())
+    if not new_words:
+        return False
+
+    for line in clean_section.splitlines():
+        line_stripped = line.strip()
+        if not line_stripped:
+            continue
+        line_words = set(line_stripped.lower().split())
+        if not line_words:
+            continue
+        overlap = new_words & line_words
+        # Check overlap relative to new entry
+        if len(overlap) / len(new_words) > 0.70:
+            return True
+
+    return False
+
+
+async def _llm_consolidate_soul(content: str) -> str:
+    """Ask the LLM to consolidate a bloated SOUL.md into a concise version."""
+    from clawed.llm import LLMClient
+
+    cfg = AppConfig.load()
+    client = LLMClient(cfg)
+    result = await client.generate(
+        prompt=content,
+        system=(
+            "This is a teaching identity document (SOUL.md) for an AI teaching assistant. "
+            "Consolidate it: merge duplicates, remove contradictions (keep the most recent), "
+            "produce a clean concise version. Preserve section structure."
+        ),
+        temperature=0.2,
+        max_tokens=2000,
+    )
+    return result
+
+
+async def consolidate_soul() -> bool:
+    """Consolidate SOUL.md by merging duplicates via LLM.
+
+    Returns True if consolidation was performed.
+    """
+    if not SOUL_PATH.exists():
+        return False
+
+    content = SOUL_PATH.read_text(encoding="utf-8")
+    if len(content) <= _CONSOLIDATION_THRESHOLD:
+        return False
+
+    # Save backup before overwriting
+    backup_path = SOUL_PATH.with_suffix(".md.bak")
+    backup_path.write_text(content, encoding="utf-8")
+    logger.info("Saved SOUL.md backup to %s", backup_path)
+
+    try:
+        consolidated = await _llm_consolidate_soul(content)
+        if not consolidated or not consolidated.strip():
+            raise ValueError("LLM returned empty consolidation result")
+        SOUL_PATH.write_text(consolidated, encoding="utf-8")
+        logger.info(
+            "Consolidated SOUL.md: %d chars -> %d chars",
+            len(content),
+            len(consolidated),
+        )
+        return True
+    except Exception:
+        logger.exception("SOUL.md consolidation failed — restoring from backup")
+        SOUL_PATH.write_text(backup_path.read_text(encoding="utf-8"), encoding="utf-8")
+        return False
 
 
 # ── Workspace init ─────────────────────────────────────────────────────

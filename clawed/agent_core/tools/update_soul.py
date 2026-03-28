@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import logging
 from datetime import date
-from pathlib import Path
 from typing import Any
 
 from clawed.agent_core.context import AgentContext, ToolResult
@@ -92,7 +91,9 @@ class UpdateSoulTool:
                 text=f"Unknown section '{section_key}'. Valid sections: {valid}"
             )
 
-        soul_path = Path.home() / ".eduagent" / "workspace" / "SOUL.md"
+        from clawed.workspace import SOUL_PATH
+
+        soul_path = SOUL_PATH
         soul_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Read or create SOUL.md
@@ -103,6 +104,14 @@ class UpdateSoulTool:
 
         # Build the datestamped entry
         entry = f"\n\n*({date.today().isoformat()})* {content}\n"
+
+        # Check for duplicate before writing
+        from clawed.workspace import _deduplicate_entry
+
+        if _deduplicate_entry(current, content, header):
+            return ToolResult(
+                text=f"Observation already exists in SOUL.md section '{section_key}' — skipping duplicate.",
+            )
 
         # Insert after the section header
         if header in current:
