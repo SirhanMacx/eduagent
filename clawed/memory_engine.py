@@ -397,6 +397,35 @@ def process_feedback(
     except Exception as e:
         logger.debug("Drift detection failed: %s", e)
 
+    # Check if persona evolution should trigger
+    try:
+        from clawed.persona_evolution import apply_confirmed_changes, get_confirmed_changes
+        confirmed = get_confirmed_changes()
+        if confirmed:
+            from clawed.commands._helpers import persona_path
+            from clawed.persona import load_persona
+            pp = persona_path()
+            if pp.exists():
+                current_persona = load_persona(pp)
+                updated, descriptions = apply_confirmed_changes(current_persona)
+                if descriptions:
+                    pp.write_text(updated.model_dump_json(indent=2), encoding="utf-8")
+                    # Log to SOUL.md
+                    from clawed.workspace import SOUL_PATH
+                    if SOUL_PATH.exists():
+                        soul_content = SOUL_PATH.read_text(encoding="utf-8")
+                        stamp = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+                        for desc in descriptions:
+                            entry = f"\n\n*({stamp})* Fingerprint updated: {desc}\n"
+                            marker = "## Agent Observations"
+                            soul_content = soul_content.replace(
+                                marker, marker + entry, 1
+                            )
+                        SOUL_PATH.write_text(soul_content, encoding="utf-8")
+                    logger.info("Persona evolution applied: %s", "; ".join(descriptions))
+    except Exception as e:
+        logger.debug("Persona evolution check failed: %s", e)
+
     return applied
 
 
