@@ -340,18 +340,50 @@ class GenerateLessonBundleTool:
             logger.error("PPTX export failed: %s", e)
             errors.append(f"Slideshow PPTX failed: {e}")
 
-        # ── Build response ───────────────────────────────────────────
-        lines = [f"Generated teaching package for: {lesson.title}\n"]
-        if generated_files:
-            lines.append("Files created:")
-            for f in generated_files:
-                lines.append(f"  - {f}")
-        if kb_context:
-            lines.append("\nReferenced your existing materials on this topic.")
-        if errors:
-            lines.append("\nErrors:")
+        # ── Build honest response ─────────────────────────────────────
+        used_fallback_packet = not student_packet and any("Student packet" in s for s in side_effects)
+
+        lines = []
+
+        if len(generated_files) == 3 and not errors:
+            lines.append(f"Complete teaching package for: {lesson.title}")
+            lines.append("All three files ready to print:")
+            for se in side_effects:
+                lines.append(f"  - {se}")
+        elif generated_files:
+            lines.append(f"Generated {len(generated_files)} of 3 files for: {lesson.title}")
+            for se in side_effects:
+                lines.append(f"  - {se}")
+            if errors:
+                lines.append("")
+                for err in errors:
+                    clean_err = str(err).split("\n")[0][:200]
+                    lines.append(f"  Could not generate: {clean_err}")
+                lines.append("Want me to try the failed item(s) again?")
+        else:
+            lines.append(f"Failed to generate teaching package for: {lesson.title}")
             for err in errors:
                 lines.append(f"  - {err}")
+
+        if used_fallback_packet:
+            lines.append("")
+            lines.append(
+                "Note: The student packet was generated using a simpler method — "
+                "it may not have full graphic organizers. Let me know if you'd like me to regenerate it."
+            )
+
+        if kb_context:
+            lines.append("\nReferenced your existing materials on this topic.")
+
+        # Self-review findings
+        try:
+            if review and not review.get("passed", True) and review.get("issues"):
+                lines.append("")
+                lines.append("Quality notes:")
+                for issue in review["issues"][:3]:
+                    lines.append(f"  - {issue}")
+        except NameError:
+            pass
 
         if voice_notes:
             lines.append("\nVoice match notes:")
