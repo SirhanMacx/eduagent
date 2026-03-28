@@ -1,16 +1,20 @@
 """Reading report — analyze ingested documents and summarize what we learned.
 
 Produces a report that feels like a colleague sharing observations, not a
-database query.
+database query.  Phase 1 of the quality layer adds an LLM pass that reads
+actual excerpts and returns qualitative observations a regex can never make.
 """
 from __future__ import annotations
 
+import logging
 import re
 from collections import Counter
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from clawed.models import Document, TeacherPersona
+    from clawed.models import AppConfig, Document, TeacherPersona
+
+log = logging.getLogger(__name__)
 
 
 def generate_reading_report(
@@ -35,6 +39,8 @@ def generate_reading_report(
         "assessment_patterns": [],
         "interesting_finds": [],
         "doc_stats": {},
+        "llm_observations": None,     # None = not yet run, [] = ran but empty
+        "_excerpts_for_llm": [],       # populated for async LLM pass
     }
 
     if not documents:
@@ -273,7 +279,178 @@ def generate_reading_report(
                     f"Your files reference {detected} — is that you, or a co-teacher?"
                 )
 
+    # ── Prepare excerpts for the async LLM pass ──────────────────────
+    report["_excerpts_for_llm"] = _select_representative_excerpts(documents)
+
     return report
+
+
+# ── LLM-enhanced observation helpers ──────────────────────────────────
+
+
+def _select_representative_excerpts(
+    documents: list["Document"],
+    max_excerpts: int = 8,
+) -> list["Document"]:
+    """Pick a diverse subset of documents for the LLM to read.
+
+    Uses round-robin across doc types so the LLM sees a variety of
+    formats, then fills remaining slots with documents that have the
+    most content (likely the richest lesson plans).
+    """
+    if not documents:
+        return []
+
+    if len(documents) <= max_excerpts:
+        return list(documents)
+
+    # Group documents by doc type
+    by_type: dict[str, list["Document"]] = {}
+    for doc in documents:
+        key = doc.doc_type.value if doc.doc_type else "unknown"
+        by_type.setdefault(key, []).append(doc)
+
+    # Sort each group by content length descending (richest first)
+    for group in by_type.values():
+        group.sort(key=lambda d: len(d.content or ""), reverse=True)
+
+    # Round-robin across types
+    selected: list["Document"] = []
+    seen_ids: set[int] = set()
+    type_keys = sorted(by_type.keys())
+    idx = 0
+    while len(selected) < max_excerpts:
+        added_this_round = False
+        for key in type_keys:
+            group = by_type[key]
+            if idx < len(group) and len(selected) < max_excerpts:
+                doc = group[idx]
+                if id(doc) not in seen_ids:
+                    selected.append(doc)
+                    seen_ids.add(id(doc))
+                    added_this_round = True
+        idx += 1
+        if not added_this_round:
+            break
+
+    return selected
+
+
+def _build_llm_reading_prompt(
+    regex_report: dict[str, Any],
+    excerpts: list["Document"],
+) -> str:
+    """Build the user prompt for the LLM reading-observations call.
+
+    Includes the regex-derived stats so the LLM can reference them,
+    plus the actual document excerpts for qualitative analysis.
+    """
+    stats = regex_report.get("doc_stats", {})
+    total = stats.get("total", 0)
+    by_type = stats.get("by_type", {})
+    type_str = ", ".join(f"{c} {t}" for t, c in by_type.items()) if by_type else "unknown mix"
+
+    topics = regex_report.get("topic_coverage", {})
+    topic_str = ", ".join(
+        f"{t} ({c})" for t, c in list(topics.items())[:8]
+    ) if topics else "none detected"
+
+    strategies = regex_report.get("favorite_strategies", [])
+    strategy_str = ", ".join(strategies[:5]) if strategies else "none detected"
+
+    strengths = regex_report.get("strengths", [])
+    strength_str = ", ".join(strengths) if strengths else "none"
+
+    gaps = regex_report.get("gaps", [])
+    gap_str = ", ".join(gaps[:5]) if gaps else "none"
+
+    # Build excerpt text blocks
+    excerpt_blocks = []
+    for i, doc in enumerate(excerpts, 1):
+        doc_type = doc.doc_type.value.upper() if doc.doc_type else "UNKNOWN"
+        title = doc.title or "Untitled"
+        # Truncate very long documents to keep prompt reasonable
+        content = (doc.content or "")[:1500]
+        if len(doc.content or "") > 1500:
+            content += "\n[... truncated ...]"
+        excerpt_blocks.append(
+            f"--- Excerpt {i}: \"{title}\" ({doc_type}) ---\n{content}"
+        )
+
+    excerpts_text = "\n\n".join(excerpt_blocks)
+
+    return (
+        f"A teacher has uploaded {total} curriculum files ({type_str}).\n\n"
+        f"REGEX ANALYSIS SUMMARY:\n"
+        f"- Topic coverage: {topic_str}\n"
+        f"- Strongest areas: {strength_str}\n"
+        f"- Gaps: {gap_str}\n"
+        f"- Strategies used: {strategy_str}\n\n"
+        f"Below are {len(excerpts)} representative excerpts from their files. "
+        f"Read them carefully and share 3-5 genuine qualitative observations "
+        f"that a regex analysis could never produce. Focus on:\n"
+        f"- How the teacher's instructional style comes through\n"
+        f"- The quality and sophistication of their activities\n"
+        f"- What their Do Nows actually look like\n"
+        f"- Whether assessments align with instruction\n"
+        f"- Anything genuinely surprising or distinctive about their practice\n"
+        f"- How their pedagogical approach has evolved (if visible)\n\n"
+        f"Respond ONLY with a JSON array of observation strings. "
+        f"Each observation should be 1-2 sentences, specific and grounded "
+        f"in what you actually read — not generic praise.\n\n"
+        f"{excerpts_text}"
+    )
+
+
+_LLM_SYSTEM = (
+    "You are an expert instructional coach analyzing a teacher's curriculum "
+    "materials. Respond only with a JSON array of observation strings."
+)
+
+
+async def enhance_reading_report_with_llm(
+    report: dict[str, Any],
+    config: "AppConfig | None" = None,
+) -> None:
+    """Add qualitative LLM observations to an existing reading report.
+
+    Reads the excerpts stored in ``report["_excerpts_for_llm"]`` by
+    :func:`generate_reading_report`, sends them to the LLM, and stores
+    the result in ``report["llm_observations"]``.
+
+    Wrapped in try/except so the report still works if the LLM call
+    fails — it just falls back to the regex-only version.
+    """
+    excerpts = report.get("_excerpts_for_llm", [])
+    if not excerpts:
+        # Nothing to send to the LLM — leave llm_observations as None
+        return
+
+    try:
+        from clawed.llm import LLMClient
+
+        client = LLMClient(config)
+        prompt = _build_llm_reading_prompt(report, excerpts)
+        result = await client.generate_json(
+            prompt=prompt,
+            system=_LLM_SYSTEM,
+            temperature=0.4,
+            max_tokens=800,
+        )
+
+        # Validate: must be a list of strings
+        if isinstance(result, list) and all(isinstance(s, str) for s in result):
+            report["llm_observations"] = result
+        else:
+            log.warning(
+                "LLM returned unexpected format for reading observations: %s",
+                type(result).__name__,
+            )
+            report["llm_observations"] = []
+
+    except Exception:
+        log.exception("LLM reading-report enhancement failed; using regex-only report")
+        report["llm_observations"] = []
 
 
 def format_reading_report(report: dict[str, Any]) -> str:
@@ -359,5 +536,12 @@ def format_reading_report(report: dict[str, Any]) -> str:
         lines.append("")
         for find in report["interesting_finds"]:
             lines.append(find)
+
+    # ── LLM qualitative observations ──────────────────────────────
+    if report.get("llm_observations"):
+        lines.append("")
+        lines.append("Here's what stood out to me after reading your materials:")
+        for obs in report["llm_observations"]:
+            lines.append(f"- {obs}")
 
     return "\n".join(lines)
