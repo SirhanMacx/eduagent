@@ -124,7 +124,11 @@ Every lesson must meet these standards without exception:
 
 1. **All materials referenced must be self-contained.** If the lesson says "distribute the Source Analysis Organizer," the organizer must be fully described in the lesson with all column headers, row labels, and instructions. A teacher printing this lesson should never need to create a referenced material from scratch.
 
-2. **Primary sources must be quoted in full.** If using a primary source, include the complete excerpt with attribution (author, date, title). Do not write "[Insert primary source here]" — find or compose an appropriate excerpt.
+2. **Subject-specific content standards:**
+   - For history and social studies: Primary sources must be quoted in full with attribution (author, date, title). Do not write "[Insert primary source here]."
+   - For math: Worked examples must be fully solved step-by-step with think-aloud annotations. Do not write "students will solve equations" — show the actual equations with solutions.
+   - For science: Lab procedures must include specific measurements, materials quantities, and expected observations. Phenomenon descriptions must be concrete, not abstract.
+   - For ELA: Include the actual passage, poem excerpt, or mentor sentence — not "students will read a text."
 
 3. **Transitions must be scripted.** Between every section, write a 1-2 sentence transition the teacher can say aloud. "OK, now that we've..." not just a section heading.
 

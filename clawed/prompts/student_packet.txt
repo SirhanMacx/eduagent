@@ -30,6 +30,13 @@ Create a student packet with these sections IN ORDER:
    - 3-4 analysis questions that build in complexity (identify → analyze → evaluate)
    - Each question needs 4-5 response lines
 
+**Subject Adaptation for Stations:**
+- History / Social Studies: Use primary source documents with full text, context, and sourcing questions.
+- Math: Use problem sets with worked examples at increasing difficulty. Each station covers a different problem type or approach.
+- Science: Use data tables, lab observations, or phenomenon descriptions. Each station presents different data to analyze.
+- ELA: Use different text excerpts (poetry, prose, nonfiction) with comprehension and analysis questions.
+Match the station format to the subject. Do not use primary source document analysis for a math or science lesson.
+
 5. **Graphic Organizer** — A table students fill in as they work through the stations or discussion. Define the column headers and number of rows. Common formats:
    - Document / Author's Claim / Evidence / Significance
    - Cause / Event / Effect

@@ -24,7 +24,11 @@ Create a structured observation-ready lesson plan with these sections:
    - 1-2 common misconceptions students might have
    - How the teacher should redirect each misconception (use analogies when possible)
 
-4. **Teacher Content Knowledge** — 2-3 paragraphs of background information the teacher should know about the topic beyond what's in the lesson. This is the "expert knowledge" section — historical context, historiographic debates, connections to other units.
+4. **Teacher Content Knowledge** — 2-3 paragraphs of background information the teacher should know about the topic beyond what's in the lesson. Adapt to the subject:
+   - For history/social studies: historical context, historiographic debates, connections to other units.
+   - For math: common student misconceptions about this concept and how to address them, alternative solution methods, connections to prerequisite and future skills.
+   - For science: current scientific understanding beyond the grade level, common student misconceptions, real-world applications of the concept.
+   - For ELA: literary criticism perspectives, author background, connections to other texts and genres.
 
 ## Output Format
 
