@@ -391,6 +391,12 @@ def process_feedback(
             len(applied), rating, lesson.title,
         )
 
+    # Preference drift detection (runs on every rated lesson)
+    try:
+        detect_preference_drift(rating)
+    except Exception as e:
+        logger.debug("Drift detection failed: %s", e)
+
     return applied
 
 
@@ -780,3 +786,177 @@ def _compute_stats(content: str) -> dict[str, Any]:
         "avg_rating": round(avg_rating, 2),
         "trend": trend,
     }
+
+
+# ── Long-term memory compression ─────────────────────────────────────
+
+COMPRESSION_THRESHOLD = 20  # Compress after every N episodes
+EPISODES_TO_KEEP_VERBATIM = 10  # Keep this many recent episodes uncompressed
+
+
+def _get_memory_summary_path() -> Path:
+    """Get the memory_summary.md path, respecting EDUAGENT_DATA_DIR."""
+    from clawed.workspace import MEMORY_SUMMARY_PATH
+    return MEMORY_SUMMARY_PATH
+
+
+def compress_old_episodes(teacher_id: str) -> str:
+    """Summarize older episodes into compressed highlights.
+
+    Keeps the last ``EPISODES_TO_KEEP_VERBATIM`` episodes verbatim and
+    compresses everything older into a bullet-point summary stored in
+    ``memory_summary.md``.  This prevents episodic memory from growing
+    unbounded and degrading context quality.
+
+    Returns the summary text (empty string if nothing to compress).
+    """
+    from clawed.agent_core.memory.episodes import EpisodicMemory
+
+    mem = EpisodicMemory()
+    total = mem.count_episodes(teacher_id)
+
+    if total <= EPISODES_TO_KEEP_VERBATIM:
+        return ""
+
+    # Fetch all episodes oldest-first
+    all_eps = mem.get_all_episodes(teacher_id, limit=total)
+
+    # Split: compress older, keep recent verbatim
+    cutoff = len(all_eps) - EPISODES_TO_KEEP_VERBATIM
+    old_episodes = all_eps[:cutoff]
+
+    if not old_episodes:
+        return ""
+
+    # Build compressed highlights (rule-based, no LLM)
+    highlights: list[str] = []
+    for ep in old_episodes:
+        text = ep["text"]
+        date_str = ep["created_at"][:10] if ep.get("created_at") else "unknown"
+        # Extract the first meaningful line (usually "Teacher: <message>")
+        first_line = text.split("\n")[0].strip()
+        if len(first_line) > 120:
+            first_line = first_line[:117] + "..."
+        highlights.append(f"- [{date_str}] {first_line}")
+
+    summary_header = (
+        "# Memory Summary — Compressed Episode Highlights\n\n"
+        f"*{len(old_episodes)} older episodes compressed. "
+        f"Last {min(EPISODES_TO_KEEP_VERBATIM, total)} episodes kept verbatim in episodic memory.*\n\n"
+    )
+    summary_body = "\n".join(highlights) + "\n"
+    summary_text = summary_header + summary_body
+
+    # Write summary to disk
+    summary_path = _get_memory_summary_path()
+    summary_path.parent.mkdir(parents=True, exist_ok=True)
+    summary_path.write_text(summary_text, encoding="utf-8")
+
+    logger.info(
+        "Compressed %d old episodes into memory_summary.md for teacher %s",
+        len(old_episodes), teacher_id,
+    )
+    return summary_text
+
+
+def maybe_compress_episodes(teacher_id: str) -> str:
+    """Trigger compression if the episode count crosses a threshold.
+
+    Should be called after storing a new episode.  Compression runs
+    every ``COMPRESSION_THRESHOLD`` episodes.
+
+    Returns the summary text if compression ran, empty string otherwise.
+    """
+    from clawed.agent_core.memory.episodes import EpisodicMemory
+
+    mem = EpisodicMemory()
+    total = mem.count_episodes(teacher_id)
+
+    if total > 0 and total % COMPRESSION_THRESHOLD == 0:
+        return compress_old_episodes(teacher_id)
+    return ""
+
+
+# ── Preference drift detection ────────────────────────────────────────
+
+DRIFT_WINDOW_SIZE = 10  # Rolling window of ratings to compare
+DRIFT_THRESHOLD = 0.5   # Minimum average change to trigger an alert
+
+
+def _get_rating_history_path() -> Path:
+    """Get the rating_history.json path."""
+    return _base_dir() / "rating_history.json"
+
+
+def _load_rating_history() -> list[int]:
+    """Load the chronological list of ratings from disk."""
+    path = _get_rating_history_path()
+    if path.exists():
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(data, list):
+                return data
+        except (json.JSONDecodeError, OSError):
+            pass
+    return []
+
+
+def _save_rating_history(ratings: list[int]) -> None:
+    """Persist the rating history to disk."""
+    path = _get_rating_history_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(ratings), encoding="utf-8")
+
+
+def detect_preference_drift(rating: int) -> str | None:
+    """Track ratings and detect quality drift across a rolling window.
+
+    Appends ``rating`` to the history.  When at least two full windows
+    exist (``2 * DRIFT_WINDOW_SIZE`` ratings), compares the current
+    window average to the prior window.
+
+    Returns a drift message if detected (also logged to memory.md),
+    or ``None`` if no meaningful drift.
+    """
+    ratings = _load_rating_history()
+    ratings.append(rating)
+    _save_rating_history(ratings)
+
+    needed = 2 * DRIFT_WINDOW_SIZE
+    if len(ratings) < needed:
+        return None
+
+    current_window = ratings[-DRIFT_WINDOW_SIZE:]
+    prior_window = ratings[-needed:-DRIFT_WINDOW_SIZE]
+
+    current_avg = sum(current_window) / len(current_window)
+    prior_avg = sum(prior_window) / len(prior_window)
+    diff = current_avg - prior_avg
+
+    timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    message: str | None = None
+
+    if diff < -DRIFT_THRESHOLD:
+        message = (
+            f"[{timestamp}] Your recent lessons are rating lower "
+            f"(avg {current_avg:.1f} vs prior {prior_avg:.1f}) "
+            "— consider reviewing what changed."
+        )
+    elif diff > DRIFT_THRESHOLD:
+        message = (
+            f"[{timestamp}] Ratings are improving! "
+            f"(avg {current_avg:.1f} vs prior {prior_avg:.1f}) "
+            "— keep up the great work."
+        )
+
+    if message:
+        _log_drift_to_memory(message)
+
+    return message
+
+
+def _log_drift_to_memory(message: str) -> None:
+    """Append a drift alert to the Drift Alerts section of memory.md."""
+    content = _read_memory()
+    content = _append_to_section(content, "Drift Alerts", message)
+    _write_memory(content)

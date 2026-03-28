@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.2.0] - 2026-03-27
+
+Better Memory — deeper understanding of your teaching over time.
+
+### Added
+- **Long-term memory compression** — after every 20 episodes, older episodes are summarized into `memory_summary.md` highlights. Last 10 episodes kept verbatim, preventing unbounded episodic memory growth.
+- **Cross-session context threading** — new sessions greet with continuity ("Last time we worked on the Age of Exploration unit. Want to continue?") using the most recent episode from episodic memory.
+- **Preference drift detection** — rolling 10-lesson rating window comparison. Logs a warning to memory.md when average drops >0.5 stars, or a positive note when it improves >0.5 stars.
+- `EpisodicMemory.get_latest_episode()` — retrieve the most recent episode for a teacher
+- `EpisodicMemory.count_episodes()` — total episode count per teacher
+- `EpisodicMemory.get_all_episodes()` — chronological episode retrieval with pagination
+- `compress_old_episodes()` / `maybe_compress_episodes()` — rule-based episode compression (no LLM)
+- `detect_preference_drift()` — rolling-window drift detection with automatic memory logging
+- `last_session_summary` field in memory context loader
+- "Drift Alerts" section in memory.md for tracking rating trends
+- Comprehensive test suite for all three features
+
 ## [2.0.1] - 2026-03-27
 
 Pedagogical fingerprint — "teacher voice" means how you teach, not just how you sound.

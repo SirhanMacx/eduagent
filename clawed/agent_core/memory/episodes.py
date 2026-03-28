@@ -96,3 +96,53 @@ class EpisodicMemory:
 
         scored.sort(key=lambda x: x["similarity"], reverse=True)
         return scored[:top_k]
+
+    def get_latest_episode(self, teacher_id: str) -> dict[str, Any] | None:
+        """Return the most recent episode for a teacher, or None."""
+        with sqlite3.connect(self._db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            row = conn.execute(
+                "SELECT text, metadata, created_at FROM episodes "
+                "WHERE teacher_id = ? ORDER BY created_at DESC LIMIT 1",
+                (teacher_id,),
+            ).fetchone()
+        if not row:
+            return None
+        return {
+            "text": row["text"],
+            "metadata": json.loads(row["metadata"]),
+            "created_at": row["created_at"],
+        }
+
+    def count_episodes(self, teacher_id: str) -> int:
+        """Return the total number of episodes stored for a teacher."""
+        with sqlite3.connect(self._db_path) as conn:
+            row = conn.execute(
+                "SELECT COUNT(*) FROM episodes WHERE teacher_id = ?",
+                (teacher_id,),
+            ).fetchone()
+        return row[0] if row else 0
+
+    def get_all_episodes(
+        self,
+        teacher_id: str,
+        limit: int = 500,
+        offset: int = 0,
+    ) -> list[dict[str, Any]]:
+        """Return episodes in chronological order (oldest first)."""
+        with sqlite3.connect(self._db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            rows = conn.execute(
+                "SELECT text, metadata, created_at FROM episodes "
+                "WHERE teacher_id = ? ORDER BY created_at ASC "
+                "LIMIT ? OFFSET ?",
+                (teacher_id, limit, offset),
+            ).fetchall()
+        return [
+            {
+                "text": row["text"],
+                "metadata": json.loads(row["metadata"]),
+                "created_at": row["created_at"],
+            }
+            for row in rows
+        ]

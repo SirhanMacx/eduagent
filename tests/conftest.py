@@ -39,6 +39,9 @@ def _isolate_state_db(tmp_path, monkeypatch):
         "clawed.workspace.MEMORY_PATH", tmp_path / "workspace" / "memory.md", raising=False,
     )
     monkeypatch.setattr(
+        "clawed.workspace.MEMORY_SUMMARY_PATH", tmp_path / "workspace" / "memory_summary.md", raising=False,
+    )
+    monkeypatch.setattr(
         "clawed.workspace.HEARTBEAT_PATH", tmp_path / "workspace" / "heartbeat.md", raising=False,
     )
     monkeypatch.setattr(

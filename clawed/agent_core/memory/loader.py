@@ -96,6 +96,28 @@ def load_memory_context(teacher_id: str, current_message: str) -> dict[str, Any]
     except Exception as e:
         logger.debug("Curriculum KB search failed: %s", e)
 
+    # Layer 6: Last session summary (cross-session context threading)
+    last_session_summary = ""
+    try:
+        from clawed.agent_core.memory.episodes import EpisodicMemory
+
+        mem = EpisodicMemory()
+        latest = mem.get_latest_episode(teacher_id)
+        if latest:
+            text = latest["text"]
+            # Extract teacher's message (first line is usually "Teacher: <msg>")
+            first_line = text.split("\n")[0].strip()
+            if first_line.startswith("Teacher: "):
+                topic = first_line[len("Teacher: "):]
+            else:
+                topic = first_line
+            # Truncate to a concise summary
+            if len(topic) > 150:
+                topic = topic[:147] + "..."
+            last_session_summary = topic
+    except Exception as e:
+        logger.debug("Last session summary load failed: %s", e)
+
     return {
         "identity_summary": identity_summary,
         "curriculum_summary": curriculum_summary,
@@ -104,4 +126,5 @@ def load_memory_context(teacher_id: str, current_message: str) -> dict[str, Any]
         "preferences_summary": preferences_summary,
         "autonomy_summary": autonomy_summary,
         "curriculum_kb_context": curriculum_kb_context,
+        "last_session_summary": last_session_summary,
     }

@@ -361,7 +361,18 @@ class Gateway:
             soul_context=soul_context,
         )
 
-        # 2c. Enhance prompt for multi-step planning requests
+        # 2c. Cross-session context threading — greet with continuity
+        last_session = memory_ctx.get("last_session_summary", "")
+        if last_session and not session_history:
+            system += (
+                "\n\n=== Last Session Context ===\n"
+                f"The teacher's last interaction was about: {last_session}\n"
+                "If this is a new conversation, greet them with continuity — e.g. "
+                '"Last time we worked on [topic]. Want to continue or start something new?"\n'
+                "=== End Last Session Context ===\n"
+            )
+
+        # 2d. Enhance prompt for multi-step planning requests
         from clawed.agent_core.planner import build_planning_prompt, is_planning_request
 
         if is_planning_request(message):
@@ -412,6 +423,14 @@ class Gateway:
                 "message_length": len(message),
             }
             mem.store(teacher_id, episode_text, metadata=episode_metadata)
+        except Exception:
+            pass
+
+        # 8. Maybe compress old episodes (runs every COMPRESSION_THRESHOLD episodes)
+        try:
+            from clawed.memory_engine import maybe_compress_episodes
+
+            maybe_compress_episodes(teacher_id)
         except Exception:
             pass
 

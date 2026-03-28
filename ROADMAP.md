@@ -33,13 +33,13 @@ Claw-ED is a personal AI teaching agent. Everything below is shipped.
 - [x] Teacher preference learning from feedback
 - [x] Closed feedback loop (ratings improve future generation)
 
-## v1.1.0 -- Better Memory
+## v1.1.0 -- Better Memory (shipped as v2.2.0)
 
 Deeper understanding of your teaching over time.
 
-- [ ] Long-term memory compression -- summarize old episodes, keep what matters
-- [ ] Cross-session context threading -- pick up where you left off across days
-- [ ] Preference drift detection -- notice when your style evolves and adapt
+- [x] Long-term memory compression -- summarize old episodes, keep what matters
+- [x] Cross-session context threading -- pick up where you left off across days
+- [x] Preference drift detection -- notice when your style evolves and adapt
 - [ ] Improved curriculum state tracking -- unit-level progress, not just lesson-level
 
 ## v1.2.0 -- Beautiful Materials
