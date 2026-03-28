@@ -253,16 +253,17 @@ def _select_sources(subject: str, topic: str = "") -> list[str]:
 
     Returns an ordered list of source identifiers to try.
     Teacher's own images are always checked first.
+    Only uses academic sources (LOC, Wikimedia). No stock photos.
     """
     subject_lower = subject.strip().lower()
     if any(s in subject_lower for s in ("history", "social", "civics", "government")):
-        return ["teacher_files", "loc", "wikimedia", "unsplash"]
+        return ["teacher_files", "loc", "wikimedia"]
     elif any(s in subject_lower for s in ("science", "biology", "chemistry", "physics")):
-        return ["teacher_files", "wikimedia", "loc", "unsplash"]
+        return ["teacher_files", "wikimedia", "loc"]
     elif any(s in subject_lower for s in ("art", "music")):
-        return ["teacher_files", "wikimedia", "loc", "unsplash"]
+        return ["teacher_files", "wikimedia", "loc"]
     else:
-        return ["teacher_files", "loc", "wikimedia", "unsplash"]
+        return ["teacher_files", "loc", "wikimedia"]
 
 
 # ── Cache helpers ────────────────────────────────────────────────────
@@ -497,14 +498,25 @@ async def _fetch_teacher_image(
 
         with sqlite3.connect(db_path) as conn:
             conn.row_factory = sqlite3.Row
-            # Join asset_images to assets to search by context + title
-            rows = conn.execute(
-                "SELECT ai.image_path, ai.context_text, a.title "
-                "FROM asset_images ai "
-                "JOIN assets a ON ai.asset_id = a.id "
-                "WHERE ai.image_path != '' "
-                "LIMIT 500",
-            ).fetchall()
+            # Pre-filter by topic keywords in SQL for efficiency
+            if keywords:
+                like_clauses = " OR ".join(
+                    "(lower(ai.context_text) LIKE '%' || ? || '%' OR lower(a.title) LIKE '%' || ? || '%')"
+                    for _ in keywords[:5]
+                )
+                params = []
+                for kw in keywords[:5]:
+                    params.extend([kw, kw])
+                rows = conn.execute(
+                    f"SELECT ai.image_path, ai.context_text, a.title "
+                    f"FROM asset_images ai "
+                    f"JOIN assets a ON ai.asset_id = a.id "
+                    f"WHERE ai.image_path != '' AND ({like_clauses}) "
+                    f"LIMIT 100",
+                    params,
+                ).fetchall()
+            else:
+                rows = []
 
         best_path: Optional[str] = None
         best_score = 0
@@ -540,8 +552,8 @@ async def _fetch_teacher_image(
                 best_score = score
                 best_path = row["image_path"]
 
-        # Require minimum score of 2 (at least one keyword match)
-        if best_path and best_score >= 2 and Path(best_path).exists():
+        # Require minimum score of 6 (exact phrase match or 3+ keyword hits)
+        if best_path and best_score >= 6 and Path(best_path).exists():
             logger.info("Using teacher's own image for '%s' -> %s", query, best_path)
             return Path(best_path)
     except Exception as e:

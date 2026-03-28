@@ -22,7 +22,10 @@ class GenerateLessonBundleTool:
                 "description": (
                     "Generate a COMPLETE teaching package for a topic: "
                     "a lesson plan (DOCX), a student handout (DOCX), and "
-                    "a slideshow (PPTX). All three files are created at once."
+                    "a slideshow (PPTX). All three files are created at once. "
+                    "IMPORTANT: Always call search_my_materials FIRST to find "
+                    "the teacher's existing materials on this topic before "
+                    "calling this tool."
                 ),
                 "parameters": {
                     "type": "object",

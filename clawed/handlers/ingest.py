@@ -60,6 +60,25 @@ class IngestHandler:
             try:
                 from clawed.models import AppConfig
                 persona = await extract_persona(documents, AppConfig.load())
+                # Override LLM-inferred name with configured teacher name
+                try:
+                    config = AppConfig.load()
+                    if config.teacher_profile and config.teacher_profile.name:
+                        persona.name = f"{config.teacher_profile.name} Teaching Persona"
+                except Exception:
+                    pass
+                try:
+                    _id_path = Path.home() / ".eduagent" / "workspace" / "identity.md"
+                    if _id_path.exists():
+                        import re as _re
+                        _id_content = _id_path.read_text(encoding="utf-8")
+                        _name_match = _re.match(r"^#\s+(.+)", _id_content)
+                        if _name_match:
+                            _tname = _name_match.group(1).strip()
+                            if _tname and _tname != "Teacher":
+                                persona.name = f"{_tname} Teaching Persona"
+                except Exception:
+                    pass
                 from clawed.persona import save_persona
                 save_persona(persona, Path.home() / ".eduagent")
                 style_info = f"\nLearned teaching style: {persona.teaching_style}"
@@ -96,6 +115,35 @@ class IngestHandler:
                 )
             except Exception as e:
                 logger.debug("KB indexing skipped: %s", e)
+
+            # Register assets (files, images, YouTube links) for search
+            try:
+                from clawed.asset_registry import AssetRegistry
+                registry = AssetRegistry()
+                asset_count = 0
+                for doc in documents:
+                    doc_type_val = doc.doc_type.value if hasattr(doc.doc_type, "value") else str(doc.doc_type)
+                    extraction = None
+                    if doc.source_path:
+                        try:
+                            from clawed.ingestor import extract_rich
+                            extraction = extract_rich(Path(doc.source_path))
+                        except Exception:
+                            pass
+                    aid = registry.register_asset(
+                        teacher_id=teacher_id,
+                        source_path=doc.source_path or "",
+                        title=doc.title,
+                        doc_type=doc_type_val,
+                        text=doc.content,
+                        extraction=extraction,
+                    )
+                    if aid:
+                        asset_count += 1
+                if asset_count:
+                    kb_info += f" ({asset_count} files catalogued with images and links)"
+            except Exception as e:
+                logger.debug("Asset registration skipped: %s", e)
 
             return GatewayResponse(
                 text=f"Ingested {len(documents)} document(s).{style_info}{kb_info}"

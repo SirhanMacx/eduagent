@@ -488,6 +488,15 @@ class WorksheetItem(BaseModel):
     answer_key: str = ""
     point_value: int = 1
 
+    @field_validator("point_value", mode="before")
+    @classmethod
+    def _coerce_point_value(cls, v):
+        if isinstance(v, str):
+            import re
+            match = re.match(r"(\d+)", v.strip())
+            return int(match.group(1)) if match else 1
+        return v
+
 
 class AssessmentQuestion(BaseModel):
     """A single assessment question."""
@@ -498,6 +507,15 @@ class AssessmentQuestion(BaseModel):
     choices: list[str] = Field(default_factory=list)
     correct_answer: str = ""
     point_value: int = 1
+
+    @field_validator("point_value", mode="before")
+    @classmethod
+    def _coerce_point_value(cls, v):
+        if isinstance(v, str):
+            import re
+            match = re.match(r"(\d+)", v.strip())
+            return int(match.group(1)) if match else 1
+        return v
 
 
 class RubricCriterion(BaseModel):
@@ -673,6 +691,15 @@ class SummativeQuestion(BaseModel):
     correct_answer: str = ""
     point_value: int = 1
     standard_aligned: str = ""
+
+    @field_validator("point_value", mode="before")
+    @classmethod
+    def _coerce_point_value(cls, v):
+        if isinstance(v, str):
+            import re
+            match = re.match(r"(\d+)", v.strip())
+            return int(match.group(1)) if match else 1
+        return v
 
 
 class SummativeAssessment(BaseModel):

@@ -130,7 +130,35 @@ def ingest(
         persona = _run_async(extract_persona(documents))
         progress.update(task, description="Persona extracted!")
 
+    # Override LLM-inferred name with configured teacher name
+    try:
+        cfg = AppConfig.load()
+        if cfg.teacher_profile and cfg.teacher_profile.name:
+            persona.name = f"{cfg.teacher_profile.name} Teaching Persona"
+    except Exception:
+        pass
+    # Also check identity.md
+    try:
+        identity_path = Path.home() / ".eduagent" / "workspace" / "identity.md"
+        if identity_path.exists():
+            import re
+            content = identity_path.read_text(encoding="utf-8")
+            name_match = re.match(r"^#\s+(.+)", content)
+            if name_match:
+                teacher_name = name_match.group(1).strip()
+                if teacher_name and teacher_name != "Teacher":
+                    persona.name = f"{teacher_name} Teaching Persona"
+    except Exception:
+        pass
+
     out = save_persona(persona, _output_dir())
+
+    # Track persona changes for evolution
+    try:
+        from clawed.persona_evolution import record_ingestion_changes
+        record_ingestion_changes(old_persona=None, new_persona=persona)
+    except Exception:
+        pass
 
     # Index documents into curriculum knowledge base for KB search
     kb_msg = ""

@@ -65,7 +65,31 @@ class IngestMaterialsTool:
                 from clawed.persona import extract_persona, save_persona
 
                 persona = await extract_persona(docs, context.config)
+                # Override LLM-inferred name with configured teacher name
+                try:
+                    if context.config and context.config.teacher_profile and context.config.teacher_profile.name:
+                        persona.name = f"{context.config.teacher_profile.name} Teaching Persona"
+                except Exception:
+                    pass
+                try:
+                    _id_path = Path.home() / ".eduagent" / "workspace" / "identity.md"
+                    if _id_path.exists():
+                        import re as _re
+                        _id_content = _id_path.read_text(encoding="utf-8")
+                        _name_match = _re.match(r"^#\s+(.+)", _id_content)
+                        if _name_match:
+                            _tname = _name_match.group(1).strip()
+                            if _tname and _tname != "Teacher":
+                                persona.name = f"{_tname} Teaching Persona"
+                except Exception:
+                    pass
                 save_persona(persona, Path.home() / ".eduagent")
+                # Track persona changes for evolution
+                try:
+                    from clawed.persona_evolution import record_ingestion_changes
+                    record_ingestion_changes(old_persona=None, new_persona=persona)
+                except Exception:
+                    pass
             except Exception:
                 pass
 
@@ -128,6 +152,39 @@ class IngestMaterialsTool:
                 )
             except Exception as e:
                 logger.debug("KB indexing failed: %s", e)
+
+            # Register assets for file-level search
+            try:
+                from clawed.asset_registry import AssetRegistry
+                registry = AssetRegistry()
+                asset_count = 0
+                for doc in docs:
+                    doc_type_val = (
+                        doc.doc_type.value
+                        if hasattr(doc.doc_type, "value")
+                        else str(doc.doc_type)
+                    )
+                    extraction = None
+                    if doc.source_path:
+                        try:
+                            from clawed.ingestor import extract_rich
+                            extraction = extract_rich(Path(doc.source_path))
+                        except Exception:
+                            pass
+                    aid = registry.register_asset(
+                        teacher_id=context.teacher_id,
+                        source_path=doc.source_path or "",
+                        title=doc.title,
+                        doc_type=doc_type_val,
+                        text=doc.content,
+                        extraction=extraction,
+                    )
+                    if aid:
+                        asset_count += 1
+                if asset_count:
+                    summary += f" ({asset_count} files catalogued for search)"
+            except Exception as e:
+                logger.debug("Asset registration failed: %s", e)
 
             # Update SOUL.md with what we learned
             try:

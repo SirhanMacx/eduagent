@@ -43,6 +43,13 @@ class SubPacket(BaseModel):
     closing_notes: str = ""
     generated_at: datetime = Field(default_factory=datetime.now)
 
+    @field_validator("student_notes", mode="before")
+    @classmethod
+    def _coerce_student_notes(cls, v):
+        if isinstance(v, list):
+            return "\n".join(str(item) for item in v)
+        return v
+
     @field_validator("emergency_info", mode="before")
     @classmethod
     def coerce_emergency_info(cls, v):
