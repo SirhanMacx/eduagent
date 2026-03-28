@@ -9,10 +9,8 @@ import pytest
 from clawed.memory_engine import (
     COMPRESSION_THRESHOLD,
     DEFAULT_MEMORY_TEMPLATE,
-    DRIFT_THRESHOLD,
     DRIFT_WINDOW_SIZE,
     EPISODES_TO_KEEP_VERBATIM,
-    _load_rating_history,
     _save_rating_history,
     compress_old_episodes,
     detect_preference_drift,
@@ -20,7 +18,6 @@ from clawed.memory_engine import (
     process_feedback,
 )
 from clawed.models import DailyLesson
-
 
 # ── Fixtures ─────────────────────────────────────────────────────────
 
