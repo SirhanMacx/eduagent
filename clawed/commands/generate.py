@@ -131,13 +131,37 @@ def ingest(
         progress.update(task, description="Persona extracted!")
 
     out = save_persona(persona, _output_dir())
+
+    # Index documents into curriculum knowledge base for KB search
+    try:
+        from clawed.agent_core.memory.curriculum_kb import CurriculumKB
+        kb = CurriculumKB()
+        total_chunks = 0
+        for doc in documents:
+            doc_type_val = doc.doc_type.value if hasattr(doc.doc_type, "value") else str(doc.doc_type)
+            total_chunks += kb.index(
+                teacher_id="default",
+                doc_title=doc.title,
+                source_path=doc.source_path or "",
+                full_text=doc.content,
+                metadata={"doc_type": doc_type_val},
+            )
+        stats = kb.stats("default")
+        kb_msg = (
+            f"[bold]Knowledge base:[/bold] {stats['doc_count']} documents, "
+            f"{stats['chunk_count']} searchable sections"
+        )
+    except Exception:
+        kb_msg = ""
+
     console.print(
         Panel(
             f"[green]Persona saved to {out}[/green]\n\n"
             f"[bold]Style:[/bold] {persona.teaching_style.value.replace('_', ' ').title()}\n"
             f"[bold]Tone:[/bold] {persona.tone}\n"
             f"[bold]Subject:[/bold] {persona.subject_area}\n"
-            f"[bold]Format:[/bold] {persona.preferred_lesson_format}",
+            f"[bold]Format:[/bold] {persona.preferred_lesson_format}"
+            + (f"\n{kb_msg}" if kb_msg else ""),
             title="Teacher Persona",
         )
     )
