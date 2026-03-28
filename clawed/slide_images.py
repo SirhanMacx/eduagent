@@ -252,16 +252,17 @@ def _select_sources(subject: str, topic: str = "") -> list[str]:
     """Pick the best image sources for this subject.
 
     Returns an ordered list of source identifiers to try.
+    Teacher's own images are always checked first.
     """
     subject_lower = subject.strip().lower()
     if any(s in subject_lower for s in ("history", "social", "civics", "government")):
-        return ["loc", "wikimedia", "unsplash"]
+        return ["teacher_files", "loc", "wikimedia", "unsplash"]
     elif any(s in subject_lower for s in ("science", "biology", "chemistry", "physics")):
-        return ["wikimedia", "loc", "unsplash"]
+        return ["teacher_files", "wikimedia", "loc", "unsplash"]
     elif any(s in subject_lower for s in ("art", "music")):
-        return ["wikimedia", "loc", "unsplash"]
+        return ["teacher_files", "wikimedia", "loc", "unsplash"]
     else:
-        return ["loc", "wikimedia", "unsplash"]
+        return ["teacher_files", "loc", "wikimedia", "unsplash"]
 
 
 # ── Cache helpers ────────────────────────────────────────────────────
@@ -474,8 +475,57 @@ async def _fetch_unsplash(
         return None
 
 
+async def _fetch_teacher_image(
+    query: str, cache_dir: Optional[Path] = None,
+) -> Optional[Path]:
+    """Search the teacher's extracted images for one matching the query.
+
+    Checks the asset_images table for images whose context_text or parent
+    asset title has keyword overlap with the query. Returns the cached
+    image path if found — no network call needed.
+    """
+    try:
+        import sqlite3
+
+        db_path = Path.home() / ".eduagent" / "memory" / "curriculum_kb.db"
+        if not db_path.exists():
+            return None
+
+        keywords = [w.lower() for w in query.split() if len(w) > 2]
+        if not keywords:
+            return None
+
+        with sqlite3.connect(db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            # Join asset_images to assets to search by context + title
+            rows = conn.execute(
+                "SELECT ai.image_path, ai.context_text, a.title "
+                "FROM asset_images ai "
+                "JOIN assets a ON ai.asset_id = a.id "
+                "WHERE ai.image_path != '' "
+                "LIMIT 500",
+            ).fetchall()
+
+        best_path: Optional[str] = None
+        best_score = 0
+        for row in rows:
+            combined = (row["context_text"] + " " + row["title"]).lower()
+            score = sum(1 for kw in keywords if kw in combined)
+            if score > best_score:
+                best_score = score
+                best_path = row["image_path"]
+
+        if best_path and best_score >= 1 and Path(best_path).exists():
+            logger.info("Using teacher's own image for '%s' -> %s", query, best_path)
+            return Path(best_path)
+    except Exception as e:
+        logger.debug("Teacher image lookup failed: %s", e)
+    return None
+
+
 # Source name -> fetcher function mapping
 _SOURCE_FETCHERS: dict = {
+    "teacher_files": _fetch_teacher_image,
     "loc": _fetch_loc,
     "wikimedia": _fetch_wikimedia,
     "unsplash": _fetch_unsplash,

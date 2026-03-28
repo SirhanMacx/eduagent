@@ -155,20 +155,26 @@ def ingest(
     except Exception:
         pass
 
-    # Register assets (file-level metadata, images, YouTube links)
+    # Register assets with rich extraction (images, YouTube links, metadata)
     asset_msg = ""
     try:
         from clawed.asset_registry import AssetRegistry
+        from clawed.ingestor import extract_rich
         registry = AssetRegistry()
         asset_count = 0
         for doc in documents:
             doc_type_val = doc.doc_type.value if hasattr(doc.doc_type, "value") else str(doc.doc_type)
+            # Try rich extraction for images/URLs from original file
+            extraction = None
+            if doc.source_path:
+                extraction = extract_rich(Path(doc.source_path))
             asset_id = registry.register_asset(
                 teacher_id="default",
                 source_path=doc.source_path or "",
                 title=doc.title,
                 doc_type=doc_type_val,
                 text=doc.content,
+                extraction=extraction,
             )
             if asset_id:
                 asset_count += 1

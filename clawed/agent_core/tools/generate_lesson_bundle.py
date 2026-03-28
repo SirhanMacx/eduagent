@@ -104,18 +104,32 @@ class GenerateLessonBundleTool:
             topic=topic,
         )
 
-        # ── Search curriculum KB for relevant prior work ───────────────
+        # ── Search for teacher's existing materials (assets + KB) ─────
         kb_context = ""
         kb_prompt_section = ""
+
+        # Asset-level search (complete files, YouTube links)
+        try:
+            from clawed.asset_registry import AssetRegistry
+            registry = AssetRegistry()
+            assets = registry.search_assets(context.teacher_id, topic, top_k=5)
+            yt_links = registry.get_youtube_links(context.teacher_id, topic, top_k=3)
+            if assets or yt_links:
+                kb_prompt_section = registry.format_asset_summary(assets, yt_links)
+                logger.info(
+                    "Asset search found %d files, %d YouTube links for '%s'",
+                    len(assets), len(yt_links), topic,
+                )
+        except Exception as e:
+            logger.debug("Asset search failed: %s", e)
+
+        # KB chunk-level search (text excerpts)
         try:
             from clawed.agent_core.memory.curriculum_kb import CurriculumKB
             kb = CurriculumKB()
             kb_results = kb.search(context.teacher_id, topic, top_k=3)
             if kb_results:
-                kb_parts = []
-                for r in kb_results:
-                    if r.get("similarity", 0) > 0.1:
-                        kb_parts.append(r)
+                kb_parts = [r for r in kb_results if r.get("similarity", 0) > 0.1]
                 if kb_parts:
                     kb_context = (
                         "\n\nRelevant materials from the teacher's files:\n"
@@ -124,20 +138,22 @@ class GenerateLessonBundleTool:
                             for r in kb_parts
                         )
                     )
-                    # Build structured prompt section for the LLM
-                    kb_prompt_section = (
-                        "Teacher's Existing Materials on This Topic\n"
-                        "The teacher has created content on this topic before. "
-                        "Reference and build on their existing work:\n\n"
-                        + "\n\n".join(
-                            f"From \"{r['doc_title']}\":\n{r['chunk_text'][:500]}"
-                            for r in kb_parts
-                        )
-                        + "\n\nUse these materials as a foundation. Reference the teacher's existing "
-                        "lessons, reuse their graphic organizer formats, build on their approach. "
-                        "If the teacher has taught this topic before, extend their work — don't "
-                        "start from scratch."
+                    chunk_section = "\n\n".join(
+                        f"From \"{r['doc_title']}\":\n{r['chunk_text'][:500]}"
+                        for r in kb_parts
                     )
+                    if kb_prompt_section:
+                        kb_prompt_section += "\n\n" + chunk_section
+                    else:
+                        kb_prompt_section = (
+                            "Teacher's Existing Materials on This Topic\n"
+                            "The teacher has created content on this topic before. "
+                            "Reference and build on their existing work:\n\n"
+                            + chunk_section
+                            + "\n\nUse these materials as a foundation. "
+                            "Reference the teacher's existing lessons, reuse their "
+                            "graphic organizer formats, build on their approach."
+                        )
                     logger.info("KB search found %d relevant chunks for '%s'", len(kb_parts), topic)
         except Exception as e:
             logger.debug("KB search failed: %s", e)
