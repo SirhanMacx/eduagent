@@ -508,14 +508,40 @@ async def _fetch_teacher_image(
 
         best_path: Optional[str] = None
         best_score = 0
+        query_lower = query.lower()
+
         for row in rows:
-            combined = (row["context_text"] + " " + row["title"]).lower()
-            score = sum(1 for kw in keywords if kw in combined)
+            context = (row["context_text"] or "").lower()
+            title = (row["title"] or "").lower()
+            combined = f"{context} {title}"
+
+            score = 0
+
+            # Exact phrase match gets big bonus
+            if query_lower in combined:
+                score += 5
+
+            # Keyword overlap (weighted)
+            for kw in keywords:
+                if kw in combined:
+                    score += 2
+
+            # Partial word matches (e.g., "suffrage" matches "suffragist")
+            for kw in keywords:
+                if kw not in combined:  # Only check partials for non-exact matches
+                    words = combined.split()
+                    for word in words:
+                        if len(kw) >= 4 and len(word) >= 4:
+                            if kw in word or word in kw:
+                                score += 1
+                                break
+
             if score > best_score:
                 best_score = score
                 best_path = row["image_path"]
 
-        if best_path and best_score >= 1 and Path(best_path).exists():
+        # Require minimum score of 2 (at least one keyword match)
+        if best_path and best_score >= 2 and Path(best_path).exists():
             logger.info("Using teacher's own image for '%s' -> %s", query, best_path)
             return Path(best_path)
     except Exception as e:
