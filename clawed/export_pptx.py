@@ -109,6 +109,24 @@ def _section_divider(prs, slide_num, text, theme, slide_w, slide_h):
 # ── Image fetching ────────────────────────────────────────────────────
 
 
+def _run_async_safe(coro):
+    """Run an async coroutine, handling both sync and async calling contexts.
+
+    When called from inside a running event loop (e.g., agent_core tools),
+    uses a thread to avoid nested asyncio.run() errors.  When called from
+    plain sync code (CLI), uses asyncio.run() directly.
+    """
+    try:
+        asyncio.get_running_loop()
+        # We're inside an event loop — run in a worker thread
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+            return pool.submit(asyncio.run, coro).result(timeout=30)
+    except RuntimeError:
+        # No running loop — safe to use asyncio.run()
+        return asyncio.run(coro)
+
+
 def _try_fetch_images(topics: list[tuple[str, str]], subject: str) -> dict[str, Optional[Path]]:
     """Attempt to fetch images for multiple topics. Non-blocking, short timeout.
 
@@ -130,18 +148,7 @@ def _try_fetch_images(topics: list[tuple[str, str]], subject: str) -> dict[str, 
                 results[key] = None
 
     try:
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
-
-        if loop and loop.is_running():
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                future = pool.submit(asyncio.run, _fetch_all())
-                future.result(timeout=30)
-        else:
-            asyncio.run(_fetch_all())
+        _run_async_safe(_fetch_all())
     except Exception as e:
         logger.debug("Image fetching failed: %s", e)
 
@@ -193,18 +200,7 @@ def _try_fetch_content_images(
                 results[key] = None
 
     try:
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
-
-        if loop and loop.is_running():
-            import concurrent.futures
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-                future = pool.submit(asyncio.run, _fetch_all())
-                future.result(timeout=30)
-        else:
-            asyncio.run(_fetch_all())
+        _run_async_safe(_fetch_all())
     except Exception as e:
         logger.debug("Content image fetching failed: %s", e)
 

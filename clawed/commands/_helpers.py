@@ -67,15 +67,7 @@ def output_dir() -> Path:
 
 def run_async(coro):
     """Run an async coroutine from synchronous CLI code."""
-    try:
-        loop = asyncio.get_event_loop()
-        if loop.is_closed():
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-        return loop.run_until_complete(coro)
-    except RuntimeError:
-        # No running event loop — create a new one
-        return asyncio.run(coro)
+    return asyncio.run(coro)
 
 
 def persona_path() -> Path:
