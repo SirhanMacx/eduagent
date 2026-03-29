@@ -77,8 +77,9 @@ class CurriculumMapper:
 
         config = route_model("year_map", self.config)
         client = LLMClient(config)
-        data = await client.generate_json(
+        return await client.safe_generate_json(
             prompt=prompt,
+            model_class=YearMap,
             system=(
                 "You are an expert curriculum designer. "
                 "Respond only with valid JSON matching the specified format."
@@ -86,8 +87,6 @@ class CurriculumMapper:
             temperature=0.5,
             max_tokens=8192,
         )
-
-        return YearMap.model_validate(data)
 
     async def generate_pacing_guide(
         self,
@@ -140,8 +139,9 @@ class CurriculumMapper:
 
         config = route_model("pacing_guide", self.config)
         client = LLMClient(config)
-        data = await client.generate_json(
+        return await client.safe_generate_json(
             prompt=prompt,
+            model_class=PacingGuide,
             system=(
                 "You are an expert curriculum pacing specialist. "
                 "Respond only with valid JSON matching the specified format."
@@ -149,8 +149,6 @@ class CurriculumMapper:
             temperature=0.4,
             max_tokens=12000,
         )
-
-        return PacingGuide.model_validate(data)
 
     async def identify_curriculum_gaps(
         self,

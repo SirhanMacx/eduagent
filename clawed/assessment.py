@@ -8,16 +8,12 @@ from clawed.llm import LLMClient
 from clawed.model_router import route as route_model
 from clawed.models import (
     AppConfig,
-    AssessmentQuestion,
     DailyLesson,
     DBQAssessment,
-    DBQDocument,
     FormativeAssessment,
     Quiz,
     Rubric,
-    RubricCriterion,
     SummativeAssessment,
-    SummativeQuestion,
     TeacherPersona,
     UnitPlan,
 )
@@ -57,21 +53,11 @@ class AssessmentGenerator:
         )
 
         client = LLMClient(route_model("assessment", cfg) if cfg else cfg)
-        data = await client.generate_json(
+        return await client.safe_generate_json(
             prompt=prompt,
+            model_class=FormativeAssessment,
             system="You are an expert formative assessment designer. Respond only with valid JSON.",
             temperature=0.4,
-        )
-
-        questions = [AssessmentQuestion.model_validate(q) for q in data.get("questions", [])]
-        answer_key = {int(k): v for k, v in data.get("answer_key", {}).items()}
-
-        return FormativeAssessment(
-            lesson_title=data.get("lesson_title", lesson.title),
-            objective=data.get("objective", lesson.objective),
-            questions=questions,
-            answer_key=answer_key,
-            time_minutes=data.get("time_minutes", 5),
         )
 
     # ── Summative (unit test) ───────────────────────────────────────────
@@ -102,24 +88,11 @@ class AssessmentGenerator:
         )
 
         client = LLMClient(route_model("assessment", cfg) if cfg else cfg)
-        data = await client.generate_json(
+        return await client.safe_generate_json(
             prompt=prompt,
+            model_class=SummativeAssessment,
             system="You are an expert summative assessment designer. Respond only with valid JSON.",
             temperature=0.4,
-        )
-
-        questions = [SummativeQuestion.model_validate(q) for q in data.get("questions", [])]
-        rubric = [RubricCriterion.model_validate(r) for r in data.get("rubric", [])]
-
-        return SummativeAssessment(
-            unit_title=data.get("unit_title", unit.title),
-            subject=data.get("subject", unit.subject),
-            grade_level=data.get("grade_level", unit.grade_level),
-            objectives=data.get("objectives", unit.enduring_understandings),
-            questions=questions,
-            rubric=rubric,
-            total_points=data.get("total_points", sum(q.point_value for q in questions)),
-            time_minutes=data.get("time_minutes", 45),
         )
 
     # ── DBQ (Document-Based Question) ───────────────────────────────────
@@ -145,25 +118,12 @@ class AssessmentGenerator:
         )
 
         client = LLMClient(route_model("assessment", cfg) if cfg else cfg)
-        data = await client.generate_json(
+        return await client.safe_generate_json(
             prompt=prompt,
+            model_class=DBQAssessment,
             system="You are an expert DBQ designer in the NYS Regents tradition. Respond only with valid JSON.",
             temperature=0.5,
             max_tokens=16384,
-        )
-
-        documents = [DBQDocument.model_validate(d) for d in data.get("documents", [])]
-        rubric = [RubricCriterion.model_validate(r) for r in data.get("rubric", [])]
-
-        return DBQAssessment(
-            topic=data.get("topic", topic),
-            grade_level=data.get("grade_level", grade_level),
-            background=data.get("background", ""),
-            documents=documents,
-            essay_prompt=data.get("essay_prompt", ""),
-            model_answer=data.get("model_answer", ""),
-            rubric=rubric,
-            time_minutes=data.get("time_minutes", 60),
         )
 
     # ── Rubric ──────────────────────────────────────────────────────────
@@ -189,18 +149,11 @@ class AssessmentGenerator:
         )
 
         client = LLMClient(route_model("assessment", cfg) if cfg else cfg)
-        data = await client.generate_json(
+        return await client.safe_generate_json(
             prompt=prompt,
+            model_class=Rubric,
             system="You are an expert rubric designer. Respond only with valid JSON.",
             temperature=0.4,
-        )
-
-        criteria = [RubricCriterion.model_validate(c) for c in data.get("criteria", [])]
-
-        return Rubric(
-            task_description=data.get("task_description", task_description),
-            criteria=criteria,
-            total_points=data.get("total_points", len(criteria) * 4),
         )
 
     # ── Quiz ────────────────────────────────────────────────────────────
@@ -229,22 +182,11 @@ class AssessmentGenerator:
         )
 
         client = LLMClient(route_model("assessment", cfg) if cfg else cfg)
-        data = await client.generate_json(
+        return await client.safe_generate_json(
             prompt=prompt,
+            model_class=Quiz,
             system="You are an expert quiz designer. Respond only with valid JSON.",
             temperature=0.4,
-        )
-
-        questions = [AssessmentQuestion.model_validate(q) for q in data.get("questions", [])]
-        answer_key = {int(k): v for k, v in data.get("answer_key", {}).items()}
-
-        return Quiz(
-            topic=data.get("topic", topic),
-            grade_level=data.get("grade_level", grade),
-            questions=questions,
-            answer_key=answer_key,
-            total_points=data.get("total_points", sum(q.point_value for q in questions)),
-            time_minutes=data.get("time_minutes", 15),
         )
 
 

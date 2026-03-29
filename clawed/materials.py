@@ -4,6 +4,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from pydantic import BaseModel as PydanticBaseModel
+from pydantic import Field, model_validator
+
 from clawed.llm import LLMClient
 from clawed.model_router import route as route_model
 from clawed.models import (
@@ -18,6 +21,47 @@ from clawed.models import (
 )
 
 PROMPT_DIR = Path(__file__).parent / "prompts"
+
+
+# ── Wrapper models for safe_generate_json (list-returning generators) ────
+
+
+class _WorksheetResult(PydanticBaseModel):
+    items: list[WorksheetItem]
+
+    @model_validator(mode="before")
+    @classmethod
+    def _wrap_list(cls, data):  # noqa: ANN001
+        if isinstance(data, list):
+            return {"items": data}
+        return data
+
+
+class _AssessmentResult(PydanticBaseModel):
+    questions: list[AssessmentQuestion] = Field(default_factory=list)
+    rubric: list[RubricCriterion] = Field(default_factory=list)
+
+
+class _SlidesResult(PydanticBaseModel):
+    slides: list[SlideOutline]
+
+    @model_validator(mode="before")
+    @classmethod
+    def _wrap_list(cls, data):  # noqa: ANN001
+        if isinstance(data, list):
+            return {"slides": data}
+        return data
+
+
+class _IEPNotesResult(PydanticBaseModel):
+    notes: list[str]
+
+    @model_validator(mode="before")
+    @classmethod
+    def _wrap_list(cls, data):  # noqa: ANN001
+        if isinstance(data, list):
+            return {"notes": data}
+        return data
 
 
 def _lesson_key_concepts(lesson: DailyLesson) -> str:
@@ -49,14 +93,13 @@ async def generate_worksheet(
     if task_type and config:
         config = route_model(task_type, config)
     client = LLMClient(config)
-    data = await client.generate_json(
+    result = await client.safe_generate_json(
         prompt=prompt,
+        model_class=_WorksheetResult,
         system="You are an expert worksheet designer. Respond only with a valid JSON array.",
         temperature=0.5,
     )
-
-    # data is a list of dicts
-    return [WorksheetItem.model_validate(item) for item in data]
+    return result.items
 
 
 # ── Assessment generation ────────────────────────────────────────────────
@@ -83,15 +126,13 @@ async def generate_assessment(
     if task_type and config:
         config = route_model(task_type, config)
     client = LLMClient(config)
-    data = await client.generate_json(
+    result = await client.safe_generate_json(
         prompt=prompt,
+        model_class=_AssessmentResult,
         system="You are an expert assessment designer. Respond only with valid JSON.",
         temperature=0.4,
     )
-
-    questions = [AssessmentQuestion.model_validate(q) for q in data.get("questions", [])]
-    rubric = [RubricCriterion.model_validate(r) for r in data.get("rubric", [])]
-    return questions, rubric
+    return result.questions, result.rubric
 
 
 # ── Slide outline generation ─────────────────────────────────────────────
@@ -122,13 +163,13 @@ async def generate_slides(
     if task_type and config:
         config = route_model(task_type, config)
     client = LLMClient(config)
-    data = await client.generate_json(
+    result = await client.safe_generate_json(
         prompt=prompt,
+        model_class=_SlidesResult,
         system="You are a presentation designer. Respond only with a valid JSON array.",
         temperature=0.5,
     )
-
-    return [SlideOutline.model_validate(s) for s in data]
+    return result.slides
 
 
 # ── IEP / Differentiation notes ─────────────────────────────────────────
@@ -163,13 +204,13 @@ async def generate_iep_notes(
     if task_type and config:
         config = route_model(task_type, config)
     client = LLMClient(config)
-    data = await client.generate_json(
+    result = await client.safe_generate_json(
         prompt=prompt,
+        model_class=_IEPNotesResult,
         system="You are a differentiation specialist. Respond only with a valid JSON array of strings.",
         temperature=0.5,
     )
-
-    return data  # list[str]
+    return result.notes
 
 
 # ── Full materials generation ────────────────────────────────────────────
