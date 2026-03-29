@@ -263,8 +263,9 @@ class TestIngestMaterialsTool:
 
     @pytest.mark.asyncio
     async def test_execute_path_not_found(self):
-        from clawed.agent_core.tools.ingest_materials import IngestMaterialsTool
         from pathlib import Path
+
+        from clawed.agent_core.tools.ingest_materials import IngestMaterialsTool
 
         tool = IngestMaterialsTool()
         fake = str(Path.home() / "nonexistent_clawed_test_path")
@@ -283,16 +284,17 @@ class TestIngestMaterialsTool:
 
     @pytest.mark.asyncio
     async def test_execute_returns_tool_result(self, tmp_path):
-        from clawed.agent_core.tools.ingest_materials import IngestMaterialsTool
         from pathlib import Path
+
+        from clawed.agent_core.tools.ingest_materials import IngestMaterialsTool
 
         tool = IngestMaterialsTool()
         mock_doc = MagicMock()
         # Patch home check to allow tmp_path
-        with patch("clawed.agent_core.tools.ingest_materials.Path") as MockPath, \
+        with patch("clawed.agent_core.tools.ingest_materials.Path") as mock_path, \
              patch("clawed.ingestor.ingest_path") as mock_ip:
-            MockPath.home.return_value.resolve.return_value = tmp_path.parent
-            MockPath.side_effect = lambda p: Path(p)
+            mock_path.home.return_value.resolve.return_value = tmp_path.parent
+            mock_path.side_effect = lambda p: Path(p)
             mock_ip.return_value = [mock_doc, mock_doc]
             result = await tool.execute({"path": str(tmp_path)}, _ctx())
         assert isinstance(result, ToolResult)

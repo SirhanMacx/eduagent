@@ -457,7 +457,7 @@ def _extract_xlsx(path: Path) -> str:
             rows.append(f"[Sheet: {sheet}]")
             for i, row in enumerate(ws.iter_rows(values_only=True)):
                 if i >= 5000:
-                    rows.append(f"... (truncated at 5000 rows)")
+                    rows.append("... (truncated at 5000 rows)")
                     break
                 cells = [str(c) if c is not None else "" for c in row]
                 if any(cells):

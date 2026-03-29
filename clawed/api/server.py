@@ -266,7 +266,9 @@ def create_app() -> FastAPI:
         filter_html = ""
         if all_subjects:
             opts = "".join(
-                f"<option value='{html_mod.escape(s)}' {'selected' if s == subject_filter else ''}>{html_mod.escape(s)}</option>"
+                f"<option value='{html_mod.escape(s)}'"
+                f" {'selected' if s == subject_filter else ''}"
+                f">{html_mod.escape(s)}</option>"
                 for s in all_subjects
             )
             filter_html += (
@@ -275,7 +277,9 @@ def create_app() -> FastAPI:
             )
         if all_grades:
             opts = "".join(
-                f"<option value='{html_mod.escape(g)}' {'selected' if g == grade_filter else ''}>{html_mod.escape(g)}</option>"
+                f"<option value='{html_mod.escape(g)}'"
+                f" {'selected' if g == grade_filter else ''}"
+                f">{html_mod.escape(g)}</option>"
                 for g in all_grades
             )
             filter_html += (
