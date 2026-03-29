@@ -1035,6 +1035,9 @@ class AppConfig(BaseModel):
     # Web dashboard password (None = no auth, set to enable basic auth)
     dashboard_password: Optional[str] = None
 
+    # Per-image network timeout for the image pipeline (seconds)
+    image_fetch_timeout: int = 10
+
     # Teacher profile — the key to auto-tailoring
     teacher_profile: TeacherProfile = Field(default_factory=TeacherProfile)
 
