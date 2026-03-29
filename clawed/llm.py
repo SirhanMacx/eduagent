@@ -24,6 +24,7 @@ class LLMClient:
         system: str = "",
         temperature: float = 0.7,
         max_tokens: int = 4096,
+        demo_hint: str = "",
     ) -> str:
         """Generate text from the configured LLM backend.
 
@@ -36,7 +37,7 @@ class LLMClient:
         from clawed.demo import is_demo_mode
 
         if is_demo_mode(config=self.config):
-            return self._demo_response(prompt)
+            return self._demo_response(prompt, demo_hint=demo_hint)
 
         # Inject workspace context into system prompt
         system = self._enrich_system_prompt(system, prompt=prompt)
@@ -56,10 +57,28 @@ class LLMClient:
         return sanitize_text(raw)
 
     @staticmethod
-    def _demo_response(prompt: str) -> str:
-        """Return a canned demo response based on prompt keywords."""
+    def _demo_response(prompt: str, demo_hint: str = "") -> str:
+        """Return a canned demo response based on schema hint or prompt keywords."""
         from clawed.demo import load_demo
 
+        HINT_TO_FIXTURE = {
+            "MasterContent": "master_content",
+            "DailyLesson": "lesson_social_studies_g8",
+            "UnitPlan": "unit_plan",
+            "Quiz": "quiz",
+            "Rubric": "rubric",
+            "YearMap": "year_map",
+            "FormativeAssessment": "formative_assessment",
+            "SummativeAssessment": "assessment",
+            "DBQAssessment": "assessment",
+            "LessonMaterials": "lesson_materials",
+            "PacingGuide": "pacing_guide",
+        }
+        if demo_hint and demo_hint in HINT_TO_FIXTURE:
+            data = load_demo(HINT_TO_FIXTURE[demo_hint])
+            return json.dumps(data, indent=2)
+
+        # Keep existing keyword fallback below
         prompt_lower = prompt.lower()
         if "assessment" in prompt_lower or "dbq" in prompt_lower:
             data = load_demo("assessment")
@@ -163,9 +182,10 @@ class LLMClient:
         system: str = "",
         temperature: float = 0.4,
         max_tokens: int = 8192,
+        demo_hint: str = "",
     ) -> dict[str, Any]:
         """Generate and parse a JSON response from the LLM."""
-        raw = await self.generate(prompt, system, temperature, max_tokens)
+        raw = await self.generate(prompt, system, temperature, max_tokens, demo_hint=demo_hint)
         # Extract JSON from markdown code fences if present
         cleaned = raw.strip()
         if cleaned.startswith("```"):
@@ -202,6 +222,7 @@ class LLMClient:
         prompt: str,
         model_class: Type[BaseModel],
         max_retries: int = 1,
+        demo_hint: str = "",
         **kwargs: Any,
     ) -> BaseModel:
         """Generate JSON and parse into a Pydantic model with automatic retry.
@@ -209,8 +230,9 @@ class LLMClient:
         On validation failure, retries once with the error appended to the prompt.
         On second failure, raises a clear RuntimeError (not a traceback).
         """
+        demo_hint = demo_hint or model_class.__name__
         for attempt in range(max_retries + 1):
-            raw = await self.generate_json(prompt, **kwargs)
+            raw = await self.generate_json(prompt, demo_hint=demo_hint, **kwargs)
             try:
                 return model_class.model_validate(raw)
             except ValidationError as e:
@@ -418,7 +440,7 @@ class LLMClient:
                 cleaned = "\n".join(lines)
             return json.loads(cleaned)
         except Exception:
-            return {"passed": True, "issues": []}
+            return {"passed": False, "issues": ["Quality review could not parse LLM response — review skipped"]}
 
     # ── Anthropic ────────────────────────────────────────────────────────
 
