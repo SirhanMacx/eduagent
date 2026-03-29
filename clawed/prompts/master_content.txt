@@ -1,0 +1,228 @@
+(Your persona and teaching style are defined in the system instructions. Follow them.)
+
+## Unit Context
+This lesson is part of a larger unit:
+- **Unit Title:** {unit_title}
+- **Unit Overview:** {unit_overview}
+
+## Lesson Parameters
+- **Subject:** {subject}
+- **Grade Level:** {grade_level}
+- **Topic:** {topic}
+- **Objective:** {objective}
+- **Lesson Number:** {lesson_number} of {total_lessons}
+- **Duration:** {duration_minutes} minutes
+
+## Standards
+{standards}
+
+{few_shot_context}
+
+{teacher_materials}
+
+CRITICAL: Do NOT use XML tags, angle brackets, or pseudo-markup in your response.
+Do NOT wrap content in tags like <teacher prompt>, <transition>, <script>, etc.
+Write plain text only. The JSON values must contain clean, readable prose.
+
+---
+
+## Self-Contained Materials Rule
+
+Every piece of content this lesson references MUST be included in full. The following phrases are BANNED:
+- "teacher will provide"
+- "refer to textbook"
+- "see page X"
+- "open your book to"
+- "use the handout"
+- "worksheet attached"
+- "see attached"
+- "distribute the provided"
+- "refer to class notes"
+- "as discussed in class"
+
+If you reference a document, passage, data table, primary source, graphic organizer, or any other material, it MUST appear verbatim in the appropriate field. A teacher printing this lesson must never need to find or create anything separately.
+
+---
+
+## Stimulus-Based Assessment — MANDATORY FOR ALL SUBJECTS
+
+NEVER write a bare recall question. Every question — Do Now, guided notes prompts, station questions, and all exit ticket items — must be anchored to a stimulus.
+
+Choose stimulus types by subject:
+- **Science:** diagram, data table, lab observation, photograph
+- **Social Studies:** primary source, political cartoon, map, data visualization
+- **Math:** word problem, graph, table, geometric figure
+- **ELA:** text excerpt, author quote, literary device example
+- **General / Cross-Curricular:** real-world scenario, infographic, news excerpt
+
+NEVER write a bare recall question. "What is photosynthesis?" is banned. "The graph below shows oxygen production in a sealed chamber over 10 minutes. At what point does oxygen output peak, and what process is responsible?" is required.
+
+---
+
+## Pedagogical Requirements
+
+### Do Now
+- MUST be stimulus-based. Include the actual stimulus text/data/scenario in the `stimulus` field.
+- NOT "What did we learn yesterday?" or any other recall opener.
+- Students must be able to begin independently the moment they sit down.
+- Low-stakes, accessible entry — designed to activate thinking, not test prior knowledge.
+
+### Guided Notes
+- Minimum 5 fill-in-the-blank entries. Aim for 8–12.
+- Each entry has exactly ONE blank (shown as ________) for a key word or phrase.
+- The `section_ref` field names the direct-instruction heading the note belongs to.
+- Include the correct answer in the `answer` field.
+
+### Primary Sources
+- Minimum 2 per lesson, regardless of subject.
+- Each primary source must include the FULL TEXT of the excerpt in `content_text` — not a summary, not a placeholder.
+- Attribution must identify author, date, and title/origin.
+- Subject-appropriate source types: use "text_excerpt" for ELA/SS, "data_table" for science/math, "diagram" for science/math, "map" for geography/SS, "political_cartoon" for SS, "photograph" for SS/science.
+- Each primary source must include at least 2 `scaffolding_questions` that build from identification to analysis.
+
+### Exit Ticket
+- Exactly 3 `StimulusQuestion` items.
+- Cognitive progression is REQUIRED: Question 1 = recall/identification, Question 2 = application, Question 3 = analysis or transfer.
+- The `stimulus` field must be non-empty for every question — include the actual text, data, or scenario.
+- `cognitive_level` must be set: "recall", "application", or "analysis".
+
+### Differentiation
+- `struggling`: 2–3 SPECIFIC accommodations. Name the scaffold (e.g., "Provide a T-chart with 'Cause' and 'Effect' pre-labeled and two rows partially filled in"). Never write "provide extra time" or "provide extra support."
+- `advanced`: 2–3 genuine extensions that deepen, not repeat. "Write an additional paragraph" is not enrichment. "Identify an assumption the author makes that weakens their argument" is.
+- `ell`: 2–3 concrete language supports: sentence frames, visual glossaries, native-language cognates, or simplified stems with academic vocabulary embedded.
+
+---
+
+## Output Format
+
+Respond with ONLY a JSON object (no markdown fencing):
+
+{
+    "title": "Lesson Title",
+    "subject": "Subject name",
+    "grade_level": "Grade level (e.g., 8th Grade)",
+    "topic": "Specific lesson topic",
+    "standards": ["Standard code 1", "Standard code 2"],
+    "objective": "Students will be able to... (SWBAT format, observable verb)",
+    "duration_minutes": 45,
+
+    "vocabulary": [
+        {
+            "term": "Term",
+            "definition": "Clear, student-friendly definition",
+            "context_sentence": "A sentence using the term in the context of this lesson",
+            "image_spec": "Optional image description or empty string"
+        }
+    ],
+
+    "primary_sources": [
+        {
+            "id": "source_a",
+            "title": "Document Title",
+            "source_type": "text_excerpt | political_cartoon | map | data_table | photograph | diagram",
+            "content_text": "The complete source excerpt or full data table — not a summary. Must be substantive (3–8 sentences for text; all rows/columns for tables).",
+            "attribution": "Author, Title, Date/Year",
+            "image_spec": "Optional image search description or empty string",
+            "scaffolding_questions": [
+                "Identification-level question?",
+                "Analysis-level question?"
+            ]
+        }
+    ],
+
+    "do_now": {
+        "stimulus": "The full text, scenario, data excerpt, or description of the visual that students respond to. Must be substantive — not a question itself.",
+        "stimulus_type": "text_excerpt | scenario | data | image | map | diagram",
+        "questions": [
+            "Question 1 anchored to the stimulus above?",
+            "Question 2 anchored to the stimulus above?"
+        ],
+        "answers": [
+            "Expected answer to question 1",
+            "Expected answer to question 2"
+        ]
+    },
+
+    "direct_instruction": [
+        {
+            "heading": "Section Heading",
+            "content": "The actual content being taught — include full source texts, worked examples, data, or passages. Not a summary. A substitute teacher should be able to deliver this from the text alone.",
+            "teacher_script": "Scripted teacher language: what the teacher says, key questions to pose, think-aloud annotations, and transition phrases. Include checks for understanding every 3–5 minutes as specific questions.",
+            "key_points": ["Key point 1", "Key point 2"],
+            "image_spec": "Optional image description or empty string"
+        }
+    ],
+
+    "guided_notes": [
+        {
+            "prompt": "The ________ was the primary cause of...",
+            "answer": "key word or phrase",
+            "section_ref": "Heading of the direct_instruction section this note belongs to"
+        }
+    ],
+
+    "stations": [
+        {
+            "title": "STATION A: Document Title",
+            "source_ref": "id of the referenced primary_source (e.g., source_a)",
+            "task": "What students are doing at this station (e.g., sourcing, contextualizing, corroborating)",
+            "student_directions": "Step-by-step directions a student can follow independently. Include all questions students will answer.",
+            "teacher_answer_key": "Complete expected responses for all station questions"
+        }
+    ],
+
+    "independent_work": {
+        "task": "Clear, step-by-step instructions a student can follow without asking the teacher. Include all actual problems, questions, or tasks — not descriptions of tasks. Include an extension task for early finishers.",
+        "rubric_snippet": "2–3 criteria describing what proficient work looks like",
+        "exemplar": "A brief model answer or sentence-level exemplar showing the expected quality"
+    },
+
+    "exit_ticket": [
+        {
+            "stimulus": "The actual text, data excerpt, or scenario students read before answering. Must be non-empty.",
+            "stimulus_type": "text_excerpt | scenario | data | image | map | diagram",
+            "stimulus_image_spec": "Optional image description or empty string",
+            "question": "Question anchored to the stimulus above?",
+            "answer": "Expected proficient response",
+            "cognitive_level": "recall"
+        },
+        {
+            "stimulus": "A different or extended stimulus — may reuse an earlier source with a new angle.",
+            "stimulus_type": "text_excerpt | scenario | data | image | map | diagram",
+            "stimulus_image_spec": "",
+            "question": "Application-level question anchored to the stimulus?",
+            "answer": "Expected proficient response",
+            "cognitive_level": "application"
+        },
+        {
+            "stimulus": "A new or extended stimulus that requires synthesis or transfer.",
+            "stimulus_type": "text_excerpt | scenario | data | image | map | diagram",
+            "stimulus_image_spec": "",
+            "question": "Analysis or transfer question — requires students to go beyond the text?",
+            "answer": "Expected proficient response",
+            "cognitive_level": "analysis"
+        }
+    ],
+
+    "differentiation": {
+        "struggling": [
+            "Specific scaffold 1 — name the tool, structure, or sentence frame",
+            "Specific scaffold 2"
+        ],
+        "advanced": [
+            "Genuine enrichment extension 1 — deepens, does not repeat",
+            "Genuine enrichment extension 2"
+        ],
+        "ell": [
+            "Concrete language support 1 — sentence frame, visual glossary, or cognate note",
+            "Concrete language support 2"
+        ]
+    },
+
+    "homework": "A meaningful extension activity connecting today's learning to outside school or previewing tomorrow's content. Not busywork. Not a repeat of classwork. Write null if no homework.",
+
+    "materials_needed": [
+        "Item 1 — specific enough that a teacher can gather everything before class",
+        "Item 2"
+    ]
+}
