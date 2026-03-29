@@ -18,6 +18,7 @@ from clawed.corpus import (
     init_corpus_db,
 )
 from clawed.lesson import generate_lesson
+from clawed.master_content import MasterContent
 from clawed.models import (
     AppConfig,
     DailyLesson,
@@ -267,6 +268,203 @@ def _mock_lesson_json(lesson_number: int = 1) -> dict:
     }
 
 
+def _mock_master_content_json() -> dict:
+    """Return a realistic MasterContent JSON the LLM would produce."""
+    return {
+        "title": "Nationalism in 19th-Century Europe",
+        "subject": "Social Studies",
+        "grade_level": "10",
+        "topic": "Nationalism in Europe",
+        "standards": ["NYS-SS 10.5"],
+        "objective": (
+            "SWBAT analyze how nationalism fueled competition "
+            "among European powers by examining primary sources."
+        ),
+        "duration_minutes": 45,
+        "vocabulary": [
+            {
+                "term": "nationalism",
+                "definition": "Extreme pride in one's nation",
+                "context_sentence": "Nationalism drove competition among European powers.",
+            },
+        ],
+        "primary_sources": [
+            {
+                "id": "source_a",
+                "title": "Otto von Bismarck Speech, 1862",
+                "source_type": "text_excerpt",
+                "content_text": (
+                    "The great questions of the day will not be settled by speeches "
+                    "and majority decisions but by iron and blood."
+                ),
+                "attribution": "Otto von Bismarck, 1862",
+                "scaffolding_questions": [
+                    "What does Bismarck mean by 'iron and blood'?",
+                    "How does this speech reflect nationalist sentiment?",
+                ],
+            },
+            {
+                "id": "source_b",
+                "title": "Map of Europe, 1871",
+                "source_type": "map",
+                "content_text": (
+                    "Map showing the newly unified German Empire and Kingdom of Italy "
+                    "alongside older empires (Austria-Hungary, Ottoman, Russian)."
+                ),
+                "attribution": "Historical Atlas, 1871",
+                "scaffolding_questions": [
+                    "Which new nations appear on this map?",
+                    "How might their formation affect the balance of power?",
+                ],
+            },
+        ],
+        "do_now": {
+            "stimulus": (
+                "Look at the two political cartoons projected on the board. "
+                "One shows a German eagle spreading its wings over Europe; "
+                "the other shows various European nations pulling at a map."
+            ),
+            "stimulus_type": "image",
+            "questions": [
+                "What message is each cartoon trying to convey?",
+                "What emotions does each cartoon evoke about nationalism?",
+            ],
+            "answers": [
+                "The eagle represents German expansionism and national pride.",
+                "The pulling cartoon shows competition and rivalry among nations.",
+            ],
+        },
+        "direct_instruction": [
+            {
+                "heading": "The Rise of Nationalism",
+                "content": (
+                    "Nationalism — the belief that a people sharing a common language, "
+                    "history, and culture should form an independent nation — reshaped "
+                    "19th-century Europe. Germany unified under Bismarck in 1871; "
+                    "Italy unified through Garibaldi and Cavour."
+                ),
+                "teacher_script": (
+                    "Today we are investigating how nationalism fueled competition. "
+                    "Turn to your partner: what does it mean to feel national pride?"
+                ),
+                "key_points": [
+                    "Nationalism drove unification movements in Germany and Italy",
+                    "Multi-ethnic empires (Austria-Hungary, Ottoman) faced internal pressures",
+                ],
+            },
+        ],
+        "guided_notes": [
+            {
+                "prompt": "________ unified Germany through 'iron and blood' policies.",
+                "answer": "Bismarck",
+                "section_ref": "The Rise of Nationalism",
+            },
+            {
+                "prompt": "Italy was unified through the efforts of Garibaldi and ________.",
+                "answer": "Cavour",
+                "section_ref": "The Rise of Nationalism",
+            },
+            {
+                "prompt": "Multi-ethnic empires like ________ faced internal nationalist pressures.",
+                "answer": "Austria-Hungary",
+                "section_ref": "The Rise of Nationalism",
+            },
+            {
+                "prompt": "Nationalism is the belief that people sharing a common ________ should form a nation.",
+                "answer": "language",
+                "section_ref": "The Rise of Nationalism",
+            },
+            {
+                "prompt": "Germany was officially unified in the year ________.",
+                "answer": "1871",
+                "section_ref": "The Rise of Nationalism",
+            },
+        ],
+        "stations": [
+            {
+                "title": "STATION A: Bismarck's Speech",
+                "source_ref": "source_a",
+                "task": "Sourcing and contextualizing Bismarck's 'iron and blood' speech.",
+                "student_directions": (
+                    "1. Read the excerpt. 2. Identify the speaker and date. "
+                    "3. What does Bismarck mean by 'iron and blood'? "
+                    "4. How does this reflect nationalist goals?"
+                ),
+                "teacher_answer_key": (
+                    "Bismarck means military force. It reflects aggressive nationalism "
+                    "and the desire to unify Germany through power, not diplomacy."
+                ),
+            },
+        ],
+        "independent_work": {
+            "task": (
+                "Write a one-paragraph response: How did nationalism contribute "
+                "to tensions among European powers before WWI? Use at least two "
+                "pieces of evidence from today's sources."
+            ),
+            "rubric_snippet": (
+                "Proficient: Clear claim + 2 evidence citations + explanation of each"
+            ),
+            "exemplar": (
+                "Nationalism increased tensions by driving competition for territory "
+                "and destabilizing multi-ethnic empires. Bismarck's 'iron and blood' "
+                "speech shows Germany's aggressive pursuit of unification."
+            ),
+        },
+        "exit_ticket": [
+            {
+                "stimulus": (
+                    "Bismarck declared: 'The great questions of the day will not be "
+                    "settled by speeches and majority decisions but by iron and blood.'"
+                ),
+                "stimulus_type": "text_excerpt",
+                "question": "What policy approach does this quote describe?",
+                "answer": "Military force and realpolitik over diplomacy.",
+                "cognitive_level": "recall",
+            },
+            {
+                "stimulus": (
+                    "By 1871, both Germany and Italy had unified into nation-states "
+                    "after decades of fragmentation."
+                ),
+                "stimulus_type": "text_excerpt",
+                "question": (
+                    "How did the unification of Germany and Italy change "
+                    "the balance of power in Europe?"
+                ),
+                "answer": (
+                    "New powerful nations competed with established empires, "
+                    "increasing rivalry and tension."
+                ),
+                "cognitive_level": "application",
+            },
+            {
+                "stimulus": (
+                    "Austria-Hungary contained over 11 major ethnic groups, "
+                    "many of whom sought independence."
+                ),
+                "stimulus_type": "text_excerpt",
+                "question": (
+                    "Why might nationalism be a threat to multi-ethnic empires "
+                    "rather than a unifying force?"
+                ),
+                "answer": (
+                    "Ethnic groups within empires wanted their own nations, "
+                    "leading to internal instability and separatist movements."
+                ),
+                "cognitive_level": "analysis",
+            },
+        ],
+        "differentiation": {
+            "struggling": ["Sentence starters provided for paragraph response"],
+            "advanced": ["Compare nationalism across two countries using a Venn diagram"],
+            "ell": ["Vocabulary list with L1 cognates and visual glossary"],
+        },
+        "homework": "Read pages 412-418.",
+        "materials_needed": ["Primary source packet", "Political cartoons"],
+    }
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # 1. Full Unit Generation Flow
 # ═══════════════════════════════════════════════════════════════════════════
@@ -375,10 +573,10 @@ class TestLessonGenerationFromUnit:
         self, sample_unit, persona, config,
     ):
         """generate_lesson() with mocked LLM produces a valid DailyLesson."""
-        mock_json = _mock_lesson_json(lesson_number=1)
+        mock_json = _mock_master_content_json()
 
         with patch("clawed.lesson.LLMClient") as mock_cls:
-            _mock_llm_client(mock_cls, mock_json, model_class=DailyLesson)
+            _mock_llm_client(mock_cls, mock_json, model_class=MasterContent)
 
             lesson = _run(generate_lesson(
                 lesson_number=1,
@@ -397,10 +595,10 @@ class TestLessonGenerationFromUnit:
         self, sample_unit, persona, config,
     ):
         """Lesson objective includes SWBAT or 'will be able to'."""
-        mock_json = _mock_lesson_json()
+        mock_json = _mock_master_content_json()
 
         with patch("clawed.lesson.LLMClient") as mock_cls:
-            _mock_llm_client(mock_cls, mock_json, model_class=DailyLesson)
+            _mock_llm_client(mock_cls, mock_json, model_class=MasterContent)
 
             lesson = _run(generate_lesson(
                 lesson_number=1,
@@ -418,10 +616,10 @@ class TestLessonGenerationFromUnit:
         self, sample_unit, persona, config,
     ):
         """Every key section of a DailyLesson is populated."""
-        mock_json = _mock_lesson_json()
+        mock_json = _mock_master_content_json()
 
         with patch("clawed.lesson.LLMClient") as mock_cls:
-            _mock_llm_client(mock_cls, mock_json, model_class=DailyLesson)
+            _mock_llm_client(mock_cls, mock_json, model_class=MasterContent)
 
             lesson = _run(generate_lesson(
                 lesson_number=1,
@@ -453,10 +651,10 @@ class TestLessonGenerationFromUnit:
         self, sample_unit, persona, config,
     ):
         """Exit ticket contains at least one question with text."""
-        mock_json = _mock_lesson_json()
+        mock_json = _mock_master_content_json()
 
         with patch("clawed.lesson.LLMClient") as mock_cls:
-            _mock_llm_client(mock_cls, mock_json, model_class=DailyLesson)
+            _mock_llm_client(mock_cls, mock_json, model_class=MasterContent)
 
             lesson = _run(generate_lesson(
                 lesson_number=1,

@@ -1,7 +1,6 @@
 """Tool: generate_lesson_bundle — complete teaching package (lesson + handout + slides)."""
 from __future__ import annotations
 
-import json
 import logging
 from pathlib import Path
 from typing import Any
@@ -75,9 +74,7 @@ class GenerateLessonBundleTool:
     async def execute(
         self, params: dict[str, Any], context: AgentContext
     ) -> ToolResult:
-        from clawed.lesson import generate_lesson
         from clawed.models import LessonBrief, TeacherPersona, UnitPlan
-        from clawed.sanitize import sanitize_text
         from clawed.standards import get_standards_for_lesson
 
         topic = params["topic"]
@@ -185,13 +182,15 @@ class GenerateLessonBundleTool:
             ],
         )
 
-        # ── Generate the lesson ──────────────────────────────────────
+        # ── Generate MasterContent ────────────────────────────────────
+        from clawed.lesson import generate_master_content
+
         logger.info(
-            "Generating lesson bundle for '%s' (grade=%s, subject=%s, images=%s)",
-            topic, grade, subject, include_images,
+            "Generating master content for '%s' (grade=%s, subject=%s)",
+            topic, grade, subject,
         )
         try:
-            lesson = await generate_lesson(
+            master = await generate_master_content(
                 lesson_number=1,
                 unit=unit,
                 persona=persona,
@@ -202,159 +201,92 @@ class GenerateLessonBundleTool:
         except Exception as e:
             return ToolResult(text=f"Failed to generate lesson: {e}")
 
-        # ── Sanitize all text fields ─────────────────────────────────
-        lesson.title = sanitize_text(lesson.title)
-        lesson.objective = sanitize_text(lesson.objective)
-        lesson.do_now = sanitize_text(lesson.do_now)
-        lesson.direct_instruction = sanitize_text(lesson.direct_instruction)
-        lesson.guided_practice = sanitize_text(lesson.guided_practice)
-        lesson.independent_work = sanitize_text(lesson.independent_work)
-        if lesson.homework:
-            lesson.homework = sanitize_text(lesson.homework)
+        # ── Validate ──────────────────────────────────────────────────
+        from clawed.generation_report import GenerationReport
+        from clawed.validation import check_self_contained, validate_alignment, validate_master_content
 
-        # ── Ensure standards are populated ───────────────────────────
-        if not lesson.standards and standards_list:
-            lesson.standards = standards_list
+        report = GenerationReport()
 
-        # ── Self-review against observation-ready standards ──────────
-        lesson_json_str = json.dumps(lesson.model_dump(), indent=2)
-        try:
-            from clawed.llm import LLMClient
+        mc_errors = validate_master_content(master, topic)
+        for err in mc_errors:
+            report.warnings.append(err)
+            logger.warning("Validation: %s", err)
 
-            llm_client = LLMClient(config)
-            review = await llm_client.review_lesson_package(
-                lesson_json_str,
-                standards_present=bool(lesson.standards),
-                has_handout=True,
-                has_slideshow=True,
-            )
-            if not review.get("passed", True) and review.get("issues"):
-                # Log issues for transparency
-                issues_text = "; ".join(review["issues"][:3])
-                logger.info("Self-review found issues: %s", issues_text)
-        except Exception:
-            pass  # Review is best-effort, don't block on failure
+        align_score, align_issues = validate_alignment(master)
+        for issue in align_issues:
+            report.warnings.append(issue)
 
-        # ── Voice validation ──────────────────────────────────────────
-        voice_notes: list[str] = []
-        try:
-            from clawed.voice_check import check_voice_match
+        # Check all text for delegation phrases
+        all_text = " ".join(
+            s.content for s in master.direct_instruction
+        )
+        delegation = check_self_contained(all_text)
+        for d in delegation:
+            report.warnings.append(d)
 
-            voice_result = check_voice_match(
-                persona=persona,
-                do_now=lesson.do_now,
-                direct_instruction_opening=lesson.direct_instruction[:500] if lesson.direct_instruction else "",
-            )
-            if not voice_result.passed:
-                for issue in voice_result.issues:
-                    voice_notes.append(issue)
-                    logger.info("Voice check issue: %s", issue)
-        except Exception as e:
-            logger.debug("Voice check failed: %s", e)
+        # ── Fetch images ──────────────────────────────────────────────
+        images: dict[str, Path] = {}
+        if include_images:
+            try:
+                from clawed.image_pipeline import fetch_all_images
 
-        # ── Generate student packet + admin plan in parallel ──────────
-        import asyncio
+                images = await fetch_all_images(master, config)
+                report.images_embedded = len(images)
+                logger.info("Fetched %d images", len(images))
+            except Exception as e:
+                logger.warning("Image fetch failed: %s", e)
+                report.warnings.append(f"Image fetch failed: {e}")
 
-        from clawed.llm import LLMClient
-
-        llm_client = LLMClient(config)
-        persona_ctx = persona.to_prompt_context()
-        student_packet = None
-        admin_plan = None
-
-        async def _gen_packet():
-            return await llm_client.generate_student_packet(
-                lesson_json_str, persona_context=persona_ctx,
-            )
-
-        async def _gen_admin():
-            return await llm_client.generate_admin_plan(
-                lesson_json_str, persona_context=persona_ctx,
-            )
-
-        try:
-            results = await asyncio.gather(
-                _gen_packet(), _gen_admin(), return_exceptions=True,
-            )
-            if not isinstance(results[0], Exception):
-                student_packet = results[0]
-                logger.info("Student packet generated: %d stations, %d guided notes",
-                            len(student_packet.stations), len(student_packet.guided_notes))
-            else:
-                logger.warning("Student packet generation failed: %s", results[0])
-            if not isinstance(results[1], Exception):
-                admin_plan = results[1]
-                logger.info("Admin lesson plan generated: %d sections", len(admin_plan.sections))
-            else:
-                logger.warning("Admin plan generation failed: %s", results[1])
-        except Exception as e:
-            logger.warning("Parallel generation failed: %s", e)
-
-        # ── Export all three files ────────────────────────────────────
+        # ── Compile three views ───────────────────────────────────────
         output_dir = Path("clawed_output").resolve()
+        if config and hasattr(config, "output_dir") and config.output_dir:
+            output_dir = Path(config.output_dir).resolve()
         output_dir.mkdir(parents=True, exist_ok=True)
 
         generated_files: list[Path] = []
         side_effects: list[str] = []
         errors: list[str] = []
 
-        # 1. Admin lesson plan DOCX (or fallback to basic lesson plan)
+        # 1. Teacher DOCX
         try:
-            from clawed.export_docx import export_lesson_docx
-
-            docx_path = export_lesson_docx(
-                lesson, persona, output_dir, admin_plan=admin_plan,
-            )
-            generated_files.append(docx_path)
-            label = "Admin lesson plan" if admin_plan else "Lesson plan"
-            side_effects.append(f"{label} DOCX: {docx_path.name}")
+            from clawed.compile_teacher import compile_teacher_view
+            teacher_path = await compile_teacher_view(master, images, output_dir)
+            generated_files.append(teacher_path)
+            side_effects.append(f"Teacher lesson plan DOCX: {teacher_path.name}")
         except Exception as e:
-            logger.error("Lesson DOCX export failed: %s", e)
-            errors.append(f"Lesson plan DOCX failed: {e}")
+            logger.error("Teacher DOCX compile failed: %s", e)
+            errors.append(f"Teacher DOCX failed: {e}")
 
-        # 2. Student packet DOCX (structured) or fallback to old handout
+        # 2. Student DOCX
         try:
-            from clawed.export_handout import export_student_packet_docx
-
-            if student_packet:
-                packet_path = export_student_packet_docx(
-                    student_packet, subject=subject, output_dir=output_dir,
-                )
-            else:
-                # Fallback: build minimal packet from lesson data
-                from clawed.export_docx import export_student_handout
-                packet_path = export_student_handout(lesson, persona, output_dir)
-
-            if packet_path:
-                generated_files.append(Path(packet_path))
-                side_effects.append(f"Student packet DOCX: {Path(packet_path).name}")
+            from clawed.compile_student import compile_student_view
+            student_path = await compile_student_view(master, images, output_dir)
+            generated_files.append(student_path)
+            side_effects.append(f"Student packet DOCX: {student_path.name}")
         except Exception as e:
-            logger.warning("Student packet export failed: %s", e)
+            logger.error("Student DOCX compile failed: %s", e)
             errors.append(f"Student packet failed: {e}")
 
         # 3. Slideshow PPTX
         try:
-            from clawed.export_pptx import export_lesson_pptx
-
-            pptx_path = export_lesson_pptx(lesson, persona, output_dir, include_images=include_images)
+            from clawed.compile_slides import compile_slides
+            pptx_path = await compile_slides(master, images, output_dir)
             generated_files.append(pptx_path)
             side_effects.append(f"Slideshow PPTX: {pptx_path.name}")
         except Exception as e:
-            logger.error("PPTX export failed: %s", e)
+            logger.error("Slides compile failed: %s", e)
             errors.append(f"Slideshow PPTX failed: {e}")
 
-        # ── Build honest response ─────────────────────────────────────
-        used_fallback_packet = not student_packet and any("Student packet" in s for s in side_effects)
-
+        # ── Build response ─────────────────────────────────────────────
         lines = []
 
         if len(generated_files) == 3 and not errors:
-            lines.append(f"Complete teaching package for: {lesson.title}")
+            lines.append(f"Complete teaching package for: {master.title}")
             lines.append("All three files ready to print:")
             for se in side_effects:
                 lines.append(f"  - {se}")
         elif generated_files:
-            lines.append(f"Generated {len(generated_files)} of 3 files for: {lesson.title}")
+            lines.append(f"Generated {len(generated_files)} of 3 files for: {master.title}")
             for se in side_effects:
                 lines.append(f"  - {se}")
             if errors:
@@ -364,35 +296,18 @@ class GenerateLessonBundleTool:
                     lines.append(f"  Could not generate: {clean_err}")
                 lines.append("Want me to try the failed item(s) again?")
         else:
-            lines.append(f"Failed to generate teaching package for: {lesson.title}")
+            lines.append(f"Failed to generate teaching package for: {master.title}")
             for err in errors:
                 lines.append(f"  - {err}")
 
-        if used_fallback_packet:
-            lines.append("")
-            lines.append(
-                "Note: The student packet was generated using a simpler method — "
-                "it may not have full graphic organizers. Let me know if you'd like me to regenerate it."
-            )
-
-        if kb_context:
+        if kb_prompt_section:
             lines.append("\nReferenced your existing materials on this topic.")
 
-        # Self-review findings
-        try:
-            if review and not review.get("passed", True) and review.get("issues"):
-                lines.append("")
-                lines.append("Quality notes:")
-                for issue in review["issues"][:3]:
-                    lines.append(f"  - {issue}")
-        except NameError:
-            pass
-
-        if voice_notes:
-            lines.append("\nVoice match notes:")
-            for note in voice_notes:
-                lines.append(f"  - {note}")
-            lines.append("Want me to adjust the lesson to better match your voice?")
+        # Quality report
+        if report.warnings:
+            lines.append("\nQuality notes:")
+            for w in report.warnings[:5]:
+                lines.append(f"  - {w}")
 
         return ToolResult(
             text="\n".join(lines),

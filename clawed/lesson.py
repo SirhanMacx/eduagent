@@ -6,13 +6,66 @@ from pathlib import Path
 
 from clawed.corpus import get_few_shot_context
 from clawed.llm import LLMClient
+from clawed.master_content import MasterContent
 from clawed.model_router import route as route_model
 from clawed.models import AppConfig, DailyLesson, TeacherPersona, UnitPlan
 
 PROMPT_PATH = Path(__file__).parent / "prompts" / "lesson_plan.txt"
+MASTER_PROMPT_PATH = Path(__file__).parent / "prompts" / "master_content.txt"
 
 
-async def generate_lesson(
+def _build_system_prompt(
+    persona: TeacherPersona,
+    config: AppConfig | None,
+) -> str:
+    """Build the rich system prompt shared by both generation paths."""
+    persona_context = persona.to_prompt_context() if persona else ""
+    soul_context = ""
+    try:
+        soul_path = Path.home() / ".eduagent" / "workspace" / "SOUL.md"
+        if soul_path.exists():
+            soul_context = soul_path.read_text(encoding="utf-8")[:2000]
+    except Exception:
+        pass
+
+    system_parts = [
+        "You are an expert lesson plan writer who EXACTLY replicates "
+        "this teacher's pedagogical fingerprint in EVERY lesson. "
+        "This means: use their specific graphic organizers (INSPECT charts, T-charts, etc.), "
+        "their activity structures (jigsaw, pair role division, desk islands), "
+        "their Do Now format (multi-part visual analysis), their scaffolding moves "
+        "(writing frames, sentence starters, pre-taught vocabulary with icons), "
+        "and their signature teaching moves. If the persona says they use INSPECT charts, "
+        "the lesson MUST include an INSPECT chart. If they cold-call students, script cold calls. "
+        "If they say 'what is this source NOT telling us,' include that exact prompt.",
+    ]
+    if persona_context:
+        system_parts.append(persona_context)
+    if soul_context:
+        system_parts.append(soul_context)
+    system_parts.append(
+        "Respond only with valid JSON matching the specified format. "
+        "Do NOT use XML tags, angle brackets, or markdown formatting in the JSON values."
+    )
+
+    # NYS Regents assessment format for Social Studies
+    if (config and hasattr(config, 'teacher_profile') and config.teacher_profile
+            and getattr(config.teacher_profile, 'state', '') == 'NY'
+            and 'social studies' in (persona.subject_area or '').lower()):
+        system_parts.append(
+            "NYS Regents Assessment Format Requirements:\n"
+            "- Exit ticket questions MUST use Stimulus-Based Multiple Choice Question (SBMCQ) format:\n"
+            "  Each question includes a stimulus (primary source excerpt, map, chart, or political cartoon)\n"
+            "  followed by 4 answer choices.\n"
+            "- Include at least one Constructed Response Question (CRQ) in the exit ticket:\n"
+            "  Context → Source → Questions (identify, explain, analyze/evaluate).\n"
+            "- All assessment items must reference specific historical evidence from the sources provided."
+        )
+
+    return "\n\n".join(system_parts)
+
+
+async def generate_master_content(
     lesson_number: int,
     unit: UnitPlan,
     persona: TeacherPersona,
@@ -21,8 +74,14 @@ async def generate_lesson(
     task_type: str = "lesson_plan",
     state: str = "",
     teacher_materials: str = "",
-) -> DailyLesson:
-    """Generate a complete daily lesson plan for a specific lesson in a unit.
+    objective: str = "",
+) -> MasterContent:
+    """Generate a MasterContent object — single source-of-truth for a lesson.
+
+    All output documents (teacher plan, student packet, slides) are compiled
+    as views of the returned ``MasterContent``.  Parameters mirror
+    ``generate_lesson()`` for drop-in compatibility, with the addition of
+    *objective*.
 
     Args:
         lesson_number: Which lesson in the unit (1-indexed).
@@ -30,9 +89,13 @@ async def generate_lesson(
         persona: Teacher persona to match.
         include_homework: Whether to generate a homework assignment.
         config: Optional app config override.
+        task_type: Model-routing hint.
+        state: US state code for standards lookup.
+        teacher_materials: Pre-formatted teacher materials context.
+        objective: Explicit lesson objective (derived from brief if empty).
 
     Returns:
-        A fully populated DailyLesson.
+        A fully populated MasterContent.
     """
     # Find the matching lesson brief from the unit plan
     lesson_brief = None
@@ -81,81 +144,81 @@ async def generate_lesson(
     )
     standards_text = format_standards_for_prompt(standards_list)
 
-    prompt_template = PROMPT_PATH.read_text(encoding="utf-8")
+    # Derive objective from lesson brief if not explicitly provided
+    effective_objective = objective or getattr(lesson_brief, "description", "")
+
+    prompt_template = MASTER_PROMPT_PATH.read_text(encoding="utf-8")
     prompt = (
         prompt_template
-        .replace("{persona}", "(See your persona context in the system instructions above.)")
         .replace("{unit_title}", unit.title)
         .replace("{unit_overview}", unit.overview[:1500])
-        .replace("{essential_questions}", "\n".join(f"- {q}" for q in unit.essential_questions))
+        .replace("{subject}", unit.subject)
+        .replace("{grade_level}", unit.grade_level)
+        .replace("{topic}", lesson_brief.topic)
+        .replace("{objective}", effective_objective)
         .replace("{lesson_number}", str(lesson_number))
         .replace("{total_lessons}", str(len(unit.daily_lessons)))
-        .replace("{lesson_topic}", lesson_brief.topic)
-        .replace("{lesson_description}", lesson_brief.description)
-        .replace("{grade_level}", unit.grade_level)
-        .replace("{subject}", unit.subject)
-        .replace("{include_homework}", "Yes" if include_homework else "No — do not include homework")
-        .replace("{few_shot_context}", few_shot_context)
+        .replace("{duration_minutes}", "45")
         .replace("{standards}", standards_text)
+        .replace("{few_shot_context}", few_shot_context)
         .replace("{teacher_materials}", teacher_materials)
     )
 
-    # Build rich system prompt with persona and voice context
-    persona_context = persona.to_prompt_context() if persona else ""
-    soul_context = ""
-    try:
-        soul_path = Path.home() / ".eduagent" / "workspace" / "SOUL.md"
-        if soul_path.exists():
-            soul_context = soul_path.read_text(encoding="utf-8")[:2000]
-    except Exception:
-        pass
-
-    system_parts = [
-        "You are an expert lesson plan writer who EXACTLY replicates "
-        "this teacher's pedagogical fingerprint in EVERY lesson. "
-        "This means: use their specific graphic organizers (INSPECT charts, T-charts, etc.), "
-        "their activity structures (jigsaw, pair role division, desk islands), "
-        "their Do Now format (multi-part visual analysis), their scaffolding moves "
-        "(writing frames, sentence starters, pre-taught vocabulary with icons), "
-        "and their signature teaching moves. If the persona says they use INSPECT charts, "
-        "the lesson MUST include an INSPECT chart. If they cold-call students, script cold calls. "
-        "If they say 'what is this source NOT telling us,' include that exact prompt.",
-    ]
-    if persona_context:
-        system_parts.append(persona_context)
-    if soul_context:
-        system_parts.append(soul_context)
-    system_parts.append(
-        "Respond only with valid JSON matching the specified format. "
-        "Do NOT use XML tags, angle brackets, or markdown formatting in the JSON values."
-    )
-
-    # NYS Regents assessment format for Social Studies
-    if (config and hasattr(config, 'teacher_profile') and config.teacher_profile
-            and getattr(config.teacher_profile, 'state', '') == 'NY'
-            and 'social studies' in (persona.subject_area or '').lower()):
-        system_parts.append(
-            "NYS Regents Assessment Format Requirements:\n"
-            "- Exit ticket questions MUST use Stimulus-Based Multiple Choice Question (SBMCQ) format:\n"
-            "  Each question includes a stimulus (primary source excerpt, map, chart, or political cartoon)\n"
-            "  followed by 4 answer choices.\n"
-            "- Include at least one Constructed Response Question (CRQ) in the exit ticket:\n"
-            "  Context → Source → Questions (identify, explain, analyze/evaluate).\n"
-            "- All assessment items must reference specific historical evidence from the sources provided."
-        )
-
-    system = "\n\n".join(system_parts)
+    system = _build_system_prompt(persona, config)
 
     if task_type and config:
         config = route_model(task_type, config)
     client = LLMClient(config)
     return await client.safe_generate_json(
         prompt=prompt,
-        model_class=DailyLesson,
+        model_class=MasterContent,
         system=system,
         temperature=0.6,
         max_tokens=12000,
     )
+
+
+async def generate_lesson(
+    lesson_number: int,
+    unit: UnitPlan,
+    persona: TeacherPersona,
+    include_homework: bool = True,
+    config: AppConfig | None = None,
+    task_type: str = "lesson_plan",
+    state: str = "",
+    teacher_materials: str = "",
+) -> DailyLesson:
+    """Generate a complete daily lesson plan for a specific lesson in a unit.
+
+    Internally generates a ``MasterContent`` object and converts it to a
+    ``DailyLesson`` for backward compatibility with all existing callers.
+
+    Args:
+        lesson_number: Which lesson in the unit (1-indexed).
+        unit: The parent unit plan for context.
+        persona: Teacher persona to match.
+        include_homework: Whether to generate a homework assignment.
+        config: Optional app config override.
+        task_type: Model-routing hint.
+        state: US state code for standards lookup.
+        teacher_materials: Pre-formatted teacher materials context.
+
+    Returns:
+        A fully populated DailyLesson.
+    """
+    master = await generate_master_content(
+        lesson_number=lesson_number,
+        unit=unit,
+        persona=persona,
+        include_homework=include_homework,
+        config=config,
+        task_type=task_type,
+        state=state,
+        teacher_materials=teacher_materials,
+    )
+    daily = master.to_daily_lesson()
+    daily.lesson_number = lesson_number
+    return daily
 
 
 async def generate_all_lessons(
