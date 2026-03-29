@@ -1,0 +1,41 @@
+{
+  "task_description": "Document-Based Essay: Was the American Revolution justified? Use evidence from at least three primary sources and outside knowledge to support a clear argument.",
+  "criteria": [
+    {
+      "criterion": "Thesis",
+      "excellent": "Presents a historically defensible, specific, and arguable claim that directly addresses the question. Thesis appears in the introduction and is restated/refined in the conclusion.",
+      "proficient": "Presents a clear claim that addresses the question but may be somewhat general. Thesis is stated but not developed across the essay.",
+      "developing": "Thesis is vague, restates the prompt, or takes no clear position. May be buried mid-paragraph.",
+      "beginning": "No discernible thesis. The essay summarizes events without making an argument."
+    },
+    {
+      "criterion": "Document Analysis",
+      "excellent": "References and accurately analyzes at least three documents. Goes beyond summary to explain how each document supports the argument. Addresses point of view or historical context for at least two documents.",
+      "proficient": "References and accurately summarizes at least two documents. Attempts to connect documents to the argument. Limited attention to point of view.",
+      "developing": "References documents but relies on paraphrase or quotation without analysis. Documents are loosely connected to the thesis.",
+      "beginning": "Documents are not referenced, or are referenced inaccurately. No connection to the argument."
+    },
+    {
+      "criterion": "Outside Information",
+      "excellent": "Includes specific, accurate outside information (facts, dates, events, concepts) from the unit that enriches the argument. Outside information is integrated, not bolted on.",
+      "proficient": "Includes some outside information that is accurate and relevant. May be vague (e.g., 'we learned about natural rights') rather than specific.",
+      "developing": "Outside information is minimal, inaccurate, or off-topic.",
+      "beginning": "No outside information included."
+    },
+    {
+      "criterion": "Organization",
+      "excellent": "Clear introduction, body paragraphs each with a topic sentence connected to the thesis, and a conclusion that synthesizes rather than restates. Transitions connect ideas across paragraphs.",
+      "proficient": "Introduction, body, and conclusion are present. Organization is logical but transitions are weak or missing. Topic sentences present but inconsistently connected to thesis.",
+      "developing": "Basic organization present but paragraphs lack focus. Introduction or conclusion underdeveloped. Ideas are loosely ordered.",
+      "beginning": "Little to no organizational structure. Ideas are presented randomly without paragraph breaks or transitions."
+    },
+    {
+      "criterion": "Writing Quality",
+      "excellent": "Academic vocabulary used correctly and purposefully. Sentences are varied and grammatically correct. Minor errors do not impede comprehension.",
+      "proficient": "Adequate vocabulary. Some sentence variety. Occasional errors do not significantly impede comprehension.",
+      "developing": "Limited vocabulary. Repetitive sentence structure. Errors sometimes impede comprehension.",
+      "beginning": "Significant vocabulary and grammar issues. Very difficult to comprehend."
+    }
+  ],
+  "total_points": 20
+}

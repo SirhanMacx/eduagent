@@ -1,0 +1,109 @@
+{
+  "subject": "Social Studies",
+  "grade_level": "8",
+  "school_year": "2025-26",
+  "start_date": "2025-09-02",
+  "weeks": [
+    {
+      "week_number": 1,
+      "start_date": "2025-09-02",
+      "end_date": "2025-09-05",
+      "unit_title": "The Age of Exploration and Colonial America",
+      "unit_number": 1,
+      "topics": [
+        "Course introduction and norms",
+        "Why do people explore? Motivations for European expansion"
+      ],
+      "notes": "4-day week — Labor Day Monday 9/1. Begin year with 'big picture' hook: the Columbian Exchange as a turning point."
+    },
+    {
+      "week_number": 2,
+      "start_date": "2025-09-08",
+      "end_date": "2025-09-12",
+      "unit_title": "The Age of Exploration and Colonial America",
+      "unit_number": 1,
+      "topics": [
+        "Columbian Exchange: winners and losers",
+        "Transatlantic slave trade — scale, routes, conditions",
+        "Colonial economies and labor systems"
+      ],
+      "notes": ""
+    },
+    {
+      "week_number": 3,
+      "start_date": "2025-09-15",
+      "end_date": "2025-09-19",
+      "unit_title": "The Age of Exploration and Colonial America",
+      "unit_number": 1,
+      "topics": [
+        "Three colonial regions: New England, Middle, Southern",
+        "Colonial society and class structure",
+        "Unit 1 review"
+      ],
+      "notes": ""
+    },
+    {
+      "week_number": 4,
+      "start_date": "2025-09-22",
+      "end_date": "2025-09-26",
+      "unit_title": "The Age of Exploration and Colonial America",
+      "unit_number": 1,
+      "topics": [
+        "Unit 1 summative assessment",
+        "Introduction to Unit 2: Road to Revolution"
+      ],
+      "notes": "Unit 1 assessment on Wednesday. Begin Unit 2 hook Thursday-Friday."
+    },
+    {
+      "week_number": 5,
+      "start_date": "2025-09-29",
+      "end_date": "2025-10-03",
+      "unit_title": "Road to Revolution",
+      "unit_number": 2,
+      "topics": [
+        "French and Indian War and its consequences",
+        "Stamp Act and Townshend Acts",
+        "Colonial resistance: petitions and boycotts"
+      ],
+      "notes": "Rosh Hashanah — check school calendar for dismissal schedule."
+    },
+    {
+      "week_number": 6,
+      "start_date": "2025-10-06",
+      "end_date": "2025-10-10",
+      "unit_title": "Road to Revolution",
+      "unit_number": 2,
+      "topics": [
+        "Enlightenment ideas: Locke, Montesquieu, Rousseau",
+        "Boston Massacre and Tea Party",
+        "Thomas Paine: Common Sense primary source analysis"
+      ],
+      "notes": "Yom Kippur 10/8 — reduced attendance likely. Plan independent work for that day."
+    },
+    {
+      "week_number": 7,
+      "start_date": "2025-10-13",
+      "end_date": "2025-10-17",
+      "unit_title": "Road to Revolution",
+      "unit_number": 2,
+      "topics": [
+        "Declaration of Independence: structure and argument",
+        "Debates over revolution: Loyalists and Patriots",
+        "Unit 2 review and DBQ preparation"
+      ],
+      "notes": "Columbus Day — school open per district calendar."
+    },
+    {
+      "week_number": 8,
+      "start_date": "2025-10-20",
+      "end_date": "2025-10-24",
+      "unit_title": "Road to Revolution",
+      "unit_number": 2,
+      "topics": [
+        "Road to Revolution DBQ assessment",
+        "Introduction to Unit 3: Founding a Nation"
+      ],
+      "notes": "DBQ on Tuesday. Allow full period — no interruptions. Begin Unit 3 Thursday."
+    }
+  ]
+}

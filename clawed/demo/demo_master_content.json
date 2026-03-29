@@ -1,0 +1,225 @@
+{
+  "title": "The Causes of the American Revolution",
+  "subject": "Social Studies",
+  "grade_level": "8",
+  "topic": "Colonial Grievances and the Road to Revolution",
+  "standards": ["C3 D2.His.1.6-8", "C3 D2.Civ.2.6-8", "CCSS.ELA-LITERACY.RH.6-8.2"],
+  "objective": "Students will analyze three major causes of the American Revolution by examining primary source documents and connecting colonial grievances to Enlightenment ideals of natural rights.",
+  "duration_minutes": 45,
+  "vocabulary": [
+    {
+      "term": "Taxation without Representation",
+      "definition": "Being forced to pay taxes to a government in which you have no elected representatives or voice.",
+      "context_sentence": "Colonists chanted 'no taxation without representation' to protest the Stamp Act of 1765.",
+      "image_spec": ""
+    },
+    {
+      "term": "Natural Rights",
+      "definition": "Rights that all people possess by virtue of being human, not granted by government — including life, liberty, and property.",
+      "context_sentence": "John Locke argued that natural rights could not be taken away by any king or government.",
+      "image_spec": ""
+    },
+    {
+      "term": "Tyranny",
+      "definition": "Cruel, oppressive, and unjust use of power by a ruler or government.",
+      "context_sentence": "Thomas Paine called King George a tyrant in Common Sense to justify revolution.",
+      "image_spec": ""
+    },
+    {
+      "term": "Boycott",
+      "definition": "A collective refusal to buy, use, or participate in something as a form of protest.",
+      "context_sentence": "Colonists organized a boycott of British goods to pressure Parliament to repeal the Townshend Acts.",
+      "image_spec": ""
+    },
+    {
+      "term": "Parliament",
+      "definition": "The British legislature — the law-making body of Great Britain — which passed taxes on the American colonies.",
+      "context_sentence": "Parliament passed the Tea Act in 1773 without including any colonial representatives.",
+      "image_spec": ""
+    }
+  ],
+  "primary_sources": [
+    {
+      "id": "PS-1",
+      "title": "Thomas Paine, Common Sense (1776, adapted excerpt)",
+      "source_type": "text_excerpt",
+      "content_text": "There is something absurd in supposing a continent to be perpetually governed by an island. In no instance hath nature made the satellite larger than its primary planet; and as England and America, with respect to each other, reverse the common order of nature, it is evident they belong to different systems. England to Europe: America to itself.",
+      "attribution": "Thomas Paine, Common Sense, January 1776",
+      "image_spec": "",
+      "scaffolding_questions": [
+        "What is Paine's main argument in this excerpt?",
+        "What metaphor does Paine use to describe the relationship between England and America?",
+        "How might a colonist reading this in 1776 have reacted?"
+      ]
+    },
+    {
+      "id": "PS-2",
+      "title": "Stamp Act Protest Broadside (1765, adapted)",
+      "source_type": "text_excerpt",
+      "content_text": "We are taxed without our consent, expressed by ourselves or our representatives. We are therefore — SLAVES. The Parliament of Great Britain virtually represents the whole empire. But a virtual representation is no representation at all — it is a fiction invented to justify theft from those who have no voice.",
+      "attribution": "Colonial broadside circulated in Boston, 1765",
+      "image_spec": "",
+      "scaffolding_questions": [
+        "What word does the author use to describe colonists under unjust taxation?",
+        "What argument does the author make against 'virtual representation'?",
+        "Does this source show that colonists were willing to compromise or not? Cite evidence."
+      ]
+    },
+    {
+      "id": "PS-3",
+      "title": "John Locke, Second Treatise of Government (1689, adapted)",
+      "source_type": "text_excerpt",
+      "content_text": "The people shall be judge; for who shall be judge whether his trustee or deputy acts well and according to the trust reposed in him, but he who deputes him, and must, by having deputed him, have still a power to discard him when he fails in his trust?",
+      "attribution": "John Locke, Second Treatise of Government, 1689",
+      "image_spec": "",
+      "scaffolding_questions": [
+        "According to Locke, who has the power to judge whether a government is doing its job?",
+        "What can the people do if their government breaks their trust?",
+        "How might American colonists have used Locke's argument to justify revolution?"
+      ]
+    }
+  ],
+  "do_now": {
+    "stimulus": "Imagine the government told you that you had to pay a special tax on every text message you send — but you had zero say in the decision because you have no elected representatives. Your only 'virtual representative' is a politician in another country who has never met you and doesn't care what you think.",
+    "stimulus_type": "scenario",
+    "questions": [
+      "How would you feel about this tax? Would you pay it or resist it?",
+      "Would writing a petition be enough, or would you want to do something more?",
+      "How is this scenario similar to what American colonists faced in 1765?"
+    ],
+    "answers": [
+      "Students will likely feel it is unfair; some will say resist, others will comply — both are valid for discussion.",
+      "Accept range of responses — lead toward the colonial boycott strategy.",
+      "Colonists paid taxes to Parliament but had no representatives there — this is the core of 'no taxation without representation.'"
+    ]
+  },
+  "direct_instruction": [
+    {
+      "heading": "Setting the Scene: 1763",
+      "content": "After the French and Indian War, Britain was deeply in debt. Parliament decided the colonies should help pay for the war that had defended them. This led to a series of new taxes: the Stamp Act (1765), the Townshend Acts (1767), and the Tea Act (1773). Each tax provoked stronger colonial resistance.",
+      "teacher_script": "I want you to picture this — Britain just fought a massive, expensive war partly to protect the colonies. From Parliament's point of view, it made perfect sense to ask the colonies to share the cost. From the colonists' point of view... what would be missing from that arrangement? Right — any say in the decision. That gap — taxation with no representation — is what we're going to trace today.",
+      "key_points": [
+        "Britain's debt from the French and Indian War drove new colonial taxes.",
+        "Stamp Act (1765): taxed printed materials — legal documents, newspapers, even playing cards.",
+        "Townshend Acts (1767): taxed imported goods like glass, paint, paper, and tea.",
+        "Tea Act (1773): gave the East India Company a monopoly on tea sales, undercutting colonial merchants."
+      ],
+      "image_spec": ""
+    },
+    {
+      "heading": "Enlightenment Ideas Fuel Resistance",
+      "content": "Colonists did not just complain — they had a philosophical framework. John Locke argued that governments exist to protect natural rights (life, liberty, property), and that people have the right to remove a government that violates those rights. Colonial leaders used Locke directly in their arguments against Parliament.",
+      "teacher_script": "Here is where it gets interesting. The colonists weren't just angry — they had a language for their anger. John Locke gave them that language. Read PS-3 with me. Locke says the PEOPLE are the judge of whether the government is doing its job. If it fails... they can remove it. Every time you see the phrase 'natural rights' in a colonial document, you're seeing Locke's fingerprints.",
+      "key_points": [
+        "John Locke: government derives power from the consent of the governed.",
+        "Natural rights — life, liberty, property — cannot be taken away by any government.",
+        "If a government breaks the social contract, the people have the right to replace it.",
+        "Colonists saw Parliament's taxes as a violation of their natural right to property."
+      ],
+      "image_spec": ""
+    }
+  ],
+  "guided_notes": [
+    {
+      "prompt": "Britain needed money after the __________ War, leading Parliament to tax the colonies.",
+      "answer": "French and Indian",
+      "section_ref": "Setting the Scene: 1763"
+    },
+    {
+      "prompt": "The __________ Act of 1765 taxed all printed materials in the colonies.",
+      "answer": "Stamp",
+      "section_ref": "Setting the Scene: 1763"
+    },
+    {
+      "prompt": "Colonists argued they should not be taxed because they had no __________ in Parliament.",
+      "answer": "representation",
+      "section_ref": "Setting the Scene: 1763"
+    },
+    {
+      "prompt": "John Locke argued that governments exist to protect __________ rights: life, liberty, and property.",
+      "answer": "natural",
+      "section_ref": "Enlightenment Ideas Fuel Resistance"
+    },
+    {
+      "prompt": "According to Locke, if a government violates the social contract, the __________ have the right to replace it.",
+      "answer": "people",
+      "section_ref": "Enlightenment Ideas Fuel Resistance"
+    },
+    {
+      "prompt": "Colonists responded to the Townshend Acts with a __________ of British goods.",
+      "answer": "boycott",
+      "section_ref": "Setting the Scene: 1763"
+    }
+  ],
+  "stations": [
+    {
+      "title": "Station A: Common Sense",
+      "source_ref": "PS-1",
+      "task": "Read the excerpt from Thomas Paine's Common Sense and answer the analysis questions.",
+      "student_directions": "1. Read the excerpt twice. 2. Underline the main claim. 3. Circle any loaded or emotional words. 4. Answer the scaffolding questions in complete sentences.",
+      "teacher_answer_key": "Main claim: An island (England) cannot logically govern a continent (America). Loaded words: 'absurd,' 'satellite,' 'common order of nature.' Paine uses the satellite/planet metaphor to argue the natural order demands American independence."
+    },
+    {
+      "title": "Station B: Stamp Act Broadside",
+      "source_ref": "PS-2",
+      "task": "Analyze the colonial broadside against the Stamp Act.",
+      "student_directions": "1. Read carefully. 2. Find the most extreme word the author uses to describe taxed colonists. 3. Explain why virtual representation was rejected. 4. Evaluate: is this source biased? How do you know?",
+      "teacher_answer_key": "Most extreme word: 'SLAVES.' Virtual representation is rejected because colonists argue you cannot be represented by someone you did not choose. This source is clearly biased toward colonial resistance — it was written as protest propaganda."
+    }
+  ],
+  "independent_work": {
+    "task": "Complete the three-column graphic organizer. For each of the three causes (Stamp Act, Townshend Acts, Tea Act), write: (1) the colonial grievance, (2) the British justification, and (3) your analysis of which side had the stronger argument. Cite at least one primary source as evidence.",
+    "rubric_snippet": "4: Completes all three columns with specific evidence from primary sources. 3: Completes all three columns with some evidence. 2: Partially completes organizer, limited evidence. 1: Minimal completion.",
+    "exemplar": "Stamp Act: Colonists grieved that they were taxed without consent. Britain argued colonists benefited from the war and should share the cost. I think colonists had the stronger argument because, as Locke argued, taxation requires consent of the governed (PS-3)."
+  },
+  "exit_ticket": [
+    {
+      "stimulus": "No taxation without representation was the rallying cry of colonial resistance. Colonists paid taxes passed by Parliament, a body in which no American colonist held a seat.",
+      "stimulus_type": "text_excerpt",
+      "stimulus_image_spec": "",
+      "question": "Why did colonists consider parliamentary taxation a violation of their rights?",
+      "answer": "Colonists believed they could only be taxed by a legislature in which they had representation. Parliament had no colonial members, so colonists argued taxation without representation was tyranny and a violation of their natural rights.",
+      "cognitive_level": "analysis"
+    },
+    {
+      "stimulus": "John Locke wrote: 'The end of government is the good of mankind — and which is best for mankind, that the people should be always exposed to the boundless will of tyranny, or that the rulers should be sometimes liable to be opposed?'",
+      "stimulus_type": "text_excerpt",
+      "stimulus_image_spec": "",
+      "question": "How did Locke's ideas provide justification for colonial resistance?",
+      "answer": "Locke argued that rulers who act as tyrants can and should be opposed by the people. Colonists applied this logic to argue that Parliament's taxation without representation was tyranny, giving them the right to resist.",
+      "cognitive_level": "application"
+    },
+    {
+      "stimulus": "Between 1765 and 1773, colonial resistance escalated from written petitions to boycotts to the Boston Tea Party — the destruction of 342 chests of British tea.",
+      "stimulus_type": "text_excerpt",
+      "stimulus_image_spec": "",
+      "question": "What does the escalation of colonial resistance suggest about the effectiveness of peaceful protest?",
+      "answer": "Peaceful protest (petitions, boycotts) failed to change British policy, which pushed colonists toward more radical actions. This suggests that when a government ignores peaceful dissent, more direct forms of resistance may follow.",
+      "cognitive_level": "analysis"
+    }
+  ],
+  "differentiation": {
+    "struggling": [
+      "Sentence starters provided for graphic organizer (e.g., 'Colonists were angry because...')",
+      "Simplified primary source excerpts with vocabulary glossary",
+      "Partner with proficient reader for station work"
+    ],
+    "advanced": [
+      "Compare colonial grievances to a modern example of citizens protesting government policy",
+      "Write a one-paragraph argument: Was revolution the only option, or were there alternatives?",
+      "Read the full Declaration of Independence preamble and identify each Lockean idea"
+    ],
+    "ell": [
+      "Bilingual vocabulary cards (Spanish/English) for all five terms",
+      "Primary sources available with sentence-level glosses",
+      "Graphic organizer with visual icons alongside text headers"
+    ]
+  },
+  "homework": "Read the Declaration of Independence preamble (provided handout). Highlight three phrases that connect to today's lesson on natural rights. Be ready to share tomorrow.",
+  "materials_needed": [
+    "Primary source packet (PS-1, PS-2, PS-3)",
+    "Three-column graphic organizer",
+    "Exit ticket half-sheets",
+    "Bilingual vocabulary cards (for ELL students)"
+  ]
+}

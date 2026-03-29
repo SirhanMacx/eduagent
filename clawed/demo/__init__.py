@@ -39,17 +39,6 @@ def is_demo_mode(config: Any = None) -> bool:
             this config instead of loading global state. This allows
             LLMClient to pass its own injected config.
     """
-    import os
-    has_anthropic = bool(os.environ.get("ANTHROPIC_API_KEY"))
-    has_openai = bool(os.environ.get("OPENAI_API_KEY"))
-    if has_anthropic or has_openai:
-        return False
-    # Check config for ollama (always available locally)
-    try:
-        from clawed.models import AppConfig, LLMProvider
-        cfg = config if config is not None else AppConfig.load()
-        if cfg.provider == LLMProvider.OLLAMA:
-            return False
-    except Exception:
-        pass
-    return True
+    from clawed.config import resolve_credentials
+    provider, key = resolve_credentials(config)
+    return provider is None

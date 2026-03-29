@@ -231,21 +231,23 @@ class LLMClient:
         On second failure, raises a clear RuntimeError (not a traceback).
         """
         demo_hint = demo_hint or model_class.__name__
+        last_error = ""
         for attempt in range(max_retries + 1):
-            raw = await self.generate_json(prompt, demo_hint=demo_hint, **kwargs)
+            current_prompt = prompt
+            if attempt > 0:
+                current_prompt = prompt + f"\n\nPREVIOUS ATTEMPT FAILED. Fix these errors:\n{last_error}"
+            raw = await self.generate_json(current_prompt, demo_hint=demo_hint, **kwargs)
             try:
                 return model_class.model_validate(raw)
             except ValidationError as e:
-                if attempt < max_retries:
-                    # Retry with error context
-                    error_msg = str(e)
-                    prompt = prompt + f"\n\nPREVIOUS ATTEMPT FAILED. Fix these errors:\n{error_msg}"
-                    continue
-                raise RuntimeError(
-                    f"Generation failed after {max_retries + 1} attempts. "
-                    f"The AI returned data that doesn't match the expected format. "
-                    f"Try again or use a different AI model."
-                ) from e
+                last_error = str(e)
+                if attempt >= max_retries:
+                    raise RuntimeError(
+                        f"Generation failed after {max_retries + 1} attempts. "
+                        f"The AI returned data that doesn't match the expected format. "
+                        f"Try again or use a different AI model.\n"
+                        f"Validation errors: {last_error[:500]}"
+                    ) from e
 
     async def generate_student_handout(
         self,

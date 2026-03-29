@@ -95,6 +95,32 @@ def get_api_key(provider: str) -> Optional[str]:
     return secrets.get(key_name)
 
 
+def resolve_credentials(config=None):
+    """Resolve the best available provider and key.
+
+    Priority: environment variables > keyring/secrets > Ollama (if configured).
+    Returns (provider_name, api_key) or (None, None) if nothing is available.
+    """
+    import os
+    for env_var, provider in [
+        ("ANTHROPIC_API_KEY", "anthropic"),
+        ("OPENAI_API_KEY", "openai"),
+        ("GOOGLE_API_KEY", "google"),
+    ]:
+        key = os.environ.get(env_var)
+        if key:
+            return provider, key
+    for provider in ["anthropic", "openai"]:
+        key = get_api_key(provider)
+        if key:
+            return provider, key
+    if config:
+        from clawed.models import LLMProvider
+        if getattr(config, "provider", None) == LLMProvider.OLLAMA:
+            return "ollama", None
+    return None, None
+
+
 def set_api_key(provider: str, api_key: str) -> None:
     """Store an API key securely. Tries keyring first, falls back to file."""
     key_name = f"{provider}_api_key"

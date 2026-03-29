@@ -1,0 +1,144 @@
+{
+  "subject": "Social Studies",
+  "grade_level": "8",
+  "school_year": "2025-26",
+  "total_weeks": 36,
+  "units": [
+    {
+      "unit_number": 1,
+      "title": "The Age of Exploration and Colonial America",
+      "duration_weeks": 4,
+      "essential_questions": [
+        "What motivated European exploration and colonization?",
+        "How did colonization impact Indigenous peoples and Africans?"
+      ],
+      "standards": ["C3 D2.His.1.6-8", "C3 D2.His.5.6-8"],
+      "description": "Students examine the causes and consequences of European exploration, the development of colonial societies, and the transatlantic slave trade."
+    },
+    {
+      "unit_number": 2,
+      "title": "Road to Revolution",
+      "duration_weeks": 4,
+      "essential_questions": [
+        "Was the American Revolution inevitable?",
+        "How do Enlightenment ideas justify revolution?"
+      ],
+      "standards": ["C3 D2.His.1.6-8", "C3 D2.Civ.2.6-8"],
+      "description": "Students trace colonial grievances from the Stamp Act through the Boston Tea Party and analyze how Enlightenment philosophy gave colonists a language for resistance."
+    },
+    {
+      "unit_number": 3,
+      "title": "Founding a Nation: The Constitution",
+      "duration_weeks": 4,
+      "essential_questions": [
+        "How did the Founders balance liberty and order?",
+        "Whose voices were left out of the founding?"
+      ],
+      "standards": ["C3 D2.Civ.1.6-8", "C3 D2.Civ.3.6-8"],
+      "description": "Students analyze the Articles of Confederation, Constitutional Convention debates, and the Bill of Rights, with attention to whose interests the Constitution protected and whose it ignored."
+    },
+    {
+      "unit_number": 4,
+      "title": "The Early Republic and Expansion",
+      "duration_weeks": 3,
+      "essential_questions": [
+        "How did Manifest Destiny justify and mask violence?",
+        "What did 'freedom' mean in the early republic?"
+      ],
+      "standards": ["C3 D2.His.2.6-8", "C3 D2.His.5.6-8"],
+      "description": "Students examine westward expansion, Indian Removal, and the economic and political tensions driving the nation toward the Civil War."
+    },
+    {
+      "unit_number": 5,
+      "title": "Slavery, Abolition, and the Road to Civil War",
+      "duration_weeks": 5,
+      "essential_questions": [
+        "How did slavery shape every aspect of American society?",
+        "Was the Civil War primarily about slavery or states' rights?"
+      ],
+      "standards": ["C3 D2.His.1.6-8", "C3 D2.His.3.6-8"],
+      "description": "Students examine the institution of slavery, the abolitionist movement, the causes of the Civil War, and key turning points of the conflict."
+    },
+    {
+      "unit_number": 6,
+      "title": "Reconstruction",
+      "duration_weeks": 3,
+      "essential_questions": [
+        "What did Reconstruction accomplish — and why did it fail?",
+        "How do we measure the success of a social change movement?"
+      ],
+      "standards": ["C3 D2.His.1.6-8", "C3 D2.Civ.5.6-8"],
+      "description": "Students analyze the Reconstruction Amendments, the gains of the Reconstruction era, and the violent rollback of Black political power through Black Codes, the KKK, and Jim Crow."
+    },
+    {
+      "unit_number": 7,
+      "title": "Industrialization and the Gilded Age",
+      "duration_weeks": 3,
+      "essential_questions": [
+        "Who benefited from industrialization — and who paid the price?",
+        "How do workers gain power?"
+      ],
+      "standards": ["C3 D2.Eco.1.6-8", "C3 D2.His.2.6-8"],
+      "description": "Students examine industrial capitalism, immigration, urbanization, the labor movement, and reform-era responses to inequality."
+    },
+    {
+      "unit_number": 8,
+      "title": "The Progressive Era and WWI",
+      "duration_weeks": 3,
+      "essential_questions": [
+        "Can ordinary citizens change unjust systems?",
+        "What obligations does a democracy have in times of global conflict?"
+      ],
+      "standards": ["C3 D2.His.4.6-8", "C3 D2.Civ.7.6-8"],
+      "description": "Students study Progressive Era reforms — women's suffrage, trust-busting, child labor laws — and American entry into World War I."
+    },
+    {
+      "unit_number": 9,
+      "title": "Roaring 20s, Great Depression, New Deal",
+      "duration_weeks": 4,
+      "essential_questions": [
+        "What causes economic collapse — and who is responsible for recovery?",
+        "What is the proper role of government in the economy?"
+      ],
+      "standards": ["C3 D2.Eco.2.6-8", "C3 D2.His.2.6-8"],
+      "description": "Students analyze the economic boom of the 1920s, the Great Depression's causes and human impact, and FDR's New Deal as a contested government response."
+    },
+    {
+      "unit_number": 10,
+      "title": "World War II",
+      "duration_weeks": 3,
+      "essential_questions": [
+        "How did the U.S. balance its democratic values with wartime decisions?",
+        "What obligations do bystanders have when witnessing injustice?"
+      ],
+      "standards": ["C3 D2.His.1.6-8", "C3 D2.His.4.6-8"],
+      "description": "Students study the causes of WWII, U.S. entry, key turning points, and moral dilemmas including Japanese American internment, the Holocaust, and the atomic bomb."
+    }
+  ],
+  "big_ideas": [
+    {
+      "idea": "Power, Privilege, and Resistance",
+      "connected_units": [1, 2, 5, 6, 7, 8]
+    },
+    {
+      "idea": "The Tension Between Liberty and Equality",
+      "connected_units": [2, 3, 5, 6, 8]
+    },
+    {
+      "idea": "Who Gets to Count as American?",
+      "connected_units": [1, 3, 4, 5, 7, 10]
+    },
+    {
+      "idea": "Economic Forces Shape Political Events",
+      "connected_units": [1, 4, 5, 7, 9]
+    }
+  ],
+  "assessment_calendar": [
+    {"unit_number": 2, "assessment_type": "summative", "title": "Road to Revolution DBQ", "week": 8},
+    {"unit_number": 3, "assessment_type": "summative", "title": "Constitution Socratic Seminar + Reflection", "week": 12},
+    {"unit_number": 5, "assessment_type": "benchmark", "title": "Mid-Year Benchmark: Colonial America through Civil War", "week": 18},
+    {"unit_number": 6, "assessment_type": "summative", "title": "Reconstruction Was/Wasn't a Success — Essay", "week": 22},
+    {"unit_number": 9, "assessment_type": "summative", "title": "New Deal Document Analysis", "week": 32},
+    {"unit_number": 10, "assessment_type": "summative", "title": "End-of-Year Portfolio Reflection", "week": 36}
+  ]
+}

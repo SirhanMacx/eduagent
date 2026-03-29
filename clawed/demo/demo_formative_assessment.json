@@ -1,0 +1,46 @@
+{
+  "lesson_title": "The Causes of the American Revolution",
+  "objective": "Students will identify and explain at least two causes of the American Revolution using evidence from primary sources.",
+  "questions": [
+    {
+      "question_number": 1,
+      "question_type": "multiple_choice",
+      "question": "What was the main colonial argument against the Stamp Act of 1765?",
+      "choices": [
+        "A. The stamps were too expensive to produce",
+        "B. Colonists should not be taxed without representation in Parliament",
+        "C. Britain had no right to issue stamps",
+        "D. Colonists preferred to trade with France instead"
+      ],
+      "correct_answer": "B",
+      "point_value": 1
+    },
+    {
+      "question_number": 2,
+      "question_type": "multiple_choice",
+      "question": "Which philosopher most directly provided the theoretical basis for colonial resistance to British taxation?",
+      "choices": [
+        "A. Thomas Hobbes",
+        "B. Voltaire",
+        "C. John Locke",
+        "D. Montesquieu"
+      ],
+      "correct_answer": "C",
+      "point_value": 1
+    },
+    {
+      "question_number": 3,
+      "question_type": "short_answer",
+      "question": "In 2-3 sentences, explain how the Tea Act of 1773 led to the Boston Tea Party. Use at least one vocabulary term from today's lesson.",
+      "choices": [],
+      "correct_answer": "The Tea Act gave the British East India Company a monopoly on tea sales in the colonies, undercutting colonial merchants. Colonists saw this as another example of taxation without representation — Parliament making economic decisions that hurt colonists without their consent. In protest, colonists organized a boycott and eventually dumped 342 chests of tea into Boston Harbor.",
+      "point_value": 3
+    }
+  ],
+  "answer_key": {
+    "1": "B",
+    "2": "C",
+    "3": "Full credit: identifies Tea Act's economic impact, connects to taxation without representation, uses at least one vocabulary term (boycott, natural rights, representation, tyranny). Partial credit: addresses cause but omits vocabulary or connection to broader pattern."
+  },
+  "time_minutes": 5
+}

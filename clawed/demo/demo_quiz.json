@@ -1,0 +1,70 @@
+{
+  "topic": "Causes of the American Revolution",
+  "grade_level": "8",
+  "questions": [
+    {
+      "question_number": 1,
+      "question_type": "multiple_choice",
+      "question": "Which act taxed all printed materials in the colonies, including newspapers and legal documents?",
+      "choices": [
+        "A. Townshend Acts",
+        "B. Stamp Act",
+        "C. Tea Act",
+        "D. Quartering Act"
+      ],
+      "correct_answer": "B",
+      "point_value": 2
+    },
+    {
+      "question_number": 2,
+      "question_type": "multiple_choice",
+      "question": "Which Enlightenment thinker most directly influenced the colonial argument that people have the right to overthrow an unjust government?",
+      "choices": [
+        "A. Thomas Hobbes",
+        "B. Jean-Jacques Rousseau",
+        "C. John Locke",
+        "D. Voltaire"
+      ],
+      "correct_answer": "C",
+      "point_value": 2
+    },
+    {
+      "question_number": 3,
+      "question_type": "multiple_choice",
+      "question": "What was the colonists' main objection to parliamentary taxation?",
+      "choices": [
+        "A. The tax rates were too high",
+        "B. They had no representatives in Parliament",
+        "C. They preferred to trade with France",
+        "D. Britain was spending the tax money unwisely"
+      ],
+      "correct_answer": "B",
+      "point_value": 2
+    },
+    {
+      "question_number": 4,
+      "question_type": "true_false",
+      "question": "The Boston Tea Party was a response to the Tea Act of 1773, which gave the East India Company a monopoly on tea sales in the colonies.",
+      "choices": ["True", "False"],
+      "correct_answer": "True",
+      "point_value": 1
+    },
+    {
+      "question_number": 5,
+      "question_type": "short_answer",
+      "question": "Explain in two or three sentences how John Locke's idea of natural rights gave colonists a philosophical basis for revolution.",
+      "choices": [],
+      "correct_answer": "Locke argued that governments exist to protect natural rights — life, liberty, and property — and that people can remove a government that violates those rights. Colonists applied this directly: Parliament's taxation without representation violated their right to property. This gave them not just a grievance but a philosophical argument that revolution was justified.",
+      "point_value": 3
+    }
+  ],
+  "answer_key": {
+    "1": "B",
+    "2": "C",
+    "3": "B",
+    "4": "True",
+    "5": "See rubric — must mention natural rights, social contract, and connection to colonial situation."
+  },
+  "total_points": 10,
+  "time_minutes": 15
+}

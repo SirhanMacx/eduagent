@@ -1,0 +1,145 @@
+{
+  "lesson_title": "The Causes of the American Revolution",
+  "worksheet_items": [
+    {
+      "item_number": 1,
+      "item_type": "short_answer",
+      "prompt": "List three acts of Parliament that angered American colonists between 1765 and 1773.",
+      "answer_key": "Stamp Act (1765), Townshend Acts (1767), Tea Act (1773). Accept also: Quartering Act, Declaratory Act.",
+      "point_value": 3
+    },
+    {
+      "item_number": 2,
+      "item_type": "short_answer",
+      "prompt": "In your own words, explain what 'taxation without representation' means.",
+      "answer_key": "Being required to pay taxes to a government in which you have no elected representatives or voice in decision-making.",
+      "point_value": 2
+    },
+    {
+      "item_number": 3,
+      "item_type": "short_answer",
+      "prompt": "According to John Locke, what should the people do if their government violates their natural rights?",
+      "answer_key": "The people have the right and responsibility to replace or remove a government that violates their natural rights (life, liberty, property).",
+      "point_value": 2
+    },
+    {
+      "item_number": 4,
+      "item_type": "short_answer",
+      "prompt": "How did colonists respond to the Townshend Acts? Give at least two examples.",
+      "answer_key": "Accept any two: organized boycotts of British goods; published protest pamphlets and broadsides; formed Committees of Correspondence to coordinate resistance across colonies; daughters of liberty produced homespun cloth to replace British textiles.",
+      "point_value": 2
+    },
+    {
+      "item_number": 5,
+      "item_type": "short_answer",
+      "prompt": "Was the American Revolution primarily an economic conflict or an ideological one? Defend your answer with at least one piece of evidence.",
+      "answer_key": "Accept both positions with evidence. Economic argument: colonists resisted taxes that hurt their businesses and standard of living. Ideological argument: colonists used Enlightenment philosophy (Locke's natural rights) to frame resistance as a matter of principle, not just economics. Strongest answers acknowledge both dimensions.",
+      "point_value": 3
+    }
+  ],
+  "assessment_questions": [
+    {
+      "question_number": 1,
+      "question_type": "multiple_choice",
+      "question": "The phrase 'no taxation without representation' refers to the colonists' belief that —",
+      "choices": [
+        "A. all taxes were unjust and should be abolished",
+        "B. they should only pay taxes approved by their elected representatives",
+        "C. Parliament had the right to tax colonies that were represented by merchants",
+        "D. taxes were acceptable if they funded colonial defense"
+      ],
+      "correct_answer": "B",
+      "point_value": 1
+    },
+    {
+      "question_number": 2,
+      "question_type": "multiple_choice",
+      "question": "Which event was a direct response to the Tea Act of 1773?",
+      "choices": [
+        "A. Signing of the Mayflower Compact",
+        "B. Publication of Common Sense",
+        "C. Boston Tea Party",
+        "D. Battle of Lexington and Concord"
+      ],
+      "correct_answer": "C",
+      "point_value": 1
+    }
+  ],
+  "rubric": [
+    {
+      "criterion": "Use of Evidence",
+      "excellent": "Cites specific evidence from primary sources and class notes to support every claim.",
+      "proficient": "Cites some evidence; most claims are supported.",
+      "developing": "Limited evidence; claims are asserted without support.",
+      "beginning": "No evidence cited."
+    },
+    {
+      "criterion": "Historical Accuracy",
+      "excellent": "All facts, dates, and names are correct and precisely stated.",
+      "proficient": "Most information is accurate; minor errors do not affect meaning.",
+      "developing": "Some factual errors that affect the response.",
+      "beginning": "Significant factual errors throughout."
+    }
+  ],
+  "slide_outline": [
+    {
+      "slide_number": 1,
+      "title": "The Road to Revolution",
+      "content_bullets": [
+        "Essential Question: Was the American Revolution inevitable?",
+        "Today's objective: Identify and analyze three causes of the Revolution",
+        "Do Now: Text-tax scenario on desks"
+      ],
+      "speaker_notes": "Give students 3 minutes to write. Cold-call 2-3 responses. Bridge: 'That's exactly how colonists felt — now let's trace what happened.'"
+    },
+    {
+      "slide_number": 2,
+      "title": "Britain's Debt Problem",
+      "content_bullets": [
+        "French and Indian War (1754-1763): expensive British victory",
+        "Britain's solution: tax the colonies",
+        "Stamp Act (1765) — Townshend Acts (1767) — Tea Act (1773)"
+      ],
+      "speaker_notes": "Emphasize that from Britain's perspective this seemed reasonable. The tension is that colonists had NO say in these decisions."
+    },
+    {
+      "slide_number": 3,
+      "title": "Key Vocabulary",
+      "content_bullets": [
+        "Taxation without Representation",
+        "Natural Rights (life, liberty, property)",
+        "Tyranny",
+        "Boycott",
+        "Parliament"
+      ],
+      "speaker_notes": "Quick-check: thumbs up/thumbs down for each term. Spend extra time on 'natural rights' — this is the philosophical engine of the unit."
+    },
+    {
+      "slide_number": 4,
+      "title": "John Locke and Natural Rights",
+      "content_bullets": [
+        "Governments exist to protect natural rights",
+        "People consent to be governed — the social contract",
+        "If government violates natural rights, people can remove it",
+        "Colonists read Locke — and used his arguments"
+      ],
+      "speaker_notes": "Read PS-3 aloud together. Ask: 'What would Locke say about Parliament taxing colonists without their consent?' Let students respond before you answer."
+    },
+    {
+      "slide_number": 5,
+      "title": "Exit Ticket",
+      "content_bullets": [
+        "Q1: Why did colonists consider parliamentary taxation a violation of their rights?",
+        "Q2: How did Locke's ideas justify resistance?",
+        "Q3: What does the escalation from petitions to the Tea Party suggest?"
+      ],
+      "speaker_notes": "Collect before students leave. Review Q1 responses tonight — if fewer than 70% mention representation, reteach the core concept tomorrow."
+    }
+  ],
+  "iep_notes": [
+    "Provide graphic organizer with sentence frames for students with writing IEPs.",
+    "Allow extended time (1.5x) for worksheet completion for students with processing IEPs.",
+    "Offer primary source excerpts in simplified reading level (Lexile 700) for students reading below grade level.",
+    "Check in with IEP students during station work — ensure they understand the task before circulating."
+  ]
+}
