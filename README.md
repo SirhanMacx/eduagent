@@ -13,17 +13,23 @@ Built on the OpenClaw agent framework. Open source. MIT license.
 
 ---
 
-## What's new in v2.3
+## What's new in v2.3.5
 
-**Three documents, not one.** Every lesson now generates three professional files in parallel:
+**Master Content Track.** One LLM call generates a single `MasterContent` object. Three output documents are compiled mechanically from the same source of truth -- no content drift between what the teacher sees, what students hold, and what's on screen:
 
-1. **Student Packet** (4-6 page DOCX workbook) — Fill-in-the-blank guided notes, station sections with full primary source text and analysis questions, graphic organizer tables, exit ticket with sentence starters. This is what students hold in their hands.
-2. **Admin Lesson Plan** (observation-ready DOCX) — Multi-column table with per-section teacher actions (scripted language), student actions, observer look-fors, and differentiation. Anticipated student responses and misconceptions with teacher corrections. Teacher content knowledge appendix.
-3. **Slideshow** (PPTX) — Subject-themed slides with academic images from your own files first, then Library of Congress and Wikimedia. Vocabulary, source quotes, and section dividers on dedicated slides.
+1. **Teacher DOCX** — Full answer keys, scripted teacher language, guided notes with answers filled in, station answer keys, differentiation notes. Observation-ready.
+2. **Student DOCX** — Same structure, blanks instead of answers. Guided notes with fill-in lines, station directions without answer keys, exit ticket without expected responses. Print and hand out.
+3. **Slideshow PPTX** — Widescreen academic slides: title, vocabulary cards, instruction sections with images, primary source analysis, station overview, stimulus-based exit ticket.
 
-**Your files are first-class.** Ingestion extracts images from your PPTX/DOCX files, catalogues YouTube links, and classifies every file by type. The agent tells you what you already have before generating.
+**Zero silent failures.** All 11 generators use `safe_generate_json()` with automatic retry on validation errors. Post-generation validators catch empty outputs, topic drift, and delegation phrases. Quality review fails closed. CLI shows warnings, not raw tracebacks.
 
-**Pedagogical fingerprint.** "Teacher voice" means how you teach, not just how you sound. The persona captures source types, activity patterns, scaffolding moves, Do Now style, exit ticket format, and signature moves.
+**Stimulus-based assessment.** Every question -- Do Now, guided notes, stations, exit ticket -- must be anchored to a stimulus (source text, data, diagram, scenario). Bare recall questions are banned at the prompt level.
+
+**Identity protection.** Onboarding only triggers on explicit `/setup`. Profile fields are validated and truncated. SOUL.md writes are audit-logged and capped at 500 chars.
+
+**Your files are first-class.** Teacher materials are searched (AssetRegistry + CurriculumKB) before every generation -- not just in the bundle tool, but in standalone lesson and unit generation too.
+
+**Parallel image pipeline.** All image specs from the MasterContent are fetched in parallel with configurable timeout and local caching.
 
 ---
 

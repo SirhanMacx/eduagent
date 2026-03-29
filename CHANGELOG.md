@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.3.5] - 2026-03-28
+
+Stability & Trustworthiness — contract fidelity across the entire generation pipeline.
+
+### Added
+- **Master Content Track** — `generate_master_content()` produces a single `MasterContent` object. Three output documents (teacher DOCX, student DOCX, slideshow PPTX) are compiled mechanically as views of the same data. Eliminates 3 parallel LLM calls, replaced by 1 generation + 3 mechanical compilations.
+- **`MasterContent` model** with sub-models: `DoNow`, `InstructionSection`, `GuidedNote`, `PrimarySource`, `StationDocument`, `StimulusQuestion`, `VocabularyEntry`, `IndependentWork`. Backward-compatible via `.to_daily_lesson()` bridge.
+- **Master content prompt** — comprehensive stimulus-based pedagogy prompt with self-contained materials rule, cognitive progression requirements, and subject-specific source type guidance.
+- **Compilation functions** — `compile_teacher_view()`, `compile_student_view()`, `compile_slides()` produce print-ready documents without any LLM calls.
+- **10 post-generation validators** — `validate_quiz()`, `validate_rubric()`, `validate_year_map()`, `validate_unit_plan()`, `validate_formative()`, `validate_summative()`, `validate_dbq()`, `validate_lesson_materials()`, `validate_pacing_guide()`, `validate_master_content()` with alignment checking and delegation phrase detection.
+- **`GenerationReport` model** — accumulates warnings, quality review results, voice check results, and image counts throughout the pipeline.
+- **Schema-aware demo routing** — `demo_hint` parameter threads through `generate()`, `generate_json()`, `safe_generate_json()`. Demo mode dispatches to correct fixture by model class name, not keyword matching. 7 new demo fixture files.
+- **`resolve_credentials()`** — unified credential resolution: env vars → keychain → Ollama config.
+- **Parallel image pipeline** — `fetch_all_images()` collects all `image_spec` strings from MasterContent, fetches in parallel via `asyncio.gather` with configurable timeout and local caching.
+- **NYS Regents conditional** — when teacher state is NY and subject is Social Studies, exit ticket prompts include SBMCQ/CRQ format requirements.
+- **Prompt injection defense** — system prompt includes security instruction to reject injected instructions from input text.
+- **pytest-cov** — coverage configured with 55% regression floor.
+- **17 new tests** — E2E bundle integration (10 tests) and pedagogical quality validation (7 tests).
+
+### Changed
+- **All 11 generators migrated to `safe_generate_json()`** — assessment.py (5), materials.py (4), curriculum_map.py (2). Automatic retry on Pydantic validation failure with error context in retry prompt.
+- **`generate_lesson_bundle` rewritten** — uses Master Content Track: generate_master_content → validate → fetch images → compile three views. Replaced 3 parallel LLM calls with 1 generation + 3 mechanical compilations.
+- **`generate_lesson()` bridges through `generate_master_content()`** — all ~20 callers get `DailyLesson` back, fully backward compatible.
+- **Teacher materials wired into all paths** — `generate_all_lessons()` and `GenerateLessonTool` now search AssetRegistry + CurriculumKB before generation.
+- **Persona double-injection removed** — persona kept in system prompt only, not duplicated in user prompt.
+- **Async exports fixed** — replaced deprecated `asyncio.get_event_loop()` with `asyncio.run()`, added `_run_async_safe()` for correct sync/async call path handling. Python 3.14 compatible.
+
+### Fixed
+- **Quality review fails closed** — `review_lesson_package()` returns `passed: False` on parse errors instead of silently passing.
+- **Coroutine reuse bug** — `safe_generate_json()` uses `current_prompt` instead of mutating the original prompt in retry loop.
+- **Identity corruption** — onboarding gated behind explicit `/setup` or `/start`. TeacherProfile name/subject validated and truncated. SOUL.md writes audit-logged and capped at 500 chars.
+- **CLI error wrapping** — all `_run_async(generate_*())` calls wrapped with `try/except` for user-friendly error messages instead of raw tracebacks.
+- **`is_demo_mode()` checks keychain** — secure-store-only keys no longer trigger demo mode.
+
 ## [2.2.0] - 2026-03-27
 
 Better Memory — deeper understanding of your teaching over time.
