@@ -77,12 +77,49 @@ class GenerateLessonTool:
             ],
         )
 
+        # ── Search for teacher's existing materials (assets + KB) ─────
+        kb_prompt_section = ""
+        try:
+            from clawed.asset_registry import AssetRegistry
+            registry = AssetRegistry()
+            assets = registry.search_assets(context.teacher_id, topic, top_k=5)
+            yt_links = registry.get_youtube_links(context.teacher_id, topic, top_k=3)
+            if assets or yt_links:
+                kb_prompt_section = registry.format_asset_summary(assets, yt_links)
+        except Exception:
+            pass
+
+        try:
+            from clawed.agent_core.memory.curriculum_kb import CurriculumKB
+            kb = CurriculumKB()
+            kb_results = kb.search(context.teacher_id, topic, top_k=3)
+            if kb_results:
+                kb_parts = [r for r in kb_results if r.get("similarity", 0) > 0.1]
+                if kb_parts:
+                    chunk_section = "\n\n".join(
+                        f"From \"{r['doc_title']}\":\n{r['chunk_text'][:500]}"
+                        for r in kb_parts
+                    )
+                    if kb_prompt_section:
+                        kb_prompt_section += "\n\n" + chunk_section
+                    else:
+                        kb_prompt_section = (
+                            "Teacher's Existing Materials on This Topic\n"
+                            "The teacher has created content on this topic before. "
+                            "Reference and build on their existing work:\n\n"
+                            + chunk_section
+                            + "\n\nUse these materials as a foundation."
+                        )
+        except Exception:
+            pass
+
         try:
             lesson = await generate_lesson(
                 lesson_number=1,
                 unit=unit,
                 persona=persona,
                 config=config,
+                teacher_materials=kb_prompt_section,
             )
             lesson_data = lesson.model_dump()
             title = lesson_data.get("title", topic)

@@ -84,7 +84,7 @@ async def generate_lesson(
     prompt_template = PROMPT_PATH.read_text(encoding="utf-8")
     prompt = (
         prompt_template
-        .replace("{persona}", persona.to_prompt_context())
+        .replace("{persona}", "(See your persona context in the system instructions above.)")
         .replace("{unit_title}", unit.title)
         .replace("{unit_overview}", unit.overview[:1500])
         .replace("{essential_questions}", "\n".join(f"- {q}" for q in unit.essential_questions))
@@ -129,6 +129,21 @@ async def generate_lesson(
         "Respond only with valid JSON matching the specified format. "
         "Do NOT use XML tags, angle brackets, or markdown formatting in the JSON values."
     )
+
+    # NYS Regents assessment format for Social Studies
+    if (config and hasattr(config, 'teacher_profile') and config.teacher_profile
+            and getattr(config.teacher_profile, 'state', '') == 'NY'
+            and 'social studies' in (persona.subject_area or '').lower()):
+        system_parts.append(
+            "NYS Regents Assessment Format Requirements:\n"
+            "- Exit ticket questions MUST use Stimulus-Based Multiple Choice Question (SBMCQ) format:\n"
+            "  Each question includes a stimulus (primary source excerpt, map, chart, or political cartoon)\n"
+            "  followed by 4 answer choices.\n"
+            "- Include at least one Constructed Response Question (CRQ) in the exit ticket:\n"
+            "  Context → Source → Questions (identify, explain, analyze/evaluate).\n"
+            "- All assessment items must reference specific historical evidence from the sources provided."
+        )
+
     system = "\n\n".join(system_parts)
 
     if task_type and config:
@@ -148,6 +163,7 @@ async def generate_all_lessons(
     persona: TeacherPersona,
     include_homework: bool = True,
     config: AppConfig | None = None,
+    teacher_materials: str = "",
 ) -> list[DailyLesson]:
     """Generate lesson plans for every lesson in a unit sequentially."""
     lessons: list[DailyLesson] = []
@@ -158,6 +174,7 @@ async def generate_all_lessons(
             persona=persona,
             include_homework=include_homework,
             config=config,
+            teacher_materials=teacher_materials,
         )
         lessons.append(lesson)
     return lessons
