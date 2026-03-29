@@ -127,7 +127,12 @@ def ingest(
 
     with _safe_progress(console=console) as progress:
         task = progress.add_task("Analyzing teaching style...", total=None)
-        persona = _run_async(extract_persona(documents))
+        try:
+            persona = _run_async(extract_persona(documents))
+        except (RuntimeError, ValueError) as e:
+            console.print(f"[red]Generation failed:[/red] {e}")
+            console.print("[dim]Run with --debug for full details[/dim]")
+            raise typer.Exit(1)
         progress.update(task, description="Persona extracted!")
 
     # Override LLM-inferred name with configured teacher name
@@ -385,15 +390,20 @@ def lesson(
         task = progress.add_task(
             f"Generating lesson {lesson_num}...", total=None
         )
-        daily = _run_async(
-            generate_lesson(
-                lesson_number=lesson_num,
-                unit=unit_plan,
-                persona=persona,
-                include_homework=homework,
-                teacher_materials=kb_prompt_section,
+        try:
+            daily = _run_async(
+                generate_lesson(
+                    lesson_number=lesson_num,
+                    unit=unit_plan,
+                    persona=persona,
+                    include_homework=homework,
+                    teacher_materials=kb_prompt_section,
+                )
             )
-        )
+        except (RuntimeError, ValueError) as e:
+            console.print(f"[red]Generation failed:[/red] {e}")
+            console.print("[dim]Run with --debug for full details[/dim]")
+            raise typer.Exit(1)
         progress.update(task, description="Lesson plan complete!")
 
     out_dir = _output_dir()
@@ -494,9 +504,14 @@ def differentiate(
             task = progress.add_task(
                 "Modifying lessons for IEP students...", total=None
             )
-            modifications = _run_async(
-                generate_iep_lesson_modifications(daily, profiles)
-            )
+            try:
+                modifications = _run_async(
+                    generate_iep_lesson_modifications(daily, profiles)
+                )
+            except (RuntimeError, ValueError) as e:
+                console.print(f"[red]Generation failed:[/red] {e}")
+                console.print("[dim]Run with --debug for full details[/dim]")
+                raise typer.Exit(1)
             progress.update(
                 task,
                 description=(
@@ -536,9 +551,14 @@ def differentiate(
             task = progress.add_task(
                 "Generating 504 accommodations...", total=None
             )
-            notes = _run_async(
-                generate_504_accommodations(daily, acc_list)
-            )
+            try:
+                notes = _run_async(
+                    generate_504_accommodations(daily, acc_list)
+                )
+            except (RuntimeError, ValueError) as e:
+                console.print(f"[red]Generation failed:[/red] {e}")
+                console.print("[dim]Run with --debug for full details[/dim]")
+                raise typer.Exit(1)
             progress.update(
                 task, description="504 accommodations complete!"
             )
@@ -565,11 +585,16 @@ def differentiate(
             task = progress.add_task(
                 "Generating tiered assignments...", total=None
             )
-            items = _run_async(
-                generate_tiered_assignments(
-                    tiered_topic, tiered_grade, tiers
+            try:
+                items = _run_async(
+                    generate_tiered_assignments(
+                        tiered_topic, tiered_grade, tiers
+                    )
                 )
-            )
+            except (RuntimeError, ValueError) as e:
+                console.print(f"[red]Generation failed:[/red] {e}")
+                console.print("[dim]Run with --debug for full details[/dim]")
+                raise typer.Exit(1)
             progress.update(
                 task,
                 description=f"Generated {len(items)} tiered items!",
@@ -668,7 +693,12 @@ def sub_packet(
     with _safe_progress(console=console) as progress:
         task = progress.add_task("Generating sub packet...", total=None)
         llm = LLMClient(cfg)
-        packet = _run_async(generate_sub_packet(request, llm))
+        try:
+            packet = _run_async(generate_sub_packet(request, llm))
+        except (RuntimeError, ValueError) as e:
+            console.print(f"[red]Generation failed:[/red] {e}")
+            console.print("[dim]Run with --debug for full details[/dim]")
+            raise typer.Exit(1)
         progress.update(task, description="Sub packet complete!")
 
     md_path = save_sub_packet(packet, _output_dir())
@@ -749,15 +779,20 @@ def parent_note(
         task = progress.add_task(
             "Writing progress update...", total=None
         )
-        update = _run_async(
-            generate_progress_update(
-                student_name=student,
-                strengths=strength_list,
-                areas_to_grow=growth_list,
-                teacher_persona=persona,
-                topic=topic,
+        try:
+            update = _run_async(
+                generate_progress_update(
+                    student_name=student,
+                    strengths=strength_list,
+                    areas_to_grow=growth_list,
+                    teacher_persona=persona,
+                    topic=topic,
+                )
             )
-        )
+        except (RuntimeError, ValueError) as e:
+            console.print(f"[red]Generation failed:[/red] {e}")
+            console.print("[dim]Run with --debug for full details[/dim]")
+            raise typer.Exit(1)
         progress.update(task, description="Progress update complete!")
 
     out_dir = _output_dir()
@@ -871,13 +906,18 @@ def gap_analyze(
 
     with _safe_progress(console=console) as progress:
         task = progress.add_task("Analyzing curriculum gaps...", total=None)
-        gaps: list[CurriculumGap] = _run_async(
-            mapper.identify_curriculum_gaps(
-                existing_materials=materials_list,
-                standards=standards_list,
-                persona=teacher_persona,
+        try:
+            gaps: list[CurriculumGap] = _run_async(
+                mapper.identify_curriculum_gaps(
+                    existing_materials=materials_list,
+                    standards=standards_list,
+                    persona=teacher_persona,
+                )
             )
-        )
+        except (RuntimeError, ValueError) as e:
+            console.print(f"[red]Generation failed:[/red] {e}")
+            console.print("[dim]Run with --debug for full details[/dim]")
+            raise typer.Exit(1)
         progress.update(task, description="Analysis complete!")
 
     if not gaps:

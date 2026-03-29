@@ -46,16 +46,21 @@ def unit(
 
     with _safe_progress(console=console) as progress:
         task = progress.add_task("Generating unit plan...", total=None)
-        unit_plan = _run_async(
-            plan_unit(
-                subject=subject,
-                grade_level=grade,
-                topic=topic,
-                duration_weeks=weeks,
-                persona=persona,
-                standards=std_list,
+        try:
+            unit_plan = _run_async(
+                plan_unit(
+                    subject=subject,
+                    grade_level=grade,
+                    topic=topic,
+                    duration_weeks=weeks,
+                    persona=persona,
+                    standards=std_list,
+                )
             )
-        )
+        except (RuntimeError, ValueError) as e:
+            console.print(f"[red]Generation failed:[/red] {e}")
+            console.print("[dim]Run with --debug for full details[/dim]")
+            raise typer.Exit(1)
         progress.update(task, description="Unit plan complete!")
 
     out_dir = _output_dir()
@@ -114,16 +119,21 @@ def year_map(
             "Generating full-year curriculum map...", total=None
         )
         mapper = CurriculumMapper()
-        result = _run_async(
-            mapper.generate_year_map(
-                subject=subject,
-                grade_level=grade,
-                standards=std_list,
-                persona=persona,
-                school_year=school_year,
-                total_weeks=weeks,
+        try:
+            result = _run_async(
+                mapper.generate_year_map(
+                    subject=subject,
+                    grade_level=grade,
+                    standards=std_list,
+                    persona=persona,
+                    school_year=school_year,
+                    total_weeks=weeks,
+                )
             )
-        )
+        except (RuntimeError, ValueError) as e:
+            console.print(f"[red]Generation failed:[/red] {e}")
+            console.print("[dim]Run with --debug for full details[/dim]")
+            raise typer.Exit(1)
         progress.update(task, description="Year map complete!")
 
     out_dir = _output_dir()
@@ -211,14 +221,19 @@ def pacing(
             "Creating week-by-week pacing guide...", total=None
         )
         mapper = CurriculumMapper()
-        guide = _run_async(
-            mapper.generate_pacing_guide(
-                year_map=ym,
-                start_date=start_date,
-                school_calendar=school_cal,
-                persona=persona,
+        try:
+            guide = _run_async(
+                mapper.generate_pacing_guide(
+                    year_map=ym,
+                    start_date=start_date,
+                    school_calendar=school_cal,
+                    persona=persona,
+                )
             )
-        )
+        except (RuntimeError, ValueError) as e:
+            console.print(f"[red]Generation failed:[/red] {e}")
+            console.print("[dim]Run with --debug for full details[/dim]")
+            raise typer.Exit(1)
         progress.update(task, description="Pacing guide complete!")
 
     out_dir = _output_dir()
@@ -295,16 +310,21 @@ def full(
     # Step 1: Unit plan
     with _safe_progress(console=console) as progress:
         task = progress.add_task("Step 1/3: Planning unit...", total=None)
-        unit_plan = _run_async(
-            plan_unit(
-                subject=subject,
-                grade_level=grade,
-                topic=topic,
-                duration_weeks=weeks,
-                persona=persona,
-                standards=std_list,
+        try:
+            unit_plan = _run_async(
+                plan_unit(
+                    subject=subject,
+                    grade_level=grade,
+                    topic=topic,
+                    duration_weeks=weeks,
+                    persona=persona,
+                    standards=std_list,
+                )
             )
-        )
+        except (RuntimeError, ValueError) as e:
+            console.print(f"[red]Generation failed:[/red] {e}")
+            console.print("[dim]Run with --debug for full details[/dim]")
+            raise typer.Exit(1)
         progress.update(task, description="Unit plan complete!")
 
     save_unit(unit_plan, out_dir)
@@ -329,14 +349,19 @@ def full(
                 task,
                 description=f"Lesson {brief.lesson_number}: {brief.topic}",
             )
-            daily = _run_async(
-                generate_lesson(
-                    lesson_number=brief.lesson_number,
-                    unit=unit_plan,
-                    persona=persona,
-                    include_homework=homework,
+            try:
+                daily = _run_async(
+                    generate_lesson(
+                        lesson_number=brief.lesson_number,
+                        unit=unit_plan,
+                        persona=persona,
+                        include_homework=homework,
+                    )
                 )
-            )
+            except (RuntimeError, ValueError) as e:
+                console.print(f"[red]Generation failed:[/red] {e}")
+                console.print("[dim]Run with --debug for full details[/dim]")
+                raise typer.Exit(1)
             save_lesson(daily, out_dir)
             export_lesson(daily, out_dir, fmt=fmt)
             lessons.append(daily)
@@ -354,7 +379,12 @@ def full(
                     f"Materials for lesson {daily.lesson_number}"
                 ),
             )
-            mats = _run_async(generate_all_materials(daily, persona))
+            try:
+                mats = _run_async(generate_all_materials(daily, persona))
+            except (RuntimeError, ValueError) as e:
+                console.print(f"[red]Generation failed:[/red] {e}")
+                console.print("[dim]Run with --debug for full details[/dim]")
+                raise typer.Exit(1)
             save_materials(mats, out_dir)
             export_materials(mats, out_dir, fmt=fmt)
             progress.advance(task)

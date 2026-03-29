@@ -35,7 +35,12 @@ def materials(
 
     with _safe_progress(console=console) as progress:
         task = progress.add_task("Generating worksheet...", total=4)
-        mats = _run_async(generate_all_materials(daily, persona))
+        try:
+            mats = _run_async(generate_all_materials(daily, persona))
+        except (RuntimeError, ValueError) as e:
+            console.print(f"[red]Generation failed:[/red] {e}")
+            console.print("[dim]Run with --debug for full details[/dim]")
+            raise typer.Exit(1)
         progress.update(
             task, completed=4, description="All materials generated!"
         )
@@ -123,7 +128,12 @@ def assess(
             task = progress.add_task(
                 "Generating exit ticket...", total=None
             )
-            result = _run_async(gen.generate_formative(daily, persona))
+            try:
+                result = _run_async(gen.generate_formative(daily, persona))
+            except (RuntimeError, ValueError) as e:
+                console.print(f"[red]Generation failed:[/red] {e}")
+                console.print("[dim]Run with --debug for full details[/dim]")
+                raise typer.Exit(1)
             progress.update(task, description="Exit ticket ready!")
 
         path = save_assessment(result, out_dir, "formative")
@@ -156,7 +166,12 @@ def assess(
             task = progress.add_task(
                 "Generating unit test...", total=None
             )
-            result = _run_async(gen.generate_summative(unit_plan, persona))
+            try:
+                result = _run_async(gen.generate_summative(unit_plan, persona))
+            except (RuntimeError, ValueError) as e:
+                console.print(f"[red]Generation failed:[/red] {e}")
+                console.print("[dim]Run with --debug for full details[/dim]")
+                raise typer.Exit(1)
             progress.update(task, description="Unit test ready!")
 
         path = save_assessment(result, out_dir, "summative")
@@ -188,11 +203,16 @@ def assess(
             task = progress.add_task(
                 "Generating DBQ with documents...", total=None
             )
-            result = _run_async(
-                gen.generate_dbq(
-                    topic, persona, grade_level=grade, context=context
+            try:
+                result = _run_async(
+                    gen.generate_dbq(
+                        topic, persona, grade_level=grade, context=context
+                    )
                 )
-            )
+            except (RuntimeError, ValueError) as e:
+                console.print(f"[red]Generation failed:[/red] {e}")
+                console.print("[dim]Run with --debug for full details[/dim]")
+                raise typer.Exit(1)
             progress.update(task, description="DBQ ready!")
 
         path = save_assessment(result, out_dir, "dbq")
@@ -221,15 +241,20 @@ def assess(
         )
         with _safe_progress(console=console) as progress:
             task = progress.add_task("Generating quiz...", total=None)
-            result = _run_async(
-                gen.generate_quiz(
-                    topic=topic,
-                    question_count=questions,
-                    question_types=question_types,
-                    grade=grade,
-                    persona=persona,
+            try:
+                result = _run_async(
+                    gen.generate_quiz(
+                        topic=topic,
+                        question_count=questions,
+                        question_types=question_types,
+                        grade=grade,
+                        persona=persona,
+                    )
                 )
-            )
+            except (RuntimeError, ValueError) as e:
+                console.print(f"[red]Generation failed:[/red] {e}")
+                console.print("[dim]Run with --debug for full details[/dim]")
+                raise typer.Exit(1)
             progress.update(task, description="Quiz ready!")
 
         path = save_assessment(result, out_dir, "quiz")
@@ -276,11 +301,16 @@ def rubric(
 
     with _safe_progress(console=console) as progress:
         prog_task = progress.add_task("Generating rubric...", total=None)
-        result = _run_async(
-            gen.generate_rubric(
-                task, persona, criteria_count=criteria, grade_level=grade
+        try:
+            result = _run_async(
+                gen.generate_rubric(
+                    task, persona, criteria_count=criteria, grade_level=grade
+                )
             )
-        )
+        except (RuntimeError, ValueError) as e:
+            console.print(f"[red]Generation failed:[/red] {e}")
+            console.print("[dim]Run with --debug for full details[/dim]")
+            raise typer.Exit(1)
         progress.update(prog_task, description="Rubric ready!")
 
     out_dir = _output_dir()
@@ -328,7 +358,12 @@ def score(
     with _safe_progress(console=console) as progress:
         task = progress.add_task("Scoring lesson quality...", total=None)
         scorer = LessonQualityScore()
-        scores = _run_async(scorer.score(lesson_obj))
+        try:
+            scores = _run_async(scorer.score(lesson_obj))
+        except (RuntimeError, ValueError) as e:
+            console.print(f"[red]Generation failed:[/red] {e}")
+            console.print("[dim]Run with --debug for full details[/dim]")
+            raise typer.Exit(1)
         progress.update(task, description="Scoring complete!")
 
     table = Table(title="Lesson Quality Score")
@@ -400,7 +435,12 @@ def improve(
             task = progress.add_task(
                 "Analyzing feedback and improving prompts...", total=None
             )
-            result = _run_async(improve_prompts(db, feedback_window_days=days))
+            try:
+                result = _run_async(improve_prompts(db, feedback_window_days=days))
+            except (RuntimeError, ValueError) as e:
+                console.print(f"[red]Generation failed:[/red] {e}")
+                console.print("[dim]Run with --debug for full details[/dim]")
+                raise typer.Exit(1)
             progress.update(task, description="Done!")
 
         db.close()
@@ -550,7 +590,12 @@ def evaluate(
 
     # Evaluate
     console.print("\nEvaluating voice consistency...")
-    report = _run_async(evaluate_voice_consistency(persona, generated, config))
+    try:
+        report = _run_async(evaluate_voice_consistency(persona, generated, config))
+    except (RuntimeError, ValueError) as e:
+        console.print(f"[red]Generation failed:[/red] {e}")
+        console.print("[dim]Run with --debug for full details[/dim]")
+        raise typer.Exit(1)
 
     # Display results
     eval_table = Table(title="Voice Evaluation Results")
