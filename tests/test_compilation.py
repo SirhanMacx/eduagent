@@ -3,9 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-from pathlib import Path
-
-import pytest
 
 from clawed.master_content import (
     DoNow,
@@ -19,7 +16,6 @@ from clawed.master_content import (
     VocabularyEntry,
 )
 from clawed.models import DifferentiationNotes
-
 
 # ── Shared fixture ──────────────────────────────────────────────────────────
 

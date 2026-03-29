@@ -81,7 +81,7 @@ async def compile_student_view(
 
     def _shaded_cell(cell, fill_hex: str) -> None:
         tc = cell._tc
-        tcPr = tc.get_or_add_tcPr()
+        tcPr = tc.get_or_add_tcPr()  # noqa: N806
         shd = tcPr.makeelement(qn("w:shd"), {
             qn("w:val"): "clear",
             qn("w:color"): "auto",

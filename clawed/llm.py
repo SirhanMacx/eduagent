@@ -61,7 +61,7 @@ class LLMClient:
         """Return a canned demo response based on schema hint or prompt keywords."""
         from clawed.demo import load_demo
 
-        HINT_TO_FIXTURE = {
+        HINT_TO_FIXTURE = {  # noqa: N806
             "MasterContent": "master_content",
             "DailyLesson": "lesson_social_studies_g8",
             "UnitPlan": "unit_plan",

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "clawed"
-version = "2.3.4"
+version = "2.3.5"
 description = "Claw-ED — personal AI teaching agent. Learns your voice, works while you sleep."
 readme = "README.md"
 license = "MIT"
@@ -59,7 +59,7 @@ all = [
 ]
 pdf = ["weasyprint>=60.0"]
 keyring = ["keyring>=24.0.0"]
-dev = ["pytest>=7.0.0", "pytest-asyncio>=0.21.0", "ruff>=0.1.0", "apscheduler>=3.10.0,<4.0", "faster-whisper>=0.10.0"]
+dev = ["pytest>=7.0.0", "pytest-asyncio>=0.21.0", "pytest-cov>=4.0", "ruff>=0.1.0", "apscheduler>=3.10.0,<4.0", "faster-whisper>=0.10.0"]
 
 [project.scripts]
 clawed = "clawed.cli:app"
@@ -91,3 +91,10 @@ select = ["E", "F", "I", "N", "W"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["clawed"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 55

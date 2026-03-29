@@ -9,7 +9,6 @@ from unittest.mock import patch
 
 import pytest
 
-
 # ── Fixture loading ───────────────────────────────────────────────────────────
 
 
@@ -309,8 +308,8 @@ class TestResolveCredentials:
         assert len(result) == 2
 
     def test_ollama_config_returns_ollama(self):
-        from clawed.models import AppConfig, LLMProvider
         from clawed.config import resolve_credentials
+        from clawed.models import AppConfig, LLMProvider
         config = AppConfig()
         config.provider = LLMProvider.OLLAMA
         with patch("clawed.config.get_api_key", return_value=None):
@@ -341,8 +340,9 @@ class TestIsDemoMode:
 
     @patch.dict("os.environ", {"OPENAI_API_KEY": "sk-test"})
     def test_false_when_openai_key_in_env(self):
-        from clawed.demo import is_demo_mode
         import os
+
+        from clawed.demo import is_demo_mode
         os.environ.pop("ANTHROPIC_API_KEY", None)
         assert is_demo_mode() is False
 

@@ -17,7 +17,6 @@ from clawed.master_content import (
 )
 from clawed.models import DailyLesson, DifferentiationNotes
 
-
 # ── helpers ────────────────────────────────────────────────────────────────
 
 def _make_master_content(**overrides) -> MasterContent:

@@ -108,7 +108,7 @@ class UpdateSoulTool:
 
         import logging
         audit_logger = logging.getLogger("clawed.audit")
-        audit_logger.info("SOUL.md update: section=%s, content=%s", section, content[:200])
+        audit_logger.info("SOUL.md update: header=%s, content=%s", header, content[:200])
 
         # Build the datestamped entry
         entry = f"\n\n*({date.today().isoformat()})* {content}\n"

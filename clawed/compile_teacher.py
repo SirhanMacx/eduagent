@@ -78,7 +78,7 @@ async def compile_teacher_view(
 
     def _shaded_cell(cell, fill_hex: str) -> None:
         tc = cell._tc
-        tcPr = tc.get_or_add_tcPr()
+        tcPr = tc.get_or_add_tcPr()  # noqa: N806
         shd = tcPr.makeelement(qn("w:shd"), {
             qn("w:val"): "clear",
             qn("w:color"): "auto",
@@ -88,7 +88,7 @@ async def compile_teacher_view(
 
     # ── Title / metadata header ───────────────────────────────────────
 
-    title_para = doc.add_heading(master.title, level=0)
+    doc.add_heading(master.title, level=0)
 
     meta_lines = [
         f"Subject: {master.subject}  |  Grade: {master.grade_level}  |  "

@@ -130,15 +130,15 @@ async def compile_slides(
     prs.slide_width = Inches(13.333)
     prs.slide_height = Inches(7.5)
 
-    W = prs.slide_width
-    H = prs.slide_height
+    W = prs.slide_width  # noqa: N806
+    _slide_h = prs.slide_height  # noqa: F841, N806
 
     # Palette (neutral academic)
-    C_TITLE_BG = "1F3864"    # dark navy
-    C_SECTION_BG = "2E75B6"  # medium blue
-    C_WHITE = "FFFFFF"
-    C_DARK = "222222"
-    C_ACCENT = "BDD7EE"      # light blue
+    C_TITLE_BG = "1F3864"    # dark navy  # noqa: N806
+    C_SECTION_BG = "2E75B6"  # medium blue  # noqa: N806
+    C_WHITE = "FFFFFF"  # noqa: N806
+    C_DARK = "222222"  # noqa: N806
+    C_ACCENT = "BDD7EE"      # light blue  # noqa: N806
 
     def _set_bg(slide, hex_color: str) -> None:
         bg = slide.background
@@ -182,7 +182,7 @@ async def compile_slides(
 
     # ── 2. Vocabulary slide(s) ────────────────────────────────────────
 
-    TERMS_PER_SLIDE = 5
+    TERMS_PER_SLIDE = 5  # noqa: N806
     if master.vocabulary:
         vocab_chunks = [
             master.vocabulary[i: i + TERMS_PER_SLIDE]

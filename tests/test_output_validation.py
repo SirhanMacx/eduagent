@@ -1,49 +1,44 @@
 """Tests for clawed/validation.py — post-generation output validators."""
 from __future__ import annotations
 
-import pytest
-
-from clawed.validation import (
-    check_self_contained,
-    validate_master_content,
-    validate_alignment,
-    validate_quiz,
-    validate_rubric,
-    validate_year_map,
-    validate_unit_plan,
-    validate_formative,
-    validate_summative,
-    validate_dbq,
-    validate_lesson_materials,
-    validate_pacing_guide,
-)
 from clawed.master_content import (
-    MasterContent,
-    VocabularyEntry,
-    PrimarySource,
-    InstructionSection,
+    DoNow,
     GuidedNote,
+    InstructionSection,
+    MasterContent,
+    PrimarySource,
     StationDocument,
     StimulusQuestion,
-    DoNow,
-    IndependentWork,
 )
 from clawed.models import (
+    AssessmentQuestion,
+    DBQAssessment,
+    DifferentiationNotes,
+    FormativeAssessment,
+    LessonMaterials,
+    PacingGuide,
     Quiz,
     Rubric,
     RubricCriterion,
+    SummativeAssessment,
+    UnitPlan,
     YearMap,
     YearMapUnit,
-    UnitPlan,
-    FormativeAssessment,
-    SummativeAssessment,
-    DBQAssessment,
-    LessonMaterials,
-    PacingGuide,
-    DifferentiationNotes,
-    AssessmentQuestion,
 )
-
+from clawed.validation import (
+    check_self_contained,
+    validate_alignment,
+    validate_dbq,
+    validate_formative,
+    validate_lesson_materials,
+    validate_master_content,
+    validate_pacing_guide,
+    validate_quiz,
+    validate_rubric,
+    validate_summative,
+    validate_unit_plan,
+    validate_year_map,
+)
 
 # ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -431,7 +426,7 @@ def test_validate_year_map_subject_drift():
 
 
 def _make_unit_plan(topic: str = "Reconstruction") -> UnitPlan:
-    from clawed.models import LessonBrief, AssessmentPlan
+    from clawed.models import LessonBrief
     return UnitPlan(
         title=f"Unit on {topic}",
         subject="US History",
