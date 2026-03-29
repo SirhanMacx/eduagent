@@ -1,11 +1,14 @@
 """Core data types for the agent system."""
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, Optional
 
 from clawed.models import AppConfig
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -19,6 +22,15 @@ class AgentContext:
     session_history: list[dict[str, Any]]
     improvement_context: str
     agent_name: str = "Claw-ED"
+    progress_callback: Optional[Callable[[str], None]] = None
+
+    def notify_progress(self, message: str) -> None:
+        """Send a progress update to the user if a callback is registered."""
+        if self.progress_callback:
+            try:
+                self.progress_callback(message)
+            except Exception as e:
+                logger.debug("Progress notification failed: %s", e)
 
 
 @dataclass

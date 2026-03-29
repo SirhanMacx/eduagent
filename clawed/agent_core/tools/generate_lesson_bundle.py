@@ -83,6 +83,12 @@ class GenerateLessonBundleTool:
         activity_type = params.get("activity_type", "general")
         include_images = params.get("include_images", True)
 
+        # ── Notify user we're starting ────────────────────────────────
+        context.notify_progress(
+            f"Working on your lesson materials for \"{topic}\" now — "
+            f"this usually takes 2-4 minutes. I'll send everything when it's ready!"
+        )
+
         # ── Load config & persona from context ───────────────────────
         config = context.config
         persona = TeacherPersona()

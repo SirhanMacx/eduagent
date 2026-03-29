@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html as html_mod
 import json
 import logging
 import os
@@ -241,15 +242,23 @@ def create_app() -> FastAPI:
         for les in all_lessons:
             score_display = f"{les['quality_score']}" if les.get("quality_score") else "-"
             rating_display = f"{'*' * les['rating']}" if les.get("rating") else "-"
-            share_btn = f'<a href="/shared/{les["share_token"]}">Share</a>' if les.get("share_token") else ""
+            esc_token = html_mod.escape(str(les.get("share_token", "")))
+            share_btn = f'<a href="/shared/{esc_token}">Share</a>' if les.get("share_token") else ""
+            esc_id = html_mod.escape(str(les["id"]))
+            esc_title = html_mod.escape(str(les["title"]))
+            esc_subject = html_mod.escape(str(les["subject"]))
+            esc_grade = html_mod.escape(str(les["grade_level"]))
+            esc_date = html_mod.escape(str(les["date"]))
+            esc_score = html_mod.escape(str(score_display))
+            esc_rating = html_mod.escape(str(rating_display))
             rows_html += (
                 f"<tr>"
-                f"<td><a href='/lesson/{les['id']}'>{les['title']}</a></td>"
-                f"<td>{les['subject']}</td>"
-                f"<td>{les['grade_level']}</td>"
-                f"<td>{les['date']}</td>"
-                f"<td>{score_display}</td>"
-                f"<td>{rating_display}</td>"
+                f"<td><a href='/lesson/{esc_id}'>{esc_title}</a></td>"
+                f"<td>{esc_subject}</td>"
+                f"<td>{esc_grade}</td>"
+                f"<td>{esc_date}</td>"
+                f"<td>{esc_score}</td>"
+                f"<td>{esc_rating}</td>"
                 f"<td>{share_btn}</td>"
                 f"</tr>"
             )
@@ -257,7 +266,7 @@ def create_app() -> FastAPI:
         filter_html = ""
         if all_subjects:
             opts = "".join(
-                f"<option value='{s}' {'selected' if s == subject_filter else ''}>{s}</option>"
+                f"<option value='{html_mod.escape(s)}' {'selected' if s == subject_filter else ''}>{html_mod.escape(s)}</option>"
                 for s in all_subjects
             )
             filter_html += (
@@ -266,7 +275,7 @@ def create_app() -> FastAPI:
             )
         if all_grades:
             opts = "".join(
-                f"<option value='{g}' {'selected' if g == grade_filter else ''}>{g}</option>"
+                f"<option value='{html_mod.escape(g)}' {'selected' if g == grade_filter else ''}>{html_mod.escape(g)}</option>"
                 for g in all_grades
             )
             filter_html += (
@@ -514,11 +523,16 @@ select {{ padding: 6px 10px; border-radius: 4px;
             except (json.JSONDecodeError, TypeError):
                 pass
 
-        bot_link = f"https://t.me/clawed_bot?start={class_code}"
+        esc_class_code = html_mod.escape(class_code)
+        esc_class_name = html_mod.escape(class_name or class_code)
+        esc_teacher_name = html_mod.escape(str(teacher_name))
+        esc_class_topic = html_mod.escape(class_topic)
+        esc_lesson_topics = [html_mod.escape(t) for t in lesson_topics if t]
+        bot_link = f"https://t.me/clawed_bot?start={html_mod.escape(class_code)}"
 
-        html = f"""<!DOCTYPE html>
+        page_html = f"""<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{class_name or class_code} - Claw-ED</title>
+<title>{esc_class_name} - Claw-ED</title>
 <style>
 body {{
   font-family: -apple-system, system-ui, sans-serif;
@@ -551,18 +565,18 @@ h1 {{ color: #1a73e8; margin-bottom: 8px; }}
 .privacy {{ color: #999; font-size: 0.85em; margin-top: 24px; }}
 </style></head><body>
 <div class="card">
-<h1>{class_name or class_code}</h1>
-<p class="teacher">Teacher: {teacher_name}</p>
-<div class="code">{class_code}</div>
-{''.join(f'<span class="topic">{t}</span>' for t in lesson_topics if t)}
-{f'<p><strong>Current Topic:</strong> {class_topic}</p>' if class_topic else ''}
+<h1>{esc_class_name}</h1>
+<p class="teacher">Teacher: {esc_teacher_name}</p>
+<div class="code">{esc_class_code}</div>
+{''.join(f'<span class="topic">{t}</span>' for t in esc_lesson_topics)}
+{f'<p><strong>Current Topic:</strong> {esc_class_topic}</p>' if class_topic else ''}
 <p style="margin-top:24px"><strong>Scan to chat on Telegram:</strong></p>
 <div class="qr"><img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={bot_link}" alt="QR Code"></div>
 <a href="{bot_link}" class="join-btn">Open in Telegram</a>
 <p class="privacy">No student data is displayed on this page.</p>
 </div></body></html>"""
 
-        return HTMLResponse(html)
+        return HTMLResponse(page_html)
 
     @app.get("/analytics", response_class=HTMLResponse)
     async def analytics_page(request: Request):

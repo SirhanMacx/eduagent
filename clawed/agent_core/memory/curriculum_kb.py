@@ -138,10 +138,13 @@ class CurriculumKB:
 
         with sqlite3.connect(self._db_path) as conn:
             conn.row_factory = sqlite3.Row
+            # Fetch up to 5000 chunks for scoring. This trades higher memory
+            # for better recall — teachers with large file collections may have
+            # thousands of chunks, and a 2000 cap was silently dropping results.
             rows = conn.execute(
                 "SELECT doc_title, source_path, chunk_text, embedding, metadata, created_at "
                 "FROM chunks WHERE teacher_id = ? "
-                "LIMIT 2000",
+                "LIMIT 5000",
                 (teacher_id,),
             ).fetchall()
 
@@ -163,6 +166,47 @@ class CurriculumKB:
 
         scored = [s for s in scored if s["similarity"] > 0.05]
         logger.debug("KB search '%s': %d chunks scored, %d above threshold", query, len(rows), len(scored))
+        scored.sort(key=lambda x: x["similarity"], reverse=True)
+        return scored[:top_k]
+
+    def search_all_teachers(
+        self,
+        query: str,
+        top_k: int = 10,
+    ) -> list[dict[str, Any]]:
+        """Fallback search across ALL teachers when teacher_id doesn't match.
+
+        This handles cross-transport mismatches (e.g. files ingested via
+        Telegram numeric ID, searched via CLI 'local-teacher').
+        """
+        query_embedding = self._embedder.embed(query)
+
+        with sqlite3.connect(self._db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            # Search all chunks regardless of teacher_id — capped for safety
+            rows = conn.execute(
+                "SELECT doc_title, source_path, chunk_text, embedding, metadata, created_at "
+                "FROM chunks LIMIT 5000",
+            ).fetchall()
+
+        if not rows:
+            return []
+
+        scored = []
+        for row in rows:
+            stored_embedding = json.loads(row["embedding"])
+            sim = self._embedder.cosine_similarity(query_embedding, stored_embedding)
+            scored.append({
+                "doc_title": row["doc_title"],
+                "source_path": row["source_path"],
+                "chunk_text": row["chunk_text"],
+                "metadata": json.loads(row["metadata"]),
+                "created_at": row["created_at"],
+                "similarity": sim,
+            })
+
+        scored = [s for s in scored if s["similarity"] > 0.05]
+        logger.debug("KB fallback search '%s': %d chunks scored, %d above threshold", query, len(rows), len(scored))
         scored.sort(key=lambda x: x["similarity"], reverse=True)
         return scored[:top_k]
 

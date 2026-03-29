@@ -60,7 +60,13 @@ class OllamaEmbedder:
 
 
 class TFIDFEmbedder:
-    """TF-IDF with bigrams — no dependencies, always available."""
+    """TF-IDF with bigrams — no dependencies, always available.
+
+    Vocabulary is capped at MAX_VOCAB tokens to bound vector dimensionality
+    and prevent unbounded memory growth during large ingestion runs.
+    """
+
+    MAX_VOCAB = 10_000
 
     def __init__(self) -> None:
         self._vocab: dict[str, int] = {}
@@ -78,12 +84,15 @@ class TFIDFEmbedder:
     def embed(self, text: str) -> list[float]:
         tokens = self._tokenize(text)
         for t in tokens:
-            if t not in self._vocab:
+            if t not in self._vocab and self._next_idx < self.MAX_VOCAB:
                 self._vocab[t] = self._next_idx
                 self._next_idx += 1
-        vec = [0.0] * len(self._vocab)
+        dim = min(len(self._vocab), self.MAX_VOCAB)
+        vec = [0.0] * dim
         for t in tokens:
-            vec[self._vocab[t]] += 1.0
+            idx = self._vocab.get(t)
+            if idx is not None and idx < dim:
+                vec[idx] += 1.0
         norm = math.sqrt(sum(x * x for x in vec)) or 1.0
         return [x / norm for x in vec]
 

@@ -8,9 +8,13 @@ usage.
 
 from __future__ import annotations
 
+import logging
+
 from pydantic import BaseModel, Field, field_validator
 
 from clawed.models import DifferentiationNotes  # reuse — do not duplicate
+
+logger = logging.getLogger(__name__)
 
 
 class VocabularyEntry(BaseModel):
@@ -33,6 +37,13 @@ class PrimarySource(BaseModel):
     image_spec: str = ""
     scaffolding_questions: list[str] = Field(default_factory=list)
 
+    @field_validator("image_spec", mode="after")
+    @classmethod
+    def warn_empty_image_spec(cls, v: str) -> str:
+        if not v.strip():
+            logger.warning("Empty image_spec in PrimarySource — images will be missing for this source")
+        return v
+
 
 class InstructionSection(BaseModel):
     """One section of the direct-instruction sequence."""
@@ -42,6 +53,13 @@ class InstructionSection(BaseModel):
     teacher_script: str
     key_points: list[str] = Field(default_factory=list)
     image_spec: str = ""
+
+    @field_validator("image_spec", mode="after")
+    @classmethod
+    def warn_empty_image_spec(cls, v: str) -> str:
+        if not v.strip():
+            logger.warning("Empty image_spec in InstructionSection — images will be missing for this section")
+        return v
 
 
 class GuidedNote(BaseModel):

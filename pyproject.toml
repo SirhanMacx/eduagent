@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "clawed"
-version = "2.3.5"
+version = "2.3.7"
 description = "Claw-ED — personal AI teaching agent. Learns your voice, works while you sleep."
 readme = "README.md"
 license = "MIT"
@@ -28,11 +28,10 @@ dependencies = [
     "rich>=13.0.0",
     "pydantic>=2.0.0,<3.0",
     "httpx>=0.25.0,<1.0",
-    "anthropic>=0.40.0,<1.0",
-    "openai>=1.0.0",
     "PyMuPDF>=1.23.0",
     "python-docx>=1.0.0",
     "python-pptx>=0.6.21",
+    "lxml>=4.9.0",
     "reportlab>=4.0.0",
     "Jinja2>=3.1.0",
     "fastapi>=0.110.0,<1.0",
@@ -56,8 +55,10 @@ all = [
     "keyring>=24.0.0",
     "uvicorn[standard]>=0.27.0",
     "onnxruntime>=1.16.0",
+    "qrcode[pil]>=7.0",
 ]
 pdf = ["weasyprint>=60.0"]
+qr = ["qrcode[pil]>=7.0"]
 keyring = ["keyring>=24.0.0"]
 dev = ["pytest>=7.0.0", "pytest-asyncio>=0.21.0", "pytest-cov>=4.0", "ruff>=0.1.0", "apscheduler>=3.10.0,<4.0", "faster-whisper>=0.10.0"]
 

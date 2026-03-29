@@ -449,10 +449,13 @@ class LLMClient:
     async def _anthropic(
         self, prompt: str, system: str, temperature: float, max_tokens: int
     ) -> str:
-        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        from clawed.config import get_api_key
+
+        api_key = get_api_key("anthropic")
         if not api_key:
             raise EnvironmentError(
-                "ANTHROPIC_API_KEY not set. Export it or run: clawed config set-model ollama"
+                "Anthropic API key not found. Set ANTHROPIC_API_KEY, store via "
+                "keyring, or run: clawed config set-model ollama"
             )
         try:
             async with httpx.AsyncClient(timeout=120.0) as client:
@@ -493,10 +496,13 @@ class LLMClient:
     async def _openai(
         self, prompt: str, system: str, temperature: float, max_tokens: int
     ) -> str:
-        api_key = os.environ.get("OPENAI_API_KEY")
+        from clawed.config import get_api_key
+
+        api_key = get_api_key("openai")
         if not api_key:
             raise EnvironmentError(
-                "OPENAI_API_KEY not set. Export it or run: clawed config set-model ollama"
+                "OpenAI API key not found. Set OPENAI_API_KEY, store via "
+                "keyring, or run: clawed config set-model ollama"
             )
         messages: list[dict[str, str]] = []
         if system:

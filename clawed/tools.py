@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Any
 
@@ -367,9 +368,9 @@ def _tool_list_files(directory: str = "all") -> str:
 def _tool_read_file(path: str) -> str:
     """Read a file and return its contents (truncated if large)."""
     p = Path(path).expanduser().resolve()
-    # Security: only allow reading from known directories
+    # Security: only allow reading from known directories (resolved path containment)
     allowed = [Path.home() / ".eduagent", Path("clawed_output").resolve(), Path("eduagent_output").resolve()]
-    if not any(str(p).startswith(str(a)) for a in allowed):
+    if not any(str(p).startswith(str(a.resolve()) + os.sep) or p == a.resolve() for a in allowed):
         return "Cannot read files outside of Claw-ED directories."
     if not p.exists():
         return f"File not found: {path}"

@@ -8,10 +8,13 @@ YouTube links) alongside text chunk search.
 from __future__ import annotations
 
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
 from clawed.agent_core.context import AgentContext, ToolResult
+
+logger = logging.getLogger(__name__)
 
 
 class SearchMyMaterialsTool:
@@ -65,7 +68,14 @@ class SearchMyMaterialsTool:
             from clawed.asset_registry import AssetRegistry
             registry = AssetRegistry()
             assets = registry.search_assets(teacher_id, query, top_k=top_k)
+            # Fallback: if no results with this teacher_id, try without
+            # teacher_id filter. This handles cross-transport mismatches
+            # (e.g. files ingested via Telegram ID, searched via CLI "local-teacher").
+            if not assets:
+                assets = registry.search_assets("", query, top_k=top_k)
             yt_links = registry.get_youtube_links(teacher_id, query, top_k=3)
+            if not yt_links:
+                yt_links = registry.get_youtube_links("", query, top_k=3)
 
             if assets:
                 lines.append("EXISTING MATERIALS:\n")
@@ -92,8 +102,8 @@ class SearchMyMaterialsTool:
                 for link in yt_links:
                     lines.append(f"  - {link['url']} (from \"{link['from_file']}\")\n")
 
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Asset search failed: %s", e)
 
         # ── Chunk-level search (text excerpts) ─────────────────────
         try:
@@ -101,6 +111,9 @@ class SearchMyMaterialsTool:
 
             kb = CurriculumKB()
             results = kb.search(teacher_id, query, top_k=top_k)
+            # Fallback: cross-transport teacher_id mismatch
+            if not results:
+                results = kb.search_all_teachers(query, top_k=top_k)
 
             if not results and not lines:
                 stats = kb.stats(teacher_id)

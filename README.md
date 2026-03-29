@@ -13,23 +13,23 @@ Built on the OpenClaw agent framework. Open source. MIT license.
 
 ---
 
-## What's new in v2.3.5
+## What's new in v2.3.7
 
-**Master Content Track.** One LLM call generates a single `MasterContent` object. Three output documents are compiled mechanically from the same source of truth -- no content drift between what the teacher sees, what students hold, and what's on screen:
+**Real images in every lesson.** Image specs are now required for every primary source and instruction section across all subjects. The LLM generates specific search queries ("Thomas Nast Boss Tweed political cartoon 1871") instead of leaving the field blank. Teacher images are found first using a three-stage progressive search (full query, individual keywords, subject fallback) with filename-weighted scoring across up to 150 candidates. External sources (Library of Congress, Wikimedia Commons, Unsplash) fill in the rest with subject-aware routing.
 
-1. **Teacher DOCX** — Full answer keys, scripted teacher language, guided notes with answers filled in, station answer keys, differentiation notes. Observation-ready.
-2. **Student DOCX** — Same structure, blanks instead of answers. Guided notes with fill-in lines, station directions without answer keys, exit ticket without expected responses. Print and hand out.
-3. **Slideshow PPTX** — Widescreen academic slides: title, vocabulary cards, instruction sections with images, primary source analysis, station overview, stimulus-based exit ticket.
+**12 new file formats.** Your old `.doc`, `.ppt`, `.xls`, `.xlsx`, `.csv`, `.rtf`, `.html`, `.odt`, and `.odp` files are now parsed and indexed. Previously only 8 formats were supported -- teachers' archives spanning decades of file formats were 93% invisible to search. Now they're searchable.
 
-**Zero silent failures.** All 11 generators use `safe_generate_json()` with automatic retry on validation errors. Post-generation validators catch empty outputs, topic drift, and delegation phrases. Quality review fails closed. CLI shows warnings, not raw tracebacks.
+**Search actually works.** Three fixes to the search pipeline: cross-transport teacher ID fallback (files ingested via CLI now appear in Telegram searches), asset search errors are logged instead of silently swallowed, and the agent is explicitly instructed to surface results to you. Topic tags are auto-extracted from filenames and content for better matching.
 
-**Stimulus-based assessment.** Every question -- Do Now, guided notes, stations, exit ticket -- must be anchored to a stimulus (source text, data, diagram, scenario). Bare recall questions are banned at the prompt level.
+**Background file ingestion.** Send your files and keep chatting. The bot acknowledges immediately, processes everything in a background thread, sends progress updates ("Indexed 50/200 documents..."), and a summary when done. Max 3 concurrent ingestions, individual file failures don't abort the batch.
 
-**Identity protection.** Onboarding only triggers on explicit `/setup`. Profile fields are validated and truncated. SOUL.md writes are audit-logged and capped at 500 chars.
+**DEEP-tier model for lesson generation.** MasterContent routes to the DEEP tier. With a capable model (Claude Sonnet 4.6, GPT-4o), lesson quality improves dramatically.
 
-**Your files are first-class.** Teacher materials are searched (AssetRegistry + CurriculumKB) before every generation -- not just in the bundle tool, but in standalone lesson and unit generation too.
+**Security hardened.** Path traversal protection on all file-reading tools. XSS escaping on the web dashboard. Thread-safe tool definitions. ZIP bomb protection. Debug info no longer leaked to users. Ingest paths restricted to home directory.
 
-**Parallel image pipeline.** All image specs from the MasterContent are fetched in parallel with configurable timeout and local caching.
+**50 MB lighter.** Removed unused `anthropic` and `openai` SDK dependencies. API key resolution unified across all code paths (env var + keyring + secrets file).
+
+**Everything from v2.3.5 still applies:** Master Content Track, stimulus-based assessment, zero silent failures, parallel image pipeline, identity protection.
 
 ---
 
@@ -46,7 +46,7 @@ Everything runs on your own computer. Your files never leave your machine unless
 ## How it works
 
 ```
-Your files (PDFs, DOCX, PPTX, TXT)
+Your files (PDF, DOCX, PPTX, DOC, PPT, XLS, XLSX, CSV, RTF, HTML, ODT, TXT, and more)
         |
         v
 Claw-ED learns your teaching style

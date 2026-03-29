@@ -35,7 +35,7 @@ class TestTaskTiers:
             assert TASK_TIERS[task] == ModelTier.WORK, f"{task} should be work"
 
     def test_deep_tasks(self):
-        deep_tasks = ["persona_extract", "evaluation"]
+        deep_tasks = ["persona_extract", "evaluation", "master_content"]
         for task in deep_tasks:
             assert TASK_TIERS[task] == ModelTier.DEEP, f"{task} should be deep"
 

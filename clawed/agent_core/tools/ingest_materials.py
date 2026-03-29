@@ -38,6 +38,8 @@ class IngestMaterialsTool:
             },
         }
 
+    MAX_INGEST_FILES = 500
+
     async def execute(
         self, params: dict[str, Any], context: AgentContext
     ) -> ToolResult:
@@ -46,13 +48,20 @@ class IngestMaterialsTool:
         raw_path = params["path"]
         resolved = Path(raw_path).expanduser().resolve()
 
+        # Security: only allow ingesting files from the user's home directory
+        home = Path.home().resolve()
+        if not str(resolved).startswith(str(home)):
+            return ToolResult(
+                text="Access denied: can only ingest files from your home directory."
+            )
+
         if not resolved.exists():
             return ToolResult(
                 text=f"Path not found: {raw_path}. Check the path and try again."
             )
 
         try:
-            docs = ingest_path(resolved)
+            docs = ingest_path(resolved, max_files=self.MAX_INGEST_FILES)
             if not docs:
                 return ToolResult(
                     text=f"No supported files found in {raw_path}. "

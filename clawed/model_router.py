@@ -45,6 +45,7 @@ TASK_TIERS: dict[str, ModelTier] = {
     # Deep tier
     "persona_extract": ModelTier.DEEP,
     "evaluation": ModelTier.DEEP,
+    "master_content": ModelTier.DEEP,
 }
 
 DEFAULT_TIER_MODELS: dict[str, str] = {
@@ -57,9 +58,9 @@ DEFAULT_TIER_MODELS: dict[str, str] = {
 PROVIDER_TIER_MODELS: dict[str, dict[str, str]] = {
     "ollama": DEFAULT_TIER_MODELS,
     "anthropic": {
-        "fast": "claude-sonnet-4-5-20250514",
-        "work": "claude-sonnet-4-5-20250514",
-        "deep": "claude-opus-4-5-20250514",
+        "fast": "claude-haiku-4-5-20251001",
+        "work": "claude-sonnet-4-6-20250514",
+        "deep": "claude-opus-4-6-20250514",
     },
     "openai": {
         "fast": "gpt-4o-mini",

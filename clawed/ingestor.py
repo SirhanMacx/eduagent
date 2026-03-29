@@ -6,8 +6,12 @@ SMART Board (.xbk), ActivInspire (.flipchart), and ZIP archives.
 
 from __future__ import annotations
 
+import csv
+import io
 import logging
 import re
+import shutil
+import subprocess
 import tempfile
 import zipfile
 from collections import Counter
@@ -30,6 +34,17 @@ EXTENSION_MAP: dict[str, DocType] = {
     ".notebook": DocType.NOTEBOOK,
     ".xbk": DocType.XBK,
     ".flipchart": DocType.FLIPCHART,
+    # Added for v2.3.7 — common legacy/teacher formats
+    ".doc": DocType.DOCX,
+    ".ppt": DocType.PPTX,
+    ".xls": DocType.TXT,
+    ".xlsx": DocType.TXT,
+    ".csv": DocType.TXT,
+    ".rtf": DocType.TXT,
+    ".html": DocType.TXT,
+    ".htm": DocType.TXT,
+    ".odt": DocType.TXT,
+    ".odp": DocType.TXT,
 }
 
 SUPPORTED_EXTENSIONS = set(EXTENSION_MAP.keys())
@@ -342,6 +357,261 @@ def _extract_flipchart(path: Path) -> tuple[str, Optional[int]]:
     return extract_flipchart(path)
 
 
+# ── Legacy/additional format extractors (v2.3.7) ────────────────────────
+
+
+def _extract_doc(path: Path) -> str:
+    """Extract text from a legacy .doc file (binary Word format).
+
+    Tries textutil (macOS), then catdoc/antiword, then raw text fallback.
+    """
+    # macOS built-in
+    if shutil.which("textutil"):
+        try:
+            result = subprocess.run(
+                ["textutil", "-convert", "txt", "-stdout", str(path)],
+                capture_output=True, text=True, timeout=30,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                return result.stdout.strip()
+        except Exception:
+            pass
+    # catdoc fallback
+    for tool in ("catdoc", "antiword"):
+        if shutil.which(tool):
+            try:
+                result = subprocess.run(
+                    [tool, str(path)],
+                    capture_output=True, text=True, timeout=30,
+                )
+                if result.returncode == 0 and result.stdout.strip():
+                    return result.stdout.strip()
+            except Exception:
+                pass
+    # Raw text fallback (often garbled but better than nothing)
+    try:
+        raw = path.read_bytes()
+        text = raw.decode("utf-8", errors="replace")
+        # Strip null bytes and control chars
+        text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", " ", text)
+        text = re.sub(r"\s{3,}", "\n", text).strip()
+        if len(text) > 50:
+            return text
+    except Exception:
+        pass
+    return ""
+
+
+def _extract_ppt(path: Path) -> str:
+    """Extract text from a legacy .ppt file (binary PowerPoint format).
+
+    Tries textutil (macOS), then raw text extraction.
+    """
+    if shutil.which("textutil"):
+        try:
+            result = subprocess.run(
+                ["textutil", "-convert", "txt", "-stdout", str(path)],
+                capture_output=True, text=True, timeout=30,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                return result.stdout.strip()
+        except Exception:
+            pass
+    # Raw text fallback
+    try:
+        raw = path.read_bytes()
+        text = raw.decode("utf-8", errors="replace")
+        text = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", " ", text)
+        text = re.sub(r"\s{3,}", "\n", text).strip()
+        if len(text) > 50:
+            return text
+    except Exception:
+        pass
+    return ""
+
+
+def _extract_csv(path: Path) -> str:
+    """Extract text from a CSV file."""
+    try:
+        content = path.read_text(encoding="utf-8", errors="replace")
+        reader = csv.reader(io.StringIO(content))
+        rows = []
+        for i, row in enumerate(reader):
+            if i >= 5000:  # Cap at 5000 rows
+                rows.append(f"... ({i} rows total, truncated)")
+                break
+            rows.append(" | ".join(row))
+        return "\n".join(rows)
+    except Exception:
+        return ""
+
+
+def _extract_xlsx(path: Path) -> str:
+    """Extract text from an .xlsx file using openpyxl."""
+    try:
+        from openpyxl import load_workbook
+        wb = load_workbook(str(path), read_only=True, data_only=True)
+        rows: list[str] = []
+        for sheet in wb.sheetnames:
+            ws = wb[sheet]
+            rows.append(f"[Sheet: {sheet}]")
+            for i, row in enumerate(ws.iter_rows(values_only=True)):
+                if i >= 5000:
+                    rows.append(f"... (truncated at 5000 rows)")
+                    break
+                cells = [str(c) if c is not None else "" for c in row]
+                if any(cells):
+                    rows.append(" | ".join(cells))
+        wb.close()
+        return "\n".join(rows)
+    except ImportError:
+        logger.debug("openpyxl not installed, cannot extract .xlsx: %s", path.name)
+        return ""
+    except Exception as exc:
+        logger.debug("Failed to extract .xlsx %s: %s", path.name, exc)
+        return ""
+
+
+def _extract_xls(path: Path) -> str:
+    """Extract text from a legacy .xls file. Tries reading as raw text."""
+    # Try textutil on macOS
+    if shutil.which("textutil"):
+        try:
+            result = subprocess.run(
+                ["textutil", "-convert", "txt", "-stdout", str(path)],
+                capture_output=True, text=True, timeout=30,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                return result.stdout.strip()
+        except Exception:
+            pass
+    return ""
+
+
+def _extract_rtf(path: Path) -> str:
+    """Extract text from an RTF file.
+
+    Tries striprtf library first, then textutil (macOS), then regex fallback.
+    """
+    try:
+        from striprtf.striprtf import rtf_to_text
+        raw = path.read_text(encoding="utf-8", errors="replace")
+        return rtf_to_text(raw).strip()
+    except ImportError:
+        pass
+    except Exception:
+        pass
+    # macOS textutil
+    if shutil.which("textutil"):
+        try:
+            result = subprocess.run(
+                ["textutil", "-convert", "txt", "-stdout", str(path)],
+                capture_output=True, text=True, timeout=30,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                return result.stdout.strip()
+        except Exception:
+            pass
+    # Regex fallback: strip RTF control codes
+    try:
+        raw = path.read_text(encoding="utf-8", errors="replace")
+        # Remove RTF control words and braces
+        text = re.sub(r"\\[a-z]+\d*\s?", " ", raw)
+        text = re.sub(r"[{}]", "", text)
+        text = re.sub(r"\s{2,}", " ", text).strip()
+        if len(text) > 50:
+            return text
+    except Exception:
+        pass
+    return ""
+
+
+def _extract_html_file(path: Path) -> str:
+    """Extract text from an HTML file by stripping tags."""
+    try:
+        from html.parser import HTMLParser
+
+        class _TagStripper(HTMLParser):
+            def __init__(self):
+                super().__init__()
+                self.parts: list[str] = []
+                self._skip = False
+
+            def handle_starttag(self, tag, attrs):
+                if tag in ("script", "style"):
+                    self._skip = True
+
+            def handle_endtag(self, tag):
+                if tag in ("script", "style"):
+                    self._skip = False
+
+            def handle_data(self, data):
+                if not self._skip:
+                    self.parts.append(data)
+
+        raw = path.read_text(encoding="utf-8", errors="replace")
+        stripper = _TagStripper()
+        stripper.feed(raw)
+        text = " ".join(stripper.parts)
+        text = re.sub(r"\s{2,}", " ", text).strip()
+        return text
+    except Exception:
+        return ""
+
+
+def _extract_odt(path: Path) -> str:
+    """Extract text from an OpenDocument Text (.odt) file.
+
+    ODT is a ZIP containing content.xml. We extract text from XML tags.
+    """
+    try:
+        with zipfile.ZipFile(str(path), "r") as zf:
+            if "content.xml" not in zf.namelist():
+                return ""
+            content_xml = zf.read("content.xml").decode("utf-8", errors="replace")
+            # Strip XML tags to get plain text
+            text = re.sub(r"<[^>]+>", " ", content_xml)
+            text = re.sub(r"\s{2,}", " ", text).strip()
+            return text
+    except Exception as exc:
+        logger.debug("Failed to extract .odt %s: %s", path.name, exc)
+        return ""
+
+
+def _extract_odp(path: Path) -> str:
+    """Extract text from an OpenDocument Presentation (.odp) file.
+
+    ODP is a ZIP containing content.xml.
+    """
+    try:
+        with zipfile.ZipFile(str(path), "r") as zf:
+            if "content.xml" not in zf.namelist():
+                return ""
+            content_xml = zf.read("content.xml").decode("utf-8", errors="replace")
+            text = re.sub(r"<[^>]+>", " ", content_xml)
+            text = re.sub(r"\s{2,}", " ", text).strip()
+            return text
+    except Exception as exc:
+        logger.debug("Failed to extract .odp %s: %s", path.name, exc)
+        return ""
+
+
+# Extension-based extractors for new formats that need special handling
+# (keyed by suffix, returns (text, page_count_or_None))
+_EXTENSION_EXTRACTORS: dict[str, object] = {
+    ".doc": lambda p: (_extract_doc(p), None),
+    ".ppt": lambda p: (_extract_ppt(p), None),
+    ".csv": lambda p: (_extract_csv(p), None),
+    ".xlsx": lambda p: (_extract_xlsx(p), None),
+    ".xls": lambda p: (_extract_xls(p), None),
+    ".rtf": lambda p: (_extract_rtf(p), None),
+    ".html": lambda p: (_extract_html_file(p), None),
+    ".htm": lambda p: (_extract_html_file(p), None),
+    ".odt": lambda p: (_extract_odt(p), None),
+    ".odp": lambda p: (_extract_odp(p), None),
+}
+
+
 # ── Dispatch ─────────────────────────────────────────────────────────────
 
 EXTRACTORS = {
@@ -370,7 +640,10 @@ def _extract_single(path: Path) -> Optional[Document]:
         logger.warning("Skipping unsupported format: %s", path.name)
         return None
 
-    extractor = EXTRACTORS.get(doc_type)
+    # Check extension-based extractors first (for legacy formats like .doc,
+    # .ppt, .csv, etc. that map to a generic DocType but need special handling)
+    ext_extractor = _EXTENSION_EXTRACTORS.get(path.suffix.lower())
+    extractor = ext_extractor or EXTRACTORS.get(doc_type)
     if not extractor:
         logger.warning("No extractor for %s format: %s", doc_type.value, path.name)
         return None
@@ -499,6 +772,9 @@ def ingest_directory(
     return documents
 
 
+MAX_UNZIP_SIZE = 500 * 1024 * 1024  # 500 MB
+
+
 def ingest_zip(path: Path, *, progress_callback=None) -> list[Document]:
     """Extract a ZIP file to a temp directory, then ingest its contents."""
     if not path.is_file() or path.suffix.lower() != ".zip":
@@ -506,6 +782,13 @@ def ingest_zip(path: Path, *, progress_callback=None) -> list[Document]:
 
     with tempfile.TemporaryDirectory() as tmp_dir:
         with zipfile.ZipFile(str(path), "r") as zf:
+            total_size = sum(info.file_size for info in zf.infolist())
+            if total_size > MAX_UNZIP_SIZE:
+                logger.warning(
+                    "ZIP file too large when decompressed (%d bytes), skipping",
+                    total_size,
+                )
+                return []
             zf.extractall(tmp_dir)
         return ingest_directory(Path(tmp_dir), progress_callback=progress_callback)
 
@@ -540,6 +823,13 @@ def ingest_path(
             # For ZIP dry-run, list contents without extracting
             with tempfile.TemporaryDirectory() as tmp_dir:
                 with zipfile.ZipFile(str(path), "r") as zf:
+                    total_size = sum(info.file_size for info in zf.infolist())
+                    if total_size > MAX_UNZIP_SIZE:
+                        logger.warning(
+                            "ZIP file too large when decompressed (%d bytes), skipping",
+                            total_size,
+                        )
+                        return []
                     zf.extractall(tmp_dir)
                 files, summary = scan_directory(Path(tmp_dir))
                 logger.info(summary)

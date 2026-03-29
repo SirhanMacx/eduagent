@@ -41,7 +41,9 @@ class ReadWorkspaceTool:
     ) -> ToolResult:
         workspace = Path.home() / ".eduagent" / "workspace"
         filename = params["filename"]
-        target = workspace / filename
+        target = (workspace / filename).resolve()
+        if not str(target).startswith(str(workspace.resolve())):
+            return ToolResult(text="Access denied: path is outside the workspace.")
 
         if not target.exists():
             # List what IS in the workspace so the agent knows what's available

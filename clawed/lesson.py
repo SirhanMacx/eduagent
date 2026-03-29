@@ -71,7 +71,7 @@ async def generate_master_content(
     persona: TeacherPersona,
     include_homework: bool = True,
     config: AppConfig | None = None,
-    task_type: str = "lesson_plan",
+    task_type: str = "master_content",
     state: str = "",
     teacher_materials: str = "",
     objective: str = "",
@@ -184,7 +184,7 @@ async def generate_lesson(
     persona: TeacherPersona,
     include_homework: bool = True,
     config: AppConfig | None = None,
-    task_type: str = "lesson_plan",
+    task_type: str = "master_content",
     state: str = "",
     teacher_materials: str = "",
 ) -> DailyLesson:

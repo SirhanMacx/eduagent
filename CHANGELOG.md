@@ -5,6 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.3.7] - 2026-03-29
+
+Image pipeline hardening, background ingestion, DEEP-tier model routing, security fixes, search improvements, 12 new file formats.
+
+### Added
+- **Progress notifications for lesson generation** — Telegram bot sends "Working on your lesson materials for [topic] — this usually takes 2-4 minutes!" before starting long-running generation.
+- **Progress notifications for file ingestion** — Immediate acknowledgment on file upload, periodic updates ("Indexed 50/200 documents..."), and completion summary. Wired through `AgentContext.notify_progress()`.
+- **Background ingestion threading** — File ingestion runs in a background thread (non-daemon). Bot returns immediately and stays responsive while indexing. Completion message sent via progress_callback.
+- **`master_content` task type in model router** — MasterContent generation routes to DEEP tier instead of WORK tier.
+- **12 new file formats for ingestion** — `.doc`, `.ppt`, `.xls`, `.xlsx`, `.csv`, `.rtf`, `.html`, `.htm`, `.odt`, `.odp` now supported alongside existing formats. Uses `textutil` (macOS), `openpyxl`, stdlib `csv`, `HTMLParser`, and ODF XML extraction with graceful fallbacks.
+- **Topic tag extraction** — Assets now get auto-generated `topic_tags` from filename and content keywords during ingestion. Tags are searchable.
+- **Cross-transport search fallback** — If `search_my_materials` finds nothing for the current teacher_id, it falls back to searching all teachers. Fixes materials ingested via CLI not appearing in Telegram searches.
+- **Image cache cleanup** — Cached images older than 30 days are automatically pruned on session start. Prevents unbounded disk growth.
+- **Concurrent ingestion limit** — Max 3 simultaneous ingestion threads via semaphore. Additional uploads are queued with a friendly message.
+- **ZIP bomb protection** — Decompressed size checked before extraction (500 MB limit).
+
+### Changed
+- **MasterContent uses DEEP-tier model** — `generate_master_content()` and `generate_lesson()` default to `task_type="master_content"` (DEEP tier). Dramatically better output with capable models.
+- **Image specs REQUIRED for all subjects** — Prompt updated: `image_spec` is mandatory for every `primary_source` and `direct_instruction` section across all subjects (not just Science/Social Studies). Includes good/bad examples and guidance on writing effective specs.
+- **Political cartoon handling** — Explicit rules requiring detailed visual descriptions. Emoji and Unicode art banned.
+- **Enhanced teacher image matching** — Three-stage progressive broadening: full query → individual keywords → subject fallback. Filename matches weighted higher. Scores up to 150 candidates.
+- **Subject-aware image pipeline** — Subject flows through the entire chain: `image_pipeline.py` → `slide_images.py` → teacher image search, enabling subject-specific prioritization.
+- **Image fetch timeout** — Per-image timeout bumped from 10s to 15s.
+- **TF-IDF vocabulary capped at 10,000 tokens** — Prevents unbounded memory growth after ingesting large corpora. New tokens beyond the cap are treated as unknown.
+- **KB search limit raised to 5,000 chunks** — Improved recall for larger knowledge bases.
+- **Model router updated** — Anthropic tier defaults updated to current model IDs (Haiku 4.5, Sonnet 4.6, Opus 4.6).
+- **Removed unused `anthropic` and `openai` dependencies** — ~50MB+ lighter install. The codebase uses raw httpx for all API calls.
+- **API key resolution unified** — `llm.py` now uses `config.get_api_key()` (env var + keyring + secrets file) instead of only checking env vars. Teachers who stored keys via onboarding no longer hit key-not-found errors.
+- **Agent prompt strengthened** — Explicit instruction: "If search_my_materials returns results, you MUST list them for the teacher. NEVER say 'I didn't find anything' if the tool returned materials."
+
+### Fixed
+- **Empty slideshows** — Root cause: LLM leaving `image_spec` empty. Now required with specific search term examples and Pydantic validation warnings.
+- **Search results not surfaced (BUG 6)** — Three fixes: cross-transport teacher_id fallback, asset search error logging (was silently swallowed), and explicit prompt instruction to relay results.
+- **93% of files missing from search (BUG 7)** — `SUPPORTED_EXTENSIONS` expanded from 8 to 20 formats. Legacy `.doc`, `.ppt`, `.xls`, `.rtf`, `.html`, `.odt`, `.odp`, `.csv`, `.xlsx` now parsed.
+- **Empty topic_tags (BUG 8)** — Tags now auto-extracted from filename and content during asset registration and included in search scoring.
+- **Bot unresponsive during ingestion** — Background threading with immediate return.
+- **Duplicate notification on file upload** — Removed early Telegram ack; IngestHandler response is the sole notification.
+- **Legacy gateway silent ingestion** — `progress_callback` now threaded through `_legacy_gateway.handle()` → `_dispatch()` → `IngestHandler.handle()`.
+- **Per-file error resilience** — Individual file parse failures no longer abort the entire ingestion. Failed files are logged and counted in the completion summary.
+- **httpx thread safety** — Background ingestion progress callbacks use a fresh `httpx.Client` per message instead of sharing the polling thread's client.
+- **dashboard_password** — Added to `_SECRET_FIELDS` so it's stripped from plaintext config.
+
+### Security
+- **Path traversal in `read_workspace`** — Added `.resolve()` + containment check. Filenames like `../../etc/passwd` are now blocked.
+- **`read_file` path bypass** — Replaced string prefix check with resolved path containment.
+- **Unrestricted ingest paths** — `ingest_materials` tool now restricted to home directory with 500-file cap.
+- **XSS in lessons page** — All LLM-generated content escaped with `html.escape()` before HTML rendering.
+- **TOOL_DEFINITIONS race condition** — Module-global monkey-patching now protected by threading.Lock.
+- **Debug info exposure** — Exception class names and messages no longer leaked to users. Errors logged server-side only.
+
 ## [2.3.5] - 2026-03-28
 
 Stability & Trustworthiness — contract fidelity across the entire generation pipeline.

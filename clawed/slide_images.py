@@ -2,14 +2,16 @@
 
 Fetches relevant educational images from multiple academic sources:
 
-1. **Library of Congress** (free, no key, public domain) -- historical images,
+1. **Teacher's own images** (highest priority -- personalized curriculum material)
+2. **Library of Congress** (free, no key, public domain) -- historical images,
    maps, documents.  Ideal for history / social studies / civics.
-2. **Wikimedia Commons** (free, no key, CC-licensed) -- scientific diagrams,
+3. **Wikimedia Commons** (free, no key, CC-licensed) -- scientific diagrams,
    paintings, illustrations.  Good for all subjects.
-3. **Unsplash** (free with API key) -- modern photographs.  Generic fallback.
+4. **Unsplash** (free with API key) -- modern photographs.  Generic fallback.
 
-Sources are tried in subject-aware priority order.  All images are cached
-locally at ``~/.eduagent/cache/images/<source>/<hash>.jpg``.
+Sources are tried in subject-aware priority order.  Teacher images are always
+checked first.  All external images are cached locally at
+``~/.eduagent/cache/images/<source>/<hash>.jpg``.
 
 Falls back gracefully to ``None`` when no image can be found -- slides still
 look good without images.
@@ -21,6 +23,7 @@ import hashlib
 import logging
 import os
 import re
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -30,6 +33,41 @@ _CACHE_DIR = Path.home() / ".eduagent" / "cache" / "images"
 
 # Per-image network timeout (seconds)
 _FETCH_TIMEOUT = 5.0
+
+# ── Cache eviction settings ──────────────────────────────────────────
+MAX_CACHE_AGE_DAYS = 30
+_cache_cleaned_this_session = False
+
+
+def _cleanup_cache(cache_dir: Optional[Path] = None) -> None:
+    """Remove cached images older than MAX_CACHE_AGE_DAYS to prevent unbounded growth.
+
+    Called once per session (guarded by module-level flag) at the start of
+    image fetching.  Silently ignores errors on individual files.
+    """
+    global _cache_cleaned_this_session
+    if _cache_cleaned_this_session:
+        return
+    _cache_cleaned_this_session = True
+
+    root = cache_dir or _CACHE_DIR
+    if not root.exists():
+        return
+
+    cutoff = time.time() - (MAX_CACHE_AGE_DAYS * 86400)
+    removed = 0
+    for source_dir in root.iterdir():
+        if not source_dir.is_dir():
+            continue
+        for f in source_dir.iterdir():
+            try:
+                if f.is_file() and f.stat().st_mtime < cutoff:
+                    f.unlink()
+                    removed += 1
+            except OSError:
+                pass  # file may have been removed concurrently
+    if removed:
+        logger.info("Cache cleanup: removed %d images older than %d days", removed, MAX_CACHE_AGE_DAYS)
 
 # ── Subject-aware query enrichment ───────────────────────────────────
 
@@ -476,86 +514,191 @@ async def _fetch_unsplash(
         return None
 
 
-async def _fetch_teacher_image(
-    query: str, cache_dir: Optional[Path] = None,
-) -> Optional[Path]:
-    """Search the teacher's extracted images for one matching the query.
+def _score_teacher_image_row(
+    row: object,
+    keywords: list[str],
+    query_lower: str,
+) -> int:
+    """Score a teacher image row by relevance to the search keywords.
 
-    Checks the asset_images table for images whose context_text or parent
-    asset title has keyword overlap with the query. Returns the cached
-    image path if found — no network call needed.
+    Scoring rules:
+    - Exact phrase match in context/title: +5
+    - Keyword found in filename (basename of image_path): +3 per keyword
+    - Keyword found in context_text or asset title: +2 per keyword
+    - Partial word match (e.g. "suffrage" in "suffragist"): +1 per keyword
+    """
+    context = (row["context_text"] or "").lower()
+    title = (row["title"] or "").lower()
+    image_path = (row["image_path"] or "").lower()
+    filename = Path(image_path).stem.replace("_", " ").replace("-", " ").lower()
+    combined = f"{context} {title}"
+
+    score = 0
+
+    # Exact phrase match in content gets big bonus
+    if query_lower in combined:
+        score += 5
+
+    # Keyword matches -- filename matches are weighted higher
+    for kw in keywords:
+        if kw in filename:
+            score += 3
+        if kw in combined:
+            score += 2
+
+    # Partial word matches (e.g., "suffrage" matches "suffragist")
+    for kw in keywords:
+        if kw not in combined and kw not in filename:
+            all_words = combined.split() + filename.split()
+            for word in all_words:
+                if len(kw) >= 4 and len(word) >= 4:
+                    if kw in word or word in kw:
+                        score += 1
+                        break
+
+    return score
+
+
+def _query_teacher_images_db(
+    search_keywords: list[str],
+    limit: int = 150,
+) -> list:
+    """Run a SQL query against the teacher's image database.
+
+    Returns matching rows with image_path, context_text, and title.
+    Uses OR matching so any single keyword can surface results.
+    """
+    import sqlite3
+
+    db_path = Path.home() / ".eduagent" / "memory" / "curriculum_kb.db"
+    if not db_path.exists():
+        return []
+
+    if not search_keywords:
+        return []
+
+    with sqlite3.connect(db_path) as conn:
+        conn.row_factory = sqlite3.Row
+        like_clauses = " OR ".join(
+            "(lower(ai.context_text) LIKE '%' || ? || '%'"
+            " OR lower(a.title) LIKE '%' || ? || '%'"
+            " OR lower(ai.image_path) LIKE '%' || ? || '%')"
+            for _ in search_keywords[:8]
+        )
+        params: list[str] = []
+        for kw in search_keywords[:8]:
+            params.extend([kw, kw, kw])
+        rows = conn.execute(
+            f"SELECT ai.image_path, ai.context_text, a.title "
+            f"FROM asset_images ai "
+            f"JOIN assets a ON ai.asset_id = a.id "
+            f"WHERE ai.image_path != '' AND ({like_clauses}) "
+            f"LIMIT {limit}",
+            params,
+        ).fetchall()
+    return rows
+
+
+def _best_from_rows(
+    rows: list,
+    keywords: list[str],
+    query_lower: str,
+    min_score: int = 4,
+) -> Optional[Path]:
+    """Pick the best image from a set of DB rows, respecting a minimum score."""
+    if not rows:
+        return None
+
+    scored: list[tuple[int, str]] = []
+    for row in rows:
+        s = _score_teacher_image_row(row, keywords, query_lower)
+        if s >= min_score:
+            scored.append((s, row["image_path"]))
+
+    if not scored:
+        return None
+
+    # Sort descending by score, take best
+    scored.sort(key=lambda x: x[0], reverse=True)
+    # Return the top match if file actually exists
+    for _score, path_str in scored[:5]:
+        p = Path(path_str)
+        if p.exists():
+            return p
+
+    return None
+
+
+async def _fetch_teacher_image(
+    query: str,
+    cache_dir: Optional[Path] = None,
+    subject: str = "",
+) -> Optional[Path]:
+    """Search the teacher's extracted images with progressive broadening.
+
+    Checks the asset_images table for images whose context_text, parent
+    asset title, or filename has keyword overlap with the query.  Uses a
+    three-stage search strategy:
+
+    1. **Full query** -- all keywords combined (high precision)
+    2. **Individual keywords** -- each significant keyword independently
+       (broader recall), scored by how many terms match
+    3. **Subject fallback** -- just the subject name (broadest)
+
+    Returns the local image path if found -- no network call needed.
     """
     try:
-        import sqlite3
-
-        db_path = Path.home() / ".eduagent" / "memory" / "curriculum_kb.db"
-        if not db_path.exists():
+        # Stage 1: Full query -- all keywords at once
+        all_keywords = [w.lower() for w in query.split() if len(w) > 2]
+        if not all_keywords:
             return None
 
-        keywords = [w.lower() for w in query.split() if len(w) > 2]
-        if not keywords:
-            return None
-
-        with sqlite3.connect(db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            # Pre-filter by topic keywords in SQL for efficiency
-            if keywords:
-                like_clauses = " OR ".join(
-                    "(lower(ai.context_text) LIKE '%' || ? || '%' OR lower(a.title) LIKE '%' || ? || '%')"
-                    for _ in keywords[:5]
-                )
-                params = []
-                for kw in keywords[:5]:
-                    params.extend([kw, kw])
-                rows = conn.execute(
-                    f"SELECT ai.image_path, ai.context_text, a.title "
-                    f"FROM asset_images ai "
-                    f"JOIN assets a ON ai.asset_id = a.id "
-                    f"WHERE ai.image_path != '' AND ({like_clauses}) "
-                    f"LIMIT 100",
-                    params,
-                ).fetchall()
-            else:
-                rows = []
-
-        best_path: Optional[str] = None
-        best_score = 0
         query_lower = query.lower()
+        rows = _query_teacher_images_db(all_keywords)
 
-        for row in rows:
-            context = (row["context_text"] or "").lower()
-            title = (row["title"] or "").lower()
-            combined = f"{context} {title}"
+        result = _best_from_rows(rows, all_keywords, query_lower, min_score=6)
+        if result:
+            logger.info(
+                "Teacher image match (full query) for '%s' -> %s", query, result,
+            )
+            return result
 
-            score = 0
+        # Stage 2: Try individual significant keywords (drop stopwords + short words)
+        # Sort keywords longest-first so the most specific term is tried first
+        stopwords = {"the", "a", "an", "of", "in", "on", "for", "and", "to", "is", "are", "was", "were"}
+        significant = sorted(
+            [w for w in all_keywords if w not in stopwords and len(w) > 3],
+            key=len,
+            reverse=True,
+        )
 
-            # Exact phrase match gets big bonus
-            if query_lower in combined:
-                score += 5
+        for kw in significant:
+            kw_rows = _query_teacher_images_db([kw])
+            # Score against all original keywords even though we searched by one
+            result = _best_from_rows(kw_rows, all_keywords, query_lower, min_score=4)
+            if result:
+                logger.info(
+                    "Teacher image match (keyword '%s') for '%s' -> %s",
+                    kw, query, result,
+                )
+                return result
 
-            # Keyword overlap (weighted)
-            for kw in keywords:
-                if kw in combined:
-                    score += 2
+        # Stage 3: Subject-name fallback (e.g., "history", "biology")
+        if subject:
+            subj_lower = subject.strip().lower()
+            subj_keywords = [w for w in subj_lower.split() if len(w) > 2]
+            if subj_keywords:
+                subj_rows = _query_teacher_images_db(subj_keywords)
+                result = _best_from_rows(
+                    subj_rows, all_keywords + subj_keywords, query_lower, min_score=3,
+                )
+                if result:
+                    logger.info(
+                        "Teacher image match (subject '%s') for '%s' -> %s",
+                        subject, query, result,
+                    )
+                    return result
 
-            # Partial word matches (e.g., "suffrage" matches "suffragist")
-            for kw in keywords:
-                if kw not in combined:  # Only check partials for non-exact matches
-                    words = combined.split()
-                    for word in words:
-                        if len(kw) >= 4 and len(word) >= 4:
-                            if kw in word or word in kw:
-                                score += 1
-                                break
-
-            if score > best_score:
-                best_score = score
-                best_path = row["image_path"]
-
-        # Require minimum score of 6 (exact phrase match or 3+ keyword hits)
-        if best_path and best_score >= 6 and Path(best_path).exists():
-            logger.info("Using teacher's own image for '%s' -> %s", query, best_path)
-            return Path(best_path)
     except Exception as e:
         logger.debug("Teacher image lookup failed: %s", e)
     return None
@@ -580,19 +723,27 @@ async def fetch_slide_image(
 ) -> Optional[Path]:
     """Fetch a relevant image for a slide topic.
 
-    Tries multiple academic sources in subject-aware priority order.
-    Returns path to downloaded image, or ``None`` if unavailable.
-    Caches images locally to avoid re-fetching.
+    Tries sources in priority order:
+      1. Teacher's own uploaded images (personalized, no network needed)
+      2. Library of Congress (free, public domain, high quality)
+      3. Wikimedia Commons (free, CC-licensed)
+      4. Unsplash (requires API key, may not be configured)
+
+    If a teacher image is found, external sources are skipped entirely.
+    Failures at each level cascade to the next source.
 
     Parameters
     ----------
     topic:
         The slide topic / title (e.g. "The American Revolution").
     subject:
-        Optional subject area for better source routing.
+        Optional subject area for better source routing and teacher image search.
     cache_dir:
         Override cache directory (useful for tests).
     """
+    # Run cache cleanup once per session
+    _cleanup_cache(cache_dir)
+
     query = _build_search_query(topic, subject)
     sources = _select_sources(subject, topic)
 
@@ -601,7 +752,11 @@ async def fetch_slide_image(
         if not fetcher:
             continue
         try:
-            path = await fetcher(query, cache_dir)
+            # Pass subject to teacher image fetcher for subject-aware broadening
+            if source_name == "teacher_files":
+                path = await fetcher(query, cache_dir, subject=subject)
+            else:
+                path = await fetcher(query, cache_dir)
             if path:
                 return path
         except Exception as e:
@@ -648,7 +803,10 @@ async def fetch_content_image(
             if not fetcher:
                 continue
             try:
-                path = await fetcher(query, cache_dir)
+                if source_name == "teacher_files":
+                    path = await fetcher(query, cache_dir, subject=subject)
+                else:
+                    path = await fetcher(query, cache_dir)
                 if path:
                     logger.info(
                         "Content image found via concept '%s' -> %s",

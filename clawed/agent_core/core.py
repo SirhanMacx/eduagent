@@ -10,6 +10,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import threading
 import time
 from datetime import datetime
 from pathlib import Path
@@ -26,6 +27,9 @@ from clawed.gateway_response import GatewayResponse
 from clawed.models import AppConfig
 
 logger = logging.getLogger(__name__)
+
+
+_tool_lock = threading.Lock()
 
 
 class _LLMClientAdapter:
@@ -45,28 +49,24 @@ class _LLMClientAdapter:
         tools: list[dict[str, Any]] | None = None,
         system: str = "",
     ) -> dict[str, Any]:
-        # WARNING: This monkey-patches a module-level variable, which is NOT
-        # safe under concurrent requests. For v1.0 (hosted/multi-teacher),
-        # refactor the legacy agent functions to accept tool definitions as
-        # a parameter instead of reading from the module global.
-        #
         # The legacy agent functions operate on the global TOOL_DEFINITIONS.
-        # We temporarily monkey-patch them so the registry schemas are used
-        # instead. Since these functions read TOOL_DEFINITIONS at call time,
-        # we swap the module-level list.
+        # We temporarily swap them under a lock so concurrent requests don't
+        # clobber each other's tool definitions.
         import clawed.agent as _agent_mod
         from clawed.agent import _call_with_native_tools, _call_with_ollama_tools
         from clawed.models import LLMProvider
 
-        original_defs = _agent_mod.TOOL_DEFINITIONS
-        _agent_mod.TOOL_DEFINITIONS = tools or []
+        with _tool_lock:
+            original_defs = _agent_mod.TOOL_DEFINITIONS
+            _agent_mod.TOOL_DEFINITIONS = tools or []
         try:
             if self._config.provider in (LLMProvider.ANTHROPIC, LLMProvider.OPENAI):
                 return await _call_with_native_tools(messages, system, self._config)
             else:
                 return await _call_with_ollama_tools(messages, system, self._config)
         finally:
-            _agent_mod.TOOL_DEFINITIONS = original_defs
+            with _tool_lock:
+                _agent_mod.TOOL_DEFINITIONS = original_defs
 
 
 class Gateway:
@@ -116,6 +116,7 @@ class Gateway:
         message: str,
         teacher_id: str,
         files: list[Path] | None = None,
+        progress_callback: Any = None,
     ) -> GatewayResponse:
         """Process any message from any transport."""
         self._stats.messages_today += 1
@@ -128,9 +129,11 @@ class Gateway:
         })
 
         try:
-            # 1. Files → ingest (deterministic, no LLM)
+            # 1. Files → ingest (deterministic, no LLM, runs in background)
             if files:
-                return await self._ingest.handle(teacher_id, files)
+                return await self._ingest.handle(
+                    teacher_id, files, progress_callback=progress_callback
+                )
 
             # 2. Onboarding state machine (deterministic, no LLM)
             if self._onboard.is_onboarding(teacher_id):
@@ -147,38 +150,32 @@ class Gateway:
                 )
 
             # 4. Natural-language → agent loop
-            return await self._agent_loop(message, teacher_id)
+            return await self._agent_loop(message, teacher_id, progress_callback=progress_callback)
 
         except Exception as e:
-            logger.debug("Gateway error: %s", e)
+            logger.error("Agent error for teacher %s: %s", teacher_id, e, exc_info=True)
             self._stats.errors_today += 1
             await self.emit("error", {"teacher_id": teacher_id, "message": str(e)})
 
-            # Teacher-friendly error messages (include debug info for troubleshooting)
+            # Teacher-friendly error messages (no internal details exposed)
             err = str(e).lower()
-            debug_hint = f"\n\n[Debug: {type(e).__name__}: {str(e)[:200]}]"
             if "401" in err or "unauthorized" in err or "api key" in err:
                 return GatewayResponse(
                     text="Your AI provider key doesn't seem to be working. "
                          "Run `clawed setup --reset` to reconfigure it."
-                         + debug_hint
                 )
             if "connection" in err or "connect" in err or "timeout" in err:
                 return GatewayResponse(
                     text="Can't connect to your AI provider right now. "
                          "Check your internet connection and try again."
-                         + debug_hint
                 )
             if "rate limit" in err or "429" in err:
                 return GatewayResponse(
                     text="Your AI provider is temporarily overloaded. "
                          "Wait a minute and try again."
-                         + debug_hint
                 )
             return GatewayResponse(
-                text="Something went wrong. Try again, or run "
-                     "`clawed setup --reset` to reconfigure."
-                     + debug_hint
+                text="Something went wrong. Please try again."
             )
 
     async def handle_callback(self, callback_data: str, teacher_id: str) -> GatewayResponse:
@@ -299,7 +296,7 @@ class Gateway:
     # Agent loop — the core reasoning path
     # ------------------------------------------------------------------
 
-    async def _agent_loop(self, message: str, teacher_id: str) -> GatewayResponse:
+    async def _agent_loop(self, message: str, teacher_id: str, progress_callback: Any = None) -> GatewayResponse:
         """Load context, build prompt, and run the agent tool-use loop."""
         # 1. Load teacher context from canonical sources
         teacher_profile = self._load_teacher_profile()
@@ -393,6 +390,7 @@ class Gateway:
             session_history=session_history,
             improvement_context=memory_ctx["improvement_context"],
             agent_name=agent_name,
+            progress_callback=progress_callback,
         )
 
         # 4. Get or create LLM adapter

@@ -26,6 +26,45 @@ Write plain text only. The JSON values must contain clean, readable prose.
 
 ---
 
+## Image Requirements — MANDATORY
+
+### Per-field image_spec rules:
+- **primary_sources**: `image_spec` is ALWAYS REQUIRED (non-empty). All subjects benefit from source images.
+- **direct_instruction**: `image_spec` is ALWAYS REQUIRED (non-empty). Visual aids help every subject — math diagrams, ELA book covers, science illustrations, history paintings, etc.
+- **vocabulary**: `image_spec` is RECOMMENDED but may be an empty string for abstract terms (e.g. "democracy", "irony").
+- **exit_ticket**: `stimulus_image_spec` is OPTIONAL — use it when the stimulus is visual (map, diagram, photograph).
+
+Every image_spec MUST be a specific image search query naming the exact person, event, artifact, organism, diagram type, or concept — NOT a generic topic.
+
+### How to write a good image_spec:
+1. **Be specific**: "diagram of water cycle showing evaporation condensation precipitation" NOT "water cycle"
+2. **Include the format**: "photograph", "diagram", "map", "political cartoon", "painting", "chart", "portrait", "book cover"
+3. **Include context for age-appropriateness**: "for 5th grade students" helps filter complexity
+4. **Name people and dates**: "Thomas Nast Boss Tweed Tammany Hall political cartoon 1871" NOT "political cartoon"
+
+GOOD image_spec examples:
+- "Louis XIV portrait Palace of Versailles painting"
+- "Thomas Nast Boss Tweed Tammany Hall political cartoon 1871"
+- "photosynthesis light reactions diagram chloroplast for middle school"
+- "Declaration of Independence historical document 1776 photograph"
+- "quadratic equation graph parabola diagram"
+- "To Kill a Mockingbird book cover Harper Lee"
+- "fractions number line diagram for 4th grade"
+
+BAD image_spec (BANNED):
+- "" (empty string — NEVER leave this blank for primary sources or direct instruction)
+- "🏛️" or any emoji/Unicode — these are NOT searchable images
+- "image of a building" — too generic, will return irrelevant results
+- "political cartoon" — must include the specific subject and artist if known
+- "science diagram" — must name the specific process or concept
+
+For political cartoons specifically:
+- `content_text` MUST contain a detailed written description of what the cartoon depicts: the characters, symbols, captions, labels, and visual metaphors. A student who cannot see the image must understand the cartoon from the description alone.
+- `image_spec` MUST contain the cartoonist's name, subject, and approximate year (e.g. "Benjamin Franklin Join or Die cartoon 1754").
+- NEVER substitute emoji, Unicode art, or animated characters for a political cartoon. These are historical documents — describe them as such.
+
+---
+
 ## Self-Contained Materials Rule
 
 Every piece of content this lesson references MUST be included in full. The following phrases are BANNED:
@@ -111,7 +150,7 @@ Respond with ONLY a JSON object (no markdown fencing):
             "term": "Term",
             "definition": "Clear, student-friendly definition",
             "context_sentence": "A sentence using the term in the context of this lesson",
-            "image_spec": "Optional image description or empty string"
+            "image_spec": "Specific image search query for this term (e.g. 'photosynthesis chloroplast diagram'). RECOMMENDED — may be empty string only for abstract terms."
         }
     ],
 
@@ -120,9 +159,9 @@ Respond with ONLY a JSON object (no markdown fencing):
             "id": "source_a",
             "title": "Document Title",
             "source_type": "text_excerpt | political_cartoon | map | data_table | photograph | diagram",
-            "content_text": "The complete source excerpt or full data table — not a summary. Must be substantive (3–8 sentences for text; all rows/columns for tables).",
+            "content_text": "The complete source excerpt or full data table — not a summary. Must be substantive (3–8 sentences for text; all rows/columns for tables). For political cartoons: write a detailed visual description of what the cartoon depicts (characters, symbols, captions, setting) so the reader can picture it.",
             "attribution": "Author, Title, Date/Year",
-            "image_spec": "Optional image search description or empty string",
+            "image_spec": "REQUIRED — a specific image search query (e.g. 'Thomas Nast Boss Tweed political cartoon 1871'). Must be real search terms, NOT emoji, NOT Unicode art, NOT decorative characters.",
             "scaffolding_questions": [
                 "Identification-level question?",
                 "Analysis-level question?"
@@ -149,7 +188,7 @@ Respond with ONLY a JSON object (no markdown fencing):
             "content": "The actual content being taught — include full source texts, worked examples, data, or passages. Not a summary. A substitute teacher should be able to deliver this from the text alone.",
             "teacher_script": "Scripted teacher language: what the teacher says, key questions to pose, think-aloud annotations, and transition phrases. Include checks for understanding every 3–5 minutes as specific questions.",
             "key_points": ["Key point 1", "Key point 2"],
-            "image_spec": "Optional image description or empty string"
+            "image_spec": "REQUIRED for ALL subjects — a specific image search query describing the visual aid for this section (e.g. 'American Revolution Battle of Bunker Hill painting', 'cell mitosis phases diagram', 'quadratic formula graph parabola', 'Romeo and Juliet balcony scene painting'). Use real search terms, NOT emoji."
         }
     ],
 

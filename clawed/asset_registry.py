@@ -131,6 +131,40 @@ class ExtractionResult:
     word_count: int = 0
 
 
+# ── Topic tag extraction ─────────────────────────────────────────────
+
+_STOP_WORDS = frozenset({
+    'the', 'a', 'an', 'and', 'or', 'for', 'in', 'on', 'of', 'to', 'is',
+    'it', 'by', 'at', 'be', 'as', 'do', 'if', 'so', 'no', 'up', 'but',
+    'not', 'was', 'are', 'has', 'had', 'its', 'this', 'that', 'with',
+    'from', 'will', 'can', 'all', 'may', 'new', 'one', 'two', 'use',
+    'pdf', 'doc', 'docx', 'pptx', 'ppt', 'txt', 'copy', 'final', 'draft',
+})
+
+
+def _extract_topic_tags(filename: str, content: str) -> list[str]:
+    """Extract topic tags from filename and first portion of content."""
+    tags: set[str] = set()
+
+    # From filename — split on common separators, filter stop words
+    name = Path(filename).stem
+    parts = re.split(r'[-_\s.()]+', name.lower())
+    tags.update(p for p in parts if len(p) > 2 and p not in _STOP_WORDS)
+
+    # From content — extract capitalised multi-word phrases (likely topics)
+    for match in re.finditer(r'\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)+\b', content[:1000]):
+        tags.add(match.group().lower())
+
+    # From content — extract standalone capitalised words that look like
+    # subject keywords (longer than 4 chars to avoid noise)
+    for match in re.finditer(r'\b[A-Z][a-z]{4,}\b', content[:1000]):
+        word = match.group().lower()
+        if word not in _STOP_WORDS:
+            tags.add(word)
+
+    return sorted(tags)[:20]  # cap at 20 tags
+
+
 # ── Asset Registry ───────────────────────────────────────────────────
 
 class AssetRegistry:
@@ -247,17 +281,20 @@ class AssetRegistry:
 
         completeness = 'complete' if material_type in ('slideshow', 'assessment', 'handout') else 'unknown'
 
+        topic_tags = _extract_topic_tags(filename, text)
+
         try:
             with sqlite3.connect(self._db_path) as conn:
                 cursor = conn.execute(
                     "INSERT OR IGNORE INTO assets "
                     "(teacher_id, source_path, filename, doc_type, material_type, title, "
-                    "word_count, slide_count, page_count, has_images, image_count, "
+                    "topic_tags, word_count, slide_count, page_count, has_images, image_count, "
                     "youtube_urls, external_urls, completeness, file_size_bytes, "
                     "content_hash, indexed_at) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     (
                         teacher_id, source_path, filename, doc_type, material_type, title,
+                        json.dumps(topic_tags),
                         word_count, slide_count, page_count, has_images, image_count,
                         json.dumps(youtube_urls), json.dumps(external_urls),
                         completeness, file_size, content_hash,
@@ -313,22 +350,31 @@ class AssetRegistry:
     def search_assets(
         self, teacher_id: str, query: str, top_k: int = 10,
     ) -> list[dict[str, Any]]:
-        """Search assets by keyword matching on title, filename, and material type."""
+        """Search assets by keyword matching on title, filename, topic_tags, and material type.
+
+        If teacher_id is empty, searches across all teachers (used as a
+        fallback when the caller's transport teacher_id doesn't match the
+        ingestion teacher_id).
+        """
         keywords = [w.lower() for w in query.split() if len(w) > 2]
         if not keywords:
             return []
 
         with sqlite3.connect(self._db_path) as conn:
             conn.row_factory = sqlite3.Row
-            rows = conn.execute(
-                "SELECT * FROM assets WHERE teacher_id = ?", (teacher_id,),
-            ).fetchall()
+            if teacher_id:
+                rows = conn.execute(
+                    "SELECT * FROM assets WHERE teacher_id = ?", (teacher_id,),
+                ).fetchall()
+            else:
+                rows = conn.execute("SELECT * FROM assets").fetchall()
 
         scored: list[tuple[float, dict]] = []
         for row in rows:
             title_lower = row["title"].lower()
             fn_lower = row["filename"].lower()
-            combined = title_lower + " " + fn_lower
+            tags_lower = (row["topic_tags"] or "").lower()
+            combined = title_lower + " " + fn_lower + " " + tags_lower
             score = sum(1 for kw in keywords if kw in combined)
             if score > 0:
                 asset = dict(row)
@@ -340,7 +386,10 @@ class AssetRegistry:
         return [item[1] for item in scored[:top_k]]
 
     def get_youtube_links(self, teacher_id: str, query: str, top_k: int = 5) -> list[dict]:
-        """Search for YouTube links related to a topic."""
+        """Search for YouTube links related to a topic.
+
+        If teacher_id is empty, searches across all teachers.
+        """
         assets = self.search_assets(teacher_id, query, top_k=50)
         links: list[dict] = []
         seen: set[str] = set()

@@ -1055,6 +1055,7 @@ class AppConfig(BaseModel):
     _SECRET_FIELDS: tuple[str, ...] = (
         "ollama_api_key",
         "telegram_bot_token",
+        "dashboard_password",
     )
 
     @classmethod

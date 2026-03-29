@@ -42,7 +42,7 @@ def _collect_image_specs(master: "MasterContent") -> set[str]:
     return specs
 
 
-async def _fetch_one(spec: str, timeout: int = 10) -> tuple[str, Path | None]:
+async def _fetch_one(spec: str, subject: str = "", timeout: int = 15) -> tuple[str, Path | None]:
     """Fetch a single image by spec. Returns (spec, path) or (spec, None).
 
     Uses :func:`clawed.slide_images.fetch_slide_image` which already handles
@@ -52,7 +52,7 @@ async def _fetch_one(spec: str, timeout: int = 10) -> tuple[str, Path | None]:
         from clawed.slide_images import fetch_slide_image
 
         path = await asyncio.wait_for(
-            fetch_slide_image(spec),
+            fetch_slide_image(spec, subject=subject),
             timeout=timeout,
         )
         if path and path.exists():
@@ -84,13 +84,15 @@ async def fetch_all_images(
     if not specs:
         return {}
 
-    timeout = 10
+    timeout = 15
     if config and hasattr(config, "image_fetch_timeout"):
         timeout = config.image_fetch_timeout
 
-    logger.info("Fetching %d images (timeout=%ds)", len(specs), timeout)
+    subject = getattr(master, "subject", "")
 
-    tasks = [_fetch_one(spec, timeout=timeout) for spec in specs]
+    logger.info("Fetching %d images (timeout=%ds, subject=%s)", len(specs), timeout, subject)
+
+    tasks = [_fetch_one(spec, subject=subject, timeout=timeout) for spec in specs]
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
     images: dict[str, Path] = {}

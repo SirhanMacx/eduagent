@@ -515,9 +515,22 @@ class EduAgentTelegramBot:
                 typing_thread = threading.Thread(target=_typing_loop, daemon=True)
                 typing_thread.start()
 
+                # Progress callback — lets tools send mid-operation updates.
+                # Uses a fresh httpx.Client per call for thread safety
+                # (the main polling loop uses self.api concurrently).
+                def _progress_cb(msg: str, _cid: int = chat_id, _tok: str = self.token) -> None:
+                    try:
+                        with httpx.Client(timeout=10) as client:
+                            client.post(
+                                f"https://api.telegram.org/bot{_tok}/sendMessage",
+                                json={"chat_id": _cid, "text": msg, "parse_mode": "Markdown"},
+                            )
+                    except Exception:
+                        pass
+
                 try:
                     response = self._loop.run_until_complete(
-                        self.gateway.handle(text, teacher_id, files=files or None)
+                        self.gateway.handle(text, teacher_id, files=files or None, progress_callback=_progress_cb)
                     )
                 finally:
                     typing_stop.set()

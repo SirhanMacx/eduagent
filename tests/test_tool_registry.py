@@ -264,19 +264,35 @@ class TestIngestMaterialsTool:
     @pytest.mark.asyncio
     async def test_execute_path_not_found(self):
         from clawed.agent_core.tools.ingest_materials import IngestMaterialsTool
+        from pathlib import Path
 
         tool = IngestMaterialsTool()
-        result = await tool.execute({"path": "/nonexistent/path"}, _ctx())
+        fake = str(Path.home() / "nonexistent_clawed_test_path")
+        result = await tool.execute({"path": fake}, _ctx())
         assert isinstance(result, ToolResult)
         assert "not found" in result.text.lower()
 
     @pytest.mark.asyncio
-    async def test_execute_returns_tool_result(self, tmp_path):
+    async def test_execute_path_outside_home(self):
         from clawed.agent_core.tools.ingest_materials import IngestMaterialsTool
 
         tool = IngestMaterialsTool()
+        result = await tool.execute({"path": "/nonexistent/path"}, _ctx())
+        assert isinstance(result, ToolResult)
+        assert "access denied" in result.text.lower()
+
+    @pytest.mark.asyncio
+    async def test_execute_returns_tool_result(self, tmp_path):
+        from clawed.agent_core.tools.ingest_materials import IngestMaterialsTool
+        from pathlib import Path
+
+        tool = IngestMaterialsTool()
         mock_doc = MagicMock()
-        with patch("clawed.ingestor.ingest_path") as mock_ip:
+        # Patch home check to allow tmp_path
+        with patch("clawed.agent_core.tools.ingest_materials.Path") as MockPath, \
+             patch("clawed.ingestor.ingest_path") as mock_ip:
+            MockPath.home.return_value.resolve.return_value = tmp_path.parent
+            MockPath.side_effect = lambda p: Path(p)
             mock_ip.return_value = [mock_doc, mock_doc]
             result = await tool.execute({"path": str(tmp_path)}, _ctx())
         assert isinstance(result, ToolResult)
