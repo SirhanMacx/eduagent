@@ -167,6 +167,34 @@ class TeacherPersona(BaseModel):
     voice_sample: str = ""
     voice_examples: list[str] = Field(default_factory=list)
 
+    @field_validator("tone", mode="before")
+    @classmethod
+    def _truncate_tone(cls, v):
+        if isinstance(v, str) and len(v) > 500:
+            return v[:500]
+        return v
+
+    @field_validator("preferred_lesson_format", mode="before")
+    @classmethod
+    def _truncate_preferred_lesson_format(cls, v):
+        if isinstance(v, str) and len(v) > 500:
+            return v[:500]
+        return v
+
+    @field_validator("subject_area", mode="before")
+    @classmethod
+    def _truncate_subject_area(cls, v):
+        if isinstance(v, str) and len(v) > 200:
+            return v[:200]
+        return v
+
+    @field_validator("voice_sample", mode="before")
+    @classmethod
+    def _truncate_voice_sample(cls, v):
+        if isinstance(v, str) and len(v) > 2000:
+            return v[:2000]
+        return v
+
     # ── Pedagogical fingerprint (v2.0) ────────────────────────────────
     # These fields capture HOW a teacher teaches, not just how they sound.
     source_types: list[str] = Field(default_factory=list)
@@ -845,6 +873,16 @@ class LLMProvider(str, Enum):
     GOOGLE = "google"
 
 
+VALID_SUBJECTS = {
+    "math", "mathematics", "science", "biology", "chemistry", "physics",
+    "social studies", "history", "civics", "government", "geography",
+    "english", "ela", "language arts", "reading", "writing",
+    "art", "music", "physical education", "health", "technology",
+    "computer science", "foreign language", "spanish", "french",
+    "special education", "general",
+}
+
+
 class TeacherProfile(BaseModel):
     """Teacher-specific configuration that auto-tailors all generation.
 
@@ -859,6 +897,41 @@ class TeacherProfile(BaseModel):
     # What they teach
     subjects: list[str] = Field(default_factory=list)
     grade_levels: list[str] = Field(default_factory=list)
+
+    @field_validator("name", mode="before")
+    @classmethod
+    def _validate_name(cls, v):
+        if isinstance(v, str):
+            v = v.strip()
+            if len(v) > 100:
+                v = v[:100]
+        return v
+
+    @field_validator("subjects", mode="before")
+    @classmethod
+    def _validate_subjects(cls, v):
+        if isinstance(v, list):
+            validated = []
+            for s in v:
+                if not isinstance(s, str):
+                    continue
+                s_lower = s.strip().lower()
+                if s_lower in VALID_SUBJECTS:
+                    # Exact match — canonicalize to title case
+                    validated.append(s.strip().title())
+                else:
+                    # Not an exact match — preserve the original value unchanged
+                    # (fuzzy substitution risks corrupting legitimate subject names)
+                    validated.append(s.strip())
+            return validated if validated else v
+        return v
+
+    @field_validator("school", mode="before")
+    @classmethod
+    def _validate_school(cls, v):
+        if isinstance(v, str) and len(v) > 200:
+            v = v[:200]
+        return v
 
     # Standards framework (determines which standards to reference)
     # Options: "CCSS", "NGSS", "C3", "NY_SS", "TX_TEKS", "CA_FRAMEWORKS", "custom"

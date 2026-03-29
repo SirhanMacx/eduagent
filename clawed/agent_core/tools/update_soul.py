@@ -102,6 +102,14 @@ class UpdateSoulTool:
         else:
             current = SOUL_TEMPLATE
 
+        # Guard against oversized content
+        if len(content) > 500:
+            content = content[:500] + "..."
+
+        import logging
+        audit_logger = logging.getLogger("clawed.audit")
+        audit_logger.info("SOUL.md update: section=%s, content=%s", section, content[:200])
+
         # Build the datestamped entry
         entry = f"\n\n*({date.today().isoformat()})* {content}\n"
 

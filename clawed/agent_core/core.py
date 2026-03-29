@@ -138,7 +138,13 @@ class Gateway:
 
             # 3. First-run detection
             if not has_config():
-                return await self._onboard.step(teacher_id, message)
+                if message.strip().lower() in ("/setup", "/start", "setup", "start"):
+                    return await self._onboard.step(teacher_id, message)
+                return (
+                    "Welcome to Claw-ED! I'm your personal teaching assistant. "
+                    "Send /setup to configure your profile and API key, "
+                    "or send /demo to see what I can do."
+                )
 
             # 4. Natural-language → agent loop
             return await self._agent_loop(message, teacher_id)
