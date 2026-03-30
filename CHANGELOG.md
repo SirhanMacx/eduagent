@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.3.8] - 2026-03-30
+
+NLAH contract alignment — explicit failures replace silent swallowing, quality gates fail closed.
+
+### Added
+- **NLAH failure taxonomy** — 13 structured failure codes (`FailureCode` enum) in `clawed/failure_codes.py`. All generation failures now report machine-parseable codes.
+- **`CLAWED_DEMO=1` env var** — force demo mode regardless of stored API keys.
+- **Voice match scoring** — `score_voice_match()` in `clawed/quality.py` scores lesson text against teacher persona (1.0-5.0). Logged as VOICE_MISMATCH warning if < 3.0.
+- **`run_async_safe()` shared utility** — extracted from duplicated code in `export_pptx.py` and `export_docx.py` to `clawed/async_utils.py`.
+- **Quality review in bundle pipeline** — `generate_lesson_bundle` now calls `review_lesson_package()` and `score_voice_match()` after compilation (NLAH Stage 4, non-blocking).
+- **25 new tests** — failure codes, async utils, quality review fail-closed, NLAH validation gates, voice match, demo mode override, onboarding validation.
+
+### Changed
+- **Quality review fails closed** — `review_lesson_package()` now catches all exceptions (including LLM call failures) and returns `passed: False`. Completes the v2.3.5 fix which only handled parse errors.
+- **Silent exceptions → explicit warnings** — `generate_lesson_bundle` now logs persona parse failures, KB search failures, and asset search failures at WARNING level with NLAH failure codes.
+- **Onboarding input validation** — teacher name truncated to 100 chars with character filtering, grade validated as K/PK/1-12 with re-prompt on invalid input, subject truncated to 100 chars. Workspace init failures logged.
+- **NLAH validation gates enforced** — `validate_master_content()` now requires guided_notes >= 6, primary_sources >= 2 (with non-empty text), exit_ticket questions >= 3. Topic drift check extended to include objective field.
+- **SOUL.md path from config** — `lesson.py` and `agent_core/core.py` now use `EDUAGENT_DATA_DIR` env var instead of hardcoded `~/.eduagent/workspace/SOUL.md`.
+
+### Fixed
+- **Nested asyncio.run() in background ingest** — `generation.py` background thread now uses `run_async_safe()` instead of bare `asyncio.run()`, preventing RuntimeError on Python 3.12+.
+- **GenerationReport timing** — Report now instantiated before persona/KB/asset search blocks so early warnings are captured.
+
 ## [2.3.7] - 2026-03-29
 
 Image pipeline hardening, background ingestion, DEEP-tier model routing, security fixes, search improvements, 12 new file formats.

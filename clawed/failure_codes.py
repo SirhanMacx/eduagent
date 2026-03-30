@@ -1,0 +1,22 @@
+"""NLAH failure taxonomy — structured failure codes for generation pipeline."""
+from __future__ import annotations
+
+from enum import Enum
+
+
+class FailureCode(str, Enum):
+    """Machine-parseable failure codes per NLAH Section 6."""
+
+    NO_PERSONA = "NO_PERSONA"
+    SCHEMA_ERROR = "SCHEMA_ERROR"
+    TOPIC_DRIFT = "TOPIC_DRIFT"
+    DEMO_FIXTURE = "DEMO_FIXTURE"
+    EXPORT_INCOMPLETE = "EXPORT_INCOMPLETE"
+    EXPORT_ERROR = "EXPORT_ERROR"
+    REVIEW_FAILED = "REVIEW_FAILED"
+    CONTEXT_EXCEEDED = "CONTEXT_EXCEEDED"
+    API_FAILURE = "API_FAILURE"
+    VOICE_MISMATCH = "VOICE_MISMATCH"
+    PERSONA_PARSE_ERROR = "PERSONA_PARSE_ERROR"
+    KB_SEARCH_FAILED = "KB_SEARCH_FAILED"
+    ASSET_SEARCH_FAILED = "ASSET_SEARCH_FAILED"

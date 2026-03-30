@@ -5,36 +5,18 @@ Generates full lesson plan documents and print-ready student worksheets.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from datetime import date
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from clawed.async_utils import run_async_safe
 from clawed.export_theme import _resolve_output, get_color_theme
 
 if TYPE_CHECKING:
     from clawed.models import DailyLesson, TeacherPersona
 
 logger = logging.getLogger(__name__)
-
-
-def _run_async_safe(coro):
-    """Run an async coroutine, handling both sync and async calling contexts.
-
-    When called from inside a running event loop (e.g., agent_core tools),
-    uses a thread to avoid nested asyncio.run() errors.  When called from
-    plain sync code (CLI), uses asyncio.run() directly.
-    """
-    try:
-        asyncio.get_running_loop()
-        # We're inside an event loop — run in a worker thread
-        import concurrent.futures
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-            return pool.submit(asyncio.run, coro).result(timeout=30)
-    except RuntimeError:
-        # No running loop — safe to use asyncio.run()
-        return asyncio.run(coro)
 
 
 # ── Image helpers (DOCX-specific) ─────────────────────────────────────
@@ -57,7 +39,7 @@ def _docx_add_image(
 
         from clawed.slide_images import fetch_slide_image
 
-        img_path = _run_async_safe(fetch_slide_image(topic, subject=subject))
+        img_path = run_async_safe(fetch_slide_image(topic, subject=subject))
         if img_path and img_path.exists():
             doc.add_picture(str(img_path), width=Inches(width_inches))
             # Center the image
@@ -97,7 +79,7 @@ def _docx_add_content_image(
 
         from clawed.slide_images import _extract_key_concepts, fetch_content_image
 
-        img_path = _run_async_safe(
+        img_path = run_async_safe(
             fetch_content_image(
                 content_text,
                 subject=subject,

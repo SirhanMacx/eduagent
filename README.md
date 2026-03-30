@@ -13,6 +13,18 @@ Built on the OpenClaw agent framework. Open source. MIT license.
 
 ---
 
+## What's new in v2.3.8
+
+**No more silent failures.** Every step of lesson generation now reports what happened — persona loading, material search, quality review, voice matching. If something fails, you'll know exactly what and why, with structured NLAH failure codes. Quality review runs automatically on every generated lesson and fails closed: if the review itself crashes, it reports failure instead of silently passing.
+
+**Stricter quality gates.** Lessons now require at least 6 guided notes, 3 exit ticket questions, and 2 primary sources with actual text. Topic drift is caught automatically. Voice match scoring compares generated lessons against your teaching persona.
+
+**Safer onboarding.** Teacher names and subjects are validated and truncated. Invalid grade levels get a re-prompt instead of being silently accepted. Demo mode can be forced with `CLAWED_DEMO=1` for presentations.
+
+**Async cleanup.** Background ingestion no longer risks crashing on Python 3.12+ from nested event loops. The fix is shared across all async call sites.
+
+---
+
 ## What's new in v2.3.7
 
 **Real images in every lesson.** Image specs are now required for every primary source and instruction section across all subjects. The LLM generates specific search queries ("Thomas Nast Boss Tweed political cartoon 1871") instead of leaving the field blank. Teacher images are found first using a three-stage progressive search (full query, individual keywords, subject fallback) with filename-weighted scoring across up to 150 candidates. External sources (Library of Congress, Wikimedia Commons, Unsplash) fill in the rest with subject-aware routing.

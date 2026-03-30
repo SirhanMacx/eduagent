@@ -624,12 +624,11 @@ async def handle_connect_local(
                     progress_callback=_progress,
                 )
                 if docs:
-                    import asyncio
-
+                    from clawed.async_utils import run_async_safe
                     from clawed.persona import extract_persona
 
                     persona_cfg = AppConfig.load()
-                    persona = asyncio.run(extract_persona(docs, persona_cfg))
+                    persona = run_async_safe(extract_persona(docs, persona_cfg))
                     session.persona = persona
                     session.save()
                     notify_callback(

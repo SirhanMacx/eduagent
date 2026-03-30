@@ -5,11 +5,14 @@ Extracted from tg.py lines 1156-1263.
 """
 from __future__ import annotations
 
+import logging
 import re
 from enum import Enum
 
 from clawed.gateway_response import GatewayResponse
 from clawed.models import AppConfig, TeacherPersona, TeacherProfile
+
+logger = logging.getLogger(__name__)
 
 
 class OnboardState(Enum):
@@ -84,7 +87,7 @@ class OnboardHandler:
 
         if current == OnboardState.ASK_SUBJECT:
             grade, subject = _parse_grade_and_subject(text)
-            state["subject"] = subject if subject else text.strip().title()
+            state["subject"] = (subject if subject else text.strip().title())[:100]
             if grade:
                 state["grade"] = grade
                 state["step"] = OnboardState.ASK_NAME
@@ -103,14 +106,21 @@ class OnboardHandler:
             elif re.search(r"(?:kindergarten|kinder|pre-?k)", text, re.IGNORECASE):
                 state["grade"] = "K"
             else:
-                state["grade"] = text.strip()
+                # Invalid grade — re-prompt
+                return GatewayResponse(
+                    text="I didn't catch that — what grade level? (K, 1-12, or Pre-K)"
+                )
             state["step"] = OnboardState.ASK_NAME
             return GatewayResponse(
                 text=f"Grade {state['grade']} — got it.\n\nWhat's your name?"
             )
 
         if current == OnboardState.ASK_NAME:
-            state["name"] = text.strip()
+            name = text.strip()[:100]
+            name = re.sub(r'[^\w\s\'-]', '', name).strip()
+            if not name:
+                return GatewayResponse(text="I need a name to personalize your lessons. What should I call you?")
+            state["name"] = name
             return self._complete_onboarding(teacher_id)
 
         return GatewayResponse(text="Something went wrong with setup. Try /start again.")
@@ -132,8 +142,8 @@ class OnboardHandler:
             from clawed.workspace import init_workspace
             persona = TeacherPersona(name=state["name"], subject_area=state["subject"])
             init_workspace(persona, config)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("Workspace init failed during onboarding: %s", e)
 
         del self._state[teacher_id]
 

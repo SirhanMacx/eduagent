@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from clawed.agent_core.context import AgentContext, ToolResult
+from clawed.failure_codes import FailureCode
 
 logger = logging.getLogger(__name__)
 
@@ -89,14 +90,18 @@ class GenerateLessonBundleTool:
             f"this usually takes 2-4 minutes. I'll send everything when it's ready!"
         )
 
+        from clawed.generation_report import GenerationReport
+        report = GenerationReport()
+
         # ── Load config & persona from context ───────────────────────
         config = context.config
         persona = TeacherPersona()
         if context.persona:
             try:
                 persona = TeacherPersona(**context.persona)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning("NLAH_FAILURE=%s: %s", FailureCode.PERSONA_PARSE_ERROR, e)
+                report.warnings.append(f"[{FailureCode.PERSONA_PARSE_ERROR}] Could not parse persona: {e}")
 
         # ── Load state standards if teacher profile has a state ───────
         state = ""
@@ -127,7 +132,8 @@ class GenerateLessonBundleTool:
                     len(assets), len(yt_links), topic,
                 )
         except Exception as e:
-            logger.debug("Asset search failed: %s", e)
+            logger.warning("NLAH_FAILURE=%s: %s", FailureCode.ASSET_SEARCH_FAILED, e)
+            report.warnings.append(f"[{FailureCode.ASSET_SEARCH_FAILED}] Asset search failed: {e}")
 
         # KB chunk-level search (text excerpts)
         try:
@@ -162,7 +168,8 @@ class GenerateLessonBundleTool:
                         )
                     logger.info("KB search found %d relevant chunks for '%s'", len(kb_parts), topic)
         except Exception as e:
-            logger.debug("KB search failed: %s", e)
+            logger.warning("NLAH_FAILURE=%s: %s", FailureCode.KB_SEARCH_FAILED, e)
+            report.warnings.append(f"[{FailureCode.KB_SEARCH_FAILED}] KB search failed: {e}")
 
         # ── Build a UnitPlan with standards ──────────────────────────
         description = f"Introduction to {topic}"
@@ -205,13 +212,11 @@ class GenerateLessonBundleTool:
                 teacher_materials=kb_prompt_section,
             )
         except Exception as e:
-            return ToolResult(text=f"Failed to generate lesson: {e}")
+            logger.error("NLAH_FAILURE=%s: %s", FailureCode.API_FAILURE, e)
+            return ToolResult(text=f"[{FailureCode.API_FAILURE}] Failed to generate lesson: {type(e).__name__}")
 
         # ── Validate ──────────────────────────────────────────────────
-        from clawed.generation_report import GenerationReport
         from clawed.validation import check_self_contained, validate_alignment, validate_master_content
-
-        report = GenerationReport()
 
         mc_errors = validate_master_content(master, topic)
         for err in mc_errors:
@@ -282,6 +287,45 @@ class GenerateLessonBundleTool:
         except Exception as e:
             logger.error("Slides compile failed: %s", e)
             errors.append(f"Slideshow PPTX failed: {e}")
+
+        # ── Quality review (NLAH Stage 4 — non-blocking) ────────────
+        try:
+            from clawed.llm import LLMClient
+            from clawed.quality import score_voice_match
+
+            llm = LLMClient(config=config)
+            master_json = master.model_dump_json(indent=2)[:3000]
+            review = await llm.review_lesson_package(
+                lesson_json=master_json,
+                standards_present=bool(standards_list),
+                has_handout=len(generated_files) >= 2,
+                has_slideshow=len(generated_files) >= 3,
+            )
+            report.quality_review_passed = review.get("passed", False)
+            report.quality_review_issues = review.get("issues", [])
+            if not report.quality_review_passed:
+                for issue in report.quality_review_issues:
+                    report.warnings.append(f"[REVIEW] {issue}")
+                logger.info("Quality review: FAILED — %d issues", len(report.quality_review_issues))
+            else:
+                logger.info("Quality review: PASSED")
+
+            # Voice match scoring
+            persona_ctx = persona.to_prompt_context() if persona else ""
+            all_text = " ".join(s.content for s in master.direct_instruction)
+            voice_score = await score_voice_match(all_text, persona_ctx, llm)
+            report.voice_check_passed = voice_score >= 3.0
+            if voice_score < 3.0:
+                report.warnings.append(
+                    f"[{FailureCode.VOICE_MISMATCH}] Voice match score: {voice_score:.1f}/5.0"
+                )
+                logger.warning("Voice match: %.1f/5.0 — below threshold", voice_score)
+            else:
+                logger.info("Voice match: %.1f/5.0", voice_score)
+        except Exception as e:
+            logger.warning("Quality review/voice check failed: %s", e)
+            report.quality_review_passed = False
+            report.quality_review_issues = [f"Review failed: {type(e).__name__}"]
 
         # ── Build response ─────────────────────────────────────────────
         lines = []

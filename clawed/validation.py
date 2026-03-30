@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from clawed.failure_codes import FailureCode
+
 if TYPE_CHECKING:
     from clawed.master_content import MasterContent
 
@@ -25,21 +27,32 @@ def check_self_contained(text: str) -> list[str]:
 
 
 def validate_master_content(mc: "MasterContent", topic: str) -> list[str]:
-    """Validate a MasterContent object for required collections and topic alignment."""
+    """Validate a MasterContent object against NLAH Section 3 gates."""
     errors = []
-    if len(mc.guided_notes) < 1:
-        errors.append("No guided notes generated")
-    if len(mc.exit_ticket) < 1:
-        errors.append("No exit ticket questions generated")
-    if len(mc.primary_sources) < 1:
-        errors.append("No primary sources generated")
+    # NLAH: guided_notes >= 6
+    if len(mc.guided_notes) < 6:
+        errors.append(f"[CRITICAL] Guided notes: {len(mc.guided_notes)}/6 minimum")
+    # NLAH: exit_ticket questions >= 3
+    if len(mc.exit_ticket) < 3:
+        errors.append(f"[CRITICAL] Exit ticket questions: {len(mc.exit_ticket)}/3 minimum")
+    # NLAH: primary_sources >= 2 with non-empty text
+    sources_with_text = [s for s in mc.primary_sources if s.content_text.strip()]
+    if len(sources_with_text) < 2:
+        errors.append(f"[CRITICAL] Primary sources with text: {len(sources_with_text)}/2 minimum")
+    # Instruction sections must exist
     if len(mc.direct_instruction) < 1:
-        errors.append("No instruction sections generated")
-    if topic.lower() not in mc.title.lower() and topic.lower() not in mc.topic.lower():
-        errors.append(f"Topic drift: requested '{topic}', got '{mc.title}'")
+        errors.append("[HIGH] No instruction sections generated")
+    # NLAH: topic appears in title, topic field, OR objective (extended from just title+topic)
+    topic_lower = topic.lower()
+    title_lower = mc.title.lower()
+    topic_field_lower = mc.topic.lower() if mc.topic else ""
+    objective_lower = mc.objective.lower() if mc.objective else ""
+    if topic_lower not in title_lower and topic_lower not in topic_field_lower and topic_lower not in objective_lower:
+        errors.append(f"[{FailureCode.TOPIC_DRIFT}] Requested '{topic}', not found in title/topic/objective")
+    # Exit ticket stimulus checks
     for q in mc.exit_ticket:
         if not q.stimulus.strip():
-            errors.append(f"Exit ticket question missing stimulus: '{q.question[:50]}'")
+            errors.append(f"[HIGH] Exit ticket question missing stimulus: '{q.question[:50]}'")
     return errors
 
 

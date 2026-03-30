@@ -44,7 +44,7 @@ from clawed.validation import (
 
 
 def _minimal_mc(topic: str = "Reconstruction") -> MasterContent:
-    """Return a minimal but valid MasterContent for the given topic."""
+    """Return a minimal but valid MasterContent that passes NLAH gates."""
     return MasterContent(
         title=f"Lesson on {topic}",
         subject="US History",
@@ -60,17 +60,14 @@ def _minimal_mc(topic: str = "Reconstruction") -> MasterContent:
         direct_instruction=[
             InstructionSection(
                 heading="Introduction",
-                content="Reconstruction was the period after the Civil War.",
+                content="Reconstruction was the period after the Civil War from 1865 to 1877.",
                 teacher_script="Begin here.",
                 key_points=["key point one", "key point two"],
             )
         ],
         guided_notes=[
-            GuidedNote(
-                prompt="Reconstruction lasted from ___ to ___.",
-                answer="1865 to 1877",
-                section_ref="Introduction",
-            )
+            GuidedNote(prompt=f"Blank {i} ___.", answer=f"answer {i}", section_ref="Introduction")
+            for i in range(1, 7)  # NLAH: >= 6
         ],
         primary_sources=[
             PrimarySource(
@@ -79,15 +76,23 @@ def _minimal_mc(topic: str = "Reconstruction") -> MasterContent:
                 source_type="text_excerpt",
                 content_text="An act to establish a Bureau...",
                 attribution="Congress, 1865",
-            )
+            ),
+            PrimarySource(
+                id="src2",
+                title="14th Amendment",
+                source_type="text_excerpt",
+                content_text="All persons born or naturalized...",
+                attribution="U.S. Constitution, 1868",
+            ),
         ],
         exit_ticket=[
             StimulusQuestion(
-                stimulus="Read the excerpt above.",
+                stimulus=f"Read excerpt {i}.",
                 stimulus_type="text_excerpt",
-                question="What was the purpose of the Freedmen's Bureau?",
-                answer="To assist freed enslaved people.",
+                question=f"Question {i}?",
+                answer=f"Answer {i}.",
             )
+            for i in range(1, 4)  # NLAH: >= 3
         ],
         differentiation=DifferentiationNotes(
             struggling=["Provide graphic organizer"],
@@ -232,11 +237,11 @@ def test_validate_master_content_topic_match_in_topic_field():
 
 def test_validate_alignment_clean():
     mc = _minimal_mc()
-    # The guided note answer "1865 to 1877" must appear in instruction content
-    mc.direct_instruction[0].content = "Reconstruction lasted from 1865 to 1877."
+    # Put ALL guided note answers into instruction so alignment is 100%
+    all_answers = " ".join(n.answer for n in mc.guided_notes)
+    mc.direct_instruction[0].content = f"Reconstruction: {all_answers}."
     score, issues = validate_alignment(mc)
     assert score == 100.0
-    # No guided note issues
     note_issues = [i for i in issues if "guided note" in i.lower()]
     assert note_issues == []
 
@@ -245,25 +250,20 @@ def test_validate_alignment_mismatched_guided_note():
     mc = _minimal_mc()
     mc.guided_notes[0].answer = "completely unrelated answer xyz"
     score, issues = validate_alignment(mc)
-    assert score == 0.0
+    assert score < 100.0
     assert any("guided note" in i.lower() for i in issues)
 
 
 def test_validate_alignment_score_percentage():
     mc = _minimal_mc()
-    mc.direct_instruction[0].content = "Reconstruction lasted from 1865 to 1877."
-    mc.direct_instruction[0].key_points = ["1865 to 1877", "second point"]
-    # Add a second guided note whose answer IS in instruction
-    mc.guided_notes.append(
-        GuidedNote(prompt="Second blank ___.", answer="second point", section_ref="Introduction")
-    )
-    # Add a third guided note whose answer is NOT in instruction
-    mc.guided_notes.append(
-        GuidedNote(prompt="Third blank ___.", answer="zzzz not found zzzz", section_ref="Introduction")
-    )
+    # Match exactly half the guided notes
+    half = len(mc.guided_notes) // 2
+    matched_answers = " ".join(n.answer for n in mc.guided_notes[:half])
+    mc.direct_instruction[0].content = matched_answers
+    mc.direct_instruction[0].key_points = []
     score, issues = validate_alignment(mc)
-    # 2 out of 3 matched
-    assert abs(score - 66.67) < 1.0
+    expected = half / len(mc.guided_notes) * 100
+    assert abs(score - expected) < 1.0
 
 
 def test_validate_alignment_invalid_station_source_ref():

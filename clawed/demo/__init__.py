@@ -34,11 +34,12 @@ def load_all_demos() -> dict[str, dict[str, Any]]:
 def is_demo_mode(config: Any = None) -> bool:
     """Check whether the app should run in demo mode (no API key configured).
 
-    Args:
-        config: Optional AppConfig instance. When provided, the check uses
-            this config instead of loading global state. This allows
-            LLMClient to pass its own injected config.
+    Can be forced with CLAWED_DEMO=1 environment variable, which overrides
+    stored keys. This is useful for demo presentations and development.
     """
+    import os
+    if os.environ.get("CLAWED_DEMO", "").strip() in ("1", "true", "yes"):
+        return True
     from clawed.config import resolve_credentials
     provider, key = resolve_credentials(config)
     return provider is None

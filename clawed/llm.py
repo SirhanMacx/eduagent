@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from typing import Any, Optional, Type
 
@@ -10,6 +11,8 @@ import httpx
 from pydantic import BaseModel, ValidationError
 
 from clawed.models import AppConfig, LLMProvider
+
+logger = logging.getLogger(__name__)
 
 
 class LLMClient:
@@ -414,35 +417,39 @@ class LLMClient:
         """Self-review a lesson package against observation-ready standards.
 
         Returns a dict with 'passed' (bool) and 'issues' (list of strings).
-        If issues are found, the caller should attempt to fix them.
+        Fails closed: any exception returns passed=False (NLAH Section 3, Stage 4).
         """
-        prompt = (
-            f"Review this lesson package against observation-ready quality standards.\n\n"
-            f"Lesson:\n{lesson_json[:3000]}\n\n"
-            f"Package status: standards={'yes' if standards_present else 'MISSING'}, "
-            f"handout={'yes' if has_handout else 'MISSING'}, "
-            f"slideshow={'yes' if has_slideshow else 'MISSING'}\n\n"
-            "Check these standards:\n"
-            "1. Do all section times add up to a full class period (42-45 min)?\n"
-            "2. Are specific standards codes listed (not just 'aligned to standards')?\n"
-            "3. Is vocabulary defined for all content-specific terms?\n"
-            "4. Are there checks for understanding every 7-10 minutes?\n"
-            "5. Are all referenced materials self-contained (no phantom handouts)?\n"
-            "6. Is the Do Now completable in 5 minutes?\n"
-            "7. Are transitions scripted between sections?\n\n"
-            'Return JSON: {"passed": true/false, "issues": ["issue 1", "issue 2"]}'
-        )
-        raw = await self.generate(prompt, temperature=0.2, max_tokens=1000)
         try:
+            prompt = (
+                f"Review this lesson package against observation-ready quality standards.\n\n"
+                f"Lesson:\n{lesson_json[:3000]}\n\n"
+                f"Package status: standards={'yes' if standards_present else 'MISSING'}, "
+                f"handout={'yes' if has_handout else 'MISSING'}, "
+                f"slideshow={'yes' if has_slideshow else 'MISSING'}\n\n"
+                "Check these standards:\n"
+                "1. Do all section times add up to a full class period (42-45 min)?\n"
+                "2. Are specific standards codes listed (not just 'aligned to standards')?\n"
+                "3. Is vocabulary defined for all content-specific terms?\n"
+                "4. Are there checks for understanding every 7-10 minutes?\n"
+                "5. Are all referenced materials self-contained (no phantom handouts)?\n"
+                "6. Is the Do Now completable in 5 minutes?\n"
+                "7. Are transitions scripted between sections?\n\n"
+                'Return JSON: {"passed": true/false, "issues": ["issue 1", "issue 2"]}'
+            )
+            raw = await self.generate(prompt, temperature=0.2, max_tokens=1000)
             cleaned = raw.strip()
             if cleaned.startswith("```"):
                 lines = cleaned.split("\n")[1:]
                 if lines and lines[-1].strip() == "```":
                     lines = lines[:-1]
                 cleaned = "\n".join(lines)
-            return json.loads(cleaned)
-        except Exception:
-            return {"passed": False, "issues": ["Quality review could not parse LLM response — review skipped"]}
+            result = json.loads(cleaned)
+            if "passed" not in result:
+                return {"passed": False, "issues": ["LLM response missing 'passed' field"]}
+            return result
+        except Exception as e:
+            logger.warning("REVIEW_FAILED: %s", e)
+            return {"passed": False, "issues": [f"Quality review failed: {type(e).__name__}"]}
 
     # ── Anthropic ────────────────────────────────────────────────────────
 
