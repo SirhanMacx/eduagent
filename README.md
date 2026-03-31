@@ -2,7 +2,7 @@
 
 Your personal AI teaching agent. Runs on your machine, learns your voice, works while you sleep.
 
-Built on the OpenClaw agent framework. Open source. MIT license.
+Built on the Hermes Agent framework (NousResearch). Open source. MIT license.
 
 <p align="center">
   <a href="https://pypi.org/project/clawed/"><img src="https://img.shields.io/pypi/v/clawed?color=blue" alt="PyPI version"></a>
@@ -11,6 +11,35 @@ Built on the OpenClaw agent framework. Open source. MIT license.
   <a href="https://github.com/SirhanMacx/Claw-ED/stargazers"><img src="https://img.shields.io/github/stars/SirhanMacx/Claw-ED" alt="GitHub stars"></a>
   <a href="https://pepy.tech/project/clawed"><img src="https://static.pepy.tech/badge/clawed" alt="Downloads"></a>
 </p>
+
+---
+
+## What's new in v2.3.9
+
+**Multi-agent lesson generation.** Instead of one LLM call doing everything, `--multi-agent` spawns a team of three specialized agents: a Researcher who finds primary sources and historical context, a Writer who drafts the lesson in your voice, and a Reviewer who scores quality on voice fidelity, pedagogy, and differentiation — sending it back for revision if any dimension scores below 7/10. The result: higher-quality lessons with better sources and stronger voice matching.
+
+```bash
+clawed lesson "The Missouri Compromise" -g 8 --multi-agent
+```
+
+**Claude Code integration.** Claw-ED now auto-reads OAuth tokens from Claude Code's credential store (`~/.claude/.credentials.json`). If you have Claude Code installed, Claw-ED just works — no separate API key setup needed, and tokens auto-refresh. Claw-ED also works as an MCP server that Claude Code can use directly:
+
+```bash
+clawed mcp-server  # Add to Claude Code as an MCP tool
+```
+
+**Continuous improvement pipeline.** The new `clawed train` command lets your AI fleet (or you) continuously improve lesson quality:
+
+```bash
+clawed train --drive          # Ingest new files from Google Drive, refine persona
+clawed train --path ./files   # Ingest local curriculum files
+clawed train --benchmark -n 5 # Generate 5 lessons and score them
+clawed train --full           # Drive ingest + benchmark
+```
+
+Persona refinement is now incremental — new voice markers merge with existing ones instead of overwriting. Your teaching identity gets richer over time.
+
+**OAuth auth fix.** All Anthropic API calls now correctly detect OAuth tokens and use Bearer authentication with Claude Code identity headers. Fixes the 401 errors that affected fleet agents and Claw-ED direct usage.
 
 ---
 
@@ -48,7 +77,7 @@ Built on the OpenClaw agent framework. Open source. MIT license.
 
 ## What is this?
 
-Claw-ED is a personal AI agent for teachers. It uses the same architecture as other OpenClaw agents -- SOUL.md for identity, layered memory, a workspace, pulse jobs, tool use, and autonomous operation. The difference is what it knows: your lesson plans, your teaching style, your standards, your students.
+Claw-ED is a personal AI agent for teachers. It uses the same architecture as Hermes Agent -- SOUL.md for identity, layered memory, a workspace, cron jobs, tool use, and autonomous operation. The difference is what it knows: your lesson plans, your teaching style, your standards, your students.
 
 You feed it your curriculum files and it learns your voice. Not a generic "teacher tone" -- your actual patterns, your vocabulary, the way you structure a Do Now or frame an essential question. Then it works: drafting lessons that sound like you wrote them, organizing your Google Drive, answering student questions in your voice, prepping your week before you wake up.
 

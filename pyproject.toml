@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "clawed"
-version = "2.3.8"
+version = "2.3.9"
 description = "Free AI lesson planner for teachers. Learns your teaching voice from your curriculum files and generates complete lesson packages. Open source, runs locally, no subscription."
 readme = "README.md"
 license = "MIT"
@@ -16,7 +16,7 @@ keywords = [
     "ai", "lesson-planner", "teaching-assistant", "education",
     "curriculum", "lesson-plan-generator", "edtech", "k12",
     "open-source-education", "teacher-tools", "ai-for-teachers",
-    "lesson-planning", "pedagogy", "openclaw", "teachers",
+    "lesson-planning", "pedagogy", "hermes-agent", "teachers",
     "lesson-plans", "clawed", "claw-ed", "teaching",
 ]
 classifiers = [

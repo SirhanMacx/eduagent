@@ -1,6 +1,6 @@
 """Claw-ED MCP Server — expose teaching tools via Model Context Protocol.
 
-This lets OpenClaw, Claude Desktop, and other MCP clients call Claw-ED
+This lets Hermes Agent, Claude Desktop, and other MCP clients call Claw-ED
 tools directly: generate lessons, plan units, ingest materials, answer
 student questions, and look up standards.
 

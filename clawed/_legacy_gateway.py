@@ -350,7 +350,7 @@ class Gateway:
 
     async def _status_response(self, teacher_id: str) -> GatewayResponse:
         try:
-            from clawed.openclaw_plugin import _show_status
+            from clawed.hermes_plugin import _show_status
             from clawed.state import TeacherSession
             session = TeacherSession.load(teacher_id)
             return GatewayResponse(text=_show_status(session))

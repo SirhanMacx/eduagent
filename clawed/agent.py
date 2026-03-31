@@ -13,6 +13,29 @@ from __future__ import annotations
 
 import json
 import logging
+
+
+def _anthropic_headers(api_key: str) -> dict[str, str]:
+    """Build Anthropic API headers, auto-detecting OAuth vs regular API keys.
+
+    OAuth tokens (sk-ant-oat01-*) need Bearer auth + Claude Code identity
+    headers. Regular API keys (sk-ant-api*) use x-api-key.
+    """
+    is_oauth = api_key.startswith("sk-ant-") and not api_key.startswith("sk-ant-api")
+    if is_oauth:
+        return {
+            "authorization": f"Bearer {api_key}",
+            "anthropic-version": "2023-06-01",
+            "anthropic-beta": "interleaved-thinking-2025-05-14,claude-code-20250219,oauth-2025-04-20",
+            "user-agent": "claude-cli/1.0.0 (external, cli)",
+            "x-app": "cli",
+            "content-type": "application/json",
+        }
+    return {
+        "x-api-key": api_key,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+    }
 from typing import Any
 
 from clawed.models import AppConfig, LLMProvider
@@ -137,11 +160,7 @@ async def _anthropic_with_tools(
     async with httpx.AsyncClient(timeout=120.0) as client:
         resp = await client.post(
             "https://api.anthropic.com/v1/messages",
-            headers={
-                "x-api-key": api_key,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
-            },
+            headers=_anthropic_headers(api_key),
             json={
                 "model": config.anthropic_model,
                 "max_tokens": 4096,

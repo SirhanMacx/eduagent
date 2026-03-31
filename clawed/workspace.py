@@ -1,6 +1,6 @@
 """Teacher workspace — persistent identity, memory, daily notes, and student profiles.
 
-Mirrors the OpenClaw agent workspace pattern, adapted for teachers:
+Mirrors the Hermes Agent workspace pattern, adapted for teachers:
     ~/.eduagent/workspace/
     ├── identity.md      # Auto-generated from TeacherPersona
     ├── soul.md          # Teaching philosophy, pedagogical approach

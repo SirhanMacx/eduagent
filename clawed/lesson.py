@@ -10,6 +10,20 @@ from clawed.master_content import MasterContent
 from clawed.model_router import route as route_model
 from clawed.models import AppConfig, DailyLesson, TeacherPersona, UnitPlan
 
+# NOTE: lesson_plan.txt is kept for reference / backward compatibility but is
+# NOT used for primary lesson generation.  All lesson generation goes through
+# generate_lesson() → generate_master_content() which uses master_content.txt.
+#
+# ⚠️  master_content.txt IS SUPERIOR to lesson_plan.txt — it requires:
+#   - Stimulus-based Do Nows (never recall)
+#   - Mandatory image_spec fields for every direct-instruction section
+#   - Full primary-source excerpts with scaffolding questions
+#   - Guided notes with fill-in-the-blank entries
+#   - Station tasks referencing primary sources
+#   - Richer exit-ticket schema (StimulusQuestion with cognitive_level)
+#
+# If you are debugging generation quality, edit master_content.txt — changes to
+# lesson_plan.txt will NOT affect the live output.
 PROMPT_PATH = Path(__file__).parent / "prompts" / "lesson_plan.txt"
 MASTER_PROMPT_PATH = Path(__file__).parent / "prompts" / "master_content.txt"
 

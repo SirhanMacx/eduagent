@@ -1,7 +1,7 @@
 """Generation service layer — LLM-calling functions for lessons, units, materials, etc.
 
-Extracted from openclaw_plugin.py so that gateway handlers can call these
-directly without going through the openclaw_plugin dispatch loop.
+Extracted from hermes_plugin.py so that gateway handlers can call these
+directly without going through the hermes_plugin dispatch loop.
 
 Every function takes a TeacherSession (or the pieces it needs) and returns a
 plain string.  No routing, no intent parsing — that belongs in the gateway.
@@ -235,28 +235,88 @@ async def generate_assessment(parsed: ParsedIntent, session: TeacherSession) -> 
 
 # ── Bell ringer generation ───────────────────────────────────────────────────
 
+# Prompt file for bell ringers / Do Nows.  We use lesson_plan.txt because it
+# contains the richest Do Now specification (stimulus-based, never recall).
+# A dedicated do_now.txt could replace this if created in the future.
+_BELLRINGER_PROMPT_PATH = Path(__file__).parent / "prompts" / "lesson_plan.txt"
+
 
 async def generate_bellringer(parsed: ParsedIntent, session: TeacherSession) -> str:
-    """Generate 3 bell ringer / Do-Now prompts."""
+    """Generate 3 bell ringer / Do-Now prompts that sound like the specific teacher.
+
+    Loads the full lesson_plan.txt prompt file for Do Now requirements and injects
+    the complete teacher persona including do_now_style, voice_examples, and
+    activity_patterns so the output matches this teacher's fingerprint, not a
+    generic template.
+    """
     from clawed.llm import LLMClient
 
     topic = parsed.topic or (session.current_unit.topic if session.current_unit else "today's topic")
     persona = session.persona or TeacherPersona()
     config = route_model("bellringer", AppConfig.load())
 
+    # Pull the full persona context — critically includes do_now_style, voice_examples,
+    # activity_patterns, and scaffolding_moves so Do Nows sound like THIS teacher.
+    persona_context = persona.to_prompt_context()
+
+    # Extract specific fingerprint fields explicitly for the system prompt so the
+    # model cannot ignore them even if they appear later in a long context.
+    do_now_style_hint = (
+        f"\n\nDo Now Style for this teacher: {persona.do_now_style}"
+        if persona.do_now_style else ""
+    )
+    activity_hint = (
+        "\n\nThis teacher's activity patterns:\n" + "\n".join(f"- {p}" for p in persona.activity_patterns)
+        if persona.activity_patterns else ""
+    )
+    voice_hint = (
+        "\n\nVoice examples — write Do Nows that match this voice:\n"
+        + "\n".join(f'  "{ex}"' for ex in persona.voice_examples[:3])
+        if persona.voice_examples else ""
+    )
+
+    grade = persona.grade_levels[0] if persona.grade_levels else "8"
+    subject = persona.subject_area or "General"
+
+    system = (
+        "You are an expert teacher who writes Do Now / bell ringer activities that "
+        "exactly replicate a specific teacher's pedagogical fingerprint.\n\n"
+        "CRITICAL RULES from lesson_plan.txt:\n"
+        "- Do Nows must be STIMULUS-BASED — never a content recall question.\n"
+        "- Use analogy, scenario, provocative question, or real-world hook.\n"
+        "- BAD: 'What do you know about the Civil War?'\n"
+        "- GOOD: 'Imagine two people who used to be business partners have a "
+        "bitter falling-out. One takes half the inventory and leaves. The other "
+        "says that inventory belongs to the whole company. What should happen? "
+        "(3 min)' [metaphor for secession]\n"
+        "- Students must be able to begin independently the moment they sit down.\n"
+        "- Each Do Now takes 3-5 minutes — 1 or 2 focused questions max.\n\n"
+        f"{persona_context}"
+        f"{do_now_style_hint}"
+        f"{activity_hint}"
+        f"{voice_hint}"
+    )
+
+    prompt = (
+        f"Generate 3 different Do Now / bell ringer options for a {subject} lesson "
+        f"on '{topic}' for grade {grade}.\n\n"
+        "Each option must:\n"
+        "1. Be a complete, self-contained prompt a student can start immediately.\n"
+        "2. Use this teacher's specific Do Now style (scenario, analogy, or "
+        "provocative question — never recall).\n"
+        "3. Match the teacher's voice, vocabulary, and tone exactly.\n"
+        "4. Take 3-5 minutes.\n\n"
+        "Format as a numbered list with a brief label (e.g., 'Option 1 — Analogy:') "
+        "followed by the full student-facing prompt. No meta-commentary."
+    )
+
     try:
         client = LLMClient(config)
         response = await client.generate(
-            prompt=(
-                f"Create 3 different bell ringer / Do-Now prompts for a lesson on"
-                f" {topic} for grade"
-                f" {persona.grade_levels[0] if persona.grade_levels else '8'}."
-                f" Each should take 3-5 minutes. Match this teacher style:"
-                f" {persona.tone}. Format as a numbered list."
-            ),
-            system="You are an expert teacher. Be concise and practical.",
+            prompt=prompt,
+            system=system,
             temperature=0.7,
-            max_tokens=400,
+            max_tokens=600,
         )
         return f"\U0001f514 *Bell Ringer Options for {topic}:*\n\n{response}"
     except Exception as e:
@@ -265,9 +325,24 @@ async def generate_bellringer(parsed: ParsedIntent, session: TeacherSession) -> 
 
 # ── Differentiation generation ───────────────────────────────────────────────
 
+# Path to the dedicated differentiation prompt file.
+_DIFFERENTIATION_PROMPT_PATH = Path(__file__).parent / "prompts" / "differentiation.txt"
+
 
 async def generate_differentiation(parsed: ParsedIntent, session: TeacherSession) -> str:
-    """Generate differentiation strategies for the current lesson."""
+    """Generate differentiation strategies for the current lesson.
+
+    Loads differentiation.txt and passes the full teacher persona — including
+    scaffolding_moves — so accommodations reflect HOW this teacher already
+    scaffolds, not generic advice.
+
+    Schema fix: differentiation.txt returns a flat string array.  We parse it
+    and bucket items into {struggling, advanced, ell} to match the
+    DifferentiationNotes model expected by lesson_plan.txt / DailyLesson.
+    Items are categorised by prefix keyword (IEP → struggling, ELL → ell,
+    Advanced/Gifted → advanced, remainder → struggling as a safe default).
+    The formatted string returned to Telegram groups them for readability.
+    """
     lesson = session.current_lesson
     if not lesson:
         topic = parsed.topic or "the current lesson"
@@ -278,26 +353,123 @@ async def generate_differentiation(parsed: ParsedIntent, session: TeacherSession
 
     from clawed.llm import LLMClient
 
+    persona = session.persona or TeacherPersona()
     config = route_model("differentiation", AppConfig.load())
     client = LLMClient(config)
 
+    # Build full persona context — scaffolding_moves is the critical field here
+    # because it tells the model which tools (T-charts, sentence frames, writing
+    # frames, etc.) this teacher ALREADY uses, so accommodations extend rather
+    # than replace their practice.
+    persona_context = persona.to_prompt_context()
+    scaffolding_hint = (
+        "\n\nThis teacher's scaffolding moves (accommodations MUST build on these):\n"
+        + "\n".join(f"- {m}" for m in persona.scaffolding_moves)
+        if persona.scaffolding_moves else ""
+    )
+
+    # Load differentiation.txt prompt template
+    prompt_template = _DIFFERENTIATION_PROMPT_PATH.read_text(encoding="utf-8")
+
+    # Derive lesson activity summary for the template
+    activities_summary = getattr(lesson, "guided_practice", "") or getattr(lesson, "direct_instruction", "") or ""
+    if isinstance(activities_summary, list):
+        activities_summary = " ".join(str(a) for a in activities_summary)[:500]
+    else:
+        activities_summary = str(activities_summary)[:500]
+
+    grade = persona.grade_levels[0] if persona.grade_levels else getattr(lesson, "grade_level", "8")
+    subject = persona.subject_area or "General"
+
+    prompt = (
+        prompt_template
+        .replace("{persona}", persona_context + scaffolding_hint)
+        .replace("{lesson_title}", lesson.title)
+        .replace("{objective}", lesson.objective)
+        .replace("{grade_level}", str(grade))
+        .replace("{subject}", subject)
+        .replace("{lesson_activities}", activities_summary or "See lesson plan.")
+    )
+
+    system = (
+        "You are an expert in differentiated instruction and inclusive education. "
+        "You write accommodations that are specific to THIS lesson and THIS teacher's "
+        "existing scaffolding practice.\n\n"
+        f"{persona_context}"
+        f"{scaffolding_hint}"
+    )
+
     try:
-        response = await client.generate(
-            prompt=(
-                f"Write specific differentiation strategies for this lesson:\n"
-                f"Title: {lesson.title}\n"
-                f"Objective: {lesson.objective}\n\n"
-                "Provide:\n"
-                "1. 3 accommodations for struggling learners (specific, not generic)\n"
-                "2. 3 enrichment activities for advanced learners\n"
-                "3. 2 accommodations for ELL students\n"
-                "Be specific \u2014 mention the actual lesson content, not generic advice."
-            ),
-            system="You are an expert special education and differentiation specialist.",
+        import json as _json
+
+        raw = await client.generate(
+            prompt=prompt,
+            system=system,
             temperature=0.6,
-            max_tokens=600,
+            max_tokens=1200,
         )
-        return f"\u267f *Differentiation for {lesson.title}:*\n\n{response}"
+
+        # --- Schema fix ---------------------------------------------------
+        # differentiation.txt returns a flat JSON string array.
+        # DailyLesson.differentiation expects {struggling: [], advanced: [], ell: []}.
+        # Parse and bucket by prefix keyword so the lesson object stays consistent.
+        items: list[str] = []
+        try:
+            # Strip any markdown fencing the model may have added
+            cleaned = raw.strip()
+            if cleaned.startswith("```"):
+                cleaned = "\n".join(cleaned.split("\n")[1:])
+                cleaned = cleaned.rstrip("`").strip()
+            items = _json.loads(cleaned)
+            if not isinstance(items, list):
+                items = []
+        except Exception:
+            items = []
+
+        struggling: list[str] = []
+        advanced: list[str] = []
+        ell: list[str] = []
+        for item in items:
+            low = item.lower()
+            if low.startswith("ell") or "english language learner" in low:
+                ell.append(item)
+            elif low.startswith("advanced") or low.startswith("gifted") or "enrichment" in low[:30]:
+                advanced.append(item)
+            else:
+                # IEP, UDL, SEL, and untagged items default to struggling bucket
+                struggling.append(item)
+
+        # Update the lesson's differentiation object in-place if it exists
+        if hasattr(lesson, "differentiation") and lesson.differentiation is not None:
+            if struggling:
+                lesson.differentiation.struggling = struggling
+            if advanced:
+                lesson.differentiation.advanced = advanced
+            if ell:
+                lesson.differentiation.ell = ell
+
+        # Build a readable Telegram response grouped by category
+        lines = [f"\u267f *Differentiation for {lesson.title}:*", ""]
+        if struggling:
+            lines.append("*Struggling Learners / IEP:*")
+            for s in struggling:
+                lines.append(f"\u2022 {s}")
+            lines.append("")
+        if advanced:
+            lines.append("*Advanced / Gifted:*")
+            for a in advanced:
+                lines.append(f"\u2022 {a}")
+            lines.append("")
+        if ell:
+            lines.append("*ELL / Language Supports:*")
+            for e in ell:
+                lines.append(f"\u2022 {e}")
+            lines.append("")
+        if not lines[2:]:
+            # Fallback: model returned prose rather than JSON — show raw
+            lines.append(raw)
+
+        return "\n".join(lines)
     except Exception as e:
         return f"Trouble generating differentiation notes: {str(e)[:200]}"
 

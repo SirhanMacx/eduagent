@@ -11,7 +11,7 @@ import asyncio
 import logging
 
 from clawed.gateway_response import Button, GatewayResponse
-from clawed.openclaw_plugin import get_last_lesson_id
+from clawed.hermes_plugin import get_last_lesson_id
 
 logger = logging.getLogger(__name__)
 

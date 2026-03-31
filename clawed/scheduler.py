@@ -1,6 +1,6 @@
 """APScheduler-based task scheduler for autonomous Claw-ED behavior.
 
-Gives Claw-ED scheduled tasks like OpenClaw's cron jobs, adapted for teachers:
+Gives Claw-ED scheduled tasks like Hermes Agent's cron jobs, adapted for teachers:
 - morning-prep: review today's classes, auto-generate missing lessons
 - weekly-plan: draft next week's lesson plans
 - feedback-digest: summarize today's ratings and interactions

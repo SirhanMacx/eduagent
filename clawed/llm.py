@@ -474,13 +474,10 @@ class LLMClient:
                 }
                 if system:
                     body["system"] = system
+                from clawed.agent import _anthropic_headers
                 resp = await client.post(
                     "https://api.anthropic.com/v1/messages",
-                    headers={
-                        "x-api-key": api_key,
-                        "anthropic-version": "2023-06-01",
-                        "content-type": "application/json",
-                    },
+                    headers=_anthropic_headers(api_key),
                     json=body,
                 )
                 resp.raise_for_status()

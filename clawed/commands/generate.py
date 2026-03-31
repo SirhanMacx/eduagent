@@ -298,6 +298,10 @@ def lesson(
     homework: bool = typer.Option(
         True, "--homework/--no-homework", help="Include homework"
     ),
+    multi_agent: bool = typer.Option(
+        False, "--multi-agent/--no-multi-agent",
+        help="Use multi-agent pipeline (researcher→writer→reviewer) for higher quality",
+    ),
     fmt: str = typer.Option("markdown", "--format", "-f", help="Export format: markdown, pptx, docx, pdf, handout"),
 ):
     """Generate a detailed daily lesson plan.
@@ -305,6 +309,9 @@ def lesson(
     \b
     Standalone mode (no unit plan needed):
         clawed lesson "The American Revolution" --grade 8 --subject "social studies"
+
+    Multi-agent mode (higher quality, 3x slower):
+        clawed lesson "The Missouri Compromise" -g 8 --multi-agent
 
     From a unit plan:
         clawed lesson "Photosynthesis" --unit-file output/unit_photosynthesis.json -n 1
@@ -388,18 +395,46 @@ def lesson(
 
     with _safe_progress(console=console) as progress:
         task = progress.add_task(
-            f"Generating lesson {lesson_num}...", total=None
+            f"Generating lesson {lesson_num}{'  [multi-agent]' if multi_agent else ''}...",
+            total=None,
         )
         try:
-            daily = _run_async(
-                generate_lesson(
-                    lesson_number=lesson_num,
-                    unit=unit_plan,
-                    persona=persona,
-                    include_homework=homework,
-                    teacher_materials=kb_prompt_section,
+            if multi_agent:
+                # Multi-agent pipeline: researcher → writer → reviewer
+                from clawed.multi_agent import multi_agent_generate_master_content
+                from clawed.compile_teacher import compile_teacher_view
+                console.print("[dim]Using multi-agent pipeline (researcher→writer→reviewer)...[/dim]")
+                master = _run_async(
+                    multi_agent_generate_master_content(
+                        topic=topic,
+                        grade=grade,
+                        subject=subject,
+                        persona=persona,
+                        config=None,
+                        unit_context=kb_prompt_section,
+                    )
                 )
-            )
+                if master is None:
+                    console.print("[yellow]Multi-agent returned None, falling back to single-agent...[/yellow]")
+                    daily = _run_async(
+                        generate_lesson(
+                            lesson_number=lesson_num, unit=unit_plan,
+                            persona=persona, include_homework=homework,
+                            teacher_materials=kb_prompt_section,
+                        )
+                    )
+                else:
+                    daily = compile_teacher_view(master)
+            else:
+                daily = _run_async(
+                    generate_lesson(
+                        lesson_number=lesson_num,
+                        unit=unit_plan,
+                        persona=persona,
+                        include_homework=homework,
+                        teacher_materials=kb_prompt_section,
+                    )
+                )
         except (RuntimeError, ValueError) as e:
             console.print(f"[red]Generation failed:[/red] {e}")
             console.print("[dim]Run with --debug for full details[/dim]")

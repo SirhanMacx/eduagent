@@ -1,15 +1,14 @@
-"""Tests for the Hermes transport (+ OpenClaw backward-compat shim)."""
+"""Tests for the Hermes Agent transport."""
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from clawed.transports.openclaw import _get_gateway, handle_callback, handle_message
+from clawed.transports.hermes import _get_gateway, handle_callback, handle_message
 
 
-class TestOpenClawTransport:
+class TestHermesTransport:
     @pytest.mark.asyncio
     async def test_handle_message_returns_string(self):
-        # Patch in the hermes module where the actual function lives
         with patch("clawed.transports.hermes._get_gateway") as mock_gw_fn:
             mock_gw = AsyncMock()
             mock_gw_fn.return_value = mock_gw
@@ -47,3 +46,17 @@ class TestOpenClawTransport:
         gw2 = _get_gateway()
         assert gw1 is gw2
         m._gateway = None  # cleanup
+
+
+class TestBackwardCompat:
+    """Verify the openclaw.py shim still works."""
+
+    def test_openclaw_imports_redirect(self):
+        from clawed.transports.openclaw import handle_message as hm_old
+        from clawed.transports.hermes import handle_message as hm_new
+        assert hm_old is hm_new
+
+    def test_openclaw_plugin_imports_redirect(self):
+        from clawed.openclaw_plugin import get_last_lesson_id as old
+        from clawed.hermes_plugin import get_last_lesson_id as new
+        assert old is new

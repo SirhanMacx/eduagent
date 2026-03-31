@@ -70,6 +70,87 @@ async def extract_persona(
     return TeacherPersona.model_validate(data)
 
 
+# ── Persona merging (continuous improvement) ────────────────────────────
+
+# Maximum list lengths to prevent unbounded growth
+_LIST_CAPS: dict[str, int] = {
+    "source_types": 10,
+    "activity_patterns": 10,
+    "scaffolding_moves": 10,
+    "voice_examples": 10,
+    "signature_moves": 8,
+}
+
+# String fields: only overwrite if existing is empty/default
+_STRING_FIELDS = (
+    "tone",
+    "voice_sample",
+    "do_now_style",
+    "exit_ticket_style",
+    "handout_style",
+    "grouping_preferences",
+)
+
+# List fields eligible for union-dedup merge
+_LIST_FIELDS = (
+    "source_types",
+    "activity_patterns",
+    "scaffolding_moves",
+    "signature_moves",
+    "voice_examples",
+)
+
+# Identity fields: never overwrite from new extraction
+_IDENTITY_FIELDS = ("teaching_style", "vocabulary_level")
+
+
+def _dedup_extend(existing: list[str], new: list[str], cap: int) -> list[str]:
+    """Union two lists, dedup by lowercased comparison, existing first."""
+    seen = {item.lower().strip() for item in existing}
+    merged = list(existing)
+    for item in new:
+        key = item.lower().strip()
+        if key and key not in seen:
+            merged.append(item)
+            seen.add(key)
+    return merged[:cap]
+
+
+def merge_persona(existing: TeacherPersona, new: TeacherPersona) -> TeacherPersona:
+    """Incrementally merge a new persona extraction with an existing one.
+
+    Strategy: keep existing voice identity, merge pedagogical patterns.
+    - Lists (source_types, activity_patterns, scaffolding_moves, signature_moves,
+      voice_examples): union and dedup, existing first
+    - Strings (tone, voice_sample, do_now_style, exit_ticket_style, handout_style,
+      grouping_preferences): keep existing if non-empty, else use new
+    - Teaching style, vocabulary level: keep existing (core identity doesn't change)
+    """
+    # Start from a copy of existing
+    data = existing.model_dump()
+
+    # Merge list fields with dedup
+    for field in _LIST_FIELDS:
+        cap = _LIST_CAPS.get(field, 10)
+        existing_list = getattr(existing, field, [])
+        new_list = getattr(new, field, [])
+        data[field] = _dedup_extend(existing_list, new_list, cap)
+
+    # String fields: only update if existing is empty/default
+    for field in _STRING_FIELDS:
+        existing_val = getattr(existing, field, "")
+        new_val = getattr(new, field, "")
+        if not existing_val or existing_val == TeacherPersona.model_fields[field].default:
+            if new_val:
+                data[field] = new_val
+
+    # Identity fields: always keep existing (never overwrite)
+    for field in _IDENTITY_FIELDS:
+        data[field] = getattr(existing, field)
+
+    return TeacherPersona.model_validate(data)
+
+
 def save_persona(persona: TeacherPersona, output_dir: Path) -> Path:
     """Save a persona to disk as JSON."""
     output_dir.mkdir(parents=True, exist_ok=True)

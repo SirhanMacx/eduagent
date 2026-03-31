@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.3.9] - 2026-03-31
+
+Multi-agent lesson generation, Claude Code integration, and continuous improvement pipeline.
+
+### Added
+- **Multi-agent lesson generation** — `--multi-agent` flag on `clawed lesson` and `clawed full`. Three specialized agents collaborate: Researcher (finds primary sources and context) → Writer (drafts MasterContent in teacher's voice) → Reviewer (scores quality, requests revision if any dimension < 7/10). Falls back to single-agent on error. New module: `clawed/multi_agent.py`.
+- **Claude Code OAuth credential resolution** — `get_api_key("anthropic")` now auto-reads fresh tokens from `~/.claude/.credentials.json`. Eliminates expired-token errors when Claude Code is installed. Tokens are auto-refreshed by Claude Code.
+- **`clawed train` command** — continuous improvement pipeline for fleet agents:
+  - `--drive`: ingest from configured Google Drive folders, refine persona incrementally
+  - `--path`: ingest from local curriculum files
+  - `--benchmark -n N`: generate N lessons and score quality (voice, pedagogy, differentiation)
+  - `--full`: drive ingest + benchmark in sequence
+  - Saves training reports to `~/.eduagent/training/` as JSON
+- **Incremental persona refinement** — `merge_persona()` in `persona.py` merges new persona traits with existing ones (union + dedup lists, preserve core identity). No more overwriting voice markers on re-ingest.
+- **Multi-agent prompt templates** — `prompts/multi_agent_researcher.txt` (source finding, InSPECT analysis) and `prompts/multi_agent_reviewer.txt` (3-dimensional quality scoring rubric).
+
+### Fixed
+- **OAuth authentication** — all three Anthropic code paths (`agent.py`, `llm.py`, `config.py`) now detect OAuth tokens (`sk-ant-oat01-*`) and send `Authorization: Bearer` + Claude Code identity headers instead of `x-api-key`. Fixes 401 errors with Claude Code and Hermes OAuth tokens.
+- **Transport test mocks** — `test_openclaw_transport.py` now patches `clawed.transports.hermes._get_gateway` (where the actual code lives) instead of the backward-compat shim. Fixes 3 of 4 previously failing tests.
+
+### Changed
+- Config: `teacher_profile.drive_urls` now populated with Jon's 25-26 Google Drive folder.
+- Secrets: corrected Ollama API key format, updated Telegram bot token.
+
 ## [2.3.8] - 2026-03-30
 
 NLAH contract alignment — explicit failures replace silent swallowing, quality gates fail closed.

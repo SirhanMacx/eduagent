@@ -65,10 +65,35 @@ def _try_keyring_delete(key: str) -> bool:
         return False
 
 
+def _resolve_claude_code_token() -> Optional[str]:
+    """Read fresh OAuth token from Claude Code credential store.
+
+    Claude Code auto-refreshes OAuth tokens and stores them in
+    ~/.claude/.credentials.json. Using this as a source means Claw-ED
+    never hits expired tokens when Claude Code is installed.
+    """
+    import json as _json
+    for path in [
+        Path.home() / ".claude" / ".credentials.json",
+        Path.home() / ".claude.json",
+    ]:
+        if path.exists():
+            try:
+                data = _json.loads(path.read_text(encoding="utf-8"))
+                oauth = data.get("claudeAiOauth", {})
+                token = oauth.get("accessToken", "")
+                if token and token.startswith("sk-ant-"):
+                    return token
+            except (ValueError, KeyError, OSError):
+                continue
+    return None
+
+
 def get_api_key(provider: str) -> Optional[str]:
     """Retrieve an API key for the given provider.
 
-    Priority: environment variable > keyring > secrets.json file.
+    Priority: environment variable > Claude Code credentials (anthropic only)
+              > keyring > secrets.json file.
     """
     env_map = {
         "anthropic": "ANTHROPIC_API_KEY",
@@ -85,6 +110,12 @@ def get_api_key(provider: str) -> Optional[str]:
         val = os.environ.get(env_var)
         if val:
             return val
+
+    # Claude Code credential store — auto-refreshing OAuth tokens
+    if provider == "anthropic":
+        cc_token = _resolve_claude_code_token()
+        if cc_token:
+            return cc_token
 
     key_name = f"{provider}_api_key"
     val = _try_keyring_get(key_name)
@@ -214,12 +245,9 @@ async def test_llm_connection(config: Optional[AppConfig] = None) -> dict:
             return _result(False, model, "No API key configured", is_err=True)
         import httpx
         try:
+            from clawed.agent import _anthropic_headers
             async with httpx.AsyncClient(timeout=15.0) as client:
-                headers = {
-                    "x-api-key": api_key,
-                    "anthropic-version": "2023-06-01",
-                    "content-type": "application/json",
-                }
+                headers = _anthropic_headers(api_key)
                 body = {
                     "model": model, "max_tokens": 5,
                     "messages": [{"role": "user", "content": "Hi"}],
