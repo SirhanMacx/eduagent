@@ -5,14 +5,20 @@ build-backend = "hatchling.build"
 [project]
 name = "clawed"
 version = "2.3.8"
-description = "Claw-ED — personal AI teaching agent. Learns your voice, works while you sleep."
+description = "Free AI lesson planner for teachers. Learns your teaching voice from your curriculum files and generates complete lesson packages. Open source, runs locally, no subscription."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
 authors = [
     { name = "Jon Maccarello & Claw-ED contributors" },
 ]
-keywords = ["education", "teachers", "lesson-plans", "ai", "teaching", "clawed", "claw-ed"]
+keywords = [
+    "ai", "lesson-planner", "teaching-assistant", "education",
+    "curriculum", "lesson-plan-generator", "edtech", "k12",
+    "open-source-education", "teacher-tools", "ai-for-teachers",
+    "lesson-planning", "pedagogy", "openclaw", "teachers",
+    "lesson-plans", "clawed", "claw-ed", "teaching",
+]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Education",
@@ -22,6 +28,10 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Education",
+    "Topic :: Education :: Computer Aided Instruction (CAI)",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Operating System :: OS Independent",
+    "Environment :: Console",
 ]
 dependencies = [
     "typer>=0.9.0,<1.0",
@@ -67,9 +77,12 @@ clawed = "clawed.cli:app"
 eduagent = "clawed.cli:app"
 
 [project.urls]
-Homepage = "https://github.com/SirhanMacx/Claw-ED"
+Homepage = "https://sirhanmacx.github.io/Claw-ED"
 Documentation = "https://github.com/SirhanMacx/Claw-ED#readme"
-Issues = "https://github.com/SirhanMacx/Claw-ED/issues"
+Repository = "https://github.com/SirhanMacx/Claw-ED"
+"Bug Tracker" = "https://github.com/SirhanMacx/Claw-ED/issues"
+Changelog = "https://github.com/SirhanMacx/Claw-ED/blob/main/CHANGELOG.md"
+"PyPI" = "https://pypi.org/project/clawed/"
 
 [tool.hatch.build.targets.wheel]
 packages = ["clawed", "eduagent"]

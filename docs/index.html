@@ -3,24 +3,155 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Claw-ED — Your AI co-teacher that sounds like you</title>
-<meta name="description" content="Claw-ED learns from your curriculum files and generates lessons, unit plans, worksheets, assessments, slides, PDFs, and more — all in your exact teaching voice. Free and open source.">
+
+<!-- SEO Critical -->
+<title>Claw-ED — Free AI Lesson Planner for Teachers | Open Source</title>
+<meta name="description" content="Claw-ED is a free, open-source AI teaching assistant that learns your voice from your lesson plans. Generate complete lesson packages — plans, slides, handouts — in your style. Runs locally, no cloud, no subscription.">
+<meta name="keywords" content="AI lesson planner, free AI for teachers, lesson plan generator, AI teaching assistant, open source education AI, lesson plan AI, teacher AI tool, AI lesson plan, curriculum AI, teaching assistant AI">
+<link rel="canonical" href="https://sirhanmacx.github.io/Claw-ED/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://sirhanmacx.github.io/Claw-ED/">
+<meta property="og:title" content="Claw-ED — Free AI Lesson Planner for Teachers">
+<meta property="og:description" content="Your AI co-teacher that sounds like you. Learns from your curriculum files, generates lessons, slides, and handouts in your voice. Free, open source, runs locally.">
+<meta property="og:image" content="https://sirhanmacx.github.io/Claw-ED/og-image.png">
+<meta property="og:site_name" content="Claw-ED">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Claw-ED — Free AI Lesson Planner for Teachers">
+<meta name="twitter:description" content="Your AI co-teacher that sounds like you. Learns from your files, generates in your voice. Free, open source, local-first.">
+<meta name="twitter:image" content="https://sirhanmacx.github.io/Claw-ED/og-image.png">
+
+<!-- Schema.org JSON-LD -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Claw-ED",
+  "description": "Free, open-source AI teaching assistant that learns your voice from your lesson plans. Generate complete lesson packages in your style.",
+  "url": "https://sirhanmacx.github.io/Claw-ED/",
+  "applicationCategory": "EducationalApplication",
+  "operatingSystem": "macOS, Windows, Linux",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "softwareVersion": "2.3.8",
+  "author": {
+    "@type": "Organization",
+    "name": "Claw-ED",
+    "url": "https://github.com/SirhanMacx/Claw-ED"
+  },
+  "license": "https://opensource.org/licenses/MIT",
+  "downloadUrl": "https://pypi.org/project/clawed/",
+  "installUrl": "https://pypi.org/project/clawed/",
+  "screenshot": "https://sirhanmacx.github.io/Claw-ED/og-image.png",
+  "featureList": [
+    "Learns your teaching voice from your curriculum files",
+    "Supports 20+ file formats including PDF, DOCX, PPTX, DOC, PPT, XLS",
+    "Generates complete lesson packages with plans, slides, and handouts",
+    "Built-in quality gates: 6+ guided notes, 3+ exit tickets, 2+ primary sources",
+    "Runs locally on your machine — your data never leaves",
+    "MIT licensed, free forever, open source"
+  ]
+}
+</script>
+
+<!-- FAQ Schema -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is Claw-ED really free?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Claw-ED is MIT licensed and free forever. The software itself costs nothing. You bring your own AI provider — we recommend Ollama Cloud ($20/month for unlimited use), but it works with free-tier options too."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does Claw-ED need internet access?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Only to talk to your AI provider (like any chatbot). Your curriculum files are processed and stored entirely on your machine. If you use a local model like Ollama, everything runs offline."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What subjects does Claw-ED work with?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Every subject. History, Science, Math, ELA, AP courses, Art, Music, World Languages, CTE — Claw-ED learns from YOUR files, so it adapts to whatever you teach. It includes standards databases for all 50 US states."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does Claw-ED learn my teaching voice?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "When you run 'clawed ingest', it reads your lesson plans, worksheets, and assessments. It extracts your vocabulary, structure patterns, how you frame questions, and your pedagogical style. Then every lesson it generates uses those patterns."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is my data safe with Claw-ED?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Your files never leave your computer. Claw-ED processes and stores everything locally in a semantic database on your machine. The only external call is to your chosen AI provider for text generation. No accounts, no telemetry, no data collection."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I contribute to Claw-ED?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Absolutely. Claw-ED is open source on GitHub. Teachers with domain expertise are especially welcome — if you know what makes a great lesson in your subject, open a PR. Bug reports and feature requests via GitHub Issues are also valued."
+      }
+    }
+  ]
+}
+</script>
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
 <style>
+/* ── Reset & Variables ──────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg: #0f0f1a;
-  --card: #1a1a2e;
-  --accent: #e94560;
-  --accent-hover: #d63851;
-  --text: #e0e0e0;
-  --text-muted: #8a8a9a;
+  --primary: #1a365d;
+  --primary-light: #2a4a7f;
+  --primary-dark: #0f2340;
+  --accent: #f6ad55;
+  --accent-hover: #ed8936;
+  --accent-dark: #dd6b20;
+  --white: #ffffff;
+  --bg: #ffffff;
+  --bg-alt: #f7fafc;
+  --bg-dark: #1a365d;
+  --text: #2d3748;
+  --text-light: #4a5568;
+  --text-muted: #718096;
+  --text-on-dark: #e2e8f0;
   --text-bright: #ffffff;
-  --border: rgba(233, 69, 96, 0.15);
-  --glow: rgba(233, 69, 96, 0.08);
+  --border: #e2e8f0;
+  --border-light: #edf2f7;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 14px rgba(0,0,0,0.08);
+  --shadow-lg: 0 10px 40px rgba(0,0,0,0.1);
+  --shadow-xl: 0 20px 60px rgba(0,0,0,0.12);
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
 }
 
 html { scroll-behavior: smooth; }
@@ -34,69 +165,268 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-a { color: var(--accent); text-decoration: none; transition: color 0.2s; }
-a:hover { color: var(--text-bright); }
+a { color: var(--primary); text-decoration: none; transition: color 0.2s; }
+a:hover { color: var(--accent-dark); }
+
+img { max-width: 100%; height: auto; }
 
 /* ── Layout ─────────────────────────────────────── */
 .container {
-  max-width: 1080px;
+  max-width: 1120px;
   margin: 0 auto;
   padding: 0 1.5rem;
 }
 
+.container-narrow {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+/* ── Navigation ─────────────────────────────────── */
+.nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border-light);
+  transition: box-shadow 0.3s;
+}
+
+.nav.scrolled {
+  box-shadow: var(--shadow-sm);
+}
+
+.nav-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+}
+
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 800;
+  font-size: 1.2rem;
+  color: var(--primary);
+  letter-spacing: -0.02em;
+}
+
+.nav-brand svg {
+  width: 28px;
+  height: 28px;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 1.75rem;
+  list-style: none;
+}
+
+.nav-links a {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-light);
+  transition: color 0.2s;
+}
+
+.nav-links a:hover {
+  color: var(--primary);
+}
+
+.nav-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: var(--primary);
+  color: var(--text-bright) !important;
+  padding: 0.5rem 1.2rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  font-weight: 600;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.nav-cta:hover {
+  background: var(--primary-light);
+  color: var(--text-bright) !important;
+  transform: translateY(-1px);
+}
+
+.nav-toggle {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  color: var(--text);
+}
+
 /* ── Hero ────────────────────────────────────────── */
 .hero {
+  padding: 8rem 1.5rem 5rem;
   text-align: center;
-  padding: 6rem 1.5rem 5rem;
   position: relative;
   overflow: hidden;
+  background: linear-gradient(180deg, #f0f5ff 0%, var(--bg) 100%);
 }
 
 .hero::before {
   content: "";
   position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background: radial-gradient(ellipse at 50% 80%, rgba(233, 69, 96, 0.06) 0%, transparent 60%);
+  top: -200px;
+  right: -200px;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(246, 173, 85, 0.08) 0%, transparent 70%);
   pointer-events: none;
 }
 
+.hero::after {
+  content: "";
+  position: absolute;
+  bottom: -200px;
+  left: -200px;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(26, 54, 93, 0.05) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--white);
+  border: 1px solid var(--border);
+  padding: 0.4rem 1rem;
+  border-radius: 100px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-light);
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.hero-badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #48bb78;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
 .hero h1 {
-  font-size: clamp(2.2rem, 5.5vw, 3.6rem);
+  font-size: clamp(2.4rem, 5.5vw, 3.8rem);
   font-weight: 900;
-  color: var(--text-bright);
-  margin-bottom: 1rem;
+  color: var(--primary);
+  margin-bottom: 1.25rem;
   letter-spacing: -0.03em;
-  line-height: 1.15;
+  line-height: 1.1;
+  position: relative;
+}
+
+.hero h1 .highlight {
+  color: var(--accent-dark);
   position: relative;
 }
 
 .hero .subhead {
-  font-size: clamp(1.05rem, 2.2vw, 1.3rem);
-  color: var(--text-muted);
-  max-width: 640px;
+  font-size: clamp(1.05rem, 2.2vw, 1.25rem);
+  color: var(--text-light);
+  max-width: 620px;
   margin: 0 auto 2.5rem;
   line-height: 1.7;
-  position: relative;
+}
+
+.hero-buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 3rem;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--accent);
+  color: var(--primary-dark);
+  padding: 0.9rem 2rem;
+  border-radius: var(--radius-sm);
+  font-size: 1.05rem;
+  font-weight: 700;
+  transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+  box-shadow: 0 4px 14px rgba(246, 173, 85, 0.3);
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  color: var(--primary-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(246, 173, 85, 0.4);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: var(--white);
+  color: var(--primary);
+  padding: 0.9rem 2rem;
+  border-radius: var(--radius-sm);
+  font-size: 1.05rem;
+  font-weight: 600;
+  border: 2px solid var(--border);
+  transition: border-color 0.2s, transform 0.15s, box-shadow 0.2s;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.btn-secondary svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
 }
 
 /* ── Terminal Demo ───────────────────────────────── */
 .terminal {
   max-width: 620px;
-  margin: 0 auto 3rem;
-  border-radius: 12px;
+  margin: 0 auto;
+  border-radius: var(--radius-md);
   overflow: hidden;
-  background: #0a0a14;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 40px var(--glow);
-  position: relative;
+  background: #1a202c;
+  border: 1px solid #2d3748;
+  box-shadow: var(--shadow-xl);
   text-align: left;
 }
 
 .terminal-bar {
-  background: #16162a;
+  background: #2d3748;
   padding: 0.75rem 1rem;
   display: flex;
   align-items: center;
@@ -108,24 +438,24 @@ a:hover { color: var(--text-bright); }
   height: 12px;
   border-radius: 50%;
 }
-.terminal-dot:nth-child(1) { background: #ff5f56; }
-.terminal-dot:nth-child(2) { background: #ffbd2e; }
-.terminal-dot:nth-child(3) { background: #27c93f; }
+.terminal-dot:nth-child(1) { background: #fc8181; }
+.terminal-dot:nth-child(2) { background: #f6e05e; }
+.terminal-dot:nth-child(3) { background: #68d391; }
 
 .terminal-title {
   flex: 1;
   text-align: center;
   font-size: 0.8rem;
-  color: var(--text-muted);
+  color: #a0aec0;
   font-weight: 500;
 }
 
 .terminal-body {
-  padding: 1.5rem;
+  padding: 1.25rem 1.5rem;
   font-family: "SF Mono", "Fira Code", "Cascadia Code", "JetBrains Mono", monospace;
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   line-height: 1.8;
-  min-height: 52px;
+  min-height: 48px;
   display: flex;
   align-items: flex-start;
 }
@@ -138,7 +468,7 @@ a:hover { color: var(--text-bright); }
 }
 
 .terminal-text {
-  color: #a8d8ea;
+  color: #e2e8f0;
   white-space: nowrap;
   overflow: hidden;
 }
@@ -157,111 +487,131 @@ a:hover { color: var(--text-bright); }
   50% { opacity: 0; }
 }
 
-/* ── Hero CTA ────────────────────────────────────── */
-.hero-cta {
-  display: inline-block;
-  background: var(--accent);
-  color: var(--text-bright);
-  padding: 0.9rem 2.4rem;
-  border-radius: 8px;
-  font-size: 1.05rem;
-  font-weight: 700;
-  transition: background 0.2s, transform 0.15s;
-  position: relative;
-}
-.hero-cta:hover {
-  background: var(--accent-hover);
-  color: var(--text-bright);
-  transform: translateY(-1px);
+/* ── Social Proof Bar ───────────────────────────── */
+.social-proof {
+  padding: 2rem 0;
+  text-align: center;
+  border-bottom: 1px solid var(--border-light);
 }
 
-/* ── Section ─────────────────────────────────────── */
+.social-proof-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2.5rem;
+  flex-wrap: wrap;
+}
+
+.proof-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.proof-item strong {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.proof-item svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+/* ── Section Base ───────────────────────────────── */
 .section {
   padding: 5rem 0;
 }
 
+.section-alt {
+  background: var(--bg-alt);
+}
+
+.section-dark {
+  background: var(--primary);
+  color: var(--text-on-dark);
+}
+
 .section-header {
   text-align: center;
-  margin-bottom: 3rem;
+  margin-bottom: 3.5rem;
+}
+
+.section-header .eyebrow {
+  display: inline-block;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent-dark);
+  margin-bottom: 0.75rem;
+}
+
+.section-dark .section-header .eyebrow {
+  color: var(--accent);
 }
 
 .section-header h2 {
-  font-size: clamp(1.6rem, 3.5vw, 2.2rem);
+  font-size: clamp(1.7rem, 3.5vw, 2.4rem);
   font-weight: 800;
-  color: var(--text-bright);
+  color: var(--primary);
   margin-bottom: 0.75rem;
   letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.section-dark .section-header h2 {
+  color: var(--text-bright);
 }
 
 .section-header p {
   color: var(--text-muted);
-  font-size: 1.05rem;
-  max-width: 560px;
+  font-size: 1.1rem;
+  max-width: 600px;
   margin: 0 auto;
+  line-height: 1.7;
 }
 
-.accent-line {
-  display: block;
-  width: 50px;
-  height: 3px;
-  background: var(--accent);
-  margin: 0.75rem auto 0;
-  border-radius: 2px;
+.section-dark .section-header p {
+  color: var(--text-on-dark);
 }
 
-/* ── Value Props ─────────────────────────────────── */
-.value-props {
+/* ── Problem Section ────────────────────────────── */
+.problem-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
+  gap: 2rem;
 }
 
-.value-card {
-  background: var(--card);
-  border-radius: 16px;
-  padding: 2.2rem 1.8rem;
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
-  position: relative;
+.problem-stat {
+  text-align: center;
+  padding: 2rem 1.5rem;
+  background: var(--white);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
 }
 
-.value-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
-  border-color: var(--border);
+.problem-stat .stat-number {
+  font-size: clamp(2rem, 4vw, 2.8rem);
+  font-weight: 900;
+  color: var(--accent-dark);
+  line-height: 1;
+  margin-bottom: 0.5rem;
 }
 
-.value-card .card-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  background: var(--glow);
-  border: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.4rem;
-  margin-bottom: 1.2rem;
-}
-
-.value-card h3 {
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--text-bright);
-  margin-bottom: 0.6rem;
-}
-
-.value-card p {
+.problem-stat .stat-label {
   font-size: 0.95rem;
-  color: var(--text-muted);
-  line-height: 1.65;
+  color: var(--text-light);
+  font-weight: 500;
+  line-height: 1.5;
 }
 
 /* ── How It Works ────────────────────────────────── */
-.how-it-works-bg {
-  background: linear-gradient(180deg, var(--bg) 0%, rgba(26, 26, 46, 0.5) 50%, var(--bg) 100%);
-}
-
 .steps {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -272,11 +622,12 @@ a:hover { color: var(--text-bright); }
 .steps::before {
   content: "";
   position: absolute;
-  top: 36px;
-  left: 15%;
-  right: 15%;
+  top: 44px;
+  left: 16%;
+  right: 16%;
   height: 2px;
-  background: linear-gradient(90deg, transparent, var(--border), var(--accent), var(--border), transparent);
+  background: linear-gradient(90deg, var(--border), var(--accent), var(--border));
+  z-index: 0;
 }
 
 .step {
@@ -284,254 +635,587 @@ a:hover { color: var(--text-bright); }
   position: relative;
 }
 
-.step-number {
-  width: 72px;
-  height: 72px;
+.step-icon {
+  width: 88px;
+  height: 88px;
   border-radius: 50%;
-  background: var(--card);
-  border: 2px solid var(--accent);
+  background: var(--white);
+  border: 3px solid var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: var(--accent);
-  margin: 0 auto 1.2rem;
+  font-size: 2rem;
+  margin: 0 auto 1.25rem;
   position: relative;
   z-index: 1;
+  box-shadow: 0 4px 20px rgba(246, 173, 85, 0.15);
 }
 
 .step h3 {
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   font-weight: 700;
-  color: var(--text-bright);
+  color: var(--primary);
   margin-bottom: 0.5rem;
 }
 
 .step p {
   font-size: 0.92rem;
   color: var(--text-muted);
-  max-width: 260px;
+  max-width: 280px;
   margin: 0 auto;
+  line-height: 1.6;
 }
 
 .step code {
   display: inline-block;
-  margin-top: 0.6rem;
-  background: #0a0a14;
-  color: #a8d8ea;
-  padding: 0.35rem 0.8rem;
+  margin-top: 0.75rem;
+  background: var(--primary);
+  color: var(--accent);
+  padding: 0.4rem 0.9rem;
   border-radius: 6px;
   font-family: "SF Mono", "Fira Code", monospace;
   font-size: 0.82rem;
-  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
-/* ── Early Access CTA ────────────────────────────── */
-.early-access {
-  padding: 5rem 0;
+/* ── Features Grid ──────────────────────────────── */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
 }
 
-.cta-box {
-  background: var(--card);
-  border-radius: 20px;
-  padding: 3.5rem;
+.feature-card {
+  background: var(--white);
+  border-radius: var(--radius-md);
+  padding: 2rem 1.75rem;
+  border: 1px solid var(--border-light);
+  transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+  position: relative;
+}
+
+.feature-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: var(--accent);
+}
+
+.feature-card-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, rgba(26, 54, 93, 0.06), rgba(246, 173, 85, 0.1));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.feature-card h3 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+}
+
+.feature-card p {
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  line-height: 1.65;
+}
+
+/* ── Subject Examples ───────────────────────────── */
+.subjects-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.subject-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1.2rem;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--text);
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.subject-pill:hover {
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(246, 173, 85, 0.15);
+  transform: translateY(-2px);
+}
+
+.subject-pill .pill-icon {
+  font-size: 1.1rem;
+}
+
+/* ── Sample Output ──────────────────────────────── */
+.output-preview {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.output-bar {
+  background: var(--primary);
+  color: var(--text-bright);
+  padding: 0.75rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.output-bar-badge {
+  background: rgba(255,255,255,0.15);
+  padding: 0.25rem 0.7rem;
+  border-radius: 100px;
+  font-size: 0.78rem;
+}
+
+.output-body {
+  padding: 2rem 2.5rem;
+  font-size: 0.92rem;
+  line-height: 1.75;
+  color: var(--text);
+}
+
+.output-body h4 {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 0.25rem;
+}
+
+.output-body .output-meta {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-bottom: 1.25rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.output-body .output-section-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--accent-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.output-body .output-section-title:first-of-type {
+  margin-top: 0;
+}
+
+.output-body ul {
+  padding-left: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.output-body li {
+  margin-bottom: 0.25rem;
+  color: var(--text-light);
+}
+
+.output-body .output-fade {
+  position: relative;
+  overflow: hidden;
+  max-height: 2.5em;
+}
+
+.output-body .output-fade::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2em;
+  background: linear-gradient(transparent, var(--white));
+}
+
+.output-note {
   text-align: center;
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  font-style: italic;
+  margin-top: 1rem;
+}
+
+/* ── Comparison Table ───────────────────────────── */
+.comparison-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+  background: var(--white);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+}
+
+.comparison-table thead {
+  background: var(--primary);
+  color: var(--text-bright);
+}
+
+.comparison-table th {
+  padding: 1rem 1.25rem;
+  text-align: center;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.comparison-table th:first-child {
+  text-align: left;
+}
+
+.comparison-table th.highlight-col {
+  background: var(--accent);
+  color: var(--primary-dark);
+  position: relative;
+}
+
+.comparison-table td {
+  padding: 0.85rem 1.25rem;
+  text-align: center;
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--border-light);
+  color: var(--text-light);
+}
+
+.comparison-table td:first-child {
+  text-align: left;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.comparison-table td.highlight-col {
+  background: rgba(246, 173, 85, 0.04);
+  font-weight: 600;
+  color: var(--primary);
+}
+
+.comparison-table tbody tr:hover {
+  background: var(--bg-alt);
+}
+
+.check-yes {
+  color: #48bb78;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.check-no {
+  color: #fc8181;
+  font-weight: 500;
+}
+
+.check-partial {
+  color: var(--accent-dark);
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+/* ── Install Section ────────────────────────────── */
+.install-box {
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  padding: 3rem;
+  border: 2px solid var(--accent);
+  box-shadow: 0 8px 30px rgba(246, 173, 85, 0.12);
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.install-code-block {
+  background: var(--primary-dark);
+  border-radius: var(--radius-sm);
+  padding: 1.5rem 1.75rem;
+  margin: 1.5rem 0;
   position: relative;
   overflow: hidden;
 }
 
-.cta-box::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+.install-code-block code {
+  font-family: "SF Mono", "Fira Code", "Cascadia Code", "JetBrains Mono", monospace;
+  font-size: 0.92rem;
+  line-height: 2;
+  color: #e2e8f0;
+  display: block;
+  white-space: pre-wrap;
+  word-break: break-all;
 }
 
-.cta-box h2 {
-  font-size: clamp(1.5rem, 3vw, 2rem);
-  font-weight: 800;
-  color: var(--text-bright);
-  margin-bottom: 0.6rem;
-}
-
-.cta-box .cta-sub {
-  color: var(--text-muted);
-  margin-bottom: 2rem;
-  font-size: 1.05rem;
-}
-
-.waitlist-counter {
-  display: inline-block;
-  background: var(--glow);
-  border: 1px solid var(--border);
+.install-code-block .line-prompt {
   color: var(--accent);
-  padding: 0.4rem 1.2rem;
-  border-radius: 20px;
-  font-size: 0.88rem;
+  user-select: none;
+}
+
+.install-code-block .line-comment {
+  color: #718096;
+}
+
+.copy-btn {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #a0aec0;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.78rem;
   font-weight: 600;
-  margin-bottom: 2rem;
-}
-
-.waitlist-form {
-  display: flex;
-  gap: 0.75rem;
-  max-width: 580px;
-  margin: 0 auto;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.waitlist-form input[type="email"],
-.waitlist-form select {
-  padding: 0.85rem 1.2rem;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: var(--bg);
-  color: var(--text);
-  font-family: inherit;
-  font-size: 0.95rem;
-  outline: none;
-  transition: border-color 0.2s;
-}
-
-.waitlist-form input[type="email"]::placeholder { color: #555; }
-
-.waitlist-form input[type="email"] {
-  flex: 1;
-  min-width: 220px;
-}
-
-.waitlist-form select {
-  min-width: 140px;
   cursor: pointer;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%238a8a9a' d='M1.41 0L6 4.58 10.59 0 12 1.41l-6 6-6-6z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 1rem center;
-  padding-right: 2.5rem;
+  transition: background 0.2s, color 0.2s;
+  font-family: inherit;
 }
 
-.waitlist-form input[type="email"]:focus,
-.waitlist-form select:focus {
-  border-color: var(--accent);
-}
-
-.waitlist-form button {
-  padding: 0.85rem 2rem;
-  border-radius: 8px;
-  border: none;
-  background: var(--accent);
+.copy-btn:hover {
+  background: rgba(255,255,255,0.2);
   color: var(--text-bright);
-  font-family: inherit;
-  font-size: 0.95rem;
-  font-weight: 700;
+}
+
+.install-note {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.6;
+}
+
+.install-links {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+}
+
+/* ── FAQ ────────────────────────────────────────── */
+.faq-list {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.faq-item {
+  border-bottom: 1px solid var(--border-light);
+}
+
+.faq-question {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem 0;
+  background: none;
+  border: none;
   cursor: pointer;
-  transition: background 0.2s, transform 0.15s;
-  white-space: nowrap;
+  text-align: left;
+  font-family: inherit;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--primary);
+  transition: color 0.2s;
+  line-height: 1.4;
 }
 
-.waitlist-form button:hover {
-  background: var(--accent-hover);
-  transform: translateY(-1px);
+.faq-question:hover {
+  color: var(--accent-dark);
 }
 
-.waitlist-form button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
+.faq-chevron {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  transition: transform 0.3s;
+  color: var(--text-muted);
+  margin-left: 1rem;
 }
 
-.form-message {
-  margin-top: 1rem;
-  font-size: 0.9rem;
-  min-height: 1.4rem;
+.faq-item.open .faq-chevron {
+  transform: rotate(180deg);
 }
 
-.form-message.success { color: #27c93f; }
-.form-message.error { color: var(--accent); }
+.faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease, padding 0.35s ease;
+}
+
+.faq-item.open .faq-answer {
+  max-height: 300px;
+}
+
+.faq-answer-inner {
+  padding: 0 0 1.25rem;
+  font-size: 0.95rem;
+  color: var(--text-light);
+  line-height: 1.7;
+}
 
 /* ── Footer ──────────────────────────────────────── */
 .footer {
-  text-align: center;
-  padding: 3rem 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  background: var(--primary-dark);
+  color: var(--text-on-dark);
+  padding: 3.5rem 1.5rem 2rem;
 }
 
-.footer-links {
+.footer-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 2rem;
+}
+
+.footer-brand {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--text-bright);
+  margin-bottom: 0.5rem;
+}
+
+.footer-tagline {
+  font-size: 0.88rem;
+  color: #a0aec0;
+  max-width: 280px;
+  line-height: 1.6;
+}
+
+.footer-links-group h4 {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #a0aec0;
+  margin-bottom: 0.75rem;
+}
+
+.footer-links-group a {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--text-on-dark);
+  padding: 0.25rem 0;
+  transition: color 0.2s;
+}
+
+.footer-links-group a:hover {
+  color: var(--accent);
+}
+
+.footer-bottom {
+  max-width: 1120px;
+  margin: 2rem auto 0;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba(255,255,255,0.08);
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 1.5rem;
-  margin-bottom: 1.5rem;
+  justify-content: space-between;
   flex-wrap: wrap;
-}
-
-.gh-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: rgba(255, 255, 255, 0.06);
-  color: var(--text);
-  padding: 0.6rem 1.3rem;
-  border-radius: 8px;
-  font-size: 0.92rem;
-  font-weight: 600;
-  transition: background 0.2s, color 0.2s;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.gh-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: var(--text-bright);
-}
-
-.gh-btn svg {
-  width: 18px;
-  height: 18px;
-  fill: currentColor;
-}
-
-.oss-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.4rem 1rem;
-  border: 1px solid rgba(39, 201, 63, 0.3);
-  border-radius: 20px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #27c93f;
-}
-
-.oss-badge::before {
-  content: "";
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #27c93f;
+  gap: 1rem;
 }
 
 .footer-copy {
-  color: var(--text-muted);
   font-size: 0.82rem;
+  color: #718096;
+}
+
+.footer-social {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.footer-social a {
+  color: #a0aec0;
+  transition: color 0.2s;
+  display: flex;
+}
+
+.footer-social a:hover {
+  color: var(--accent);
+}
+
+.footer-social svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+/* ── Print ────────────────────────────────────────── */
+@media print {
+  .nav, .hero::before, .hero::after, .terminal, .social-proof, .footer { display: none; }
+  .hero { padding-top: 2rem; }
+  .section { padding: 2rem 0; }
+  .install-box { border: 2px solid #333; box-shadow: none; }
 }
 
 /* ── Responsive ──────────────────────────────────── */
+@media (max-width: 900px) {
+  .features-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .problem-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+}
+
 @media (max-width: 768px) {
-  .hero {
-    padding: 4rem 1.25rem 3.5rem;
+  .nav-links {
+    display: none;
+    position: absolute;
+    top: 64px;
+    left: 0;
+    right: 0;
+    background: var(--white);
+    flex-direction: column;
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+    gap: 0;
   }
 
-  .value-props {
-    grid-template-columns: 1fr;
-    gap: 1rem;
+  .nav-links.open {
+    display: flex;
+  }
+
+  .nav-links li {
+    width: 100%;
+  }
+
+  .nav-links a {
+    display: block;
+    padding: 0.75rem 0;
+    font-size: 1rem;
+  }
+
+  .nav-toggle {
+    display: block;
+  }
+
+  .hero {
+    padding: 6rem 1.25rem 3.5rem;
   }
 
   .steps {
@@ -543,326 +1227,599 @@ a:hover { color: var(--text-bright); }
     display: none;
   }
 
-  .cta-box {
-    padding: 2.5rem 1.5rem;
+  .features-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 
-  .waitlist-form {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .waitlist-form input[type="email"],
-  .waitlist-form select,
-  .waitlist-form button {
-    width: 100%;
-    min-width: unset;
-  }
-
-  .terminal {
-    margin: 0 auto 2.5rem;
-  }
-
-  .terminal-body {
-    font-size: 0.82rem;
-    padding: 1.2rem;
+  .problem-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
 
   .section {
     padding: 3.5rem 0;
   }
+
+  .install-box {
+    padding: 2rem 1.5rem;
+  }
+
+  .output-body {
+    padding: 1.5rem;
+  }
+
+  .footer-inner {
+    flex-direction: column;
+  }
+
+  .footer-bottom {
+    flex-direction: column;
+    text-align: center;
+  }
 }
 
 @media (max-width: 480px) {
   .hero h1 {
-    font-size: 1.9rem;
+    font-size: 2rem;
   }
 
-  .value-card {
-    padding: 1.8rem 1.4rem;
+  .hero-buttons {
+    flex-direction: column;
+    align-items: center;
   }
 
-  .footer-links {
+  .btn-primary, .btn-secondary {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .social-proof-inner {
     flex-direction: column;
     gap: 1rem;
   }
+
+  .feature-card {
+    padding: 1.5rem 1.25rem;
+  }
+
+  .problem-stat .stat-number {
+    font-size: 2rem;
+  }
 }
 
-/* ── Install Steps ───────────────────────────────── */
-.install-steps {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  margin: 1.5rem 0;
-  text-align: left;
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
+/* ── Accessibility ──────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
-.install-step {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 10px;
-  padding: 1rem 1.25rem;
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
-.step-badge {
-  background: var(--accent);
-  color: #000;
-  font-weight: 800;
-  font-size: 0.85rem;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.step-content { line-height: 1.6; font-size: 0.95rem; }
-.step-content a { color: var(--accent); }
-.install-code {
-  display: block;
-  background: #0d0d0d;
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 6px;
-  padding: 0.5rem 0.75rem;
-  font-family: 'Fira Code', monospace;
-  font-size: 0.9rem;
-  margin-top: 0.4rem;
-  color: #27c93f;
-}
-kbd {
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.2);
-  border-radius: 4px;
-  padding: 0.1rem 0.4rem;
-  font-size: 0.85rem;
-  font-family: monospace;
-}
-.cta-buttons {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin-top: 1.5rem;
-}
-.cta-secondary {
-  display: inline-block;
-  padding: 0.75rem 1.5rem;
-  border: 1.5px solid var(--accent);
-  color: var(--accent);
-  border-radius: 8px;
-  font-weight: 600;
-  text-decoration: none;
-  transition: background 0.2s;
-}
-.cta-secondary:hover { background: rgba(110,207,130,0.1); }
 </style>
 </head>
 <body>
 
+<!-- ── Navigation ──────────────────────────────────── -->
+<nav class="nav" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-brand" href="#" aria-label="Claw-ED home">
+      <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect width="32" height="32" rx="8" fill="#1a365d"/>
+        <path d="M8 10h16v2H8zm0 5h12v2H8zm0 5h14v2H8z" fill="#f6ad55"/>
+      </svg>
+      Claw-ED
+    </a>
+    <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false" onclick="document.querySelector('.nav-links').classList.toggle('open'); this.setAttribute('aria-expanded', this.getAttribute('aria-expanded') === 'true' ? 'false' : 'true')">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <ul class="nav-links">
+      <li><a href="#features">Features</a></li>
+      <li><a href="#how-it-works">How It Works</a></li>
+      <li><a href="#subjects">Subjects</a></li>
+      <li><a href="#compare">Compare</a></li>
+      <li><a href="#faq">FAQ</a></li>
+      <li><a href="#install" class="nav-cta">Get Started</a></li>
+    </ul>
+  </div>
+</nav>
+
 <!-- ── Hero ──────────────────────────────────────────── -->
-<section class="hero">
+<section class="hero" aria-labelledby="hero-heading">
   <div class="container">
-    <h1>Your AI co-teacher that sounds like you</h1>
+    <div class="hero-badge">
+      <span class="hero-badge-dot" aria-hidden="true"></span>
+      Open Source &middot; MIT Licensed &middot; Free Forever
+    </div>
+    <h1 id="hero-heading">Your AI co-teacher that<br><span class="highlight">sounds like you</span></h1>
     <p class="subhead">
       Claw-ED learns from your curriculum files and generates lessons,
-      worksheets, slides, PDFs, and assessments in your exact teaching voice.
+      slides, handouts, and assessments in your exact teaching voice.
+      Runs on your machine. No subscription. No data collection.
     </p>
+    <div class="hero-buttons">
+      <a class="btn-primary" href="#install">Get Started &mdash; Free</a>
+      <a class="btn-secondary" href="https://github.com/SirhanMacx/Claw-ED" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        View on GitHub
+      </a>
+    </div>
 
     <!-- Terminal Demo -->
-    <div class="terminal">
-      <div class="terminal-bar">
+    <div class="terminal" role="img" aria-label="Terminal demo showing Claw-ED commands">
+      <div class="terminal-bar" aria-hidden="true">
         <span class="terminal-dot"></span>
         <span class="terminal-dot"></span>
         <span class="terminal-dot"></span>
         <span class="terminal-title">Terminal</span>
       </div>
       <div class="terminal-body">
-        <span class="terminal-prompt">$</span>
-        <span class="terminal-text" id="typewriter"></span><span class="terminal-cursor" id="cursor"></span>
+        <span class="terminal-prompt" aria-hidden="true">$</span>
+        <span class="terminal-text" id="typewriter"></span><span class="terminal-cursor" id="cursor" aria-hidden="true"></span>
       </div>
     </div>
-
-    <a class="hero-cta" href="#try-now">Try It Now — Free</a>
   </div>
 </section>
 
-<!-- ── Value Props ───────────────────────────────────── -->
-<section class="section">
+<!-- ── Social Proof ─────────────────────────────────── -->
+<div class="social-proof" aria-label="Project statistics">
+  <div class="social-proof-inner">
+    <div class="proof-item">
+      <svg viewBox="0 0 20 20" fill="#48bb78" aria-hidden="true"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+      <span>Open Source on <strong>GitHub</strong></span>
+    </div>
+    <div class="proof-item">
+      <svg viewBox="0 0 20 20" fill="#4299e1" aria-hidden="true"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z"/></svg>
+      <span>Supports <strong>20+ file formats</strong></span>
+    </div>
+    <div class="proof-item">
+      <svg viewBox="0 0 20 20" fill="#ed8936" aria-hidden="true"><path d="M2 6a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm2 0v8h12V6H4z"/></svg>
+      <span>Works for <strong>every subject</strong></span>
+    </div>
+    <div class="proof-item">
+      <svg viewBox="0 0 20 20" fill="#48bb78" aria-hidden="true"><path d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"/></svg>
+      <span><strong>100% local</strong> &mdash; your data stays yours</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── Problem ──────────────────────────────────────── -->
+<section class="section section-alt" aria-labelledby="problem-heading">
   <div class="container">
     <div class="section-header">
-      <h2>What makes Claw-ED different</h2>
-      <span class="accent-line"></span>
+      <span class="eyebrow">The Problem</span>
+      <h2 id="problem-heading">Lesson prep is eating your life</h2>
+      <p>You became a teacher to teach, not to spend weekends formatting worksheets.</p>
     </div>
-    <div class="value-props">
-      <div class="value-card">
-        <div class="card-icon">&#x1F4DA;</div>
-        <h3>Trained on YOUR materials</h3>
-        <p>
-          Not generic AI. Claw-ED ingests your actual lesson plans, worksheets,
-          and assessments &mdash; learning from your existing materials to understand
-          exactly how you teach.
-        </p>
+    <div class="problem-grid">
+      <div class="problem-stat">
+        <div class="stat-number">7&ndash;12 hrs</div>
+        <div class="stat-label">per week teachers spend on lesson planning and prep</div>
       </div>
-      <div class="value-card">
-        <div class="card-icon">&#x270D;&#xFE0F;</div>
-        <h3>Generates in your voice</h3>
-        <p>
-          Lessons, unit plans, DBQs, worksheets, slides, PDF handouts, assessments, sub packets &mdash; all in your voice. Generated content matches your teaching style so closely it feels like you wrote it.
-        </p>
+      <div class="problem-stat">
+        <div class="stat-number">53%</div>
+        <div class="stat-label">of teachers cite workload as a reason for leaving the profession</div>
       </div>
-      <div class="value-card">
-        <div class="card-icon">&#x1F319;</div>
-        <h3>Students get you at 11pm</h3>
-        <p>
-          The student chatbot is AI-powered and answers questions using your lesson content and teaching style. Students know it's AI assistance &mdash; it helps them review, not replace you.
-        </p>
+      <div class="problem-stat">
+        <div class="stat-number">$0</div>
+        <div class="stat-label">what most AI tools pay attention to your actual teaching style</div>
       </div>
     </div>
   </div>
 </section>
 
 <!-- ── How It Works ──────────────────────────────────── -->
-<section class="section how-it-works-bg">
+<section class="section" id="how-it-works" aria-labelledby="how-heading">
   <div class="container">
     <div class="section-header">
-      <h2>How it works</h2>
-      <p>Three steps. Five minutes. Then Claw-ED works for you.</p>
-      <span class="accent-line"></span>
+      <span class="eyebrow">How It Works</span>
+      <h2 id="how-heading">Three steps. Five minutes. Then it works for you.</h2>
     </div>
     <div class="steps">
       <div class="step">
-        <div class="step-number">1</div>
-        <h3>Install</h3>
-        <p>One command and you're ready. Works with any Python 3.10+ environment.</p>
-        <code>pip install clawed</code>
+        <div class="step-icon" aria-hidden="true">&#x1F4C1;</div>
+        <h3>Upload Your Files</h3>
+        <p>Point Claw-ED at your lesson folders. It reads PDFs, DOCX, PPTX, and 17 more formats.</p>
+        <code>clawed ingest ./my-lessons/</code>
       </div>
       <div class="step">
-        <div class="step-number">2</div>
-        <h3>Ingest</h3>
-        <p>Point it at your lesson folders. Claw-ED learns your voice, style, and standards.</p>
-        <code>clawed ingest ./lessons</code>
+        <div class="step-icon" aria-hidden="true">&#x1F9E0;</div>
+        <h3>AI Learns Your Voice</h3>
+        <p>It extracts your vocabulary, structure, how you frame questions, your pedagogical style.</p>
+        <code>Persona extracted: "Ms. Rivera"</code>
       </div>
       <div class="step">
-        <div class="step-number">3</div>
-        <h3>Generate</h3>
-        <p>Generate full units, lessons, worksheets, PDF handouts, slides, or assessments on demand.</p>
+        <div class="step-icon" aria-hidden="true">&#x2728;</div>
+        <h3>Generate Lessons</h3>
+        <p>Get complete lesson packages &mdash; plans, slides, handouts &mdash; that sound like you wrote them.</p>
         <code>clawed lesson "WW2" --export pdf</code>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ── Try Now ──────────────────────────────────────── -->
-<section class="early-access" id="try-now">
+<!-- ── Features ─────────────────────────────────────── -->
+<section class="section section-alt" id="features" aria-labelledby="features-heading">
   <div class="container">
-    <div class="cta-box">
-      <h2>Try it now — open source</h2>
-      <p class="cta-sub">MIT licensed. No account required. The software is free &mdash; you bring your own AI provider (we recommend Ollama Cloud at $20/month for unlimited use). Install in minutes on any Mac, PC, or Linux computer.</p>
+    <div class="section-header">
+      <span class="eyebrow">Features</span>
+      <h2 id="features-heading">Everything you need, nothing you don't</h2>
+      <p>Built by teachers, for teachers. Every feature solves a real classroom problem.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-card-icon" aria-hidden="true">&#x1F3A4;</div>
+        <h3>Learns Your Voice</h3>
+        <p>Not generic AI. Claw-ED analyzes your existing files &mdash; your vocabulary, your structure, your style. Generated content matches how you actually teach.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon" aria-hidden="true">&#x1F4C4;</div>
+        <h3>20+ File Formats</h3>
+        <p>PDF, DOCX, PPTX, DOC, PPT, XLS, XLSX, CSV, RTF, HTML, ODT, ODP, TXT, and more. Decades of teaching files, finally searchable.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon" aria-hidden="true">&#x1F4E6;</div>
+        <h3>Complete Packages</h3>
+        <p>Lesson plan + slides + student handout in one command. Export to DOCX, PPTX, PDF, or Google Docs. Ready to print or share.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon" aria-hidden="true">&#x2705;</div>
+        <h3>Quality Gates</h3>
+        <p>Every lesson is automatically checked: 6+ guided notes, 3+ exit ticket questions, 2+ primary sources with real text. No thin AI slop.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon" aria-hidden="true">&#x1F512;</div>
+        <h3>Local First</h3>
+        <p>Runs on your machine. Your curriculum files never leave your computer. No accounts, no telemetry, no data collection. You own everything.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon" aria-hidden="true">&#x1F496;</div>
+        <h3>Open Source</h3>
+        <p>MIT licensed, free forever. Read every line of code. Fork it, modify it, contribute back. No lock-in, no surprise paywalls.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-      <div class="install-steps">
-        <div class="install-step">
-          <div class="step-badge">1</div>
-          <div class="step-content">
-            <strong>Install Python</strong> (if you don't have it) &mdash;
-            <a href="https://python.org/downloads" target="_blank" rel="noopener">python.org/downloads</a>.
-            Click the big button and run the installer.
-          </div>
-        </div>
-        <div class="install-step">
-          <div class="step-badge">2</div>
-          <div class="step-content">
-            <strong>Open Terminal</strong> &mdash; On Mac: press <kbd>Cmd + Space</kbd>, type <kbd>Terminal</kbd>, hit Enter.
-            On Windows: press the Windows key, type <kbd>cmd</kbd>, hit Enter.
-          </div>
-        </div>
-        <div class="install-step">
-          <div class="step-badge">3</div>
-          <div class="step-content">
-            <strong>Install Claw-ED</strong> &mdash; paste this and press Enter:
-            <code class="install-code">pip install clawed</code>
-          </div>
-        </div>
-        <div class="install-step">
-          <div class="step-badge">4</div>
-          <div class="step-content">
-            <strong>Start it up:</strong>
-            <code class="install-code">clawed</code>
-            Pick your AI provider, paste your key, and you're in.
-          </div>
+<!-- ── Subjects ─────────────────────────────────────── -->
+<section class="section" id="subjects" aria-labelledby="subjects-heading">
+  <div class="container">
+    <div class="section-header">
+      <span class="eyebrow">Every Subject</span>
+      <h2 id="subjects-heading">Whatever you teach, Claw-ED adapts</h2>
+      <p>It learns from YOUR files, so it works for any subject, any grade, any curriculum. Standards databases for all 50 US states included.</p>
+    </div>
+    <div class="subjects-grid">
+      <div class="subject-pill"><span class="pill-icon" aria-hidden="true">&#x1F3DB;</span> US History</div>
+      <div class="subject-pill"><span class="pill-icon" aria-hidden="true">&#x1F30D;</span> World History</div>
+      <div class="subject-pill"><span class="pill-icon" aria-hidden="true">&#x1F52C;</span> Biology</div>
+      <div class="subject-pill"><span class="pill-icon" aria-hidden="true">&#x2697;&#xFE0F;</span> Chemistry</div>
+      <div class="subject-pill"><span class="pill-icon" aria-hidden="true">&#x1F680;</span> Physics</div>
+      <div class="subject-pill"><span class="pill-icon" aria-hidden="true">&#x1F4D0;</span> Algebra</div>
+      <div class="subject-pill"><span class="pill-icon" aria-hidden="true">&#x1F4C8;</span> Calculus</div>
+      <div class="subject-pill"><span class="pill-icon" aria-hidden="true">&#x1F4DA;</span> ELA</div>
+      <div class="subject-pill"><span class="pill-icon" aria-hidden="true">&#x270D;&#xFE0F;</span> AP Lang</div>
+      <div class="subject-pill"><span class="pill-icon" aria-hidden="true">&#x1F3A8;</span> Art</div>
+      <div class="subject-pill"><span class="pill-icon" aria-hidden="true">&#x1F3B5;</span> Music</div>
+      <div class="subject-pill"><span class="pill-icon" aria-hidden="true">&#x1F1EA;&#x1F1F8;</span> Spanish</div>
+      <div class="subject-pill"><span class="pill-icon" aria-hidden="true">&#x1F1EB;&#x1F1F7;</span> French</div>
+      <div class="subject-pill"><span class="pill-icon" aria-hidden="true">&#x1F6E0;&#xFE0F;</span> CTE</div>
+      <div class="subject-pill"><span class="pill-icon" aria-hidden="true">&#x1F4BB;</span> Computer Science</div>
+      <div class="subject-pill"><span class="pill-icon" aria-hidden="true">&#x1F3C3;</span> Health / PE</div>
+      <div class="subject-pill"><span class="pill-icon" aria-hidden="true">&#x1F310;</span> AP World</div>
+      <div class="subject-pill"><span class="pill-icon" aria-hidden="true">&#x1F9EC;</span> AP Bio</div>
+      <div class="subject-pill"><span class="pill-icon" aria-hidden="true">&#x1F4D6;</span> AP Lit</div>
+      <div class="subject-pill"><span class="pill-icon" aria-hidden="true">&#x2795;</span> Any Subject</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Sample Output ────────────────────────────────── -->
+<section class="section section-alt" aria-labelledby="output-heading">
+  <div class="container">
+    <div class="section-header">
+      <span class="eyebrow">Sample Output</span>
+      <h2 id="output-heading">What teachers actually get</h2>
+      <p>A real lesson generated by Claw-ED. Not a mockup &mdash; this is what the tool produces.</p>
+    </div>
+    <div class="output-preview">
+      <div class="output-bar">
+        <span>Lesson Package &mdash; Generated by Claw-ED</span>
+        <span class="output-bar-badge">PDF + PPTX + DOCX</span>
+      </div>
+      <div class="output-body">
+        <h4>The Causes of World War II: From Appeasement to Invasion</h4>
+        <div class="output-meta">Grade 10 &middot; US History &middot; 55 minutes &middot; CCSS.RH.9-10.2, CCSS.RH.9-10.6</div>
+
+        <div class="output-section-title">Do Now (5 min)</div>
+        <p>Examine the political cartoon (Neville Chamberlain, "Peace for our time," 1938). In 2&ndash;3 sentences: What is the cartoonist arguing? What evidence in the image supports your claim?</p>
+
+        <div class="output-section-title">Guided Notes</div>
+        <ul>
+          <li>Treaty of Versailles &mdash; economic conditions that fueled resentment</li>
+          <li>Rise of totalitarianism: compare Hitler, Mussolini, and Tojo</li>
+          <li>Appeasement policy &mdash; Munich Agreement (1938), why Britain and France chose it</li>
+          <li>Invasion of Poland (September 1, 1939) &mdash; the breaking point</li>
+          <li>US neutrality vs. Lend-Lease &mdash; shifting American opinion</li>
+          <li>Pearl Harbor &mdash; from isolation to total war</li>
+        </ul>
+
+        <div class="output-section-title">Exit Ticket</div>
+        <div class="output-fade">
+          <p>1. Identify TWO causes of WWII and explain how they are connected. 2. Was appeasement a reasonable strategy in 1938? Defend your position with evidence. 3. How did American policy shift between 1939 and 1941?</p>
         </div>
       </div>
+    </div>
+    <p class="output-note">Includes primary source images, slide deck, and printable student handout &mdash; all in one generation.</p>
+  </div>
+</section>
 
-      <div class="cta-buttons">
-        <a class="hero-cta" href="https://github.com/SirhanMacx/Claw-ED" target="_blank" rel="noopener">
-          View on GitHub
+<!-- ── Comparison ────────────────────────────────────── -->
+<section class="section" id="compare" aria-labelledby="compare-heading">
+  <div class="container">
+    <div class="section-header">
+      <span class="eyebrow">Compare</span>
+      <h2 id="compare-heading">How Claw-ED stacks up</h2>
+      <p>We built what we wished existed. Here is how it compares to the alternatives.</p>
+    </div>
+    <div class="comparison-wrapper">
+      <table class="comparison-table" role="table">
+        <thead>
+          <tr>
+            <th scope="col">Feature</th>
+            <th scope="col" class="highlight-col">Claw-ED</th>
+            <th scope="col">MagicSchool</th>
+            <th scope="col">Diffit</th>
+            <th scope="col">ChatGPT</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Learns your teaching voice</td>
+            <td class="highlight-col"><span class="check-yes" aria-label="Yes">&#x2713;</span></td>
+            <td><span class="check-no">No</span></td>
+            <td><span class="check-no">No</span></td>
+            <td><span class="check-partial">Manual</span></td>
+          </tr>
+          <tr>
+            <td>Ingests your files (PDF, DOCX, PPT...)</td>
+            <td class="highlight-col"><span class="check-yes" aria-label="Yes">&#x2713; 20+</span></td>
+            <td><span class="check-no">No</span></td>
+            <td><span class="check-partial">Limited</span></td>
+            <td><span class="check-partial">Upload</span></td>
+          </tr>
+          <tr>
+            <td>Complete packages (plan + slides + handout)</td>
+            <td class="highlight-col"><span class="check-yes" aria-label="Yes">&#x2713;</span></td>
+            <td><span class="check-partial">Separate</span></td>
+            <td><span class="check-no">No</span></td>
+            <td><span class="check-no">No</span></td>
+          </tr>
+          <tr>
+            <td>Built-in quality gates</td>
+            <td class="highlight-col"><span class="check-yes" aria-label="Yes">&#x2713; 6 checks</span></td>
+            <td><span class="check-no">No</span></td>
+            <td><span class="check-no">No</span></td>
+            <td><span class="check-no">No</span></td>
+          </tr>
+          <tr>
+            <td>Data stays on your machine</td>
+            <td class="highlight-col"><span class="check-yes" aria-label="Yes">&#x2713;</span></td>
+            <td><span class="check-no">Cloud</span></td>
+            <td><span class="check-no">Cloud</span></td>
+            <td><span class="check-no">Cloud</span></td>
+          </tr>
+          <tr>
+            <td>Open source</td>
+            <td class="highlight-col"><span class="check-yes" aria-label="Yes">&#x2713; MIT</span></td>
+            <td><span class="check-no">No</span></td>
+            <td><span class="check-no">No</span></td>
+            <td><span class="check-no">No</span></td>
+          </tr>
+          <tr>
+            <td>Free forever</td>
+            <td class="highlight-col"><span class="check-yes" aria-label="Yes">&#x2713;</span></td>
+            <td><span class="check-partial">Freemium</span></td>
+            <td><span class="check-partial">Freemium</span></td>
+            <td><span class="check-partial">$20/mo</span></td>
+          </tr>
+          <tr>
+            <td>Standards alignment (50 states)</td>
+            <td class="highlight-col"><span class="check-yes" aria-label="Yes">&#x2713;</span></td>
+            <td><span class="check-yes" aria-label="Yes">&#x2713;</span></td>
+            <td><span class="check-partial">Some</span></td>
+            <td><span class="check-no">No</span></td>
+          </tr>
+          <tr>
+            <td>Telegram / CLI / Web interface</td>
+            <td class="highlight-col"><span class="check-yes" aria-label="Yes">&#x2713; All 3</span></td>
+            <td><span class="check-partial">Web only</span></td>
+            <td><span class="check-partial">Web only</span></td>
+            <td><span class="check-partial">Web + App</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ── Install ──────────────────────────────────────── -->
+<section class="section section-dark" id="install" aria-labelledby="install-heading">
+  <div class="container">
+    <div class="section-header">
+      <span class="eyebrow">Get Started</span>
+      <h2 id="install-heading">Up and running in three commands</h2>
+      <p>Works on Mac, Windows, and Linux. Python 3.10+ required.</p>
+    </div>
+    <div class="install-box">
+      <div class="install-code-block">
+        <button class="copy-btn" onclick="copyInstall(this)" aria-label="Copy install commands">Copy</button>
+        <code><span class="line-comment"># Install</span>
+<span class="line-prompt">$ </span>pip install clawed
+
+<span class="line-comment"># Run setup (picks your AI model, creates workspace)</span>
+<span class="line-prompt">$ </span>clawed setup
+
+<span class="line-comment"># Generate your first lesson</span>
+<span class="line-prompt">$ </span>clawed lesson "Your Topic Here"</code>
+      </div>
+      <p class="install-note" style="color: var(--text-light);">
+        The software is free. You bring your own AI provider &mdash; we recommend <strong>Ollama Cloud</strong> ($20/month unlimited) or use free-tier options to try it out. No account with us required.<br>
+        <a href="https://github.com/SirhanMacx/Claw-ED#setup" target="_blank" rel="noopener" style="color: var(--accent-dark);">Full setup guide with screenshots &rarr;</a>
+      </p>
+      <div class="install-links">
+        <a class="btn-primary" href="https://pypi.org/project/clawed/" target="_blank" rel="noopener noreferrer">
+          View on PyPI
         </a>
-        <a class="cta-secondary" href="https://github.com/SirhanMacx/Claw-ED#-getting-started" target="_blank" rel="noopener">
-          Full Setup Guide &rarr;
+        <a class="btn-secondary" href="https://github.com/SirhanMacx/Claw-ED" target="_blank" rel="noopener noreferrer" style="border-color: var(--border); color: var(--primary);">
+          <svg viewBox="0 0 16 16" aria-hidden="true" style="width:18px;height:18px;fill:currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          GitHub Repo
         </a>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ── Open Source + Collaboration ──────────────────── -->
-<section class="section" id="contribute">
+<!-- ── FAQ ───────────────────────────────────────────── -->
+<section class="section section-alt" id="faq" aria-labelledby="faq-heading">
   <div class="container">
     <div class="section-header">
-      <h2>Open source &amp; built with teachers</h2>
-      <p>Claw-ED is MIT licensed. Use it, fork it, build on it.</p>
-      <span class="accent-line"></span>
+      <span class="eyebrow">FAQ</span>
+      <h2 id="faq-heading">Frequently asked questions</h2>
     </div>
-    <div class="value-props">
-      <div class="value-card">
-        <div class="card-icon">&#x1F4AC;</div>
-        <h3>Give feedback</h3>
-        <p>
-          Found a bug? Have an idea? Something not working for your classroom?
-          <a href="https://github.com/SirhanMacx/Claw-ED/issues" target="_blank" rel="noopener">Open an issue on GitHub</a>
-          &mdash; we read every one.
-        </p>
+    <div class="faq-list" role="list">
+      <div class="faq-item" role="listitem">
+        <button class="faq-question" aria-expanded="false" onclick="toggleFaq(this)">
+          Is Claw-ED really free?
+          <svg class="faq-chevron" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
+        <div class="faq-answer" role="region">
+          <div class="faq-answer-inner">
+            Yes. Claw-ED is MIT licensed and free forever. The software itself costs nothing. You bring your own AI provider &mdash; we recommend Ollama Cloud ($20/month for unlimited use), but it also works with Gemini, Claude, or GPT. There is no account, no paywall, and no freemium upsell.
+          </div>
+        </div>
       </div>
-      <div class="value-card">
-        <div class="card-icon">&#x1F91D;</div>
-        <h3>Contribute</h3>
-        <p>
-          Teachers with domain expertise are especially welcome. Know how great lessons
-          are structured in your subject? 
-          <a href="https://github.com/SirhanMacx/Claw-ED/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">Read the contributing guide</a>
-          and open a PR.
-        </p>
+      <div class="faq-item" role="listitem">
+        <button class="faq-question" aria-expanded="false" onclick="toggleFaq(this)">
+          Does it need internet access?
+          <svg class="faq-chevron" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
+        <div class="faq-answer" role="region">
+          <div class="faq-answer-inner">
+            Only to talk to your AI provider (like any chatbot). Your curriculum files are processed and stored entirely on your machine. If you use a local model through Ollama, everything runs fully offline.
+          </div>
+        </div>
       </div>
-      <div class="value-card">
-        <div class="card-icon">&#x2B50;</div>
-        <h3>Star the repo</h3>
-        <p>
-          If Claw-ED saves you time, 
-          <a href="https://github.com/SirhanMacx/Claw-ED" target="_blank" rel="noopener">star it on GitHub</a>
-          so other teachers can find it. That's how open-source projects grow.
-        </p>
+      <div class="faq-item" role="listitem">
+        <button class="faq-question" aria-expanded="false" onclick="toggleFaq(this)">
+          What subjects does it support?
+          <svg class="faq-chevron" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
+        <div class="faq-answer" role="region">
+          <div class="faq-answer-inner">
+            Every subject. History, Science, Math, ELA, AP courses, Art, Music, World Languages, CTE, Computer Science &mdash; Claw-ED learns from YOUR files, so it adapts to whatever you teach. It includes standards databases covering all 50 US states (CCSS, NGSS, C3, and state-specific standards).
+          </div>
+        </div>
       </div>
+      <div class="faq-item" role="listitem">
+        <button class="faq-question" aria-expanded="false" onclick="toggleFaq(this)">
+          How does it learn my teaching voice?
+          <svg class="faq-chevron" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
+        <div class="faq-answer" role="region">
+          <div class="faq-answer-inner">
+            When you run <code>clawed ingest</code>, it reads your lesson plans, worksheets, and assessments. It chunks and embeds every document, extracting your vocabulary, structure patterns, how you frame essential questions, and your overall pedagogical style. Every lesson it generates uses those patterns. The more files you feed it, the better it sounds like you.
+          </div>
+        </div>
+      </div>
+      <div class="faq-item" role="listitem">
+        <button class="faq-question" aria-expanded="false" onclick="toggleFaq(this)">
+          Is my data safe?
+          <svg class="faq-chevron" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
+        <div class="faq-answer" role="region">
+          <div class="faq-answer-inner">
+            Your files never leave your computer. Claw-ED processes and stores everything locally in a semantic database on your machine. The only external call is to your chosen AI provider for text generation &mdash; and you pick that provider. There are no accounts, no telemetry, no data collection, no analytics. The code is open source so you can verify this yourself.
+          </div>
+        </div>
+      </div>
+      <div class="faq-item" role="listitem">
+        <button class="faq-question" aria-expanded="false" onclick="toggleFaq(this)">
+          Can I contribute?
+          <svg class="faq-chevron" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
+        <div class="faq-answer" role="region">
+          <div class="faq-answer-inner">
+            Absolutely. Claw-ED is open source on GitHub. Teachers with domain expertise are especially welcome &mdash; if you know what makes a great lesson in your subject, we want your input. Bug reports and feature requests via GitHub Issues are also valued. Read the <a href="https://github.com/SirhanMacx/Claw-ED/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">contributing guide</a> to get started.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Final CTA ────────────────────────────────────── -->
+<section class="section" aria-labelledby="final-cta-heading">
+  <div class="container" style="text-align: center;">
+    <h2 id="final-cta-heading" style="font-size: clamp(1.7rem, 3.5vw, 2.4rem); font-weight: 800; color: var(--primary); margin-bottom: 0.75rem; letter-spacing: -0.02em;">Ready to get your weekends back?</h2>
+    <p style="color: var(--text-muted); font-size: 1.1rem; max-width: 500px; margin: 0 auto 2rem;">Install Claw-ED in five minutes. Generate your first lesson today.</p>
+    <div class="hero-buttons" style="margin-bottom: 0;">
+      <a class="btn-primary" href="#install">Install Now &mdash; Free</a>
+      <a class="btn-secondary" href="https://github.com/SirhanMacx/Claw-ED" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 16 16" style="width:18px;height:18px;fill:currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        Star on GitHub
+      </a>
     </div>
   </div>
 </section>
 
 <!-- ── Footer ───────────────────────────────────────── -->
-<footer class="footer">
-  <div class="footer-links">
-    <a class="gh-btn" href="https://github.com/SirhanMacx/Claw-ED" target="_blank" rel="noopener noreferrer">
-      <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
-      Star on GitHub
-    </a>
-    <span class="oss-badge">Open Source</span>
+<footer class="footer" role="contentinfo">
+  <div class="footer-inner">
+    <div>
+      <div class="footer-brand">Claw-ED</div>
+      <p class="footer-tagline">Your AI co-teacher that sounds like you. Built by teachers, for teachers. Free and open source.</p>
+    </div>
+    <div class="footer-links-group">
+      <h4>Product</h4>
+      <a href="#features">Features</a>
+      <a href="#how-it-works">How It Works</a>
+      <a href="#install">Install</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <div class="footer-links-group">
+      <h4>Resources</h4>
+      <a href="https://github.com/SirhanMacx/Claw-ED" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://pypi.org/project/clawed/" target="_blank" rel="noopener">PyPI</a>
+      <a href="https://github.com/SirhanMacx/Claw-ED/issues" target="_blank" rel="noopener">Report a Bug</a>
+      <a href="https://github.com/SirhanMacx/Claw-ED/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener">Contribute</a>
+    </div>
+    <div class="footer-links-group">
+      <h4>Contact</h4>
+      <a href="mailto:crustymacx@proton.me">crustymacx@proton.me</a>
+      <a href="https://x.com/uploaded_crab" target="_blank" rel="noopener">@uploaded_crab on X</a>
+    </div>
   </div>
-  <p class="footer-copy">
-    Built by teachers, for teachers. MIT License. &copy; 2026 Claw-ED &mdash; <a href="https://github.com/SirhanMacx/Claw-ED" style="color:var(--accent)">github.com/SirhanMacx/Claw-ED</a><br>
-    Questions? <a href="mailto:crustymacx@proton.me" style="color:var(--accent)">crustymacx@proton.me</a>
-  </p>
+  <div class="footer-bottom">
+    <p class="footer-copy">&copy; 2026 Claw-ED &middot; MIT License &middot; Built by teachers, for teachers.</p>
+    <div class="footer-social">
+      <a href="https://github.com/SirhanMacx/Claw-ED" target="_blank" rel="noopener noreferrer" aria-label="GitHub">
+        <svg viewBox="0 0 16 16"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+      </a>
+      <a href="https://x.com/uploaded_crab" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)">
+        <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+      </a>
+      <a href="https://pypi.org/project/clawed/" target="_blank" rel="noopener noreferrer" aria-label="PyPI">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/><path d="M12 22V12M2 7v10M22 7v10" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+      </a>
+    </div>
+  </div>
 </footer>
 
 <!-- ── Scripts ──────────────────────────────────────── -->
@@ -870,20 +1827,21 @@ kbd {
 (function() {
   // ── Typewriter Animation ──
   var commands = [
-    'pip install clawed && clawed setup',
+    'pip install clawed',
     'clawed ingest ./my-lessons/',
-    'clawed generate "The Civil War" --grade 8',
-    'clawed chatbot start --port 3000',
-    'clawed lesson "WW2" --export pdf',
+    'clawed lesson "The Civil War" --grade 8',
+    'clawed lesson "Photosynthesis" --export pdf',
+    'clawed unit "World War II" -g 10 -s "History"',
+    'clawed serve',
   ];
 
   var el = document.getElementById('typewriter');
   var cmdIndex = 0;
   var charIndex = 0;
   var isDeleting = false;
-  var typeSpeed = 60;
-  var deleteSpeed = 30;
-  var pauseAfterType = 2200;
+  var typeSpeed = 55;
+  var deleteSpeed = 25;
+  var pauseAfterType = 2400;
   var pauseAfterDelete = 400;
 
   function tick() {
@@ -900,8 +1858,7 @@ kbd {
         }, pauseAfterType);
         return;
       }
-
-      setTimeout(tick, typeSpeed + Math.random() * 40);
+      setTimeout(tick, typeSpeed + Math.random() * 35);
     } else {
       el.textContent = current.substring(0, charIndex - 1);
       charIndex--;
@@ -912,15 +1869,60 @@ kbd {
         setTimeout(tick, pauseAfterDelete);
         return;
       }
-
       setTimeout(tick, deleteSpeed);
     }
   }
 
   tick();
 
-  // No waitlist form — open install, try now
+  // ── Nav scroll shadow ──
+  var nav = document.querySelector('.nav');
+  window.addEventListener('scroll', function() {
+    if (window.scrollY > 10) {
+      nav.classList.add('scrolled');
+    } else {
+      nav.classList.remove('scrolled');
+    }
+  }, { passive: true });
+
+  // ── Close mobile nav on link click ──
+  document.querySelectorAll('.nav-links a').forEach(function(link) {
+    link.addEventListener('click', function() {
+      document.querySelector('.nav-links').classList.remove('open');
+      var toggle = document.querySelector('.nav-toggle');
+      if (toggle) toggle.setAttribute('aria-expanded', 'false');
+    });
+  });
 })();
+
+// ── FAQ toggle ──
+function toggleFaq(btn) {
+  var item = btn.parentElement;
+  var wasOpen = item.classList.contains('open');
+
+  // Close all
+  document.querySelectorAll('.faq-item').forEach(function(el) {
+    el.classList.remove('open');
+    el.querySelector('.faq-question').setAttribute('aria-expanded', 'false');
+  });
+
+  // Open clicked (if it was closed)
+  if (!wasOpen) {
+    item.classList.add('open');
+    btn.setAttribute('aria-expanded', 'true');
+  }
+}
+
+// ── Copy install code ──
+function copyInstall(btn) {
+  var text = 'pip install clawed\nclawed setup\nclawed lesson "Your Topic Here"';
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(function() {
+      btn.textContent = 'Copied!';
+      setTimeout(function() { btn.textContent = 'Copy'; }, 2000);
+    });
+  }
+}
 </script>
 
 </body>
