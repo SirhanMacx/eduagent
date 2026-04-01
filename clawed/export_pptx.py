@@ -32,6 +32,117 @@ def _detect_subject(persona: "TeacherPersona") -> str:
     return ""
 
 
+# ── Topic-based visual theming ──────────────────────────────────────
+
+_TOPIC_THEMES: list[tuple[list[str], dict[str, str]]] = [
+    # Exploration / nautical topics
+    (
+        ["exploration", "nautical", "voyage", "navigation", "maritime",
+         "columbus", "magellan", "ocean", "sailing", "expedition", "discover"],
+        {
+            "primary": "1a3a5c",       # Navy blue
+            "secondary": "c9a96e",     # Gold accent
+            "accent": "e8eef5",        # Light blue-gray
+            "bg_dark": "0f2440",       # Deep navy
+            "bg_light": "f0f3f8",      # Soft blue-white
+            "text_dark": "1A1A1A",
+            "text_light": "FFFFFF",
+            "text_dim": "888888",
+        },
+    ),
+    # Renaissance / art topics
+    (
+        ["renaissance", "art", "painting", "sculpture", "michelangelo",
+         "da vinci", "medici", "baroque", "classical art", "gallery",
+         "fresco", "patron"],
+        {
+            "primary": "4a3728",       # Dark brown
+            "secondary": "d4af37",     # Gold accent
+            "accent": "f5efe0",        # Warm cream
+            "bg_dark": "2e2018",       # Deep brown
+            "bg_light": "faf6ef",      # Light cream
+            "text_dark": "1A1A1A",
+            "text_light": "FFFFFF",
+            "text_dim": "888888",
+        },
+    ),
+    # Revolution / war topics
+    (
+        ["revolution", "war", "battle", "conflict", "military", "independence",
+         "civil war", "rebellion", "uprising", "army", "combat", "wwi", "wwii",
+         "world war"],
+        {
+            "primary": "8b0000",       # Dark red
+            "secondary": "ffd700",     # Gold accent
+            "accent": "fce8e8",        # Light red tint
+            "bg_dark": "4a0000",       # Deep red
+            "bg_light": "fdf5f5",      # Soft rose
+            "text_dark": "1A1A1A",
+            "text_light": "FFFFFF",
+            "text_dim": "888888",
+        },
+    ),
+    # Science topics
+    (
+        ["science", "biology", "chemistry", "physics", "experiment",
+         "hypothesis", "laboratory", "cell", "atom", "molecule",
+         "ecosystem", "evolution", "genetics"],
+        {
+            "primary": "1a4a4a",       # Dark teal
+            "secondary": "00c853",     # Bright green accent
+            "accent": "e0f5ef",        # Light teal tint
+            "bg_dark": "0f2e2e",       # Deep teal
+            "bg_light": "f0faf5",      # Soft mint
+            "text_dark": "1A1A1A",
+            "text_light": "FFFFFF",
+            "text_dim": "888888",
+        },
+    ),
+    # Math topics
+    (
+        ["math", "algebra", "geometry", "calculus", "equation", "fraction",
+         "polynomial", "trigonometry", "statistics", "probability",
+         "arithmetic", "number"],
+        {
+            "primary": "2a1a4a",       # Dark purple
+            "secondary": "ff9800",     # Orange accent
+            "accent": "f0e8f8",        # Light purple tint
+            "bg_dark": "1a0f30",       # Deep purple
+            "bg_light": "f8f5fc",      # Soft lavender
+            "text_dark": "1A1A1A",
+            "text_light": "FFFFFF",
+            "text_dim": "888888",
+        },
+    ),
+]
+
+_DEFAULT_TOPIC_THEME: dict[str, str] = {
+    "primary": "2D5F3C",       # Deep green
+    "secondary": "D4A843",     # Warm gold
+    "accent": "EAF0E4",        # Soft green tint
+    "bg_dark": "1A3D25",       # Dark green
+    "bg_light": "F4F7F2",      # Light sage
+    "text_dark": "1A1A1A",
+    "text_light": "FFFFFF",
+    "text_dim": "888888",
+}
+
+
+def get_topic_theme(title: str, subject: str = "") -> dict[str, str]:
+    """Select a color theme based on lesson topic keywords.
+
+    Scans the lesson title and subject for keywords associated with
+    thematic palettes (nautical, renaissance, war, science, math).
+    Returns the first matching theme or a default deep-green/gold palette.
+    """
+    combined = f"{title} {subject}".lower()
+    for keywords, theme in _TOPIC_THEMES:
+        for kw in keywords:
+            if kw in combined:
+                return theme
+    return _DEFAULT_TOPIC_THEME
+
+
 def _add_shape_fill(shape, hex_color: str) -> None:
     """Fill a shape with a solid color."""
     fill = shape.fill
@@ -333,7 +444,10 @@ def export_lesson_pptx(
         teacher_display_name = "Teacher"
 
     subject = _detect_subject(persona)
-    theme = get_color_theme(subject)
+    # Topic-based visual theming: match lesson title/subject keywords to
+    # curated palettes (nautical, renaissance, war, science, math).
+    # Falls back to a default deep-green/gold theme.
+    theme = get_topic_theme(lesson.title, subject)
 
     prs = Presentation()
     prs.slide_width = Inches(13.333)
@@ -907,71 +1021,85 @@ def export_lesson_pptx(
             ]
 
         if vocab_pairs:
-            slide = _next_slide()
-            _white_bg(slide)
+            # Split vocabulary across multiple slides (max 4 terms per slide)
+            # to prevent overcrowding when lessons have many terms.
+            VOCAB_PER_SLIDE = 4
+            vocab_chunks = [
+                vocab_pairs[i:i + VOCAB_PER_SLIDE]
+                for i in range(0, len(vocab_pairs), VOCAB_PER_SLIDE)
+            ]
+            total_vocab_slides = len(vocab_chunks)
 
-            # "Key Vocabulary" badge
-            badge = _rounded_card(
-                slide,
-                Inches(0.8), Inches(0.6),
-                Inches(3.5), Inches(0.7),
-                theme["secondary"],
-            )
-            badge_tf = badge.text_frame
-            badge_tf.paragraphs[0].alignment = PP_ALIGN.CENTER
-            run = badge_tf.paragraphs[0].add_run()
-            run.text = "Key Vocabulary"
-            _set_text_props(run, 22, theme["text_light"], bold=True)
+            for chunk_idx, chunk in enumerate(vocab_chunks):
+                slide = _next_slide()
+                _white_bg(slide)
 
-            # Left accent bar
-            _bar(slide, Inches(0.6), Inches(1.7), Inches(0.06), Inches(5.0), theme["primary"])
-
-            # Vocabulary: 2-column layout — term (bold, left) | definition (right)
-            # Each term gets its own row for clarity. 18pt for readability with density.
-            LEFT_COL_W = Inches(3.8)
-            RIGHT_COL_W = slide_w - Inches(5.2)
-            row_h = Inches(0.65)
-            start_y = Inches(1.75)
-
-            for idx, (term, definition) in enumerate(vocab_pairs[:7]):
-                y = start_y + idx * row_h
-                if y + row_h > slide_h - Inches(0.5):
-                    break  # don't overflow bottom
-
-                # Term — left column, bold, primary color
-                tb_term = slide.shapes.add_textbox(
-                    Inches(0.9), y, LEFT_COL_W, row_h,
+                # "Key Vocabulary" badge (with page indicator if multi-slide)
+                badge_label = "Key Vocabulary"
+                if total_vocab_slides > 1:
+                    badge_label = f"Key Vocabulary ({chunk_idx + 1}/{total_vocab_slides})"
+                badge = _rounded_card(
+                    slide,
+                    Inches(0.8), Inches(0.6),
+                    Inches(3.5) if total_vocab_slides == 1 else Inches(4.5),
+                    Inches(0.7),
+                    theme["secondary"],
                 )
-                tf_term = tb_term.text_frame
-                tf_term.word_wrap = True
-                p_term = tf_term.paragraphs[0]
-                p_term.line_spacing = Pt(22)
-                run_t = p_term.add_run()
-                run_t.text = term.strip()
-                _set_text_props(run_t, 18, theme["primary"], bold=True)
+                badge_tf = badge.text_frame
+                badge_tf.paragraphs[0].alignment = PP_ALIGN.CENTER
+                run = badge_tf.paragraphs[0].add_run()
+                run.text = badge_label
+                _set_text_props(run, 22, theme["text_light"], bold=True)
 
-                # Definition — right column, normal weight
-                tb_def = slide.shapes.add_textbox(
-                    Inches(4.9), y, RIGHT_COL_W, row_h,
-                )
-                tf_def = tb_def.text_frame
-                tf_def.word_wrap = True
-                p_def = tf_def.paragraphs[0]
-                p_def.line_spacing = Pt(22)
-                run_d = p_def.add_run()
-                # Truncate long definitions to keep them slide-readable
-                defn = definition.strip()
-                if len(defn) > 120:
-                    defn = defn[:117].rsplit(" ", 1)[0] + "…"
-                run_d.text = defn
-                _set_text_props(run_d, 18, theme["text_dark"])
+                # Left accent bar
+                _bar(slide, Inches(0.6), Inches(1.7), Inches(0.06), Inches(5.0), theme["primary"])
 
-                # Light separator line between rows
-                if idx < len(vocab_pairs) - 1:
-                    _bar(slide, Inches(0.9), y + row_h - Inches(0.04),
-                         slide_w - Inches(1.8), Inches(0.02), "EEEEEE")
+                # Vocabulary: 2-column layout — term (bold, left) | definition (right)
+                LEFT_COL_W = Inches(3.8)
+                RIGHT_COL_W = slide_w - Inches(5.2)
+                # With max 4 terms, use more vertical space per row
+                row_h = Inches(1.1)
+                start_y = Inches(1.75)
 
-            _add_footer(slide, slide_num[0])
+                for idx, (term, definition) in enumerate(chunk):
+                    y = start_y + idx * row_h
+                    if y + row_h > slide_h - Inches(0.5):
+                        break  # safety: don't overflow bottom
+
+                    # Term — left column, bold, primary color
+                    tb_term = slide.shapes.add_textbox(
+                        Inches(0.9), y, LEFT_COL_W, row_h,
+                    )
+                    tf_term = tb_term.text_frame
+                    tf_term.word_wrap = True
+                    p_term = tf_term.paragraphs[0]
+                    p_term.line_spacing = Pt(22)
+                    run_t = p_term.add_run()
+                    run_t.text = term.strip()
+                    _set_text_props(run_t, 18, theme["primary"], bold=True)
+
+                    # Definition — right column, normal weight
+                    tb_def = slide.shapes.add_textbox(
+                        Inches(4.9), y, RIGHT_COL_W, row_h,
+                    )
+                    tf_def = tb_def.text_frame
+                    tf_def.word_wrap = True
+                    p_def = tf_def.paragraphs[0]
+                    p_def.line_spacing = Pt(22)
+                    run_d = p_def.add_run()
+                    # Truncate long definitions to keep them slide-readable
+                    defn = definition.strip()
+                    if len(defn) > 120:
+                        defn = defn[:117].rsplit(" ", 1)[0] + "…"
+                    run_d.text = defn
+                    _set_text_props(run_d, 18, theme["text_dark"])
+
+                    # Light separator line between rows
+                    if idx < len(chunk) - 1:
+                        _bar(slide, Inches(0.9), y + row_h - Inches(0.04),
+                             slide_w - Inches(1.8), Inches(0.02), "EEEEEE")
+
+                _add_footer(slide, slide_num[0])
 
         # ── Primary Source slides (from structured lesson data) ─────
         # Use lesson.primary_sources (PrimarySourceDocument objects)
