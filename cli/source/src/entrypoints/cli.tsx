@@ -37,7 +37,12 @@ async function main(): Promise<void> {
   if (args.length === 1 && (args[0] === '--version' || args[0] === '-v' || args[0] === '-V')) {
     // MACRO.VERSION is inlined at build time
     // biome-ignore lint/suspicious/noConsole:: intentional console output
-    console.log(`${MACRO.VERSION} (Claw-ED)`);
+    const { LOGO_COMPACT, BRAND_TEXT, BRAND_TAGLINE } = await import('../constants/logo.js');
+    for (const line of LOGO_COMPACT) {
+      console.log(line);
+    }
+    console.log(`\n  ${BRAND_TEXT} v${MACRO.VERSION}`);
+    console.log(`  ${BRAND_TAGLINE}\n`);
     return;
   }
 
