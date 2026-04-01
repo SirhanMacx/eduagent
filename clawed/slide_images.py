@@ -147,12 +147,75 @@ _SUBJECT_QUERY_STYLE: dict[str, str] = {
 }
 
 
+# ── Topic → entity map for reliable image queries ───────────────────
+# When the lesson has no named historical figures, this map provides
+# known-good Wikipedia-searchable entities for common topics.
+# Wikipedia article thumbnails for these are verified relevant.
+_TOPIC_IMAGE_QUERIES: dict[str, list[str]] = {
+    "age of exploration": ["Christopher Columbus", "Vasco da Gama", "Ferdinand Magellan"],
+    "exploration": ["Christopher Columbus", "Vasco da Gama", "caravel ship"],
+    "renaissance": ["Leonardo da Vinci", "Michelangelo", "Raphael painter"],
+    "reformation": ["Martin Luther", "John Calvin", "Protestant Reformation"],
+    "absolutism": ["Louis XIV", "Palace of Versailles", "absolute monarchy"],
+    "french revolution": ["Marie Antoinette", "Bastille", "Napoleon Bonaparte"],
+    "american revolution": ["George Washington", "Declaration of Independence", "Paul Revere"],
+    "civil war": ["Abraham Lincoln", "Battle of Gettysburg", "Ulysses Grant"],
+    "reconstruction": ["Frederick Douglass", "Reconstruction era", "Freedmen's Bureau"],
+    "industrial revolution": ["steam engine", "factory workers", "child labor industrial"],
+    "world war i": ["trench warfare", "Archduke Franz Ferdinand", "Treaty of Versailles"],
+    "world war ii": ["Adolf Hitler", "D-Day landing", "Holocaust"],
+    "cold war": ["Berlin Wall", "Cuban Missile Crisis", "Iron Curtain"],
+    "slavery": ["Frederick Douglass", "Harriet Tubman", "Underground Railroad"],
+    "civil rights": ["Martin Luther King Jr", "Rosa Parks", "March on Washington"],
+    "imperialism": ["Scramble for Africa", "British Empire", "colonialism"],
+    "ancient egypt": ["Egyptian pyramid", "Sphinx", "pharaoh"],
+    "ancient rome": ["Roman Colosseum", "Julius Caesar", "Roman Empire"],
+    "ancient greece": ["Parthenon", "Socrates", "Athens acropolis"],
+    "mesopotamia": ["Hammurabi", "Babylon ziggurat", "cuneiform writing"],
+    "feudalism": ["medieval castle", "knight armor", "feudal system"],
+    "crusades": ["Crusaders Jerusalem", "Richard I England", "Saladin"],
+    "mongol empire": ["Genghis Khan", "Mongol Empire map", "Silk Road"],
+    "ottoman empire": ["Sultan Suleiman", "Hagia Sophia", "Ottoman Empire"],
+    "mughal empire": ["Taj Mahal", "Akbar emperor", "Mughal architecture"],
+    "ming dynasty": ["Great Wall of China", "Ming Dynasty emperor", "Chinese junk ship"],
+    "columbian exchange": ["Columbian Exchange", "New World crops", "transatlantic trade"],
+    "triangular trade": ["triangular trade", "slave ship", "Atlantic slave trade"],
+    "missouri compromise": ["Missouri Compromise", "Henry Clay", "slavery map 1820"],
+    "manifest destiny": ["manifest destiny painting", "westward expansion", "Oregon Trail"],
+    "gilded age": ["Andrew Carnegie", "Standard Oil", "railroad tycoon"],
+    "progressive era": ["Theodore Roosevelt", "Jane Addams", "muckraker"],
+    "new deal": ["Franklin Roosevelt", "Great Depression", "Civilian Conservation Corps"],
+    "sectionalism": ["John C Calhoun", "slavery debate", "antebellum South"],
+    "reform movements": ["suffrage march", "abolition movement", "temperance movement"],
+    "women's suffrage": ["Susan B Anthony", "suffragette march", "19th Amendment"],
+}
+
+
+def _get_topic_queries(title: str) -> list[str]:
+    """Return known-good image queries for a lesson title, or empty list."""
+    title_lower = title.lower()
+    for topic_key, queries in _TOPIC_IMAGE_QUERIES.items():
+        if topic_key in title_lower:
+            return queries
+    # Partial word matches (e.g. "explorers" matches "exploration")
+    title_words = set(title_lower.split())
+    for topic_key, queries in _TOPIC_IMAGE_QUERIES.items():
+        topic_words = set(topic_key.split())
+        if topic_words & title_words:
+            return queries
+    return []
+
+
 def extract_image_subjects(lesson) -> list[dict]:
     """Extract specific people, places, and artifacts from lesson content for targeted image search.
 
-    Instead of searching for generic lesson titles ("Age of Absolutism"),
-    extracts specific entities like "Louis XIV", "Palace of Versailles",
-    "Treaty of Westphalia" that produce relevant image results.
+    Priority:
+    1. Named entities (people, places, documents) extracted from lesson text via regex
+    2. Topic-keyword map lookup from lesson title — returns known-good Wikipedia queries
+    3. Lesson title itself as fallback
+
+    Filters out verb phrases, section headers, and other non-entity strings
+    that regex would otherwise match.
     """
     subjects: list[dict] = []
     all_text = " ".join(filter(None, [
@@ -189,6 +252,13 @@ def extract_image_subjects(lesson) -> list[dict]:
         "Fell", "Rises", "Rose", "Grows", "Grew", "Leads", "Led",
         "Succeeds", "Succeed", "Fails", "Failed", "Starts", "Stops",
         "Outward", "Forward", "Onward", "Beyond", "Across",
+        "Explore", "Explores", "Explored", "Exploring", "Explorer",
+        "Trade", "Trades", "Traded", "Trading",
+        "Sail", "Sails", "Sailed", "Sailing",
+        "Expand", "Expands", "Expanded", "Expanding", "Expansion",
+        "Spread", "Spreads", "Discover", "Discovers", "Discovered",
+        "Fight", "Fights", "Fighting", "Fought",
+        "Create", "Creates", "Created", "Building", "Built",
     }
     people_patterns = [
         r"((?:King |Queen |Emperor |Empress |President |Pope |Tsar |Czar )"
@@ -237,30 +307,29 @@ def extract_image_subjects(lesson) -> list[dict]:
     for doc_name in set(doc_patterns[:2]):
         subjects.append({"query": doc_name, "type": "document", "label": doc_name})
 
-    # Fallback: if no named entities found, use the lesson title as the primary query
-    # and also generate sub-topic queries from key noun phrases in the title.
-    if not subjects:
-        title = getattr(lesson, 'title', 'lesson')
-        subjects.append({"query": title, "type": "topic", "label": title})
+    title = getattr(lesson, 'title', '')
 
-        # Extract sub-topics from title for variety across slides
-        # e.g. "Age of Exploration: Why Europe Left Home" → ["Age of Exploration", "Europe exploration"]
-        # Strip subtitle (after colon/dash) and use main title for first query
-        main_title = re.split(r"[:—–-]", title)[0].strip()
-        if main_title and main_title != title:
-            subjects.insert(0, {"query": main_title, "type": "topic", "label": main_title})
+    # If regex found real entities, use them — they're more specific than the map
+    if subjects:
+        # Still pad to 3 with topic-map queries so all slide positions get coverage
+        topic_queries = _get_topic_queries(title)
+        for q in topic_queries:
+            if len(subjects) >= 5:
+                break
+            if not any(s["query"].lower() == q.lower() for s in subjects):
+                subjects.append({"query": q, "type": "topic", "label": q})
+        return subjects
 
-    # Always ensure we have at least 3 queries so slides 1/2/3 each get something different.
-    # Pad with progressively broader queries derived from the first subject.
-    if len(subjects) < 3 and subjects:
-        base_query = subjects[0]["query"]
-        # Add a map/overview query (good for title slide)
-        if not any("map" in s["query"].lower() for s in subjects):
-            subjects.append({"query": f"{base_query} map", "type": "topic", "label": f"{base_query} map"})
-        # Add a primary source / document query (good for instruction slides)
-        if len(subjects) < 3:
-            subjects.append({"query": f"{base_query} primary source", "type": "topic", "label": f"{base_query} document"})
+    # No regex entities — use the topic-keyword map (known-good Wikipedia queries)
+    topic_queries = _get_topic_queries(title)
+    if topic_queries:
+        for q in topic_queries:
+            subjects.append({"query": q, "type": "topic", "label": q})
+        return subjects
 
+    # Last resort: lesson title main segment only
+    main_title = re.split(r"[:—–-]", title)[0].strip() if title else "history"
+    subjects.append({"query": main_title, "type": "topic", "label": main_title})
     return subjects
 
 
@@ -505,40 +574,15 @@ async def _fetch_wikimedia(
                     )
                     return path
 
-            # ── Strategy 2: Wikimedia Commons file search (fallback) ──────
-            commons_resp = await client.get(
-                "https://commons.wikimedia.org/w/api.php",
-                params={
-                    "action": "query",
-                    "generator": "search",
-                    "gsrsearch": query,
-                    "gsrnamespace": "6",
-                    "prop": "imageinfo",
-                    "iiprop": "url|extmetadata",
-                    "iiurlwidth": "1024",
-                    "format": "json",
-                },
-            )
-            commons_resp.raise_for_status()
-            commons_data = commons_resp.json()
-            pages = commons_data.get("query", {}).get("pages", {})
-            image_url = None
-            for _page_id, page in pages.items():
-                info_list = page.get("imageinfo", [])
-                if info_list:
-                    image_url = info_list[0].get("thumburl") or info_list[0].get("url")
-                    if image_url:
-                        break
-
-            if not image_url:
-                logger.debug("No Wikimedia results for query: %s", query)
-                return None
-
-            dl = await client.get(image_url, timeout=_FETCH_TIMEOUT)
-            dl.raise_for_status()
-            path = _save_to_cache(dl.content, "wikimedia", query, cache_dir)
-            logger.info("Wikimedia Commons image for '%s' -> %s", query, path)
-            return path
+            # Commons file-namespace search is DISABLED.
+            # It matches on file description text and returns completely
+            # unrelated content (e.g. government CBRN weapons presentations
+            # for "Religious Motivations" queries). Wikipedia article
+            # thumbnails are the only safe source — if no article image
+            # exists for a query, return None rather than risk an
+            # irrelevant or harmful image.
+            logger.debug("No Wikipedia article image for query: %s", query)
+            return None
 
     except Exception as e:
         logger.debug("Wikimedia fetch failed for '%s': %s", query, e)
