@@ -338,7 +338,18 @@ async def compile_game(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     config = config or AppConfig.load()
-    config = route_model("game_generate", config)
+    # Games require code-capable models. Ollama cloud models produce
+    # broken HTML (missing tags, malformed structure). Force Anthropic
+    # if available, fall back to whatever is configured.
+    from clawed.config import get_api_key
+    from clawed.models import LLMProvider
+    anthropic_key = get_api_key("anthropic")
+    if anthropic_key:
+        config.provider = LLMProvider.ANTHROPIC
+        # Haiku is fast and produces valid HTML reliably
+        config.anthropic_model = "claude-haiku-4-5-20251001"
+    else:
+        config = route_model("game_generate", config)
     client = LLMClient(config)
 
     # Build the game generation prompt
