@@ -354,6 +354,20 @@ async def compile_game(
     # Teacher picked Ollama? Gets their best Ollama model.
     # Teacher picked Anthropic? Gets Opus. Their choice.
     config = route_model("game_generate", config)
+
+    # Game generation requires code-capable models. Warn if using a model
+    # that is known to produce broken HTML (small local Ollama models).
+    _CODE_WEAK_MODELS = {"qwen3.5:cloud", "llama3.2:latest", "phi3:latest"}
+    resolved_model = getattr(config, "ollama_model", "") or ""
+    if resolved_model in _CODE_WEAK_MODELS:
+        logger.warning(
+            "Game generation works best with code-capable models. "
+            "Model '%s' may produce broken HTML. Consider using a larger "
+            "model (minimax, deepseek-coder, codestral) or a cloud provider "
+            "(Anthropic, OpenAI) for games.",
+            resolved_model,
+        )
+
     client = LLMClient(config)
 
     # Build the game generation prompt
