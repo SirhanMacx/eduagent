@@ -286,21 +286,58 @@ def export_lesson_pptx(
     # Images on: Title (bg), Do Now (accent), Direct Instruction (sidebar)
     # No images on: Objectives, Guided Practice, Exit Ticket, Closing
     if include_images:
-        from clawed.slide_images import extract_image_subjects
+        from clawed.slide_images import extract_image_subjects, _fetch_wikimedia
         entities = extract_image_subjects(lesson)
-        image_items: list[tuple[str, str, str]] = []
-        for i, entity in enumerate(entities[:5]):
-            key = f"entity_{i}"
-            image_items.append((entity["query"], entity["query"], key))
 
-        # Ensure we have at least a title image
-        if not image_items:
-            image_items = [("", lesson.title, "title")]
+        # For named entities (people, places, documents), go directly to Wikipedia —
+        # it's faster and the article thumbnail is always the right image.
+        # For generic topic queries, fall back to the standard LOC→Wikimedia chain.
+        async def _fetch_entity_images() -> dict[str, Optional[Path]]:
+            results: dict[str, Optional[Path]] = {}
+            found = 0
+            for i, entity in enumerate(entities[:5]):
+                if found >= 5:
+                    break
+                key = f"entity_{i}"
+                query = entity["query"]
+                try:
+                    path = await asyncio.wait_for(
+                        _fetch_wikimedia(query),
+                        timeout=8.0,
+                    )
+                    results[key] = path
+                    if path:
+                        found += 1
+                        logger.info("Entity image [%s]: %s -> %s", key, query, path)
+                    else:
+                        logger.debug("No entity image for: %s", query)
+                except Exception as e:
+                    results[key] = None
+                    logger.debug("Entity image fetch failed for %s: %s", query, e)
+            return results
 
-        images = _try_fetch_content_images(image_items, subject, max_images=5)
+        if entities:
+            try:
+                images = run_async_safe(_fetch_entity_images())
+            except Exception as e:
+                logger.debug("Entity image fetch block failed: %s", e)
+                images = {}
+        else:
+            # No entities found — use lesson title direct Wikipedia lookup
+            try:
+                async def _fetch_title_image() -> dict[str, Optional[Path]]:
+                    path = await asyncio.wait_for(
+                        _fetch_wikimedia(lesson.title),
+                        timeout=8.0,
+                    )
+                    return {"entity_0": path}
+                images = run_async_safe(_fetch_title_image())
+            except Exception:
+                images = {}
+
         logger.info(
-            "Image fetch: %d items requested, %d returned",
-            len(image_items),
+            "Image fetch: %d entities, %d images found",
+            len(entities),
             len([v for v in images.values() if v]),
         )
     else:
@@ -362,11 +399,45 @@ def export_lesson_pptx(
         fill.solid()
         fill.fore_color.rgb = _hex_to_rgb(hex_color)
 
+    def _safe_image_path(image_path: Path) -> Optional[Path]:
+        """Validate an image file before embedding in a slide.
+
+        python-pptx crashes on palette-mode PNGs, truncated files, or
+        non-image data saved with an image extension.  This converts
+        palette/RGBA images to RGB and rejects anything unreadable.
+
+        Returns a safe path (possibly a converted temp file) or None.
+        """
+        try:
+            from PIL import Image as PILImage
+            import io, tempfile
+            data = image_path.read_bytes()
+            if len(data) < 1000:
+                return None
+            img = PILImage.open(io.BytesIO(data))
+            # Convert palette (P) or RGBA to RGB — python-pptx can't handle these
+            if img.mode in ("P", "RGBA", "LA", "PA"):
+                img = img.convert("RGB")
+                tmp = Path(tempfile.mktemp(suffix=".jpg"))
+                img.save(tmp, "JPEG", quality=90)
+                return tmp
+            return image_path
+        except Exception as e:
+            logger.debug("Image validation failed for %s: %s", image_path, e)
+            return None
+
     def _add_bg_image(slide, image_path: Path, overlay_alpha: str = "30000"):
         """Full-bleed background image with dark gradient overlay."""
-        pic = slide.shapes.add_picture(
-            str(image_path), Emu(0), Emu(0), slide_w, slide_h,
-        )
+        safe = _safe_image_path(image_path)
+        if not safe:
+            return
+        try:
+            pic = slide.shapes.add_picture(
+                str(safe), Emu(0), Emu(0), slide_w, slide_h,
+            )
+        except Exception as e:
+            logger.debug("_add_bg_image failed: %s", e)
+            return
         sp = pic._element
         sp.getparent().remove(sp)
         slide.shapes._spTree.insert(2, sp)
@@ -391,13 +462,16 @@ def export_lesson_pptx(
                 alpha.set("val", overlay_alpha)
 
     def _add_sidebar_image(slide, image_path: Path, caption: str = ""):
+        safe = _safe_image_path(image_path)
+        if not safe:
+            return
         img_left = int(slide_w * 0.65)
         img_width = int(slide_w * 0.33)
         img_top = Inches(1.4)
         img_height = int(slide_h - Inches(2.4))
         try:
             slide.shapes.add_picture(
-                str(image_path), img_left, img_top, img_width, img_height,
+                str(safe), img_left, img_top, img_width, img_height,
             )
             if caption:
                 cap_tb = slide.shapes.add_textbox(
@@ -415,13 +489,16 @@ def export_lesson_pptx(
 
     def _add_accent_image(slide, image_path: Path, caption: str = ""):
         """Add a smaller accent image in the bottom-right area."""
+        safe = _safe_image_path(image_path)
+        if not safe:
+            return
         img_left = slide_w - Inches(4.0)
         img_top = slide_h - Inches(3.2)
         img_width = Inches(3.5)
         img_height = Inches(2.2)
         try:
             slide.shapes.add_picture(
-                str(image_path), img_left, img_top, img_width, img_height,
+                str(safe), img_left, img_top, img_width, img_height,
             )
             if caption:
                 cap_tb = slide.shapes.add_textbox(
