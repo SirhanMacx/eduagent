@@ -20,6 +20,19 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+# Track temporary image files created during PPTX export for cleanup
+_temp_image_files: list[Path] = []
+
+
+def cleanup_temp_images() -> None:
+    """Remove temporary image files created during PPTX export."""
+    for tmp in _temp_image_files:
+        try:
+            tmp.unlink(missing_ok=True)
+        except OSError:
+            pass
+    _temp_image_files.clear()
+
 
 # ── PPTX helpers ──────────────────────────────────────────────────────
 
@@ -598,6 +611,7 @@ def export_lesson_pptx(
                 img = img.convert("RGB")
                 tmp = Path(tempfile.mktemp(suffix=".jpg"))
                 img.save(tmp, "JPEG", quality=90)
+                _temp_image_files.append(tmp)
                 return tmp
             return image_path
         except Exception as e:
@@ -1544,4 +1558,5 @@ def export_lesson_pptx(
     # ── Save ──────────────────────────────────────────────────────────
     out = _resolve_output(output_dir, lesson, ".pptx")
     prs.save(str(out))
+    cleanup_temp_images()
     return out
