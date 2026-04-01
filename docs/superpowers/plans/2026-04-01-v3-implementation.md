@@ -266,9 +266,15 @@ git commit -m "feat: add --json flag to lesson command"
 Apply the same pattern from Task 0.2 to each command. For each command:
 
 1. Add `json_output: bool = typer.Option(False, "--json", help="Output as JSON")` parameter
-2. Create `_<command>_json()` helper that returns `{data, files, warnings}` dict
+2. Create `_<command>_json()` helper that returns `{data, files, warnings}` dict — use existing `_run_async()` from `_helpers.py` instead of creating new event loops
 3. At the top of the command function: `if json_output: run_json_command("<cmd>", _<cmd>_json, ...); return`
 4. Existing console output code stays untouched (the `else` path)
+
+**NOTE: Missing CLI commands that need creation first:**
+- `review` — no CLI command exists. Add `review` to `generate.py` or a new `review_cmd.py` that wraps `review_output.py`'s `review_pptx()` / `review_docx()` / `review_game_html()`.
+- `search` — no CLI command exists. Add `search` to `generate.py` or a new `search_cmd.py` that wraps the corpus/memory search functions.
+- `differentiate` — exists at `generate.py` but may need `--json` wiring.
+- `workspace students` — exists at `workspace_cmd.py`, add `--json`.
 
 - [ ] **Step 1: Write tests for all JSON-flagged commands**
 
@@ -610,6 +616,25 @@ git commit -m "feat: professional ASCII logo with animated startup sequence"
 
 ---
 
+### Task 1.5: Replace Figures and Icons
+
+**Files:**
+- Modify: `cli/source/src/constants/figures.ts`
+
+- [ ] **Step 1: Replace Claude-specific icons**
+
+In `figures.ts`, replace any crab/Claude-specific symbols with Claw-ED educational icons. Keep cross-platform unicode symbols (circles, arrows, diamonds) as-is — they're generic. Replace any branded spinner frames or indicators with Claw-ED equivalents.
+
+- [ ] **Step 2: Commit**
+
+```bash
+cd ~/Projects/Claw-ED-v0920
+git add cli/source/src/constants/figures.ts
+git commit -m "feat: replace Claude icons with Claw-ED educational icons"
+```
+
+---
+
 ## Phase 2: TypeScript Tool Bridges
 
 ### Task 2.1: Create the Python Subprocess Bridge
@@ -656,7 +681,7 @@ describe('Python bridge', () => {
 ```typescript
 // cli/source/src/tools/clawed/_bridge.ts
 import { spawn } from 'child_process'
-import { which } from 'bun'
+import { execSync } from 'child_process'
 
 export interface BridgeResult {
   status: 'success' | 'error'
@@ -676,7 +701,9 @@ let cachedPython: string | null = null
 export async function findPython(): Promise<string | null> {
   if (cachedPython) return cachedPython
   for (const name of ['python3', 'python']) {
-    const path = which(name)
+    try {
+      const path = execSync(`which ${name}`, { encoding: 'utf-8' }).trim()
+    } catch { continue }
     if (path) {
       cachedPython = path
       return path
@@ -898,7 +925,37 @@ git commit -m "feat: LessonTool — TypeScript bridge for lesson generation"
 
 ---
 
-### Task 2.3: Implement Remaining 13 Tools
+### Task 2.3a: Implement Read-Only Tools (Batch A — 5 tools)
+
+**Files:**
+- Create: `cli/source/src/tools/clawed/StandardsTool.ts`
+- Create: `cli/source/src/tools/clawed/PersonaTool.ts`
+- Create: `cli/source/src/tools/clawed/StudentsTool.ts`
+- Create: `cli/source/src/tools/clawed/SearchCurriculumTool.ts`
+- Create: `cli/source/src/tools/clawed/ReviewTool.ts`
+
+Simple read-only tools with short timeouts. Follow exact LessonTool pattern.
+
+| Tool | Python Command | Input Schema | Timeout |
+|------|---------------|--------------|---------|
+| StandardsTool | `config standards list --json` | grade, subject | 5s |
+| PersonaTool | `config persona show --json` | (none) | 5s |
+| StudentsTool | `workspace students --json` | (none) | 5s |
+| SearchCurriculumTool | `search QUERY --json` | query | 10s |
+| ReviewTool | `review LESSON_FILE --json` | lesson_file | 30s |
+
+- [ ] **Step 1: Implement all 5 tools**
+- [ ] **Step 2: Commit**
+
+```bash
+cd ~/Projects/Claw-ED-v0920
+git add cli/source/src/tools/clawed/StandardsTool.ts cli/source/src/tools/clawed/PersonaTool.ts cli/source/src/tools/clawed/StudentsTool.ts cli/source/src/tools/clawed/SearchCurriculumTool.ts cli/source/src/tools/clawed/ReviewTool.ts
+git commit -m "feat: read-only Claw-ED tools (standards, persona, students, search, review)"
+```
+
+---
+
+### Task 2.3b: Implement Generation Tools (Batch B — 8 tools)
 
 **Files:**
 - Create: `cli/source/src/tools/clawed/GameTool.ts`
@@ -907,15 +964,10 @@ git commit -m "feat: LessonTool — TypeScript bridge for lesson generation"
 - Create: `cli/source/src/tools/clawed/TrainTool.ts`
 - Create: `cli/source/src/tools/clawed/ExportTool.ts`
 - Create: `cli/source/src/tools/clawed/AssessmentTool.ts`
-- Create: `cli/source/src/tools/clawed/StandardsTool.ts`
-- Create: `cli/source/src/tools/clawed/PersonaTool.ts`
 - Create: `cli/source/src/tools/clawed/DifferentiateTool.ts`
-- Create: `cli/source/src/tools/clawed/ReviewTool.ts`
-- Create: `cli/source/src/tools/clawed/SearchCurriculumTool.ts`
 - Create: `cli/source/src/tools/clawed/MaterialsTool.ts`
-- Create: `cli/source/src/tools/clawed/StudentsTool.ts`
 
-Each follows the exact LessonTool pattern. Key differences per tool:
+Complex generation tools with longer timeouts and richer input schemas.
 
 | Tool | Python Command | Input Schema | Timeout |
 |------|---------------|--------------|---------|
@@ -925,19 +977,28 @@ Each follows the exact LessonTool pattern. Key differences per tool:
 | TrainTool | `train --benchmark --json` | n?, drive?, path?, full? | 600s |
 | ExportTool | `export LESSON_FILE --json` | lesson_file, format | 60s |
 | AssessmentTool | `assess TYPE TOPIC --json` | type, topic, grade, questions? | 120s |
-| StandardsTool | `config standards list --json` | grade, subject | 5s |
-| PersonaTool | `config persona show --json` | (none) | 5s |
 | DifferentiateTool | `differentiate --json` | lesson_file, student_profiles | 60s |
-| ReviewTool | `review LESSON_FILE --json` | lesson_file | 30s |
-| SearchCurriculumTool | `search QUERY --json` | query | 10s |
 | MaterialsTool | `gen materials --json` | lesson_file, format | 120s |
-| StudentsTool | `workspace students --json` | (none) | 5s |
 
-- [ ] **Step 1: Implement all 13 tools following LessonTool pattern**
+- [ ] **Step 1: Implement all 8 tools**
+- [ ] **Step 2: Commit**
 
-Each tool: `buildTool()` with name, inputSchema (zod), description, prompt, call (spawnPython), renderToolUseMessage, mapToolResultToToolResultBlockParam.
+```bash
+cd ~/Projects/Claw-ED-v0920
+git add cli/source/src/tools/clawed/GameTool.ts cli/source/src/tools/clawed/UnitTool.ts cli/source/src/tools/clawed/IngestTool.ts cli/source/src/tools/clawed/TrainTool.ts cli/source/src/tools/clawed/ExportTool.ts cli/source/src/tools/clawed/AssessmentTool.ts cli/source/src/tools/clawed/DifferentiateTool.ts cli/source/src/tools/clawed/MaterialsTool.ts
+git commit -m "feat: generation Claw-ED tools (game, unit, ingest, train, export, assess, differentiate, materials)"
+```
 
-- [ ] **Step 2: Create an index file**
+---
+
+### Task 2.3c: Create Index and Onboarding/Status Commands
+
+**Files:**
+- Create: `cli/source/src/tools/clawed/index.ts`
+- Create: `cli/source/src/commands/clawed/setup.ts` (onboarding wizard)
+- Create: `cli/source/src/commands/clawed/status.ts` (system status dashboard)
+
+- [ ] **Step 1: Create an index file**
 
 ```typescript
 // cli/source/src/tools/clawed/index.ts
@@ -957,12 +1018,32 @@ export { MaterialsTool } from './MaterialsTool.js'
 export { StudentsTool } from './StudentsTool.js'
 ```
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 3: Implement setup command (onboarding wizard in Ink TUI)**
+
+The `setup.ts` command replaces Python `onboarding.py` with an Ink TUI experience:
+- Provider selection (Gemini free, Claude, OpenAI, Ollama)
+- API key collection + validation
+- State selection for standards
+- Telegram user ID (optional, for daemon security)
+- Persona detection (if `~/.eduagent/persona.json` exists)
+- Config saved to `~/.eduagent/config.json`
+
+- [ ] **Step 4: Implement status command (system dashboard)**
+
+The `status.ts` command shows:
+- Current provider + model
+- Persona loaded (yes/no, name)
+- Standards state
+- Daemon running (yes/no, uptime)
+- Curriculum cache size
+- Recent lessons generated
+
+- [ ] **Step 5: Commit**
 
 ```bash
 cd ~/Projects/Claw-ED-v0920
-git add cli/source/src/tools/clawed/
-git commit -m "feat: all 14 Claw-ED tool bridges (lesson, game, unit, ingest, train, export, assessment, standards, persona, differentiate, review, search, materials, students)"
+git add cli/source/src/tools/clawed/ cli/source/src/commands/clawed/
+git commit -m "feat: tool index, onboarding wizard, and status dashboard commands"
 ```
 
 ---
@@ -1133,6 +1214,12 @@ export class LLMRouter {
 
 The full implementation wraps each provider's SDK for tool_use. This is the most complex new TypeScript module.
 
+**Rate limit handling:** Each provider method wraps calls with exponential backoff (retry on 429, max 3 retries, delays 1s/2s/4s).
+
+**Ollama:** Requires Ollama 0.3.0+ for native tool_use. No prompt-injection fallback — if Ollama version is too old, show a clear error telling teacher to update.
+
+**Keychain:** Auth chain step 3 (OS keychain) is deferred to a follow-up. Steps 1 (env), 2 (Claude OAuth), and 4 (secrets.json) cover the primary use cases. TODO comment in code for keychain integration.
+
 - [ ] **Step 3: Commit**
 
 ```bash
@@ -1189,7 +1276,7 @@ async function main() {
 }
 ```
 
-- [ ] **Step 4: Create launchd plist**
+- [ ] **Step 4: Create launchd plist and systemd unit**
 
 ```xml
 <!-- daemon/launchd/com.clawed.daemon.plist -->
@@ -1215,6 +1302,22 @@ async function main() {
 </plist>
 ```
 
+Also create systemd user unit:
+```ini
+# daemon/systemd/clawed-daemon.service
+[Unit]
+Description=Claw-ED Teaching Assistant Daemon
+After=network.target
+
+[Service]
+ExecStart=node DAEMON_PATH/index.js start
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
+```
+
 - [ ] **Step 5: Add daemon command to CLI**
 
 In `cli/source/src/commands/`, add a `daemon` command that routes to the daemon entry point.
@@ -1224,7 +1327,7 @@ In `cli/source/src/commands/`, add a `daemon` command that routes to the daemon 
 ```bash
 cd ~/Projects/Claw-ED-v0920
 git add daemon/ cli/source/src/commands/
-git commit -m "feat: background daemon with Telegram bridge and launchd service"
+git commit -m "feat: background daemon with Telegram bridge, launchd + systemd services"
 ```
 
 ---
@@ -1447,6 +1550,113 @@ git commit -m "fix: split vocabulary across multiple slides (max 4 per slide)"
 
 ---
 
+### Task 6.1b: Fix PPTX Visual Theming
+
+**Files:**
+- Modify: `clawed/export_pptx.py`
+
+- [ ] **Step 1: Add topic-based theme selection**
+
+In `export_pptx.py`, add a theme mapping:
+```python
+TOPIC_THEMES = {
+    "exploration": {"bg": "#1a3a5c", "accent": "#c9a96e", "style": "nautical"},
+    "renaissance": {"bg": "#4a3728", "accent": "#d4af37", "style": "marble"},
+    "revolution": {"bg": "#8b0000", "accent": "#ffd700", "style": "patriotic"},
+    # ... more topic-theme mappings
+}
+```
+
+Apply theme colors to slide backgrounds, title bars, and accent elements based on keyword matching in the lesson topic.
+
+- [ ] **Step 2: Commit**
+
+```bash
+git commit -am "feat: topic-based visual theming for PPTX slides"
+```
+
+---
+
+### Task 6.1c: Fix Game HTML — Prevention-First Model Selection
+
+**Files:**
+- Modify: `clawed/compile_game.py`
+
+- [ ] **Step 1: Enforce code-capable models for game generation**
+
+In `compile_game.py`, before the LLM call, check the model tier. If using Ollama with a non-code model, either:
+- Route to a code-capable model (if available)
+- Warn the teacher that game quality may be lower
+- Fall back gracefully with a simpler game template
+
+- [ ] **Step 2: Commit**
+
+```bash
+git commit -am "fix: enforce code-capable models for game HTML generation"
+```
+
+---
+
+### Task 6.1d: GitHub Actions CI Pipeline
+
+**Files:**
+- Create: `.github/workflows/ci.yml`
+
+- [ ] **Step 1: Create CI workflow**
+
+```yaml
+name: CI
+on: [push, pull_request]
+jobs:
+  python-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '${{ matrix.python-version }}' }
+      - run: pip install -e ".[all]"
+      - run: ulimit -n 4096 && python -m pytest tests/ -q --tb=short
+
+  typescript-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v1
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: cd cli && npm install && node scripts/build-cli.mjs
+
+  wheel-build:
+    needs: [python-tests, typescript-build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/build.sh
+      - run: ls -lh dist/*.whl
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [wheel-build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: bash scripts/build.sh
+      - run: pip install twine && twine upload dist/*
+        env: { TWINE_USERNAME: __token__, TWINE_PASSWORD: '${{ secrets.PYPI_TOKEN }}' }
+```
+
+- [ ] **Step 2: Commit**
+
+```bash
+git add .github/workflows/ci.yml
+git commit -m "ci: add GitHub Actions pipeline — tests, build, publish"
+```
+
+---
+
 ### Task 6.2: Run Full Test Suite & Fix Regressions
 
 - [ ] **Step 1: Run all Python tests**
@@ -1563,19 +1773,24 @@ clawed  # Should launch Ink TUI with animated logo
 ## Execution Order & Dependencies
 
 ```
-Phase 0 (JSON Bridge) ──────────────────────────► MUST complete first
+Phase 0 (JSON Bridge) ─────► MUST complete first
   │
-  ├── Phase 1 (Branding) ──► can start in parallel
+  ├── Phase 1 (Branding) ──► can start in parallel with Phase 0
   │     │
-  │     └── Phase 2 (Tools) ──► needs Phase 0 + Phase 1
+  │     ├── Phase 2 (Tools) ──► needs Phase 0 + Phase 1
+  │     │
+  │     └── Phase 3 (LLM Router) ──► needs Phase 1 only (independent of Phase 2)
   │           │
-  │           └── Phase 3 (LLM Router) ──► needs Phase 2
-  │                 │
-  │                 └── Phase 4 (Daemon) ──► needs Phase 3
+  │           └── Phase 4 (Daemon) ──► needs Phase 2 + Phase 3
   │
   └── Phase 5 (Packaging) ──► needs Phase 1 + Phase 2
         │
         └── Phase 6 (Polish & Ship) ──► needs ALL phases
 ```
 
-Phases 0 and 1 can run in parallel. Phases 2-4 are sequential. Phase 5 can start once 1+2 are done. Phase 6 is the final gate.
+**Parallelism opportunities:**
+- Phase 0 + Phase 1 run in parallel
+- Phase 2 + Phase 3 run in parallel (both need Phase 1, Phase 2 also needs Phase 0)
+- Phase 4 waits for both Phase 2 + Phase 3
+- Phase 5 can start as soon as Phase 1 + Phase 2 are done
+- Phase 6 is the final gate requiring everything
