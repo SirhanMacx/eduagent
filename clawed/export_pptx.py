@@ -66,35 +66,79 @@ def _split_text(text: str, max_len: int = 550) -> list[str]:
     return chunks or [text]
 
 
-def _section_divider(prs, slide_num, text, theme, slide_w, slide_h):
-    """Create a clean section divider slide with accent background."""
+def _section_divider(prs, slide_num, text, theme, slide_w, slide_h,
+                     sub_text: str = ""):
+    """Create a section divider slide with label + optional sub-instruction."""
     from pptx.enum.text import PP_ALIGN
-    from pptx.util import Inches, Pt
+    from pptx.util import Emu, Inches, Pt
 
     slide_num[0] += 1
     layout = prs.slide_layouts[6]  # blank layout
     slide = prs.slides.add_slide(layout)
 
-    # Accent background
+    # Two-tone background: dark primary top 60%, light bottom 40%
     bg = slide.background
     fill = bg.fill
     fill.solid()
-    fill.fore_color.rgb = _hex_to_rgb(theme["accent"])
+    fill.fore_color.rgb = _hex_to_rgb(theme.get("bg_dark", theme["primary"]))
 
-    # Large centered text
+    # Light bottom band
+    band_top = int(slide_h * 0.62)
+    band_h = slide_h - band_top
+    band = slide.shapes.add_shape(
+        1,  # MSO_SHAPE_TYPE.RECTANGLE
+        Emu(0), band_top, slide_w, band_h,
+    )
+    band.line.fill.background()
+    bfill = band.fill
+    bfill.solid()
+    bfill.fore_color.rgb = _hex_to_rgb(theme.get("bg_light", "F0F0F0"))
+
+    # Section label — left-aligned, 36pt, accent color, upper portion
+    # Split "Let's Practice Together\n(15 minutes)" into label and time
+    parts = text.split("\n", 1)
+    label = parts[0].strip()
+    time_hint = parts[1].strip() if len(parts) > 1 else ""
+
     tb = slide.shapes.add_textbox(
-        Inches(1.5), Inches(2.5), slide_w - Inches(3.0), Inches(2.5),
+        Inches(1.0), Inches(1.8), slide_w - Inches(2.0), Inches(1.6),
     )
     tf = tb.text_frame
     tf.word_wrap = True
     p = tf.paragraphs[0]
-    p.alignment = PP_ALIGN.CENTER
+    p.alignment = PP_ALIGN.LEFT
     run = p.add_run()
-    run.text = text
-    run.font.size = Pt(44)
-    run.font.color.rgb = _hex_to_rgb(theme["primary"])
+    run.text = label
+    run.font.size = Pt(38)
+    run.font.color.rgb = _hex_to_rgb(theme.get("text_light", "FFFFFF"))
     run.font.bold = True
     run.font.name = "Calibri"
+
+    # Time hint — smaller, below label
+    if time_hint:
+        tb_time = slide.shapes.add_textbox(
+            Inches(1.0), Inches(3.5), Inches(4.0), Inches(0.6),
+        )
+        p_t = tb_time.text_frame.paragraphs[0]
+        run_t = p_t.add_run()
+        run_t.text = time_hint
+        run_t.font.size = Pt(20)
+        run_t.font.color.rgb = _hex_to_rgb(theme.get("text_light", "DDDDDD"))
+        run_t.font.name = "Calibri"
+
+    # Sub-instruction text (e.g. activity directions) in the light band
+    if sub_text:
+        tb_sub = slide.shapes.add_textbox(
+            Inches(1.0), int(slide_h * 0.65), slide_w - Inches(2.0), int(slide_h * 0.30),
+        )
+        tf_sub = tb_sub.text_frame
+        tf_sub.word_wrap = True
+        p_sub = tf_sub.paragraphs[0]
+        run_sub = p_sub.add_run()
+        run_sub.text = sub_text
+        run_sub.font.size = Pt(16)
+        run_sub.font.color.rgb = _hex_to_rgb(theme.get("text_dark", "333333"))
+        run_sub.font.name = "Calibri"
 
     # Footer with slide number
     left = slide_w - Inches(1.5)
@@ -255,6 +299,24 @@ def export_lesson_pptx(
     lesson.standards = [sanitize_text(s) for s in lesson.standards]
     lesson.materials_needed = [sanitize_text(m) for m in lesson.materials_needed]
 
+    def _clean_slide_text(text: str) -> str:
+        """Final text cleanup before rendering to slides.
+
+        Removes markdown artifacts, normalises blanks, strips section
+        headers embedded in body text, and trims prose to slide-safe length.
+        """
+        if not text:
+            return text
+        # Replace __blank__ or ________ with a standard blank line
+        text = re.sub(r"_{2,}", "______", text)
+        # Strip markdown bold/italic markers
+        text = re.sub(r"\*{1,3}([^*]+)\*{1,3}", r"\1", text)
+        # Strip ## section headers at line start (DI prose has these)
+        text = re.sub(r"^#{1,4}\s+", "", text, flags=re.MULTILINE)
+        # Strip leading open-quote orphan chars (split source excerpts)
+        text = re.sub(r'^["\u201c\u2018\u2019\u201d]\s*', "", text.strip())
+        return text.strip()
+
     # Resolve teacher display name
     teacher_display_name = ""
     if persona and persona.name and persona.name != "My Teaching Persona":
@@ -286,7 +348,7 @@ def export_lesson_pptx(
     # Images on: Title (bg), Do Now (accent), Direct Instruction (sidebar)
     # No images on: Objectives, Guided Practice, Exit Ticket, Closing
     if include_images:
-        from clawed.slide_images import extract_image_subjects, _fetch_wikimedia
+        from clawed.slide_images import _fetch_wikimedia, extract_image_subjects
         entities = extract_image_subjects(lesson)
 
         # For named entities (people, places, documents), go directly to Wikipedia —
@@ -409,8 +471,10 @@ def export_lesson_pptx(
         Returns a safe path (possibly a converted temp file) or None.
         """
         try:
+            import io
+            import tempfile
+
             from PIL import Image as PILImage
-            import io, tempfile
             data = image_path.read_bytes()
             if len(data) < 1000:
                 return None
@@ -663,27 +727,29 @@ def export_lesson_pptx(
         run.text = "Do Now"
         _set_text_props(run, 22, theme["text_light"], bold=True)
 
-        # Question / prompt text -- 28pt, dark, good line spacing
+        # Question / prompt text — adaptive font size based on length
         # Do Now uses accent image (small, bottom-right) not sidebar
         do_now_img = images.get("entity_1")
 
         tb = slide.shapes.add_textbox(
-            Inches(0.8), Inches(1.8), slide_w - Inches(2.0), Inches(3.2),
+            Inches(0.8), Inches(1.8), slide_w - Inches(2.0), Inches(4.2),
         )
         tf = tb.text_frame
         tf.word_wrap = True
         p = tf.paragraphs[0]
-        p.line_spacing = Pt(38)
+        p.line_spacing = Pt(30)
         run = p.add_run()
         # Brief prompt on slide face, full text in speaker notes
-        dn_text = lesson.do_now
-        if len(dn_text) > 250:
-            cutoff = dn_text[:250].rfind(". ")
-            dn_display = dn_text[:cutoff + 1] if cutoff > 80 else dn_text[:250].rsplit(" ", 1)[0] + "..."
+        dn_text = _clean_slide_text(lesson.do_now)
+        if len(dn_text) > 300:
+            cutoff = dn_text[:300].rfind(". ")
+            dn_display = dn_text[:cutoff + 1] if cutoff > 80 else dn_text[:300].rsplit(" ", 1)[0] + "..."
         else:
             dn_display = dn_text
         run.text = dn_display
-        _set_text_props(run, 28, theme["text_dark"])
+        # Scale font: short prompt = 22pt, medium = 18pt, long = 16pt
+        dn_font = 22 if len(dn_display) < 120 else 18 if len(dn_display) < 250 else 16
+        _set_text_props(run, dn_font, theme["text_dark"])
 
         # Full Do Now in speaker notes
         if len(dn_text) > 250:
@@ -749,23 +815,48 @@ def export_lesson_pptx(
             caption = ", ".join(concepts[:2]) if concepts else ""
             _add_sidebar_image(slide, img_path, caption=caption)
 
-        # Brief summary on the slide face (first sentence or ~150 chars)
-        first_sentence_match = re.match(r"^(.+?[.!?])\s", di_text)
-        if first_sentence_match and len(first_sentence_match.group(1)) <= 200:
-            summary_text = first_sentence_match.group(1)
-        else:
-            summary_text = di_text[:150].rsplit(" ", 1)[0] + " ..."
+        # Extract 3-4 key bullet points from DI prose for slide face.
+        # Full script goes to speaker notes.
+        di_clean = _clean_slide_text(di_text)
+
+        def _extract_di_bullets(text: str, max_bullets: int = 4) -> list[str]:
+            """Pull key sentences/bullets from direct instruction prose."""
+            bullets: list[str] = []
+            # Try existing bullet/numbered list items first
+            list_items = re.findall(r"^[\-•\*]\s+(.+)$", text, re.MULTILINE)
+            if not list_items:
+                list_items = re.findall(r"^\d+[\.\)]\s+(.+)$", text, re.MULTILINE)
+            for item in list_items[:max_bullets]:
+                item = item.strip()
+                if len(item) > 20:
+                    bullets.append(item[:140])
+            if bullets:
+                return bullets
+            # Fallback: first N sentences that are short enough to be readable
+            sentences = re.split(r"(?<=[.!?])\s+", text)
+            for sent in sentences:
+                sent = sent.strip()
+                # Skip header-like short sentences and very long ones
+                if 30 < len(sent) <= 160 and not sent.startswith(("##", "**", "Alright")):
+                    bullets.append(sent)
+                if len(bullets) >= max_bullets:
+                    break
+            return bullets or [text[:160].rsplit(" ", 1)[0] + "…"]
+
+        bullets = _extract_di_bullets(di_clean)
 
         tb = slide.shapes.add_textbox(
-            Inches(1.0), Inches(1.8), text_width, Inches(4.5),
+            Inches(1.0), Inches(1.8), text_width, Inches(4.8),
         )
         tf = tb.text_frame
         tf.word_wrap = True
-        p = tf.paragraphs[0]
-        p.line_spacing = Pt(36)
-        run = p.add_run()
-        run.text = summary_text
-        _set_text_props(run, 26, theme["text_dark"])
+        for bi, bullet in enumerate(bullets):
+            p = tf.paragraphs[0] if bi == 0 else tf.add_paragraph()
+            p.line_spacing = Pt(26)
+            p.space_before = Pt(6)
+            run = p.add_run()
+            run.text = f"• {bullet}"
+            _set_text_props(run, 18, theme["text_dark"])
 
         # Full DI script in speaker notes
         notes_slide = slide.notes_slide
@@ -832,25 +923,50 @@ def export_lesson_pptx(
             # Left accent bar
             _bar(slide, Inches(0.6), Inches(1.7), Inches(0.06), Inches(5.0), theme["primary"])
 
-            # Vocabulary terms in large readable font
-            tb = slide.shapes.add_textbox(
-                Inches(1.0), Inches(1.8), slide_w - Inches(2.0), Inches(5.0),
-            )
-            tf = tb.text_frame
-            tf.word_wrap = True
+            # Vocabulary: 2-column layout — term (bold, left) | definition (right)
+            # Each term gets its own row for clarity. 18pt for readability with density.
+            LEFT_COL_W = Inches(3.8)
+            RIGHT_COL_W = slide_w - Inches(5.2)
+            row_h = Inches(0.65)
+            start_y = Inches(1.75)
 
-            for idx, (term, definition) in enumerate(vocab_pairs[:8]):
-                p = tf.paragraphs[0] if idx == 0 else tf.add_paragraph()
-                p.space_before = Pt(10)
-                p.line_spacing = Pt(36)
-                # Bold term
-                run_term = p.add_run()
-                run_term.text = term.strip()
-                _set_text_props(run_term, 24, theme["primary"], bold=True)
-                # Definition
-                run_def = p.add_run()
-                run_def.text = f"  \u2014  {definition.strip()}"
-                _set_text_props(run_def, 24, theme["text_dark"])
+            for idx, (term, definition) in enumerate(vocab_pairs[:7]):
+                y = start_y + idx * row_h
+                if y + row_h > slide_h - Inches(0.5):
+                    break  # don't overflow bottom
+
+                # Term — left column, bold, primary color
+                tb_term = slide.shapes.add_textbox(
+                    Inches(0.9), y, LEFT_COL_W, row_h,
+                )
+                tf_term = tb_term.text_frame
+                tf_term.word_wrap = True
+                p_term = tf_term.paragraphs[0]
+                p_term.line_spacing = Pt(22)
+                run_t = p_term.add_run()
+                run_t.text = term.strip()
+                _set_text_props(run_t, 18, theme["primary"], bold=True)
+
+                # Definition — right column, normal weight
+                tb_def = slide.shapes.add_textbox(
+                    Inches(4.9), y, RIGHT_COL_W, row_h,
+                )
+                tf_def = tb_def.text_frame
+                tf_def.word_wrap = True
+                p_def = tf_def.paragraphs[0]
+                p_def.line_spacing = Pt(22)
+                run_d = p_def.add_run()
+                # Truncate long definitions to keep them slide-readable
+                defn = definition.strip()
+                if len(defn) > 120:
+                    defn = defn[:117].rsplit(" ", 1)[0] + "…"
+                run_d.text = defn
+                _set_text_props(run_d, 18, theme["text_dark"])
+
+                # Light separator line between rows
+                if idx < len(vocab_pairs) - 1:
+                    _bar(slide, Inches(0.9), y + row_h - Inches(0.04),
+                         slide_w - Inches(1.8), Inches(0.02), "EEEEEE")
 
             _add_footer(slide, slide_num[0])
 
@@ -892,30 +1008,40 @@ def export_lesson_pptx(
                 _add_sidebar_image(slide, src_img)
             source_img_idx += 1
 
-            # Quoted text in large italic font
+            # Quoted text — adaptive font, clean text, truncate if needed
+            clean_quote = _clean_slide_text(quote_text.strip())
+            # Truncate very long quotes to keep readable on slide
+            if len(clean_quote) > 350:
+                clean_quote = clean_quote[:347].rsplit(" ", 1)[0] + "…"
+
+            quote_font = 20 if len(clean_quote) < 180 else 17 if len(clean_quote) < 300 else 15
+
             tb = slide.shapes.add_textbox(
-                Inches(1.5), Inches(2.0), text_width, Inches(3.5),
+                Inches(1.5), Inches(1.9), text_width, Inches(3.8),
             )
             tf = tb.text_frame
             tf.word_wrap = True
             p = tf.paragraphs[0]
             p.alignment = PP_ALIGN.LEFT
-            p.line_spacing = Pt(36)
+            p.line_spacing = Pt(quote_font + 8)
             run = p.add_run()
-            run.text = f"\u201c{quote_text.strip()}\u201d"
-            _set_text_props(run, 24, theme["text_dark"])
+            run.text = f"\u201c{clean_quote}\u201d"
+            _set_text_props(run, quote_font, theme["text_dark"])
             run.font.italic = True
 
-            # Attribution below
+            # Attribution — right-aligned, smaller, just above footer
             if attribution and attribution.strip():
+                attr_clean = _clean_slide_text(attribution.strip())
+                if len(attr_clean) > 100:
+                    attr_clean = attr_clean[:97].rsplit(" ", 1)[0] + "…"
                 tb_attr = slide.shapes.add_textbox(
-                    Inches(1.5), Inches(5.8), text_width, Inches(0.6),
+                    Inches(1.5), slide_h - Inches(1.6), text_width, Inches(0.7),
                 )
                 p_attr = tb_attr.text_frame.paragraphs[0]
                 p_attr.alignment = PP_ALIGN.RIGHT
                 run_attr = p_attr.add_run()
-                run_attr.text = f"\u2014 {attribution.strip()}"
-                _set_text_props(run_attr, 18, "666666")
+                run_attr.text = f"\u2014 {attr_clean}"
+                _set_text_props(run_attr, 14, "666666")
 
             _add_footer(slide, slide_num[0])
 
@@ -924,9 +1050,15 @@ def export_lesson_pptx(
     # ═══════════════════════════════════════════════════════════════════
     if lesson.guided_practice:
         gp_min = lesson.time_estimates.get("guided_practice", 15)
+        # Show first instruction line in the divider's light band
+        gp_preview = _clean_slide_text(lesson.guided_practice)
+        gp_first_line = gp_preview.split("\n")[0].strip()
+        if len(gp_first_line) > 120:
+            gp_first_line = gp_first_line[:117].rsplit(" ", 1)[0] + "…"
         _section_divider(
             prs, slide_num, f"Let's Practice Together\n({gp_min} minutes)",
             theme, slide_w, slide_h,
+            sub_text=gp_first_line,
         )
 
     # ═══════════════════════════════════════════════════════════════════
@@ -951,26 +1083,31 @@ def export_lesson_pptx(
 
         # No image on Guided Practice -- keep clean for readability
 
-        # Brief student-facing instructions on slide face (first 2-3 sentences)
-        gp_text = lesson.guided_practice
-        gp_summary = gp_text
-        if len(gp_text) > 250:
-            cutoff = gp_text[:250].rfind(". ")
-            if cutoff > 80:
-                gp_summary = gp_text[:cutoff + 1]
-            else:
-                gp_summary = gp_text[:250].rsplit(" ", 1)[0] + "..."
+        # Guided practice: render as numbered/bulleted list items at 18pt
+        gp_text = _clean_slide_text(lesson.guided_practice)
+
+        # Split into individual items (lines starting with - or numbers)
+        gp_lines = [line.strip() for line in gp_text.split("\n") if line.strip()]
+        # Limit to what fits: ~7 lines at 18pt in 4.5" box
+        MAX_GP_LINES = 7
+        if len(gp_lines) > MAX_GP_LINES:
+            gp_lines = gp_lines[:MAX_GP_LINES]
 
         tb = slide.shapes.add_textbox(
-            Inches(0.8), Inches(1.8), slide_w - Inches(2.0), Inches(4.5),
+            Inches(0.8), Inches(1.8), slide_w - Inches(2.0), Inches(4.8),
         )
         tf = tb.text_frame
         tf.word_wrap = True
-        p = tf.paragraphs[0]
-        p.line_spacing = Pt(34)
-        run = p.add_run()
-        run.text = gp_summary
-        _set_text_props(run, 24, theme["text_dark"])
+        for li, line in enumerate(gp_lines):
+            p = tf.paragraphs[0] if li == 0 else tf.add_paragraph()
+            p.line_spacing = Pt(26)
+            p.space_before = Pt(4)
+            run = p.add_run()
+            # Ensure list items have a bullet if they don't already
+            if not line.startswith(("-", "•", "–")) and not re.match(r"^\d+[\.\)]", line):
+                line = f"• {line}"
+            run.text = line
+            _set_text_props(run, 18, theme["text_dark"])
 
         # Full guided practice + ANSWER KEY in speaker notes
         notes_slide = slide.notes_slide
@@ -1087,57 +1224,72 @@ def export_lesson_pptx(
         run.text = "Exit Ticket"
         _set_text_props(run, 36, theme["text_light"], bold=True)
 
-        # Numbered question cards
-        q_top = Inches(1.6)
-        for i, q in enumerate(lesson.exit_ticket, 1):
-            # Card background (rounded rectangle with shadow)
+        # Numbered questions + answer line
+        # Available height: 7.5" - 1.2" header - 0.6" footer = ~5.7"
+        # Divide evenly among questions (max 4 shown)
+        et_questions = lesson.exit_ticket[:4]
+        n_q = len(et_questions)
+        available_h = slide_h - Inches(1.55) - Inches(0.8)
+        card_h = available_h // n_q
+
+        q_top = Inches(1.5)
+        for i, q in enumerate(et_questions, 1):
+            # Card background
             _rounded_card(
                 slide,
-                Inches(1.0), q_top,
-                slide_w - Inches(2.0), Inches(1.1),
+                Inches(0.8), q_top,
+                slide_w - Inches(1.6), card_h - Inches(0.1),
                 theme["accent"],
             )
 
-            # Number circle
+            # Number circle — properly sized
             circle = slide.shapes.add_shape(
                 MSO_SHAPE.OVAL,
-                Inches(1.3), q_top + Inches(0.15),
-                Inches(0.7), Inches(0.7),
+                Inches(1.1), q_top + Inches(0.12),
+                Inches(0.55), Inches(0.55),
             )
             circle.line.fill.background()
             _add_shape_fill(circle, theme["secondary"])
-            circle.text_frame.paragraphs[0].alignment = PP_ALIGN.CENTER
-            run = circle.text_frame.paragraphs[0].add_run()
+            circ_p = circle.text_frame.paragraphs[0]
+            circ_p.alignment = PP_ALIGN.CENTER
+            run = circ_p.add_run()
             run.text = str(i)
-            _set_text_props(run, 22, theme["text_light"], bold=True)
+            _set_text_props(run, 18, theme["text_light"], bold=True)
 
-            # Question text
+            # Question text — adaptive font, left of number
+            q_text = _clean_slide_text(q.question)
+            # For slide: trim to one clear sentence
+            if len(q_text) > 150:
+                q_text = q_text[:150].rsplit(" ", 1)[0] + "…"
+            q_font = 16 if len(q_text) > 100 else 18
+
             tb = slide.shapes.add_textbox(
-                Inches(2.3), q_top + Inches(0.15),
-                slide_w - Inches(3.8), Inches(0.8),
+                Inches(1.85), q_top + Inches(0.10),
+                slide_w - Inches(3.0), Inches(0.65),
             )
             tf = tb.text_frame
             tf.word_wrap = True
             run = tf.paragraphs[0].add_run()
-            # Truncate long questions for slide readability
-            q_text = q.question
-            if len(q_text) > 120:
-                q_text = q_text[:120].rsplit(" ", 1)[0] + "..."
             run.text = q_text
-            _set_text_props(run, 20, theme["text_dark"])
+            _set_text_props(run, q_font, theme["text_dark"])
 
-            q_top += Inches(1.3)
+            # Answer line underneath question
+            answer_y = q_top + Inches(0.75)
+            _bar(slide, Inches(1.85), answer_y,
+                 slide_w - Inches(3.0), Inches(0.02), "CCCCCC")
+
+            q_top += card_h
 
         # "Turn in before you leave" footer note
         tb = slide.shapes.add_textbox(
-            Inches(0.8), slide_h - Inches(0.9),
+            Inches(0.8), slide_h - Inches(0.75),
             slide_w - Inches(1.6), Inches(0.4),
         )
         p = tb.text_frame.paragraphs[0]
         p.alignment = PP_ALIGN.CENTER
         run = p.add_run()
-        run.text = "Turn in before you leave"
-        _set_text_props(run, 14, "888888")
+        run.text = "Turn in before you leave  •  REMEMBER: T.E.A."
+        _set_text_props(run, 13, "888888")
 
         _add_footer(slide, slide_num[0])
 

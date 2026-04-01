@@ -867,7 +867,7 @@ async def _fetch_web_scrape(
 
     # DDG image search endpoint
     search_url = "https://duckduckgo.com/"
-    params = {"q": query, "iax": "images", "ia": "images"}
+    params = {"q": query, "iax": "images", "ia": "images"}  # noqa: F841
 
     try:
         async with httpx.AsyncClient(

@@ -390,7 +390,7 @@ wheels = [
 
 [[package]]
 name = "clawed"
-version = "2.3.8"
+version = "2.5.2"
 source = { editable = "." }
 dependencies = [
     { name = "apscheduler" },

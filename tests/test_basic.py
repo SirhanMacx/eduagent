@@ -334,7 +334,7 @@ class TestVersion:
     def test_version_string(self):
         from clawed import __version__
 
-        assert __version__ == "2.5.1"
+        assert __version__ == "2.5.2"
 
 
 # ── Standards module ───────────────────────────────────────────────

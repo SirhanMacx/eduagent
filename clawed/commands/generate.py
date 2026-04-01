@@ -306,7 +306,10 @@ def lesson(
         False, "--game/--no-game",
         help="Also generate an interactive HTML learning game",
     ),
-    fmt: str = typer.Option("handout", "--format", "-f", help="Export format: handout (student packet), docx (teacher), pptx, pdf, markdown"),
+    fmt: str = typer.Option(
+        "handout", "--format", "-f",
+        help="Export: handout, docx, pptx, pdf, markdown",
+    ),
 ):
     """Generate a detailed daily lesson plan.
 

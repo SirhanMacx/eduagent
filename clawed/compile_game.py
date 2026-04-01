@@ -203,7 +203,7 @@ def _repair_html_structure(html: str) -> str:
             f"<style>\n{html}\n</style>\n</head>\n<body></body>\n</html>"
         )
 
-    preamble = html[:html_tag_end + 1]  # everything up to and including <html ...>
+    _preamble = html[:html_tag_end + 1]  # noqa: F841  # everything up to and including <html ...>
     rest = html[html_tag_end + 1:].strip()
 
     # Extract bare title text (first non-tag, non-CSS line after <html>)
@@ -219,7 +219,7 @@ def _repair_html_structure(html: str) -> str:
 
     # Split: CSS/meta goes in <head>, script/div/etc goes in <body>
     head_parts: list[str] = []
-    body_parts: list[str] = []
+    body_parts: list[str] = []  # noqa: F841
 
     # Collect <meta> tags floating outside <head>
     meta_tags = re.findall(r"<meta[^>]*>", rest, re.IGNORECASE)

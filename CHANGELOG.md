@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.5.2] - 2026-04-01
+
+Production-quality output release. Every teacher gets professional PPTX with real images, clean handouts, and working games.
+
+### Added
+- **Web scraping image source** — DuckDuckGo image search finds specific educational images (diagrams, maps, portraits) without API keys. Most comprehensive source in the pipeline.
+- **5-source image pipeline** — teacher files, web scrape, Library of Congress, Wikimedia Commons, Unsplash. All enabled for all subjects. Teacher images always first.
+
+### Changed
+- **All generation routes to Opus (DEEP tier)** — every lesson, unit, assessment, game, and evaluation uses maximum intelligence. No more routing to weaker models. Default fallback also DEEP.
+- **Handout is the default export format** — `clawed lesson` produces student-facing DOCX handout by default (was markdown).
+- **Game compiler forces Opus** — games require code-capable models. Opus produces valid, interactive HTML every time.
+
+### Fixed
+- **Answer keys stripped from student handouts** — (Answer: X), Answer: ..., Expected: ... patterns removed from guided_practice and independent_work. Students never see answer keys.
+- **Game HTML structure repair** — detects bare JavaScript not wrapped in script tags, strips duplicate DOCTYPE, wraps properly. Games render and play instead of showing blue screens.
+- **Image relevance filtering** — eliminates irrelevant/dangerous images, anchors slide positions, extends verb blocklist for search queries.
+- **Multi-agent pipeline config** — passes AppConfig correctly, handles None task_models.
+- **PPTX crash fixes** — topic-map queries, slide positioning, presentation bug fixes.
+
 ## [2.5.1] - 2026-04-01
 
 Interactive learning games and community gallery.
