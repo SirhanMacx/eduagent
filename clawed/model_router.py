@@ -31,22 +31,21 @@ TASK_TIERS: dict[str, ModelTier] = {
     "bellringer": ModelTier.FAST,
     "formatting": ModelTier.FAST,
 
-    # Work tier
-    "lesson_plan": ModelTier.WORK,
-    "unit_plan": ModelTier.WORK,
-    "materials": ModelTier.WORK,
-    "differentiation": ModelTier.WORK,
-    "iep_modification": ModelTier.WORK,
-    "assessment": ModelTier.WORK,
-    "year_map": ModelTier.WORK,
-    "pacing_guide": ModelTier.WORK,
-    "curriculum_gaps": ModelTier.WORK,
-
-    # Deep tier
+    # Deep tier — maximum intelligence for everything that matters
+    "lesson_plan": ModelTier.DEEP,
+    "unit_plan": ModelTier.DEEP,
+    "materials": ModelTier.DEEP,
+    "differentiation": ModelTier.DEEP,
+    "iep_modification": ModelTier.DEEP,
+    "assessment": ModelTier.DEEP,
+    "year_map": ModelTier.DEEP,
+    "pacing_guide": ModelTier.DEEP,
+    "curriculum_gaps": ModelTier.DEEP,
     "persona_extract": ModelTier.DEEP,
     "evaluation": ModelTier.DEEP,
     "master_content": ModelTier.DEEP,
     "game_generate": ModelTier.DEEP,
+    "multi_agent": ModelTier.DEEP,
 }
 
 DEFAULT_TIER_MODELS: dict[str, str] = {
@@ -78,7 +77,7 @@ PROVIDER_TIER_MODELS: dict[str, dict[str, str]] = {
 
 def resolve_tier(task_type: str) -> ModelTier:
     """Get the tier for a task. Unknown tasks default to WORK."""
-    return TASK_TIERS.get(task_type, ModelTier.WORK)
+    return TASK_TIERS.get(task_type, ModelTier.DEEP)
 
 
 def resolve_model(tier: ModelTier, config: AppConfig) -> str:
