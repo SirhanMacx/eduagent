@@ -456,3 +456,83 @@ class AssetRegistry:
                 (teacher_id,),
             ).fetchone()[0]
         return {"asset_count": total, "image_count": images, "link_count": links}
+
+    def get_extracted_images(
+        self,
+        asset_id: int | None = None,
+        query: str | None = None,
+        limit: int = 20,
+    ) -> list[dict[str, Any]]:
+        """Retrieve extracted images from the asset registry.
+
+        Args:
+            asset_id: Filter by specific asset ID.
+            query: Search image context/filename for keyword matches.
+            limit: Max results to return.
+
+        Returns:
+            List of dicts with: path, source, content_type, context, asset_id,
+            image_format, width, height, slide_number.
+        """
+        with sqlite3.connect(self._db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            if asset_id is not None:
+                rows = conn.execute(
+                    "SELECT ai.*, a.filename, a.title, a.source_path "
+                    "FROM asset_images ai "
+                    "JOIN assets a ON ai.asset_id = a.id "
+                    "WHERE ai.asset_id = ? "
+                    "ORDER BY ai.image_index "
+                    "LIMIT ?",
+                    (asset_id, limit),
+                ).fetchall()
+            elif query:
+                keywords = [f"%{w.lower()}%" for w in query.split() if len(w) > 2]
+                if not keywords:
+                    return []
+                # Match against context_text, alt_text, or parent asset filename/title
+                conditions = " OR ".join(
+                    ["LOWER(ai.context_text) LIKE ?"
+                     " OR LOWER(ai.alt_text) LIKE ?"
+                     " OR LOWER(a.filename) LIKE ?"
+                     " OR LOWER(a.title) LIKE ?"] * len(keywords)
+                )
+                params: list[Any] = []
+                for kw in keywords:
+                    params.extend([kw, kw, kw, kw])
+                params.append(limit)
+                rows = conn.execute(
+                    f"SELECT ai.*, a.filename, a.title, a.source_path "
+                    f"FROM asset_images ai "
+                    f"JOIN assets a ON ai.asset_id = a.id "
+                    f"WHERE {conditions} "
+                    f"ORDER BY ai.id DESC "
+                    f"LIMIT ?",
+                    params,
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    "SELECT ai.*, a.filename, a.title, a.source_path "
+                    "FROM asset_images ai "
+                    "JOIN assets a ON ai.asset_id = a.id "
+                    "ORDER BY ai.id DESC "
+                    "LIMIT ?",
+                    (limit,),
+                ).fetchall()
+
+        results: list[dict[str, Any]] = []
+        for row in rows:
+            fmt = row["image_format"] or "png"
+            results.append({
+                "path": row["image_path"],
+                "source": row["filename"],
+                "content_type": f"image/{fmt}",
+                "context": row["context_text"] or "",
+                "asset_id": row["asset_id"],
+                "image_format": fmt,
+                "width": row["width_px"],
+                "height": row["height_px"],
+                "slide_number": row["slide_number"],
+                "alt_text": row["alt_text"] or "",
+            })
+        return results
