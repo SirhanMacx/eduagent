@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [3.0.0] - 2026-04-01
+
+The agentic layer for education. Claw-ED absorbs the Claude Code CLI as its terminal interface, becoming a persistent AI co-teacher that lives in your terminal and on your phone.
+
+### Added
+- **Interactive Ink TUI** — beautiful terminal interface powered by React/Ink (from Claude Code source build). Natural language mode: "make me a lesson on WWI" just works.
+- **Multi-provider LLM router** — Anthropic (Claude), OpenAI (GPT), Google (Gemini), Ollama (local). Teacher picks provider, Claw-ED picks the best model. Rate limit retry with exponential backoff.
+- **Background Telegram daemon** — `clawed daemon start` keeps an always-on Telegram bot running. Generate lessons from your phone. Secured to configured teacher ID, rate limited, restricted commands.
+- **14 TypeScript tool bridges** — lesson, game, unit, ingest, train, export, assessment, standards, persona, differentiate, review, search, materials, students. Each calls Python via subprocess with structured JSON output.
+- **`--json` flag on all commands** — every Python command supports `--json` for machine-readable output. Universal envelope: `{status, command, data, files, warnings, errors}`.
+- **Professional ASCII logo** — animated startup sequence with educational branding (warm gold, deep green, chalkboard theme).
+- **Entry point router** — `pip install clawed` installs everything. If Node.js is available, launches the Ink TUI. Otherwise falls back to the Python CLI with a helpful notice.
+- **Build pipeline** — `scripts/build.sh` builds TypeScript CLI, bundles into Python wheel, ready for PyPI.
+- **GitHub Actions CI** — Python tests, TypeScript build, wheel build, auto-publish on tag.
+- **launchd + systemd service** — `clawed daemon install` registers the daemon as a system service for auto-start on boot.
+
+### Changed
+- **Rebranded from Claude Code** — all user-facing strings now say "Claw-ED". Educational color palette (warm gold, deep green, cream/parchment) replaces the corporate blue.
+- **Version 3.0.0** — major version bump reflects the architectural transformation.
+- **Entry point** — `clawed` command now routes through `_entry_router.py` instead of directly to typer.
+
+### Fixed
+- **PPTX vocabulary overcrowding** — max 4 terms per slide, split across multiple slides.
+- **PPTX visual theming** — slides now match lesson topic (nautical for exploration, marble for renaissance, patriotic for revolution).
+- **Game HTML quality** — warns on code-weak local models, suggests code-capable alternatives.
+
+---
+
 ## [2.5.3] - 2026-04-01
 
 Quality-first release. Output review agent catches issues before delivery.

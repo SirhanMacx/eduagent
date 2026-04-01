@@ -1,6 +1,6 @@
-# Claw-ED
+# Claw-ED v3
 
-**Your AI co-teacher. Learns your voice. Generates lessons that sound like you wrote them.**
+**The agentic layer for education. Your AI co-teacher that lives in the terminal.**
 
 <p align="center">
   <a href="https://pypi.org/project/clawed/"><img src="https://img.shields.io/pypi/v/clawed?color=blue" alt="PyPI version"></a>
@@ -12,7 +12,9 @@
 
 ---
 
-Claw-ED is an open-source AI teaching assistant that learns your actual teaching style from your curriculum files. Not a generic lesson template generator — a personal agent that captures your voice, your scaffolding patterns, your assessment style, and your classroom personality. It generates complete lesson packages that your colleagues would swear you wrote yourself.
+Claw-ED v3 is a persistent AI teaching assistant that lives in your terminal and on your phone. Talk naturally — "make me a lesson on WWI for my 8th graders" — and it generates complete lesson packages in your voice. Not a chatbot. An agent that knows your curriculum, your standards, your students, and your teaching style.
+
+**New in v3:** Beautiful interactive terminal (Ink TUI), always-on Telegram bot, multi-provider LLM support (Anthropic, OpenAI, Google, Ollama), natural language routing.
 
 ```bash
 pip install clawed
@@ -119,7 +121,9 @@ Your curriculum files (PDF, DOCX, PPTX, and 20+ formats)
 | `clawed standards list -g 8 -s "Math"` | Browse state standards |
 | `clawed gap-analyze` | Find curriculum gaps |
 | `clawed train --benchmark -n 5` | Score lesson quality |
-| `clawed bot --token TOKEN` | Connect Telegram bot |
+| `clawed daemon start` | Start always-on Telegram bot (background) |
+| `clawed daemon stop` | Stop the Telegram daemon |
+| `clawed daemon status` | Show daemon uptime and health |
 | `clawed serve` | Web dashboard |
 | `clawed mcp-server` | MCP server (for Claude Code integration) |
 | `clawed game create "Topic" -g 8` | Generate an interactive HTML learning game |
@@ -204,28 +208,33 @@ Claw-ED can work while you sleep:
 ## Architecture
 
 ```
-Teacher (Telegram, CLI, Web, MCP)
+Teacher (Terminal or Phone)
        |
-   Gateway (feature-flag router)
-   |-- Control Plane (deterministic: files, onboarding, export)
-   |-- Agent Loop (LLM with 28 typed tools)
-              |                        |
-       Tool Registry              Workspace
-       - generate_lesson          - SOUL.md (identity)
-       - search_materials         - HEARTBEAT.md (schedule)
-       - generate_assessment      - Memory (3-layer cognitive)
-       - curriculum_map           |
-       - export_document     Curriculum KB
-       - 23 more tools       (semantic search over your files)
-              |
-       Professional exports (DOCX, PPTX, PDF, Google Docs)
+  ┌────┴─────┐
+  │ Ink TUI  │  ←── Beautiful interactive terminal (TypeScript)
+  │  or      │
+  │ Telegram │  ←── Always-on thin client via background daemon
+  └────┬─────┘
+       |
+  Multi-Provider LLM Router
+  (Anthropic | OpenAI | Google | Ollama)
+       |
+  ↕ tool_use / function_calling
+       |
+  14 Claw-ED Tools (TypeScript → Python subprocess)
+       |
+  Python Engine (lesson, game, export, standards, persona, ...)
+       |
+  Professional exports (DOCX, PPTX, HTML games, PDF)
 ```
 
 **Key design decisions:**
 
 - **Agent-first.** Natural language goes through an LLM that decides which tools to call. No rigid command parsing.
 - **Master Content Track.** One LLM generation produces a unified `MasterContent` object. Teacher view, student packet, and slideshow are compiled mechanically — no redundant AI calls.
-- **Fail-closed quality gates.** Every generation is validated. If quality review crashes, it reports failure instead of silently passing.
+- **Subprocess bridge.** TypeScript CLI calls Python engine via `python3 -m clawed <cmd> --json`. Clean separation, independent testing, single install.
+- **Multi-provider.** Teacher picks their provider (free Ollama to premium Claude). Claw-ED picks the best model within it.
+- **Always-on daemon.** Background process keeps Telegram bot online. Teachers generate lessons from their phone.
 - **Subject-specific skills.** 13 built-in subject skills (Math, Science, History, ELA, Music, Art, PE, CS, Foreign Language, Library, Special Ed, and more) tune the generation for each discipline's pedagogy.
 
 ---
@@ -300,7 +309,7 @@ Claw-ED is built by a teacher for teachers. Join the conversation:
 - **[Report issues](https://github.com/SirhanMacx/Claw-ED/issues)** — bugs, feature requests, quality feedback
 - **[Star the repo](https://github.com/SirhanMacx/Claw-ED)** — it helps other teachers find us
 
-14,000+ installs and growing. If Claw-ED saved you prep time, tell a colleague.
+14,000+ installs and growing. The agentic layer for education starts here.
 
 ---
 
@@ -308,6 +317,6 @@ Claw-ED is built by a teacher for teachers. Join the conversation:
 
 MIT License. Free for personal and commercial use.
 
-Built by educators, for educators.
+Built by educators, for educators. The agentic layer for education.
 
-[GitHub](https://github.com/SirhanMacx/Claw-ED) | [PyPI](https://pypi.org/project/clawed/) | [Discussions](https://github.com/SirhanMacx/Claw-ED/discussions) | [Changelog](CHANGELOG.md)
+[GitHub](https://github.com/SirhanMacx/Claw-ED) | [PyPI](https://pypi.org/project/clawed/) | [Game Gallery](https://sirhanmacx.github.io/Claw-ED/games) | [Discussions](https://github.com/SirhanMacx/Claw-ED/discussions) | [Changelog](CHANGELOG.md)
