@@ -1010,7 +1010,7 @@ class AppConfig(BaseModel):
     output_dir: str = "./clawed_output"
     include_homework: bool = True
     agent_gateway: bool = True
-    export_format: str = "markdown"
+    export_format: str = "docx"
     drive_root_folder: str = ""
     drive_token_path: str = ""
 

@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.4.0] - 2026-04-01
+
+Fleet upgrade release — all 4 nodes producing autonomously, self-monitoring, self-improving.
+
+### Added
+- **Fleet-doctor daemon** — auto-checks all nodes every 6h, restarts dead gateways, re-syncs stale tokens, posts health reports to Starwisp
+- **Regents prep auto-generation** — daily cron on Bob generates next-needed lesson based on curriculum state and Regents countdown
+- **Quality review cron on Amber** — scores new lessons against 20-criterion rubric, flags anything below 56/80
+- **Differentiation pack cron on Amber** — creates ELL/IEP/gifted variants for each new lesson
+- **ArXiv scout cron on Bob** — daily AI/edtech research scan, posts findings to Starwisp Research thread
+- **Voice scoring in CLI** — `clawed lesson` now shows voice match score after generation
+- **Multi-agent teams rewritten** — replaced broken open-multi-agent with direct Anthropic SDK orchestration. 4 teams (coordinator, lesson, curriculum, quality) all functional
+- **Token sync v2** — file-locked, validates token before pushing, auto-restarts dead gateways
+
+### Changed
+- Default export format: `docx` (was `markdown`). Jon's explicit requirement.
+- All fleet machines now have Claw-ED v2.4.0 installed (Amber and Sirhan newly provisioned)
+- Fleet-token-sync validates token with Haiku API call before distributing
+- OpenRouter references removed from onboarding.py fallback
+
+### Fixed
+- Multi-agent teams.mjs import drift (open-multi-agent API changed, rewrote with @anthropic-ai/sdk)
+- OAuth headers in multi-agent runner (was missing Claude Code identity headers)
+- Sub-agent permission propagation (background agents now use direct execution instead of spawning)
+
 ## [2.3.9] - 2026-03-31
 
 Multi-agent lesson generation, Claude Code integration, and continuous improvement pipeline.

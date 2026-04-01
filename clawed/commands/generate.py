@@ -441,6 +441,21 @@ def lesson(
             raise typer.Exit(1)
         progress.update(task, description="Lesson plan complete!")
 
+    # ── Voice scoring ────────────────────────────────────────────
+    try:
+        from clawed.quality import score_voice_match
+        from clawed.persona import load_persona as _load_p
+        _pp = _output_dir() / "persona.json"
+        if _pp.exists():
+            _persona = _load_p(_pp)
+            _lesson_text = str(daily.objective) + " " + str(daily.do_now) + " " + str(getattr(daily, 'direct_instruction', ''))
+            _voice_score = _run_async(score_voice_match(_lesson_text, _persona.to_prompt_context()))
+            if _voice_score and _voice_score > 0:
+                _color = "green" if _voice_score >= 3.5 else "yellow" if _voice_score >= 2.5 else "red"
+                console.print(f"  Voice match: [{_color}]{_voice_score:.1f}/5.0[/{_color}]")
+    except Exception:
+        pass  # Non-blocking — don't fail lesson delivery on scoring error
+
     out_dir = _output_dir()
     json_path = save_lesson(daily, out_dir)
 

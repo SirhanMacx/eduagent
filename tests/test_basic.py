@@ -171,7 +171,7 @@ class TestAppConfigDefaults:
         assert config.ollama_base_url == "http://localhost:11434"
         assert config.output_dir == "./clawed_output"
         assert config.include_homework is True
-        assert config.export_format == "markdown"
+        assert config.export_format == "docx"
 
     def test_config_path_is_in_home_dir(self, monkeypatch):
         # Remove EDUAGENT_DATA_DIR to test the default path
@@ -334,7 +334,7 @@ class TestVersion:
     def test_version_string(self):
         from clawed import __version__
 
-        assert __version__ == "2.3.9"
+        assert __version__ == "2.4.0"
 
 
 # ── Standards module ───────────────────────────────────────────────
