@@ -3,7 +3,7 @@
  * with optional typewriter animation.
  */
 import React, { useState, useEffect } from 'react'
-import { Text, Box } from 'ink'
+import { Text, Box } from '../ink/index.js'
 import { getLogoLines, BRAND_TEXT, BRAND_TAGLINE } from '../constants/logo.js'
 import { getTheme } from '../utils/theme.js'
 

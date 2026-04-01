@@ -3,7 +3,7 @@
  * Shows: logo animation -> brand text -> tagline -> transitions to REPL.
  */
 import React, { useState, useCallback } from 'react'
-import { Box, Text } from 'ink'
+import { Box, Text } from '../ink/index.js'
 import { ClawedLogo } from './ClawedLogo.js'
 
 interface ClawedStartupProps {

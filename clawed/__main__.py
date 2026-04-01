@@ -10,8 +10,8 @@ def main():
         if hasattr(sys.stderr, "reconfigure"):
             sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
-        from clawed.cli import app
-        app()
+        from clawed._entry_router import main as entry_main
+        entry_main()
     except KeyboardInterrupt:
         sys.exit(130)
     except SystemExit:
