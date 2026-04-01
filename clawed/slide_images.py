@@ -259,6 +259,11 @@ def extract_image_subjects(lesson) -> list[dict]:
         "Spread", "Spreads", "Discover", "Discovers", "Discovered",
         "Fight", "Fights", "Fighting", "Fought",
         "Create", "Creates", "Created", "Building", "Built",
+        "Motivations", "Motivation", "Reasons", "Causes", "Effects",
+        "Europe", "Europeans", "Asian", "African", "American",
+        "Economic", "Political", "Religious", "Cultural", "Social",
+        "Consequences", "Impact", "Significance", "Importance",
+        "Changes", "Developments", "Factors", "Events", "Period",
     }
     people_patterns = [
         r"((?:King |Queen |Emperor |Empress |President |Pope |Tsar |Czar )"
@@ -308,29 +313,29 @@ def extract_image_subjects(lesson) -> list[dict]:
         subjects.append({"query": doc_name, "type": "document", "label": doc_name})
 
     title = getattr(lesson, 'title', '')
-
-    # If regex found real entities, use them — they're more specific than the map
-    if subjects:
-        # Still pad to 3 with topic-map queries so all slide positions get coverage
-        topic_queries = _get_topic_queries(title)
-        for q in topic_queries:
-            if len(subjects) >= 5:
-                break
-            if not any(s["query"].lower() == q.lower() for s in subjects):
-                subjects.append({"query": q, "type": "topic", "label": q})
-        return subjects
-
-    # No regex entities — use the topic-keyword map (known-good Wikipedia queries)
     topic_queries = _get_topic_queries(title)
+
+    # Topic-map queries always anchor the first positions — they are
+    # curated, known-good Wikipedia entities that reliably produce the
+    # most iconic/relevant images for the lesson topic (e.g. Columbus
+    # portrait for Age of Exploration). Regex entities follow after.
     if topic_queries:
-        for q in topic_queries:
-            subjects.append({"query": q, "type": "topic", "label": q})
+        result: list[dict] = [{"query": q, "type": "topic", "label": q} for q in topic_queries]
+        # Append any regex-found entities that aren't already covered
+        for s in subjects:
+            if len(result) >= 5:
+                break
+            if not any(r["query"].lower() == s["query"].lower() for r in result):
+                result.append(s)
+        return result
+
+    # No topic map match — use regex entities if found
+    if subjects:
         return subjects
 
     # Last resort: lesson title main segment only
     main_title = re.split(r"[:—–-]", title)[0].strip() if title else "history"
-    subjects.append({"query": main_title, "type": "topic", "label": main_title})
-    return subjects
+    return [{"query": main_title, "type": "topic", "label": main_title}]
 
 
 def _build_search_query(topic: str, subject: str = "") -> str:
