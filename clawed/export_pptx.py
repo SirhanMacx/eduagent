@@ -973,37 +973,65 @@ def export_lesson_pptx(
 
             _add_footer(slide, slide_num[0])
 
-        # ── Source excerpt slides (if quoted passages detected) ─────
-        # Try multiple quote patterns: curly quotes, straight quotes, markdown bold
-        source_quotes: list[tuple[str, str]] = []
-        for pattern in [
-            r'\u201c([^\u201d]{30,500})\u201d[^\n]*?(?:[-\u2014]\s*(.+?)(?:\n|$))',
-            r'"([^"]{30,500})"[^\n]*?(?:[-\u2014]\s*(.+?)(?:\n|$))',
-            r"['\u2018]([^'\u2019]{30,500})['\u2019][^\n]*?(?:[-\u2014]\s*(.+?)(?:\n|$))",
-        ]:
-            source_quotes = re.findall(pattern, di_text)
-            if source_quotes:
-                break
+        # ── Primary Source slides (from structured lesson data) ─────
+        # Use lesson.primary_sources (PrimarySourceDocument objects)
+        # instead of regex-extracting fragments from DI prose.
+        source_img_idx = 3
+        primary_sources = getattr(lesson, "primary_sources", []) or []
+        for ps in primary_sources[:3]:
+            # Get source fields — handle both dict and object
+            if isinstance(ps, dict):
+                ps_title = ps.get("title", "") or ps.get("document_label", "")
+                ps_author = ps.get("author", "")
+                ps_date = ps.get("date", "")
+                ps_context = ps.get("context", "")
+                ps_text = ps.get("full_text", "") or ps.get("text", "")
+                ps_questions = ps.get("analysis_questions", [])
+            else:
+                ps_title = getattr(ps, "title", "") or getattr(ps, "document_label", "")
+                ps_author = getattr(ps, "author", "")
+                ps_date = getattr(ps, "date", "")
+                ps_context = getattr(ps, "context", "")
+                ps_text = getattr(ps, "full_text", "")
+                ps_questions = getattr(ps, "analysis_questions", [])
 
-        source_img_idx = 3  # Start from entity_3 for source slides
-        for quote_text, attribution in source_quotes[:3]:
+            if not ps_text and not ps_title:
+                continue
+
             slide = _next_slide()
             _tinted_bg(slide, theme["accent"])
 
-            # "Source Excerpt" badge
+            # "Primary Source" badge with title
+            badge_text = ps_title or "Primary Source"
             badge = _rounded_card(
                 slide,
-                Inches(0.8), Inches(0.6),
-                Inches(3.5), Inches(0.7),
+                Inches(0.8), Inches(0.5),
+                Inches(5.0), Inches(0.7),
                 theme["primary"],
             )
             badge_tf = badge.text_frame
             badge_tf.paragraphs[0].alignment = PP_ALIGN.CENTER
             run = badge_tf.paragraphs[0].add_run()
-            run.text = "Source Excerpt"
-            _set_text_props(run, 22, theme["text_light"], bold=True)
+            run.text = _clean_slide_text(badge_text)[:80]
+            _set_text_props(run, 20, theme["text_light"], bold=True)
 
-            # Add image if available (use remaining entity images)
+            # Attribution line (author + date)
+            attribution = ""
+            if ps_author:
+                attribution = ps_author
+            if ps_date:
+                attribution += f", {ps_date}" if attribution else ps_date
+            if attribution:
+                tb_attr = slide.shapes.add_textbox(
+                    Inches(0.8), Inches(1.3), Inches(8.0), Inches(0.4),
+                )
+                p_attr = tb_attr.text_frame.paragraphs[0]
+                run_attr = p_attr.add_run()
+                run_attr.text = f"— {_clean_slide_text(attribution)}"
+                _set_text_props(run_attr, 14, theme["text_dim"])
+                run_attr.font.italic = True
+
+            # Source text — the actual excerpt
             src_img = images.get(f"entity_{source_img_idx}")
             text_width = slide_w - Inches(2.0)
             if src_img:
@@ -1011,40 +1039,43 @@ def export_lesson_pptx(
                 _add_sidebar_image(slide, src_img)
             source_img_idx += 1
 
-            # Quoted text — adaptive font, clean text, truncate if needed
-            clean_quote = _clean_slide_text(quote_text.strip())
-            # Truncate very long quotes to keep readable on slide
-            if len(clean_quote) > 350:
-                clean_quote = clean_quote[:347].rsplit(" ", 1)[0] + "…"
+            clean_text = _clean_slide_text(ps_text.strip())
+            if len(clean_text) > 400:
+                clean_text = clean_text[:397].rsplit(" ", 1)[0] + "…"
 
-            quote_font = 20 if len(clean_quote) < 180 else 17 if len(clean_quote) < 300 else 15
+            text_font = 18 if len(clean_text) < 200 else 15 if len(clean_text) < 350 else 13
 
+            y_start = Inches(1.8) if attribution else Inches(1.5)
             tb = slide.shapes.add_textbox(
-                Inches(1.5), Inches(1.9), text_width, Inches(3.8),
+                Inches(1.0), y_start, text_width, Inches(3.5),
             )
             tf = tb.text_frame
             tf.word_wrap = True
             p = tf.paragraphs[0]
             p.alignment = PP_ALIGN.LEFT
-            p.line_spacing = Pt(quote_font + 8)
+            p.line_spacing = Pt(text_font + 7)
             run = p.add_run()
-            run.text = f"\u201c{clean_quote}\u201d"
-            _set_text_props(run, quote_font, theme["text_dark"])
+            run.text = f"\u201c{clean_text}\u201d" if clean_text else "(Source text not available)"
+            _set_text_props(run, text_font, theme["text_dark"])
             run.font.italic = True
 
-            # Attribution — right-aligned, smaller, just above footer
-            if attribution and attribution.strip():
-                attr_clean = _clean_slide_text(attribution.strip())
-                if len(attr_clean) > 100:
-                    attr_clean = attr_clean[:97].rsplit(" ", 1)[0] + "…"
-                tb_attr = slide.shapes.add_textbox(
-                    Inches(1.5), slide_h - Inches(1.6), text_width, Inches(0.7),
+            # Analysis questions (if any)
+            if ps_questions:
+                q_y = slide_h - Inches(2.0)
+                tb_q = slide.shapes.add_textbox(
+                    Inches(1.0), q_y, slide_w - Inches(2.0), Inches(1.2),
                 )
-                p_attr = tb_attr.text_frame.paragraphs[0]
-                p_attr.alignment = PP_ALIGN.RIGHT
-                run_attr = p_attr.add_run()
-                run_attr.text = f"\u2014 {attr_clean}"
-                _set_text_props(run_attr, 14, "666666")
+                tf_q = tb_q.text_frame
+                tf_q.word_wrap = True
+                for qi, question in enumerate(ps_questions[:2]):
+                    p_q = tf_q.paragraphs[0] if qi == 0 else tf_q.add_paragraph()
+                    p_q.space_before = Pt(4)
+                    run_q = p_q.add_run()
+                    q_text = _clean_slide_text(question)
+                    if len(q_text) > 100:
+                        q_text = q_text[:97].rsplit(" ", 1)[0] + "…"
+                    run_q.text = f"Q{qi+1}: {q_text}"
+                    _set_text_props(run_q, 14, theme["text_dark"], bold=True)
 
             _add_footer(slide, slide_num[0])
 
