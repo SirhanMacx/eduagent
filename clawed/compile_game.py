@@ -20,6 +20,7 @@ from __future__ import annotations
 import logging
 import re
 from pathlib import Path
+from typing import Any
 
 from clawed.io import safe_filename
 from clawed.llm import LLMClient
@@ -59,12 +60,15 @@ WHAT MAKES A GREAT LEARNING GAME:
 
 
 def _extract_game_content(master: MasterContent) -> str:
-    """Extract educational content from MasterContent for game generation."""
+    """Extract educational content from MasterContent for game generation.
+
+    Accepts MasterContent or DailyLesson (single-agent path lacks subject/grade_level).
+    """
     parts = [
         f"LESSON: {master.title}",
-        f"SUBJECT: {master.subject}",
-        f"GRADE: {master.grade_level}",
-        f"TOPIC: {master.topic}",
+        f"SUBJECT: {getattr(master, 'subject', 'Social Studies')}",
+        f"GRADE: {getattr(master, 'grade_level', '')}",
+        f"TOPIC: {getattr(master, 'topic', master.title)}",
         f"OBJECTIVE: {master.objective}",
     ]
 
@@ -76,32 +80,43 @@ def _extract_game_content(master: MasterContent) -> str:
                 + (f" (context: {v.context_sentence})" if v.context_sentence else "")
             )
 
-    if master.guided_notes:
+    guided_notes = getattr(master, "guided_notes", None)
+    if guided_notes:
         parts.append("\nKEY FACTS (fill-in-the-blank):")
-        for note in master.guided_notes:
+        for note in guided_notes:
             parts.append(f"  - Q: {note.prompt} → A: {note.answer}")
 
-    if master.exit_ticket:
+    exit_ticket = getattr(master, "exit_ticket", None)
+    if exit_ticket:
         parts.append("\nQUIZ QUESTIONS:")
-        for i, q in enumerate(master.exit_ticket, 1):
-            parts.append(f"  {i}. {q.question}")
+        # DailyLesson exit_ticket is a list of ExitTicketQuestion (has .question)
+        # MasterContent exit_ticket may differ — handle both
+        for i, q in enumerate(exit_ticket if isinstance(exit_ticket, list) else [], 1):
+            question_text = getattr(q, "question", str(q))
+            parts.append(f"  {i}. {question_text}")
             if hasattr(q, "expected_answer") and q.expected_answer:
                 parts.append(f"     Answer: {q.expected_answer}")
 
-    if master.primary_sources:
+    primary_sources = getattr(master, "primary_sources", None)
+    if primary_sources:
         parts.append("\nPRIMARY SOURCES:")
-        for src in master.primary_sources:
-            parts.append(f"  - {src.title} ({src.source_type})")
+        for src in primary_sources:
+            src_title = getattr(src, "title", str(src))
+            src_type = getattr(src, "source_type", "")
+            parts.append(f"  - {src_title} ({src_type})")
             if hasattr(src, "content_text") and src.content_text:
                 parts.append(f"    Text: {src.content_text[:300]}...")
 
-    if master.direct_instruction:
+    direct_instruction = getattr(master, "direct_instruction", None)
+    if direct_instruction and not isinstance(direct_instruction, str):
         parts.append("\nKEY CONCEPTS:")
-        for section in master.direct_instruction:
-            parts.append(f"  - {section.heading}")
+        for section in direct_instruction:
+            parts.append(f"  - {getattr(section, 'heading', str(section))}")
             if hasattr(section, "key_points") and section.key_points:
                 for pt in section.key_points[:3]:
                     parts.append(f"    • {pt}")
+    elif isinstance(direct_instruction, str) and direct_instruction:
+        parts.append(f"\nKEY CONCEPTS:\n{direct_instruction[:500]}")
 
     return "\n".join(parts)
 
@@ -123,7 +138,7 @@ def _validate_game_html(html: str, master: MasterContent) -> list[str]:
         issues.append("No JavaScript functions found")
 
     # Check that educational content is embedded
-    topic_words = master.topic.lower().split()[:3]
+    topic_words = getattr(master, "topic", master.title).lower().split()[:3]
     html_lower = html.lower()
     found_topic = any(w in html_lower for w in topic_words if len(w) > 3)
     if not found_topic:
@@ -142,7 +157,7 @@ def _validate_game_html(html: str, master: MasterContent) -> list[str]:
 
 
 async def compile_game(
-    master: MasterContent,
+    master: "MasterContent | Any",
     persona: TeacherPersona | None = None,
     output_dir: Path | None = None,
     config: AppConfig | None = None,
@@ -209,7 +224,7 @@ async def compile_game(
     if persona:
         prompt_parts.append(
             f"\nTEACHER'S STYLE: {persona.tone or 'engaging'}\n"
-            f"Grade level: {master.grade_level}\n"
+            f"Grade level: {getattr(master, 'grade_level', '')}\n"
             "Match the difficulty and humor to this teacher and grade."
         )
 
