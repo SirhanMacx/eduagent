@@ -222,8 +222,8 @@ async def multi_agent_generate_master_content(
     Returns a validated MasterContent on success, or None if the pipeline
     fails at any step (so the caller can fall back to single-agent).
     """
-    model = route_model("multi_agent", config)
-    client = LLMClient(model=model, config=config)
+    routed_config = route_model("multi_agent", config)
+    client = LLMClient(config=routed_config)
 
     # --- Step 1: Research ---------------------------------------------------
     logger.info("Multi-agent pipeline: starting RESEARCHER for '%s'", topic)
