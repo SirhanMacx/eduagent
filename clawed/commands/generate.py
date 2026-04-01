@@ -501,6 +501,41 @@ def lesson(
     console.print(f"\n[green]Lesson saved:[/green] {json_path}")
     if export_path:
         console.print(f"[green]Exported:[/green] {export_path}")
+
+    # ── Quality review ────────────────────────────────────────────
+    if export_path:
+        try:
+            from clawed.review_output import (
+                review_docx,
+                review_pptx,
+            )
+            export_p = Path(export_path) if not isinstance(export_path, Path) else export_path
+            if export_p.suffix == ".pptx":
+                review = review_pptx(export_p)
+            elif export_p.suffix == ".docx":
+                review = review_docx(export_p)
+            else:
+                review = None
+            if review:
+                if review.passed:
+                    console.print(
+                        f"  Quality: [green]{review.score:.1f}/10[/green]"
+                    )
+                else:
+                    console.print(
+                        f"  Quality: [red]{review.score:.1f}/10 "
+                        f"({len(review.issues)} issues)[/red]"
+                    )
+                    for issue in review.issues[:5]:
+                        _sev = {"critical": "red", "major": "yellow", "minor": "dim"}
+                        console.print(
+                            f"    [{_sev.get(issue['severity'], 'dim')}]"
+                            f"{issue['location']}: "
+                            f"{issue['description']}[/{_sev.get(issue['severity'], 'dim')}]"
+                        )
+        except Exception:
+            pass
+
     console.print(
         Panel(
             f"[bold]Objective:[/bold] {daily.objective}\n"

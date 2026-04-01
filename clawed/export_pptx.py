@@ -829,7 +829,10 @@ def export_lesson_pptx(
             for item in list_items[:max_bullets]:
                 item = item.strip()
                 if len(item) > 20:
-                    bullets.append(item[:140])
+                    # Truncate at word boundary, not mid-word
+                    if len(item) > 140:
+                        item = item[:140].rsplit(' ', 1)[0] + '...'
+                    bullets.append(item)
             if bullets:
                 return bullets
             # Fallback: first N sentences that are short enough to be readable
