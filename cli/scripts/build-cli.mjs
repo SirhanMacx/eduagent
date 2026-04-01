@@ -162,11 +162,11 @@ const bundlePath = path.join(path.dirname(outputPath), bundleName);
 const tempBundlePath = `${bundlePath}.tmp`;
 const referenceVendorRoot = path.join(sourceRoot, 'runtime-vendor');
 const publicMacroValues = {
-  ISSUES_EXPLAINER: 'report the issue at https://github.com/anthropics/claude-code/issues',
+  ISSUES_EXPLAINER: 'report the issue at https://github.com/SirhanMacx/Claw-ED/issues',
   PACKAGE_URL: packageJson.name,
   README_URL: 'https://code.claude.com/docs/en/overview',
   VERSION: packageJson.version,
-  FEEDBACK_CHANNEL: 'https://github.com/anthropics/claude-code/issues',
+  FEEDBACK_CHANNEL: 'https://github.com/SirhanMacx/Claw-ED/issues',
   BUILD_TIME: '2026-03-30T21:59:52Z',
   NATIVE_PACKAGE_URL: null,
   VERSION_CHANGELOG: null,

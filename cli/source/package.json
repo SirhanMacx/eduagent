@@ -1,19 +1,19 @@
 {
-  "name": "@anthropic-ai/claude-code",
-  "version": "2.1.88",
+  "name": "clawed",
+  "version": "3.0.0",
   "bin": {
-    "claude": "cli.js"
+    "clawed": "cli.js"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "type": "module",
-  "author": "Anthropic <support@anthropic.com>",
+  "author": "SirhanMacx",
   "license": "SEE LICENSE IN README.md",
-  "description": "Use Claude, Anthropic's AI assistant, right from your terminal. Claude can understand your codebase, edit files, run terminal commands, and handle entire workflows for you.",
-  "homepage": "https://github.com/anthropics/claude-code",
+  "description": "Claw-ED -- Your AI co-teacher. Generate lessons, rubrics, flashcards, and more from your terminal.",
+  "homepage": "https://github.com/SirhanMacx/Claw-ED",
   "bugs": {
-    "url": "https://github.com/anthropics/claude-code/issues"
+    "url": "https://github.com/SirhanMacx/Claw-ED/issues"
   },
   "scripts": {
     "prepare": "node -e \"if (!process.env.AUTHORIZED) { console.error('ERROR: Direct publishing is not allowed.\\nPlease see the release workflow documentation to publish this package.'); process.exit(1); }\""

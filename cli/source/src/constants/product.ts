@@ -1,6 +1,8 @@
-export const PRODUCT_URL = 'https://claude.com/claude-code'
+export const PRODUCT_NAME = 'Claw-ED'
+export const PRODUCT_TAGLINE = 'Your AI co-teacher'
+export const PRODUCT_URL = 'https://github.com/SirhanMacx/Claw-ED'
 
-// Claude Code Remote session URLs
+// Remote session URLs
 export const CLAUDE_AI_BASE_URL = 'https://claude.ai'
 export const CLAUDE_AI_STAGING_BASE_URL = 'https://claude-ai.staging.ant.dev'
 export const CLAUDE_AI_LOCAL_BASE_URL = 'http://localhost:4000'
