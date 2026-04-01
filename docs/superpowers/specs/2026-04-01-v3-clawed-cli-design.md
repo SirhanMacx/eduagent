@@ -1,7 +1,7 @@
 # Claw-ED v3.0 Design Spec
 
 **Date:** 2026-04-01
-**Status:** Draft
+**Status:** Reviewed (rev 2)
 **Author:** Claude (with Jon)
 
 ## Vision
@@ -235,6 +235,44 @@ Each command wrapper checks for `--json` and routes accordingly:
 - With `--json`: structured JSON to stdout, no rich formatting
 - Without `--json`: existing rich console output (backward compatible)
 
+**Universal JSON Envelope:**
+
+Every command returns this shape:
+
+```json
+{
+  "status": "success" | "error",
+  "command": "gen.lesson",
+  "data": { ... },
+  "files": ["/path/to/output.docx"],
+  "warnings": [],
+  "errors": []
+}
+```
+
+**Per-Command `data` Schemas:**
+
+| Command | `data` contents |
+|---------|----------------|
+| `gen lesson` | `{title, subject, grade, topic, score, master_content: MasterContent}` |
+| `gen unit` | `{title, subject, grade, weeks, daily_lessons: LessonBrief[]}` |
+| `gen materials` | `{title, items: MaterialItem[]}` |
+| `game create` | `{title, html_path, mechanic, score}` |
+| `assessment` | `{title, type, questions: Question[]}` |
+| `gen ingest` | `{documents_count, images_count, persona_extracted: bool}` |
+| `export` | `{format, output_path}` |
+| `train` | `{mode, lessons_generated, avg_score, scores: float[]}` |
+| `config standards` | `{state, subject, standards: Standard[]}` |
+| `config persona` | `{persona: TeacherPersona}` |
+| `differentiate` | `{student, modifications: Modification[]}` |
+| `review` | `{score, issues: Issue[], passed: bool}` |
+| `search` | `{query, results: Document[]}` |
+| `students` | `{profiles: StudentProfile[]}` |
+
+These map 1:1 to the existing Pydantic models in `clawed/models.py`. The `--json` flag calls `.model_dump()` on the result rather than rendering with Rich.
+
+**This is Phase 0** — the `--json` retrofit is the serial dependency that everything else builds on. It must be complete before any TypeScript tool can be implemented.
+
 **TypeScript tool template:**
 
 ```typescript
@@ -264,7 +302,70 @@ export const LessonTool: Tool = {
 };
 ```
 
+**Subprocess Error Handling (`spawnPython` implementation):**
+
+```typescript
+// tools/clawed/_bridge.ts
+async function spawnPython(args: string[], opts?: { timeout?: number }): Promise<BridgeResult> {
+  const timeout = opts?.timeout ?? TIMEOUT_BY_COMMAND[args[2]] ?? 120_000;
+
+  // Verify Python is available (cached after first check)
+  if (!pythonPath) {
+    pythonPath = await findPython(); // checks python3, python, validates >= 3.10
+    if (!pythonPath) throw new BridgeError('Python 3.10+ not found. Install from python.org');
+  }
+
+  const proc = spawn(pythonPath, args, { timeout });
+  let stdout = '', stderr = '';
+
+  proc.stdout.on('data', (d) => stdout += d);
+  proc.stderr.on('data', (d) => stderr += d);
+
+  const code = await new Promise<number>((resolve, reject) => {
+    proc.on('close', resolve);
+    proc.on('error', reject);
+  });
+
+  if (code !== 0) {
+    return { status: 'error', errors: [stderr || `Process exited with code ${code}`], data: null, files: [] };
+  }
+
+  try {
+    return JSON.parse(stdout);
+  } catch {
+    return { status: 'error', errors: [`Invalid JSON output: ${stdout.slice(0, 200)}`], data: null, files: [] };
+  }
+}
+
+// Timeout tiers (ms)
+const TIMEOUT_BY_COMMAND: Record<string, number> = {
+  'lesson': 120_000,   // 2 min — LLM generation
+  'unit': 180_000,     // 3 min — multi-lesson planning
+  'game': 120_000,     // 2 min — game compilation
+  'ingest': 300_000,   // 5 min — large file ingestion
+  'train': 600_000,    // 10 min — benchmark runs
+  'export': 60_000,    // 1 min — file export
+  'standards': 5_000,  // 5 sec — local lookup
+  'persona': 5_000,    // 5 sec — local read
+  'review': 30_000,    // 30 sec — quality check
+};
+```
+```
+
 ### 2. Multi-Provider LLM Router (TypeScript)
+
+**Two routers, two responsibilities:**
+
+| Layer | Router | Purpose | Config Key |
+|-------|--------|---------|-----------|
+| Conversational | TS `llm-router.ts` | NL intent → tool_use selection | `config.provider` |
+| Generation | Python `model_router.py` | Lesson/game/assessment content | `config.provider` (same) |
+
+Both read from `~/.eduagent/config.json` and use the **same provider**. The distinction is:
+- The TS router handles the conversational REPL (deciding which tool to call)
+- The Python router handles generation-tier calls (creating the actual lesson content, always DEEP tier)
+
+There is NO `chat_provider` vs `generation_provider` split. One provider, one config. The TS router picks the conversational model (WORK tier for tool selection), Python picks DEEP tier for generation. Both use the same provider's API key.
 
 ```typescript
 // services/llm-router.ts
@@ -282,12 +383,17 @@ Reads `~/.eduagent/config.json` at startup. Maps provider to SDK:
 - `anthropic` → `@anthropic-ai/sdk` (tool_use)
 - `openai` → `openai` npm package (function_calling)
 - `google` → `@google/generative-ai` (function_calling)
-- `ollama` → HTTP to localhost:11434 (tool_use if supported, else prompt injection)
+- `ollama` → HTTP to localhost:11434 (native tool_use, requires Ollama 0.3.0+; older versions without tool support get a helpful error message telling teacher to update)
 
-Auth chain reads from the same sources as Python:
-1. Environment variables
-2. `~/.claude/.credentials.json` (OAuth tokens)
-3. `~/.eduagent/secrets.json`
+**Auth chain (priority order, highest first):**
+1. Environment variables (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc.)
+2. `~/.claude/.credentials.json` (Claude Code OAuth tokens, sk-ant-oat01-*)
+3. OS keychain (macOS Keychain / Linux Secret Service)
+4. `~/.eduagent/secrets.json` (chmod 600)
+
+This matches the Python `config.py` precedence exactly. Both TS and Python resolve auth the same way.
+
+**Config isolation:** Claw-ED uses ONLY `~/.eduagent/` for its config. The `~/.claude/` directory is read-only (for OAuth token discovery) but never written to. No Claw-ED config lives in `~/.claude/`.
 
 ### 3. Background Daemon
 
@@ -313,10 +419,27 @@ class ClawedDaemon {
 ```
 
 **TelegramBridge** wraps `node-telegram-bot-api`:
-- Receives message → determines intent (natural language or /command)
-- Spawns `python3 -m clawed <cmd> --json`
-- Parses result → sends text response + file attachments back to Telegram
-- Handles long-running operations with "generating..." status messages
+- Receives message → routes through the **same TS LLM router** used by the Ink TUI
+- The daemon imports `LLMRouter` from `services/llm-router.ts` (shared code)
+- LLM sees the same 14 Claw-ED tools → picks the right one → subprocess to Python
+- Results sent back as Telegram messages + file attachments
+- Long-running operations show "generating..." status with Telegram `sendChatAction('typing')`
+
+**Telegram NL routing flow:**
+```
+Telegram message → TelegramBridge
+  → LLMRouter.chat(message, clawedTools)  # Same router as Ink TUI
+  → LLM returns tool_use → spawn python3 -m clawed <cmd> --json
+  → Parse result → Telegram reply + file upload
+```
+
+**Security:**
+- Telegram bot only responds to the configured teacher's Telegram user ID
+- Teacher ID stored in `~/.eduagent/config.json` as `telegram_user_id`
+- Set during onboarding or via `clawed config telegram`
+- Unknown users get: "This is a private teaching assistant. Contact your administrator."
+- Rate limit: max 10 requests/minute per user (prevents abuse if bot token leaks)
+- Restricted commands via Telegram: `config`, `daemon`, `setup` are terminal-only (blocked from Telegram)
 
 **Service management:**
 - macOS: launchd plist at `~/Library/LaunchAgents/com.clawed.daemon.plist`
@@ -402,7 +525,7 @@ clawed = ["_cli_bundle/cli.js"]
 
 ## Feature Preservation Matrix
 
-All 16 features from v2.5.3, verified working through v3 CLI:
+All 16 features from v2.5.3. **14 get dedicated TS tools; 3 are Python-internal** (Image Pipeline, Memory & Feedback, MCP Server don't need TS tool wrappers because they're invoked internally by other commands, not directly by teachers).
 
 | # | Feature | Python Module | TS Tool | Status |
 |---|---------|--------------|---------|--------|
@@ -429,6 +552,72 @@ All 16 features from v2.5.3, verified working through v3 CLI:
 2. **PPTX visual theming** — Match slide theme to lesson topic (nautical for exploration, etc.)
 3. **Game HTML structural repair** — Prevention-first: only use code-capable models for game generation
 4. **Rate limit handling** — TypeScript CLI retries with backoff on 429, falls back to lower tier
+
+## Migration from v2.5.3
+
+**Data compatibility:** v3.0 reads the same `~/.eduagent/` directory layout as v2.5.3. No migration needed for:
+- `config.json` — same schema, new fields added (backward compatible)
+- `secrets.json` — unchanged
+- `persona.json` / `persona_deep.md` — unchanged
+- `curriculum_state.json` — unchanged
+- `jon_curriculum_cache/` — unchanged (668MB stays in place)
+
+**New fields added to config.json:**
+- `telegram_user_id` — for daemon security (optional, set during onboarding)
+- `version` — "3.0.0" (for future migration checks)
+
+**Upgrade path:** `pip install --upgrade clawed` from 2.5.3 → 3.0.0 just works. No re-onboarding required. First run prints a one-time "Welcome to Claw-ED v3" message showing new features.
+
+## Node.js Fallback Experience
+
+When Node.js is not installed:
+1. Python entry point detects missing `node` binary
+2. Prints one-time notice:
+
+```
+Claw-ED v3.0 — running in classic mode (Python CLI)
+
+For the full experience with the interactive AI assistant,
+install Node.js 18+: https://nodejs.org
+
+Classic mode still supports all commands:
+  clawed lesson "Topic" -g 8 -s "US History"
+  clawed game create "Topic"
+  clawed ingest ~/Documents/
+```
+
+3. Falls back to existing typer/rich CLI — all commands work, just without the Ink TUI and NL routing
+4. This notice shows once, then sets `~/.eduagent/.node_notice_shown`
+
+## Platform Support
+
+| Platform | Ink TUI | Python CLI | Daemon |
+|----------|---------|------------|--------|
+| macOS | Full | Full | launchd |
+| Linux | Full | Full | systemd |
+| Windows | Full (Windows Terminal) | Full | Not supported (use WSL) |
+
+Windows daemon support is out of scope for v3.0. Windows teachers can use the Ink TUI and Python CLI but not the always-on Telegram daemon. WSL provides a full experience including the daemon.
+
+## Observability
+
+**Ink TUI logging:**
+- `~/.eduagent/cli.log` — debug log for the TypeScript CLI
+- Set `CLAWED_LOG_LEVEL=debug` for verbose output
+- Captures: tool calls, subprocess spawns, LLM router decisions, errors
+
+**Daemon logging:**
+- `~/.eduagent/daemon.log` — all daemon activity
+- `clawed daemon logs -f` for live tail
+- Captures: Telegram messages received/sent, subprocess results, errors
+
+**Python logging:**
+- Existing logging via `logging` module (unchanged)
+- `--verbose` flag on any command for debug output
+
+## Bundle Size
+
+Expected cli.js bundle: ~15-25MB (Bun tree-shakes unused features). PyPI wheel total: ~20-30MB including Python code + bundled JS. Well within PyPI's 100MB limit. Comparable to packages like `tensorflow-lite` or `pytorch-cpu` in wheel size.
 
 ## Testing Strategy
 
@@ -468,6 +657,12 @@ All 16 features from v2.5.3, verified working through v3 CLI:
 21. [ ] README rewritten for v3
 22. [ ] CHANGELOG updated with v3.0.0
 23. [ ] Landing page updated
-24. [ ] Ship to PyPI as clawed 3.0.0
-25. [ ] Ship to GitHub as v3.0.0 release
-26. [ ] Deploy to fleet nodes
+24. [ ] Subprocess bridge with timeout tiers and error handling
+25. [ ] Telegram bot authorization (restrict to configured teacher)
+26. [ ] Node.js absence detection with helpful fallback message
+27. [ ] Bundle size audit (cli.js < 30MB, wheel < 50MB)
+28. [ ] Smoke test on machine without Node.js (fallback path)
+29. [ ] v2.5.3 → v3.0 upgrade path verified (pip install --upgrade)
+30. [ ] Ship to PyPI as clawed 3.0.0
+31. [ ] Ship to GitHub as v3.0.0 release
+32. [ ] Deploy to fleet nodes
