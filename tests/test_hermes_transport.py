@@ -52,11 +52,11 @@ class TestBackwardCompat:
     """Verify the openclaw.py shim still works."""
 
     def test_openclaw_imports_redirect(self):
-        from clawed.transports.openclaw import handle_message as hm_old
         from clawed.transports.hermes import handle_message as hm_new
+        from clawed.transports.openclaw import handle_message as hm_old
         assert hm_old is hm_new
 
     def test_openclaw_plugin_imports_redirect(self):
-        from clawed.openclaw_plugin import get_last_lesson_id as old
         from clawed.hermes_plugin import get_last_lesson_id as new
+        from clawed.openclaw_plugin import get_last_lesson_id as old
         assert old is new
