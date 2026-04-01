@@ -881,13 +881,34 @@ async def _fetch_web_scrape(
                 )
             },
         ) as client:
-            # First get a vqd token from DDG
-            resp = await client.get(search_url, params={"q": query})
-            vqd_match = re.search(r"vqd=([^&'\"]+)", resp.text)
-            if not vqd_match:
-                logger.debug("No DDG vqd token for: %s", query)
+            # First get a vqd token from DDG (with a tighter timeout)
+            try:
+                resp = await client.get(
+                    search_url, params={"q": query}, timeout=5.0,
+                )
+            except httpx.TimeoutException:
+                logger.info("DDG initial request timed out for: %s", query)
                 return None
-            vqd = vqd_match.group(1)
+
+            # Try multiple VQD token patterns (DDG changes format)
+            vqd: str | None = None
+            for pattern in [
+                r"vqd=([^&'\"]+)",
+                r"vqd['\"]:\s*['\"]([^'\"]+)",
+                r"vqd4=([^&'\"]+)",
+            ]:
+                vqd_match = re.search(pattern, resp.text)
+                if vqd_match:
+                    vqd = vqd_match.group(1)
+                    break
+
+            if not vqd:
+                logger.info(
+                    "Could not extract DDG vqd token for '%s'; "
+                    "web image search unavailable for this query",
+                    query,
+                )
+                return None
 
             # Then fetch image results
             img_url = "https://duckduckgo.com/i.js"
@@ -932,7 +953,7 @@ async def _fetch_web_scrape(
             return path
 
     except Exception as e:
-        logger.debug("Web image scrape failed for '%s': %s", query, e)
+        logger.info("Web image scrape failed for '%s': %s", query, e)
         return None
 
 
