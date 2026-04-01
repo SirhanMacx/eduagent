@@ -405,7 +405,7 @@ class TestModelRouterAssessment:
         from clawed.model_router import DEFAULT_TIER_MODELS, TASK_TIERS, ModelTier
 
         assert "assessment" in TASK_TIERS
-        assert TASK_TIERS["assessment"] == ModelTier.WORK
+        assert TASK_TIERS["assessment"] == ModelTier.DEEP
         assert DEFAULT_TIER_MODELS["work"] == "minimax-m2.7:cloud"
 
     def test_route_assessment_task(self):

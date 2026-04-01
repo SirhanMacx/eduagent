@@ -14,7 +14,6 @@ from clawed.models import AppConfig, LLMProvider
 class TestModelTier:
     def test_tier_enum_values(self):
         assert ModelTier.FAST.value == "fast"
-        assert ModelTier.WORK.value == "work"
         assert ModelTier.DEEP.value == "deep"
 
     def test_all_tiers_have_defaults(self):
@@ -28,19 +27,18 @@ class TestTaskTiers:
         for task in fast_tasks:
             assert TASK_TIERS[task] == ModelTier.FAST, f"{task} should be fast"
 
-    def test_work_tasks(self):
-        work_tasks = ["lesson_plan", "unit_plan", "materials", "differentiation",
-                      "assessment", "year_map", "pacing_guide", "curriculum_gaps"]
-        for task in work_tasks:
-            assert TASK_TIERS[task] == ModelTier.WORK, f"{task} should be work"
-
     def test_deep_tasks(self):
-        deep_tasks = ["persona_extract", "evaluation", "master_content"]
+        """All generation tasks route to DEEP (Opus) — maximum intelligence."""
+        deep_tasks = [
+            "lesson_plan", "unit_plan", "materials", "differentiation",
+            "assessment", "year_map", "pacing_guide", "curriculum_gaps",
+            "persona_extract", "evaluation", "master_content", "game_generate",
+        ]
         for task in deep_tasks:
             assert TASK_TIERS[task] == ModelTier.DEEP, f"{task} should be deep"
 
-    def test_unknown_task_defaults_to_work(self):
-        assert resolve_tier("totally_unknown_task") == ModelTier.WORK
+    def test_unknown_task_defaults_to_deep(self):
+        assert resolve_tier("totally_unknown_task") == ModelTier.DEEP
 
 
 class TestResolveTier:
@@ -48,7 +46,7 @@ class TestResolveTier:
         assert resolve_tier("bellringer") == ModelTier.FAST
 
     def test_unknown_task(self):
-        assert resolve_tier("something_new") == ModelTier.WORK
+        assert resolve_tier("something_new") == ModelTier.DEEP
 
 
 class TestResolveModel:
@@ -56,11 +54,6 @@ class TestResolveModel:
         config = AppConfig()
         model = resolve_model(ModelTier.FAST, config)
         assert model == DEFAULT_TIER_MODELS["fast"]
-
-    def test_default_work_model(self):
-        config = AppConfig()
-        model = resolve_model(ModelTier.WORK, config)
-        assert model == DEFAULT_TIER_MODELS["work"]
 
     def test_default_deep_model(self):
         config = AppConfig()
@@ -74,8 +67,8 @@ class TestResolveModel:
 
     def test_teacher_tier_override_only_affects_specified(self):
         config = AppConfig(tier_models={"fast": "my-fast-model"})
-        model = resolve_model(ModelTier.WORK, config)
-        assert model == DEFAULT_TIER_MODELS["work"]
+        model = resolve_model(ModelTier.DEEP, config)
+        assert model == DEFAULT_TIER_MODELS["deep"]
 
 
 class TestTierConfig:
@@ -88,7 +81,7 @@ class TestTierConfig:
         assert config.tier_models is None
 
     def test_tier_models_can_be_set(self):
-        config = AppConfig(tier_models={"fast": "qwen3.5:cloud", "work": "claude-sonnet-4-6"})
+        config = AppConfig(tier_models={"fast": "qwen3.5:cloud", "deep": "claude-opus-4-6"})
         assert config.tier_models["fast"] == "qwen3.5:cloud"
 
     def test_tier_models_survives_json_roundtrip(self):
@@ -103,7 +96,7 @@ class TestRouteFunction:
         config = AppConfig(provider=LLMProvider.OLLAMA, ollama_model="llama3.2")
         routed = route("lesson_plan", config)
         assert routed is not config
-        assert routed.ollama_model == DEFAULT_TIER_MODELS["work"]
+        assert routed.ollama_model == DEFAULT_TIER_MODELS["deep"]
 
     def test_route_does_not_mutate_original(self):
         config = AppConfig(provider=LLMProvider.OLLAMA, ollama_model="llama3.2")
@@ -115,20 +108,20 @@ class TestRouteFunction:
         routed = route("bellringer", config)
         assert routed.ollama_model == DEFAULT_TIER_MODELS["fast"]
 
-    def test_route_work_task(self):
-        config = AppConfig(provider=LLMProvider.OLLAMA, ollama_model="llama3.2")
-        routed = route("unit_plan", config)
-        assert routed.ollama_model == DEFAULT_TIER_MODELS["work"]
-
     def test_route_deep_task(self):
         config = AppConfig(provider=LLMProvider.OLLAMA, ollama_model="llama3.2")
         routed = route("persona_extract", config)
         assert routed.ollama_model == DEFAULT_TIER_MODELS["deep"]
 
-    def test_route_unknown_task_falls_back_to_work_tier(self):
+    def test_route_lesson_is_deep(self):
+        config = AppConfig(provider=LLMProvider.OLLAMA, ollama_model="llama3.2")
+        routed = route("lesson_plan", config)
+        assert routed.ollama_model == DEFAULT_TIER_MODELS["deep"]
+
+    def test_route_unknown_task_falls_back_to_deep_tier(self):
         config = AppConfig(provider=LLMProvider.OLLAMA, ollama_model="llama3.2")
         routed = route("unknown_task_type", config)
-        assert routed.ollama_model == DEFAULT_TIER_MODELS["work"]
+        assert routed.ollama_model == DEFAULT_TIER_MODELS["deep"]
 
     def test_route_preserves_other_config_fields(self):
         config = AppConfig(
@@ -174,5 +167,3 @@ class TestRouteFunction:
         routed = route("quick_answer", config)
         assert routed.ollama_model == DEFAULT_TIER_MODELS["fast"]
         assert routed.provider == LLMProvider.ANTHROPIC
-
-
