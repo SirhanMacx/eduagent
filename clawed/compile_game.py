@@ -172,11 +172,15 @@ def _repair_html_structure(html: str) -> str:
     rest = html[html_tag_end + 1:].strip()
 
     # Extract bare title text (first non-tag, non-CSS line after <html>)
+    # This catches lines like "Age of Exploration: Chart Your Course" emitted before the CSS
     title_text = "Learning Game"
-    title_match = re.match(r"^\s*([A-Za-z][^\n@{<]{3,80})\n", rest)
-    if title_match and not title_match.group(1).strip().startswith(("@", "{", ".")):
-        title_text = title_match.group(1).strip()
-        rest = rest[title_match.end():]
+    title_match = re.match(r"^\s*([A-Za-z][^\n@{<]{3,120})\n", rest)
+    if title_match:
+        candidate = title_match.group(1).strip()
+        # Accept as title if it looks like a human-readable title (not CSS)
+        if not candidate.startswith(("@", "{", ".", "#", "*", ":", "/")):
+            title_text = candidate
+            rest = rest[title_match.end():]
 
     # Split: CSS/meta goes in <head>, script/div/etc goes in <body>
     head_parts: list[str] = []
