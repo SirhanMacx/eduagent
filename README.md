@@ -274,10 +274,22 @@ lesson = await generate_lesson(
 
 ---
 
+## Community
+
+Claw-ED is built by a teacher for teachers. Join the conversation:
+
+- **[GitHub Discussions](https://github.com/SirhanMacx/Claw-ED/discussions)** — share how you use Claw-ED, request features, ask questions
+- **[Report issues](https://github.com/SirhanMacx/Claw-ED/issues)** — bugs, feature requests, quality feedback
+- **[Star the repo](https://github.com/SirhanMacx/Claw-ED)** — it helps other teachers find us
+
+14,000+ installs and growing. If Claw-ED saved you prep time, tell a colleague.
+
+---
+
 ## License
 
 MIT License. Free for personal and commercial use.
 
 Built by educators, for educators.
 
-[GitHub](https://github.com/SirhanMacx/Claw-ED) | [PyPI](https://pypi.org/project/clawed/) | [Changelog](CHANGELOG.md)
+[GitHub](https://github.com/SirhanMacx/Claw-ED) | [PyPI](https://pypi.org/project/clawed/) | [Discussions](https://github.com/SirhanMacx/Claw-ED/discussions) | [Changelog](CHANGELOG.md)

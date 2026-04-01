@@ -501,6 +501,16 @@ def lesson(
         )
     )
 
+    # Star prompt — show once per session, not every time
+    import os
+    if not os.environ.get("_CLAWED_STAR_SHOWN"):
+        os.environ["_CLAWED_STAR_SHOWN"] = "1"
+        console.print(
+            "\n[dim]Claw-ED is free and open source. "
+            "If it saved you time, consider starring the repo:[/dim]\n"
+            "[dim]  https://github.com/SirhanMacx/Claw-ED[/dim]\n"
+        )
+
 
 # ── Differentiation / IEP ────────────────────────────────────────────────
 
