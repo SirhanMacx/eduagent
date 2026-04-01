@@ -302,6 +302,10 @@ def lesson(
         True, "--multi-agent/--single-agent",
         help="Multi-agent pipeline (researcher→writer→reviewer) for higher quality. Use --single-agent for speed.",
     ),
+    game: bool = typer.Option(
+        False, "--game/--no-game",
+        help="Also generate an interactive HTML learning game",
+    ),
     fmt: str = typer.Option("markdown", "--format", "-f", help="Export format: markdown, pptx, docx, pdf, handout"),
 ):
     """Generate a detailed daily lesson plan.
@@ -500,6 +504,32 @@ def lesson(
             title=f"Lesson {daily.lesson_number}: {daily.title}",
         )
     )
+
+    # Generate game if requested
+    if game:
+        try:
+            from clawed.compile_game import compile_game
+            with _safe_progress(console=console) as gprog:
+                gtask = gprog.add_task(
+                    "Designing learning game...", total=None
+                )
+                game_path = _run_async(
+                    compile_game(
+                        master=daily if hasattr(daily, "vocabulary") else None,
+                        persona=persona,
+                        output_dir=_output_dir(),
+                    )
+                )
+                gprog.update(gtask, description="Game ready!")
+            if game_path:
+                console.print(
+                    f"[green]Game created:[/green] {game_path}\n"
+                    f"[dim]Open: open {game_path}[/dim]"
+                )
+        except Exception as e:
+            console.print(
+                f"[yellow]Game generation failed:[/yellow] {e}"
+            )
 
     # Star prompt — show once per session, not every time
     import os

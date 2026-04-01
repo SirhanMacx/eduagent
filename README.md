@@ -122,6 +122,10 @@ Your curriculum files (PDF, DOCX, PPTX, and 20+ formats)
 | `clawed bot --token TOKEN` | Connect Telegram bot |
 | `clawed serve` | Web dashboard |
 | `clawed mcp-server` | MCP server (for Claude Code integration) |
+| `clawed game create "Topic" -g 8` | Generate an interactive HTML learning game |
+| `clawed game create "Topic" --style "escape room"` | Game with specific style |
+| `clawed game create "Topic" --students "they love Minecraft"` | Game matching student interests |
+| `clawed game gallery` | View all your generated games |
 | `clawed demo` | Try it without an API key |
 
 ---
@@ -171,6 +175,20 @@ Every lesson can be automatically differentiated:
 - **IEP modifications:** Chunked tasks, explicit instructions, modified assessments
 - **504 accommodations:** Extended time, preferential seating, scribe access
 - **Gifted extensions:** Deeper inquiry, independent research, cross-topic connections
+
+### Interactive Learning Games
+
+Every lesson can generate an interactive HTML game as an extension activity:
+
+```bash
+clawed game create "The Missouri Compromise" -g 8 -s "US History"
+clawed game create "Photosynthesis" -g 6 --students "they love Minecraft"
+clawed game create "The Renaissance" -g 9 --style "escape room"
+```
+
+Every game is unique — the AI designs the mechanic, visuals, and interaction from scratch based on the lesson content and your students' interests. No templates. Games are single-file HTML that works on phones, Chromebooks, and any browser.
+
+Browse community games: [Game Gallery](https://sirhanmacx.github.io/Claw-ED/games)
 
 ### Autonomous Operation
 

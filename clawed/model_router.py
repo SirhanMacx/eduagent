@@ -46,6 +46,7 @@ TASK_TIERS: dict[str, ModelTier] = {
     "persona_extract": ModelTier.DEEP,
     "evaluation": ModelTier.DEEP,
     "master_content": ModelTier.DEEP,
+    "game_generate": ModelTier.DEEP,
 }
 
 DEFAULT_TIER_MODELS: dict[str, str] = {

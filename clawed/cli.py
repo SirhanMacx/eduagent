@@ -35,6 +35,7 @@ from clawed.commands.export import (
     _lesson_to_html,
     export_app,
 )
+from clawed.commands.game import game_app
 from clawed.commands.generate import generate_app
 from clawed.commands.queue import queue_app
 from clawed.commands.schedule_cmd import schedule_app
@@ -243,6 +244,7 @@ app.add_typer(queue_app, name="queue")
 app.add_typer(workspace_app, name="workspace")
 app.add_typer(schedule_app, name="schedule")
 app.add_typer(train_app, name="train")
+app.add_typer(game_app, name="game")
 
 # ── Register top-level commands from sub-modules ────────────────────────
 # Commands from generate_app, export_app, and bot_app are registered as

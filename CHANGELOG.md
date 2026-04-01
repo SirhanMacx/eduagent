@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.5.1] - 2026-04-01
+
+Interactive learning games and community gallery.
+
+### Added
+- **Interactive HTML learning games** — `clawed game create` generates unique single-file HTML games from lesson content. Every game is designed by the LLM from scratch — no templates, no repetition. Games use Three.js for 3D, work on phones/Chromebooks.
+- **Student preference input** — `--students "they love Minecraft"` tells the LLM to design the game mechanic around what students are into.
+- **Game style hints** — `--style "escape room"` gives creative direction.
+- **`--game` flag on lesson command** — generate a game alongside any lesson.
+- **`clawed game gallery`** — view all generated games locally.
+- **Community Game & Lesson Gallery** — https://sirhanmacx.github.io/Claw-ED/games — browse and share games by grade, subject, topic. Teachers submit games via Discussions.
+- **Gallery schema** — organized by type (game/lesson), grade, subject, topic, author.
+
 ## [2.5.0] - 2026-04-01
 
 Teacher-first release — onboarding for any teacher, not just developers.
