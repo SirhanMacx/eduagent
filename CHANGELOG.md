@@ -5,31 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [3.0.0] - 2026-04-01
+## [4.1.2026] - 2026-04-01
 
-The agentic layer for education. Claw-ED absorbs the Claude Code CLI as its terminal interface, becoming a persistent AI co-teacher that lives in your terminal and on your phone.
+Quality release. Every system audited, every bug fixed, every feature verified.
 
-### Added
-- **Interactive Ink TUI** — beautiful terminal interface powered by React/Ink (from Claude Code source build). Natural language mode: "make me a lesson on WWI" just works.
-- **Multi-provider LLM router** — Anthropic (Claude), OpenAI (GPT), Google (Gemini), Ollama (local). Teacher picks provider, Claw-ED picks the best model. Rate limit retry with exponential backoff.
-- **Background Telegram daemon** — `clawed daemon start` keeps an always-on Telegram bot running. Generate lessons from your phone. Secured to configured teacher ID, rate limited, restricted commands.
-- **14 TypeScript tool bridges** — lesson, game, unit, ingest, train, export, assessment, standards, persona, differentiate, review, search, materials, students. Each calls Python via subprocess with structured JSON output.
+### Fixed (Ingest System — Critical)
+- **PDF image extraction now works** — `_extract_pdf_rich()` actually extracts image bytes from PDFs using PyMuPDF (was a stub returning empty list since v2.0).
+- **Persona merging on re-ingest** — second ingest now merges with existing persona instead of overwriting it. Teachers no longer lose learned voice patterns when adding new materials.
+- **`--json` images_count is real** — was hardcoded to 0. Now calculates actual count from extraction results.
+- **Image retrieval API** — new `AssetRegistry.get_extracted_images()` method. Teacher images are no longer orphaned on disk.
+- **Silent error swallowing replaced** — bare `except: pass` handlers in ingestor replaced with specific exception types and proper logging.
+
+### Fixed (Image Pipeline)
+- **DuckDuckGo scraper hardened** — tries 3 VQD token regex patterns (DDG changes format), 5-second timeout on initial request, INFO-level logging on failure.
+- **PPTX temp file cleanup** — converted images in /tmp now cleaned up after PPTX export (was leaking files indefinitely).
+- **Rate limiting on parallel fetches** — semaphore limits to 5 concurrent image downloads (prevents IP bans from API providers).
+
+### Fixed (Exports)
+- **PPTX vocabulary overcrowding** — max 4 terms per slide, split across multiple slides with page indicators.
+- **PPTX visual theming** — slides match lesson topic (nautical for exploration, marble for renaissance, patriotic for revolution, teal for science, purple for math).
+- **Game HTML quality** — warns on code-weak local models, suggests code-capable alternatives.
+
+### Added (CLI Infrastructure)
 - **`--json` flag on all commands** — every Python command supports `--json` for machine-readable output. Universal envelope: `{status, command, data, files, warnings, errors}`.
-- **Professional ASCII logo** — animated startup sequence with educational branding (warm gold, deep green, chalkboard theme).
-- **Entry point router** — `pip install clawed` installs everything. If Node.js is available, launches the Ink TUI. Otherwise falls back to the Python CLI with a helpful notice.
-- **Build pipeline** — `scripts/build.sh` builds TypeScript CLI, bundles into Python wheel, ready for PyPI.
-- **GitHub Actions CI** — Python tests, TypeScript build, wheel build, auto-publish on tag.
-- **launchd + systemd service** — `clawed daemon install` registers the daemon as a system service for auto-start on boot.
+- **Entry point router** — `pip install clawed` installs everything. If Node.js + Ink TUI available, launches it. Otherwise runs Python CLI.
+- **Build pipeline** — `scripts/build.sh` builds TypeScript CLI, bundles into Python wheel.
+- **GitHub Actions CI** — Python tests, TypeScript build (non-blocking), wheel build, auto-publish on tag.
+- **Daemon infrastructure** — `clawed daemon start/stop/status/logs` for always-on Telegram bot (requires Node.js setup).
+- **14 TypeScript tool bridges** — infrastructure for future Ink TUI integration. Each bridges to Python via subprocess.
+
+### Added (Branding)
+- **Claw-ED branding** — professional ASCII logo, educational color palette (warm gold, deep green, chalkboard), `--version` shows logo.
 
 ### Changed
-- **Rebranded from Claude Code** — all user-facing strings now say "Claw-ED". Educational color palette (warm gold, deep green, cream/parchment) replaces the corporate blue.
-- **Version 3.0.0** — major version bump reflects the architectural transformation.
-- **Entry point** — `clawed` command now routes through `_entry_router.py` instead of directly to typer.
+- **Version scheme** — date-based versioning (v{month}.{day}.{year}).
+- **Entry point** — `clawed` command routes through `_entry_router.py`.
 
-### Fixed
-- **PPTX vocabulary overcrowding** — max 4 terms per slide, split across multiple slides.
-- **PPTX visual theming** — slides now match lesson topic (nautical for exploration, marble for renaissance, patriotic for revolution).
-- **Game HTML quality** — warns on code-weak local models, suggests code-capable alternatives.
+### Note
+The TypeScript Ink TUI, Telegram daemon, and NL routing are infrastructure in the repo but require Node.js + Bun for the full experience. The Python CLI (`clawed --python`) is the production-ready interface for this release.
 
 ---
 
