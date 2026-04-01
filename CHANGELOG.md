@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.5.3] - 2026-04-01
+
+Quality-first release. Output review agent catches issues before delivery.
+
+### Added
+- **Output review agent** (`review_output.py`) — post-generation quality checker scores every PPTX, DOCX, and HTML game 0-10. Catches truncated text, answer key leaks, empty slides, overcrowding, broken HTML structure. Integrated into CLI — teachers see quality score after every generation.
+- **3D immersive game visuals** — game compiler instructs LLM to create all visuals programmatically with Three.js, CSS animations, Canvas, inline SVG. No image file dependencies. Age of Exploration = 3D ocean with ships. Renaissance = marble halls.
+
+### Fixed  
+- **PPTX source excerpts** — now pulled from structured PrimarySourceDocument objects (title, author, date, full_text, analysis_questions) instead of regex-extracted fragments. Complete quotes with proper attribution.
+- **PPTX text truncation** — truncates at word boundaries, not mid-character.
+- **Teacher model choice respected** — game compiler no longer overrides teacher's chosen provider. Routes to DEEP tier within their provider.
+
 ## [2.5.2] - 2026-04-01
 
 Production-quality output release. Every teacher gets professional PPTX with real images, clean handouts, and working games.
