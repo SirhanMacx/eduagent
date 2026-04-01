@@ -18,6 +18,7 @@ build/
 !examples/**/*.json
 !eduagent/demo/*.json
 !clawed/demo/*.json
+!cli/**/*.json
 eduagent_output/
 clawed_output/
 eduagent_data/
@@ -37,6 +38,13 @@ clawed_data/
 .coverage
 htmlcov/
 .ruff_cache/
+
+# CLI (TypeScript/Ink build)
+cli/node_modules/
+cli/dist/
+cli/.bun/
+cli/source/cli.js
+cli/source/cli.js.map
 
 # Build prompts (internal)
 BUILD_PROMPT.md
