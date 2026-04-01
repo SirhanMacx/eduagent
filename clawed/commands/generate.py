@@ -152,17 +152,30 @@ def ingest(
     console.print(table)
 
     # Extract persona
-    from clawed.persona import extract_persona, save_persona
+    from clawed.persona import extract_persona, load_persona, merge_persona, save_persona
 
     with _safe_progress(console=console) as progress:
         task = progress.add_task("Analyzing teaching style...", total=None)
         try:
-            persona = _run_async(extract_persona(documents))
+            new_persona = _run_async(extract_persona(documents))
         except (RuntimeError, ValueError) as e:
             console.print(f"[red]Generation failed:[/red] {e}")
             console.print("[dim]Run with --debug for full details[/dim]")
             raise typer.Exit(1)
         progress.update(task, description="Persona extracted!")
+
+    # Merge with existing persona instead of overwriting
+    persona_path = _output_dir() / "persona.json"
+    old_persona = None
+    if persona_path.exists():
+        try:
+            old_persona = load_persona(persona_path)
+            persona = merge_persona(old_persona, new_persona)
+            console.print("[cyan]Merged with existing persona.[/cyan]")
+        except Exception:
+            persona = new_persona
+    else:
+        persona = new_persona
 
     # Override LLM-inferred name with configured teacher name
     try:
@@ -190,7 +203,7 @@ def ingest(
     # Track persona changes for evolution
     try:
         from clawed.persona_evolution import record_ingestion_changes
-        record_ingestion_changes(old_persona=None, new_persona=persona)
+        record_ingestion_changes(old_persona=old_persona, new_persona=persona)
     except Exception:
         pass
 
