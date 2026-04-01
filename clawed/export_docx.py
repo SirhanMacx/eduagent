@@ -457,6 +457,8 @@ def export_student_handout(
 
     Returns the path to the saved .docx file.
     """
+    import re as _re
+
     from docx import Document
     from docx.enum.table import WD_TABLE_ALIGNMENT
     from docx.enum.text import WD_ALIGN_PARAGRAPH
@@ -464,15 +466,27 @@ def export_student_handout(
 
     from clawed.sanitize import sanitize_text
 
+    def _strip_answers(text: str) -> str:
+        """Remove answer keys from student-facing content."""
+        # Strip (Answer: ...) patterns
+        text = _re.sub(r"\s*\(Answer:\s*[^)]*\)", "", text)
+        # Strip (answer: ...) lowercase variant
+        text = _re.sub(r"\s*\(answer:\s*[^)]*\)", "", text)
+        # Strip "Answer: ..." at end of lines
+        text = _re.sub(r"\s*Answer:\s*.+$", "", text, flags=_re.MULTILINE)
+        # Strip "Expected: ..." patterns
+        text = _re.sub(r"\s*\*?Expected:?\*?\s*.+$", "", text, flags=_re.MULTILINE)
+        return text.strip()
+
     doc = Document()
 
-    # Sanitize all lesson text fields for the handout
+    # Sanitize AND strip answers from all student-facing text
     lesson.title = sanitize_text(lesson.title)
     lesson.objective = sanitize_text(lesson.objective)
     lesson.do_now = sanitize_text(lesson.do_now) if lesson.do_now else ""
     lesson.direct_instruction = sanitize_text(lesson.direct_instruction) if lesson.direct_instruction else ""
-    lesson.guided_practice = sanitize_text(lesson.guided_practice) if lesson.guided_practice else ""
-    lesson.independent_work = sanitize_text(lesson.independent_work) if lesson.independent_work else ""
+    lesson.guided_practice = _strip_answers(sanitize_text(lesson.guided_practice)) if lesson.guided_practice else ""
+    lesson.independent_work = _strip_answers(sanitize_text(lesson.independent_work)) if lesson.independent_work else ""
     for q in lesson.exit_ticket:
         q.question = sanitize_text(q.question)
 
