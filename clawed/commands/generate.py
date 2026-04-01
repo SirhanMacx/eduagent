@@ -17,6 +17,7 @@ import typer
 from rich.panel import Panel
 from rich.table import Table
 
+from clawed._json_output import emit_json, json_envelope, run_json_command
 from clawed.commands._helpers import _safe_progress, console, load_persona_or_exit
 from clawed.commands._helpers import output_dir as _output_dir
 from clawed.commands._helpers import run_async as _run_async
@@ -280,6 +281,60 @@ def transcribe(
 # ── Lesson generation ────────────────────────────────────────────────────
 
 
+def _lesson_json(*, topic, grade, subject, fmt, unit_file=None, lesson_number=1):
+    """Run lesson generation and return structured result for JSON output."""
+    from clawed.export_markdown import export_lesson
+    from clawed.lesson import generate_lesson, save_lesson
+    from clawed.models import LessonBrief, UnitPlan
+
+    persona = load_persona_or_exit()
+
+    if unit_file:
+        from clawed.planner import load_unit
+        unit_plan = load_unit(Path(unit_file))
+    else:
+        unit_plan = UnitPlan(
+            title=f"{topic} Lesson",
+            subject=subject,
+            grade_level=grade,
+            topic=topic,
+            duration_weeks=1,
+            overview=f"A standalone lesson on {topic} for grade {grade} {subject}.",
+            essential_questions=[f"What are the key concepts of {topic}?"],
+            daily_lessons=[
+                LessonBrief(
+                    lesson_number=1,
+                    topic=topic,
+                    description=f"Explore the key concepts, events, and significance of {topic}.",
+                    lesson_type="direct_instruction",
+                )
+            ],
+        )
+        lesson_number = 1
+
+    daily = _run_async(
+        generate_lesson(
+            lesson_number=lesson_number,
+            unit=unit_plan,
+            persona=persona,
+            include_homework=True,
+        )
+    )
+
+    out_dir = _output_dir()
+    json_path = save_lesson(daily, out_dir)
+    export_path = export_lesson(daily, out_dir, fmt=fmt)
+
+    files = [str(json_path)]
+    if export_path:
+        files.append(str(export_path))
+
+    return {
+        "data": daily.model_dump() if hasattr(daily, "model_dump") else None,
+        "files": files,
+    }
+
+
 @generate_app.command()
 def lesson(
     topic: str = typer.Argument(..., help="Lesson topic (e.g. 'The American Revolution')"),
@@ -310,6 +365,7 @@ def lesson(
         "handout", "--format", "-f",
         help="Export: handout, docx, pptx, pdf, markdown",
     ),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
     """Generate a detailed daily lesson plan.
 
@@ -323,6 +379,19 @@ def lesson(
     From a unit plan:
         clawed lesson "Photosynthesis" --unit-file output/unit_photosynthesis.json -n 1
     """
+    if json_output:
+        run_json_command(
+            "gen.lesson",
+            _lesson_json,
+            topic=topic,
+            grade=grade,
+            subject=subject,
+            fmt=fmt,
+            unit_file=unit_file,
+            lesson_number=lesson_num,
+        )
+        return
+
     from clawed.export_markdown import export_lesson
     from clawed.lesson import generate_lesson, save_lesson
 

@@ -32,3 +32,17 @@ def test_json_envelope_serializable():
     assert isinstance(serialized, str)
     roundtrip = json.loads(serialized)
     assert roundtrip["data"]["nested"]["key"] == "val"
+
+
+def test_lesson_json_flag_error_without_config():
+    """clawed gen lesson --json returns error envelope when not configured."""
+    result = subprocess.run(
+        [sys.executable, "-m", "clawed", "lesson", "Test Topic", "-g", "8", "-s", "US History", "--json"],
+        capture_output=True, text=True, timeout=30,
+    )
+    output = json.loads(result.stdout)
+    assert output["command"] == "gen.lesson"
+    assert output["status"] in ("success", "error")
+    assert isinstance(output["data"], (dict, type(None)))
+    assert isinstance(output["files"], list)
+    assert isinstance(output["errors"], list)
