@@ -200,8 +200,8 @@ def _extract_docx_rich(path: Path) -> ExtractionResult:
                         ))
                     else:
                         urls.append(ExtractedURL(url=url, link_type="website"))
-    except Exception:
-        pass
+    except (AttributeError, KeyError, ValueError) as e:
+        logger.warning("Failed to extract DOCX hyperlinks from %s: %s", path.name, e)
 
     # Also find URLs in plain text
     for text_url in _extract_urls_from_text(full_text):
@@ -224,10 +224,10 @@ def _extract_docx_rich(path: Path) -> ExtractionResult:
                             alt_text="",
                             context_text="",
                         ))
-                except Exception:
-                    pass
-    except Exception:
-        pass
+                except (AttributeError, OSError, ValueError) as e:
+                    logger.debug("Failed to extract DOCX image: %s", e)
+    except (AttributeError, KeyError) as e:
+        logger.warning("Failed to enumerate DOCX image rels from %s: %s", path.name, e)
 
     return ExtractionResult(
         text=full_text,
@@ -300,8 +300,8 @@ def _extract_pptx_rich(path: Path) -> ExtractionResult:
                                             link_type="website",
                                             context_text=run.text[:100],
                                         ))
-                        except Exception:
-                            pass
+                        except (AttributeError, ValueError) as e:
+                            logger.debug("Failed to extract PPTX hyperlink: %s", e)
 
             # Extract images
             try:
@@ -322,8 +322,8 @@ def _extract_pptx_rich(path: Path) -> ExtractionResult:
                             context_text=slide_context,
                             slide_number=i,
                         ))
-            except Exception:
-                pass
+            except (AttributeError, OSError, ValueError) as e:
+                logger.debug("Failed to extract PPTX image on slide %d: %s", i, e)
 
         if len(parts) > 1:
             slides_text.append("\n".join(parts))
@@ -387,8 +387,8 @@ def _extract_doc(path: Path) -> str:
             )
             if result.returncode == 0 and result.stdout.strip():
                 return result.stdout.strip()
-        except Exception:
-            pass
+        except (OSError, subprocess.TimeoutExpired) as e:
+            logger.warning("textutil failed on %s: %s", path.name, e)
     # catdoc fallback
     for tool in ("catdoc", "antiword"):
         if shutil.which(tool):
@@ -399,8 +399,8 @@ def _extract_doc(path: Path) -> str:
                 )
                 if result.returncode == 0 and result.stdout.strip():
                     return result.stdout.strip()
-            except Exception:
-                pass
+            except (OSError, subprocess.TimeoutExpired) as e:
+                logger.warning("%s failed on %s: %s", tool, path.name, e)
     # Raw text fallback (often garbled but better than nothing)
     try:
         raw = path.read_bytes()
@@ -410,8 +410,8 @@ def _extract_doc(path: Path) -> str:
         text = re.sub(r"\s{3,}", "\n", text).strip()
         if len(text) > 50:
             return text
-    except Exception:
-        pass
+    except OSError as e:
+        logger.warning("Failed to read .doc raw bytes from %s: %s", path.name, e)
     return ""
 
 
@@ -428,8 +428,8 @@ def _extract_ppt(path: Path) -> str:
             )
             if result.returncode == 0 and result.stdout.strip():
                 return result.stdout.strip()
-        except Exception:
-            pass
+        except (OSError, subprocess.TimeoutExpired) as e:
+            logger.warning("textutil failed on %s: %s", path.name, e)
     # Raw text fallback
     try:
         raw = path.read_bytes()
@@ -438,8 +438,8 @@ def _extract_ppt(path: Path) -> str:
         text = re.sub(r"\s{3,}", "\n", text).strip()
         if len(text) > 50:
             return text
-    except Exception:
-        pass
+    except OSError as e:
+        logger.warning("Failed to read .ppt raw bytes from %s: %s", path.name, e)
     return ""
 
 
@@ -455,7 +455,8 @@ def _extract_csv(path: Path) -> str:
                 break
             rows.append(" | ".join(row))
         return "\n".join(rows)
-    except Exception:
+    except (OSError, csv.Error, ValueError) as e:
+        logger.warning("Failed to extract CSV from %s: %s", path.name, e)
         return ""
 
 
@@ -496,8 +497,8 @@ def _extract_xls(path: Path) -> str:
             )
             if result.returncode == 0 and result.stdout.strip():
                 return result.stdout.strip()
-        except Exception:
-            pass
+        except (OSError, subprocess.TimeoutExpired) as e:
+            logger.warning("textutil failed on %s: %s", path.name, e)
     return ""
 
 
@@ -512,8 +513,8 @@ def _extract_rtf(path: Path) -> str:
         return rtf_to_text(raw).strip()
     except ImportError:
         pass
-    except Exception:
-        pass
+    except (OSError, ValueError) as e:
+        logger.warning("striprtf failed on %s: %s", path.name, e)
     # macOS textutil
     if shutil.which("textutil"):
         try:
@@ -523,8 +524,8 @@ def _extract_rtf(path: Path) -> str:
             )
             if result.returncode == 0 and result.stdout.strip():
                 return result.stdout.strip()
-        except Exception:
-            pass
+        except (OSError, subprocess.TimeoutExpired) as e:
+            logger.warning("textutil failed on RTF %s: %s", path.name, e)
     # Regex fallback: strip RTF control codes
     try:
         raw = path.read_text(encoding="utf-8", errors="replace")
@@ -534,8 +535,8 @@ def _extract_rtf(path: Path) -> str:
         text = re.sub(r"\s{2,}", " ", text).strip()
         if len(text) > 50:
             return text
-    except Exception:
-        pass
+    except OSError as e:
+        logger.warning("Failed to read RTF file %s: %s", path.name, e)
     return ""
 
 
@@ -568,7 +569,8 @@ def _extract_html_file(path: Path) -> str:
         text = " ".join(stripper.parts)
         text = re.sub(r"\s{2,}", " ", text).strip()
         return text
-    except Exception:
+    except (OSError, ValueError) as e:
+        logger.warning("Failed to extract HTML from %s: %s", path.name, e)
         return ""
 
 
