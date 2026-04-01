@@ -102,25 +102,38 @@ def _extract_pdf(path: Path) -> tuple[str, Optional[int]]:
 
 
 def _extract_pdf_rich(path: Path) -> ExtractionResult:
-    """Extract text, image count, and URLs from a PDF."""
+    """Extract text, images, and URLs from a PDF."""
     import fitz
 
     doc = fitz.open(str(path))
     pages: list[str] = []
-    image_count = 0
-    for page in doc:
+    images: list[ExtractedImage] = []
+    for page_num, page in enumerate(doc):
         text = page.get_text()
+        slide_context = ""
         if text.strip():
             pages.append(text)
-        image_count += len(page.get_images())
+            slide_context = text.strip()
+        for img_info in page.get_images():
+            xref = img_info[0]
+            try:
+                base_image = doc.extract_image(xref)
+                if base_image and base_image.get("image"):
+                    img_bytes = base_image["image"]
+                    ext = base_image.get("ext", "png")
+                    if len(img_bytes) > 2000:  # Skip tiny icons
+                        images.append(ExtractedImage(
+                            image_bytes=img_bytes,
+                            format=ext,
+                            context_text=slide_context[:200] if slide_context else "",
+                        ))
+            except Exception as e:
+                logger.debug("Failed to extract image xref %d: %s", xref, e)
     page_count = len(doc)
     doc.close()
 
     full_text = "\n\n".join(pages)
     urls = _extract_urls_from_text(full_text)
-
-    # Create placeholder images (we count but don't extract bytes from PDFs)
-    images: list[ExtractedImage] = []
 
     return ExtractionResult(
         text=full_text,
