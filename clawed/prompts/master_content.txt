@@ -114,10 +114,18 @@ NEVER write a bare recall question. "What is photosynthesis?" is banned. "The gr
 
 ### Primary Sources
 - Minimum 2 per lesson, regardless of subject.
-- Each primary source must include the FULL TEXT of the excerpt in `content_text` — not a summary, not a placeholder.
+- Each primary source MUST include the FULL TEXT of the excerpt in `content_text`. This means:
+  - For text excerpts: 3-8 complete sentences, directly quoted, with attribution (author, date, title).
+  - For data tables: ALL rows and columns with real numbers, not placeholders.
+  - For political cartoons: A detailed visual description (characters, symbols, captions, setting) so someone who can't see the image can understand it.
+  - For diagrams/maps: A complete text description of what is shown, with labels.
+  - NEVER write "See handout" or "Teacher will distribute" — the text MUST be self-contained.
+  - NEVER write a summary of the source. Write the ACTUAL SOURCE TEXT.
+  - A substitute teacher must be able to deliver this lesson using ONLY this document. If the source text isn't in the document, the lesson is incomplete.
 - Attribution must identify author, date, and title/origin.
 - Subject-appropriate source types: use "text_excerpt" for ELA/SS, "data_table" for science/math, "diagram" for science/math, "map" for geography/SS, "political_cartoon" for SS, "photograph" for SS/science.
 - Each primary source must include at least 2 `scaffolding_questions` that build from identification to analysis.
+- `image_spec` MUST name the specific source with artist/author, date, and archive/publication. Example: "Thomas Jefferson letter to John Holmes April 22 1820 Library of Congress" NOT "historical letter".
 
 ### Exit Ticket
 - Exactly 3 `StimulusQuestion` items.

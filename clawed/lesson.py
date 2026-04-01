@@ -31,51 +31,73 @@ MASTER_PROMPT_PATH = Path(__file__).parent / "prompts" / "master_content.txt"
 def _build_system_prompt(
     persona: TeacherPersona,
     config: AppConfig | None,
+    subject: str = "",
 ) -> str:
-    """Build the rich system prompt shared by both generation paths."""
+    """Build the rich system prompt shared by both generation paths.
+
+    The prompt is subject-aware: it loads the appropriate SubjectSkill
+    for the lesson's subject (not just the persona's default subject),
+    preventing Social Studies patterns from bleeding into Math lessons.
+    """
     persona_context = persona.to_prompt_context() if persona else ""
     soul_context = ""
     try:
         import os
-        data_dir = os.environ.get("EDUAGENT_DATA_DIR", str(Path.home() / ".eduagent"))
+        data_dir = os.environ.get(
+            "EDUAGENT_DATA_DIR", str(Path.home() / ".eduagent")
+        )
         soul_path = Path(data_dir) / "workspace" / "SOUL.md"
         if soul_path.exists():
             soul_context = soul_path.read_text(encoding="utf-8")[:2000]
     except Exception:
         pass
 
+    # Base prompt — subject-neutral. Specific pedagogy comes from skills.
     system_parts = [
         "You are an expert lesson plan writer who EXACTLY replicates "
         "this teacher's pedagogical fingerprint in EVERY lesson. "
-        "This means: use their specific graphic organizers (INSPECT charts, T-charts, etc.), "
-        "their activity structures (jigsaw, pair role division, desk islands), "
-        "their Do Now format (multi-part visual analysis), their scaffolding moves "
-        "(writing frames, sentence starters, pre-taught vocabulary with icons), "
-        "and their signature teaching moves. If the persona says they use INSPECT charts, "
-        "the lesson MUST include an INSPECT chart. If they cold-call students, script cold calls. "
-        "If they say 'what is this source NOT telling us,' include that exact prompt.",
+        "Match their voice, tone, scaffolding patterns, activity structures, "
+        "Do Now format, and signature teaching moves. If the persona describes "
+        "specific techniques, use those EXACT techniques — not generic alternatives.",
     ]
+
+    # Load subject-specific skill for THIS lesson's subject
+    effective_subject = subject or (persona.subject_area if persona else "")
+    if effective_subject:
+        try:
+            from clawed.skills import SkillLibrary
+            library = SkillLibrary()
+            skill = library.get(effective_subject)
+            if skill:
+                system_parts.append(skill.to_system_context())
+        except Exception:
+            pass
+
     if persona_context:
         system_parts.append(persona_context)
     if soul_context:
         system_parts.append(soul_context)
     system_parts.append(
         "Respond only with valid JSON matching the specified format. "
-        "Do NOT use XML tags, angle brackets, or markdown formatting in the JSON values."
+        "Do NOT use XML tags, angle brackets, or markdown formatting "
+        "in the JSON values."
     )
 
     # NYS Regents assessment format for Social Studies
-    if (config and hasattr(config, 'teacher_profile') and config.teacher_profile
-            and getattr(config.teacher_profile, 'state', '') == 'NY'
-            and 'social studies' in (persona.subject_area or '').lower()):
+    if (config and hasattr(config, "teacher_profile") and config.teacher_profile
+            and getattr(config.teacher_profile, "state", "") == "NY"
+            and "social studies" in effective_subject.lower()):
         system_parts.append(
             "NYS Regents Assessment Format Requirements:\n"
-            "- Exit ticket questions MUST use Stimulus-Based Multiple Choice Question (SBMCQ) format:\n"
-            "  Each question includes a stimulus (primary source excerpt, map, chart, or political cartoon)\n"
-            "  followed by 4 answer choices.\n"
-            "- Include at least one Constructed Response Question (CRQ) in the exit ticket:\n"
-            "  Context → Source → Questions (identify, explain, analyze/evaluate).\n"
-            "- All assessment items must reference specific historical evidence from the sources provided."
+            "- Exit ticket questions MUST use Stimulus-Based Multiple "
+            "Choice Question (SBMCQ) format:\n"
+            "  Each question includes a stimulus (primary source excerpt, "
+            "map, chart, or political cartoon) followed by 4 answer choices.\n"
+            "- Include at least one Constructed Response Question (CRQ):\n"
+            "  Context → Source → Questions (identify, explain, "
+            "analyze/evaluate).\n"
+            "- All assessment items must reference specific historical "
+            "evidence from the sources provided."
         )
 
     return "\n\n".join(system_parts)
@@ -180,7 +202,7 @@ async def generate_master_content(
         .replace("{teacher_materials}", teacher_materials)
     )
 
-    system = _build_system_prompt(persona, config)
+    system = _build_system_prompt(persona, config, subject=unit.subject)
 
     if task_type and config:
         config = route_model(task_type, config)

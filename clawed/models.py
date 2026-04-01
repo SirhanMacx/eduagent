@@ -289,16 +289,43 @@ class TeacherPersona(BaseModel):
 
         if self.voice_examples:
             lines.append("")
-            lines.append("=== Voice Examples (write like this) ===")
+            lines.append("=== Voice Examples (write EXACTLY like this) ===")
             for i, example in enumerate(self.voice_examples[:5], 1):
                 lines.append(f'Example {i}: "{example}"')
-            lines.append("")
-            lines.append(
-                "Your writing MUST match the voice, style, lesson structure, "
-                "and activity choices shown above. "
-                "Use the same vocabulary, sentence structure, source types, "
-                "scaffolding patterns, and activity formats."
-            )
+
+        # Strong voice enforcement block
+        lines.append("")
+        lines.append("=== VOICE ENFORCEMENT (CRITICAL) ===")
+        lines.append(
+            "Your writing MUST match this teacher's actual voice. "
+            "This means:"
+        )
+        lines.append(
+            "- Use their EXACT phrases and transitions from the "
+            "voice examples above"
+        )
+        lines.append(
+            "- Match their tone — if they're warm and witty, be warm "
+            "and witty. If they're direct, be direct."
+        )
+        lines.append(
+            "- Use their scaffolding patterns — if they use fill-in-"
+            "the-blank guided notes, you MUST use fill-in-the-blank "
+            "guided notes"
+        )
+        lines.append(
+            "- Use their activity structures — if they use jigsaw "
+            "groups of 3, you MUST use jigsaw groups of 3"
+        )
+        lines.append(
+            "- DO NOT write like a textbook. DO NOT use generic AI "
+            "language. DO NOT be dry or formal unless the teacher is "
+            "dry and formal."
+        )
+        lines.append(
+            "- A colleague reading this lesson should think the "
+            "teacher wrote it themselves."
+        )
         return "\n".join(lines) + "\n"
 
 
