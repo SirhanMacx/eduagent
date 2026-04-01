@@ -198,7 +198,7 @@ def extract_image_subjects(lesson) -> list[dict]:
                 if first_word not in common_non_names:
                     people_found.add(name)
     for person in list(people_found)[:5]:
-        subjects.append({"query": f"{person} portrait", "type": "person", "label": person})
+        subjects.append({"query": person, "type": "person", "label": person})
 
     # Named places/buildings
     place_patterns = re.findall(
@@ -214,7 +214,7 @@ def extract_image_subjects(lesson) -> list[dict]:
         all_text,
     )
     for place in set(famous_places[:2]):
-        subjects.append({"query": f"{place} historical photograph", "type": "place", "label": place})
+        subjects.append({"query": place, "type": "place", "label": place})
 
     # Historical documents/treaties
     doc_patterns = re.findall(
@@ -222,7 +222,7 @@ def extract_image_subjects(lesson) -> list[dict]:
         all_text,
     )
     for doc_name in set(doc_patterns[:2]):
-        subjects.append({"query": f"{doc_name} historical document", "type": "document", "label": doc_name})
+        subjects.append({"query": doc_name, "type": "document", "label": doc_name})
 
     # Fallback: lesson title
     if not subjects:
@@ -398,38 +398,102 @@ async def _fetch_loc(
 async def _fetch_wikimedia(
     query: str, cache_dir: Optional[Path] = None,
 ) -> Optional[Path]:
-    """Fetch an image from Wikimedia Commons API."""
+    """Fetch a relevant image from Wikipedia/Wikimedia for a given query.
+
+    Strategy (in order):
+    1. Wikipedia article thumbnail — search for the Wikipedia article most
+       closely matching the query, then pull its lead image.  This gives the
+       canonical, highly-relevant image editors chose for that topic.
+    2. Wikimedia Commons file search — fallback when no article image exists.
+
+    Wikipedia article thumbnails are almost always directly relevant
+    (e.g. "Hernán Cortés" → his portrait, "Caravel" → a drawing of one).
+    The old Commons file-namespace search returned loosely-matching results.
+    """
     import httpx
 
     cached = _check_cache("wikimedia", query, cache_dir)
     if cached:
         return cached
 
-    url = "https://commons.wikimedia.org/w/api.php"
-    params = {
-        "action": "query",
-        "generator": "search",
-        "gsrsearch": query,
-        "gsrnamespace": "6",
-        "prop": "imageinfo",
-        "iiprop": "url|extmetadata",
-        "iiurlwidth": "1024",
-        "format": "json",
-    }
+    headers = {"User-Agent": "ClawED/1.0 (https://github.com/SirhanMacx/Claw-ED; educational)"}
 
     try:
-        headers = {"User-Agent": "ClawED/1.0 (https://github.com/SirhanMacx/Claw-ED; educational)"}
         async with httpx.AsyncClient(timeout=_FETCH_TIMEOUT, headers=headers) as client:
-            resp = await client.get(url, params=params)
-            resp.raise_for_status()
-            data = resp.json()
 
-            pages = data.get("query", {}).get("pages", {})
-            image_url: Optional[str] = None
+            # ── Strategy 1: Wikipedia article thumbnail ───────────────────
+            # Use the Wikipedia OpenSearch to find the best-matching article,
+            # then fetch its page image via the pageimages prop.
+            search_resp = await client.get(
+                "https://en.wikipedia.org/w/api.php",
+                params={
+                    "action": "query",
+                    "list": "search",
+                    "srsearch": query,
+                    "srlimit": 5,
+                    "srnamespace": 0,
+                    "format": "json",
+                },
+            )
+            search_resp.raise_for_status()
+            search_data = search_resp.json()
+            search_results = search_data.get("query", {}).get("search", [])
+
+            if search_results:
+                # Take top result — Wikipedia search is good at topic relevance
+                page_title = search_results[0]["title"]
+                img_resp = await client.get(
+                    "https://en.wikipedia.org/w/api.php",
+                    params={
+                        "action": "query",
+                        "titles": page_title,
+                        "prop": "pageimages",
+                        "pithumbsize": 1200,
+                        "piprop": "thumbnail",
+                        "format": "json",
+                    },
+                )
+                img_resp.raise_for_status()
+                img_data = img_resp.json()
+                pages = img_data.get("query", {}).get("pages", {})
+                image_url: Optional[str] = None
+                for page in pages.values():
+                    thumb = page.get("thumbnail", {})
+                    if thumb.get("source"):
+                        image_url = thumb["source"]
+                        break
+
+                if image_url:
+                    dl = await client.get(image_url, timeout=_FETCH_TIMEOUT)
+                    dl.raise_for_status()
+                    path = _save_to_cache(dl.content, "wikimedia", query, cache_dir)
+                    logger.info(
+                        "Wikipedia article image for '%s' (article: '%s') -> %s",
+                        query, page_title, path,
+                    )
+                    return path
+
+            # ── Strategy 2: Wikimedia Commons file search (fallback) ──────
+            commons_resp = await client.get(
+                "https://commons.wikimedia.org/w/api.php",
+                params={
+                    "action": "query",
+                    "generator": "search",
+                    "gsrsearch": query,
+                    "gsrnamespace": "6",
+                    "prop": "imageinfo",
+                    "iiprop": "url|extmetadata",
+                    "iiurlwidth": "1024",
+                    "format": "json",
+                },
+            )
+            commons_resp.raise_for_status()
+            commons_data = commons_resp.json()
+            pages = commons_data.get("query", {}).get("pages", {})
+            image_url = None
             for _page_id, page in pages.items():
                 info_list = page.get("imageinfo", [])
                 if info_list:
-                    # Use the thumbnail URL (scaled to 1024px width)
                     image_url = info_list[0].get("thumburl") or info_list[0].get("url")
                     if image_url:
                         break
@@ -438,11 +502,10 @@ async def _fetch_wikimedia(
                 logger.debug("No Wikimedia results for query: %s", query)
                 return None
 
-            img_resp = await client.get(image_url, timeout=_FETCH_TIMEOUT)
-            img_resp.raise_for_status()
-
-            path = _save_to_cache(img_resp.content, "wikimedia", query, cache_dir)
-            logger.info("Downloaded Wikimedia image for '%s' -> %s", query, path)
+            dl = await client.get(image_url, timeout=_FETCH_TIMEOUT)
+            dl.raise_for_status()
+            path = _save_to_cache(dl.content, "wikimedia", query, cache_dir)
+            logger.info("Wikimedia Commons image for '%s' -> %s", query, path)
             return path
 
     except Exception as e:
