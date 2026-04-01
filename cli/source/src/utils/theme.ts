@@ -450,14 +450,14 @@ const darkTheme: Theme = {
   ide: 'rgb(71,130,200)', // Muted blue
   promptBorder: 'rgb(136,136,136)', // Medium gray
   promptBorderShimmer: 'rgb(166,166,166)', // Lighter gray for shimmer
-  text: 'rgb(255,255,255)', // White
-  inverseText: 'rgb(0,0,0)', // Black
+  text: 'rgb(245,240,232)', // Chalk White (Claw-ED)
+  inverseText: 'rgb(26,58,42)', // Chalkboard (Claw-ED)
   inactive: 'rgb(153,153,153)', // Light gray
   inactiveShimmer: 'rgb(193,193,193)', // Lighter gray for shimmer effect
   subtle: 'rgb(80,80,80)', // Dark gray
   suggestion: 'rgb(177,185,249)', // Light blue-purple
   remember: 'rgb(177,185,249)', // Light blue-purple
-  background: 'rgb(0,204,204)', // Bright cyan
+  background: 'rgb(45,95,60)', // Deep Green (Claw-ED)
   success: 'rgb(78,186,101)', // Bright green (dark theme keeps bright variants)
   error: 'rgb(193,57,43)', // Apple Red (Claw-ED)
   warning: 'rgb(212,168,67)', // Warm Gold (Claw-ED)
