@@ -32,21 +32,39 @@ generate_app = typer.Typer()
 
 def _ingest_json(*, path):
     """Run ingest and return structured result for JSON output."""
-    from clawed.ingestor import ingest_path as _ingest
-    from clawed.persona import extract_persona, save_persona
+    from clawed.ingestor import extract_rich, ingest_path as _ingest
+    from clawed.persona import extract_persona, load_persona, merge_persona, save_persona
 
     source = Path(path).expanduser().resolve()
     documents = _ingest(source)
     if not documents:
         return {"data": {"documents_count": 0, "images_count": 0, "persona_extracted": False}, "files": []}
 
-    persona = _run_async(extract_persona(documents))
+    # Count images via rich extraction
+    total_images = 0
+    for doc in documents:
+        if doc.source_path:
+            extraction = extract_rich(Path(doc.source_path))
+            if extraction:
+                total_images += len(extraction.images)
+
+    # Extract and merge persona
+    new_persona = _run_async(extract_persona(documents))
+    persona_path = _output_dir() / "persona.json"
+    if persona_path.exists():
+        try:
+            existing = load_persona(persona_path)
+            persona = merge_persona(existing, new_persona)
+        except Exception:
+            persona = new_persona
+    else:
+        persona = new_persona
     out = save_persona(persona, _output_dir())
 
     return {
         "data": {
             "documents_count": len(documents),
-            "images_count": 0,
+            "images_count": total_images,
             "persona_extracted": True,
         },
         "files": [str(out)],
