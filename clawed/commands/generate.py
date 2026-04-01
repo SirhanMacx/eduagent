@@ -401,8 +401,8 @@ def lesson(
         try:
             if multi_agent:
                 # Multi-agent pipeline: researcher → writer → reviewer
-                from clawed.multi_agent import multi_agent_generate_master_content
                 from clawed.compile_teacher import compile_teacher_view
+                from clawed.multi_agent import multi_agent_generate_master_content
                 console.print("[dim]Using multi-agent pipeline (researcher→writer→reviewer)...[/dim]")
                 master = _run_async(
                     multi_agent_generate_master_content(
@@ -443,12 +443,15 @@ def lesson(
 
     # ── Voice scoring ────────────────────────────────────────────
     try:
-        from clawed.quality import score_voice_match
         from clawed.persona import load_persona as _load_p
+        from clawed.quality import score_voice_match
         _pp = _output_dir() / "persona.json"
         if _pp.exists():
             _persona = _load_p(_pp)
-            _lesson_text = str(daily.objective) + " " + str(daily.do_now) + " " + str(getattr(daily, 'direct_instruction', ''))
+            _lesson_text = (
+                str(daily.objective) + " " + str(daily.do_now)
+                + " " + str(getattr(daily, "direct_instruction", ""))
+            )
             _voice_score = _run_async(score_voice_match(_lesson_text, _persona.to_prompt_context()))
             if _voice_score and _voice_score > 0:
                 _color = "green" if _voice_score >= 3.5 else "yellow" if _voice_score >= 2.5 else "red"

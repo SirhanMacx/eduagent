@@ -40,3 +40,9 @@ htmlcov/
 
 # Build prompts (internal)
 BUILD_PROMPT.md
+
+# Local utility scripts
+check_jon.py
+check_db.py
+update_jon_persona.py
+output/

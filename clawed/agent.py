@@ -13,6 +13,10 @@ from __future__ import annotations
 
 import json
 import logging
+from typing import Any
+
+from clawed.models import AppConfig, LLMProvider
+from clawed.tools import TOOL_DEFINITIONS, execute_tool
 
 
 def _anthropic_headers(api_key: str) -> dict[str, str]:
@@ -26,7 +30,10 @@ def _anthropic_headers(api_key: str) -> dict[str, str]:
         return {
             "authorization": f"Bearer {api_key}",
             "anthropic-version": "2023-06-01",
-            "anthropic-beta": "interleaved-thinking-2025-05-14,claude-code-20250219,oauth-2025-04-20",
+            "anthropic-beta": (
+                "interleaved-thinking-2025-05-14,"
+                "claude-code-20250219,oauth-2025-04-20"
+            ),
             "user-agent": "claude-cli/1.0.0 (external, cli)",
             "x-app": "cli",
             "content-type": "application/json",
@@ -36,10 +43,6 @@ def _anthropic_headers(api_key: str) -> dict[str, str]:
         "anthropic-version": "2023-06-01",
         "content-type": "application/json",
     }
-from typing import Any
-
-from clawed.models import AppConfig, LLMProvider
-from clawed.tools import TOOL_DEFINITIONS, execute_tool
 
 logger = logging.getLogger(__name__)
 

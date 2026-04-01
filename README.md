@@ -1,8 +1,6 @@
 # Claw-ED
 
-Your personal AI teaching agent. Runs on your machine, learns your voice, works while you sleep.
-
-Built on the Hermes Agent framework (NousResearch). Open source. MIT license.
+**Your AI co-teacher. Learns your voice. Generates lessons that sound like you wrote them.**
 
 <p align="center">
   <a href="https://pypi.org/project/clawed/"><img src="https://img.shields.io/pypi/v/clawed?color=blue" alt="PyPI version"></a>
@@ -14,163 +12,94 @@ Built on the Hermes Agent framework (NousResearch). Open source. MIT license.
 
 ---
 
-## What's new in v2.3.9
-
-**Multi-agent lesson generation.** Instead of one LLM call doing everything, `--multi-agent` spawns a team of three specialized agents: a Researcher who finds primary sources and historical context, a Writer who drafts the lesson in your voice, and a Reviewer who scores quality on voice fidelity, pedagogy, and differentiation — sending it back for revision if any dimension scores below 7/10. The result: higher-quality lessons with better sources and stronger voice matching.
+Claw-ED is an open-source AI teaching assistant that learns your actual teaching style from your curriculum files. Not a generic lesson template generator — a personal agent that captures your voice, your scaffolding patterns, your assessment style, and your classroom personality. It generates complete lesson packages that your colleagues would swear you wrote yourself.
 
 ```bash
-clawed lesson "The Missouri Compromise" -g 8 --multi-agent
+pip install clawed
 ```
-
-**Claude Code integration.** Claw-ED now auto-reads OAuth tokens from Claude Code's credential store (`~/.claude/.credentials.json`). If you have Claude Code installed, Claw-ED just works — no separate API key setup needed, and tokens auto-refresh. Claw-ED also works as an MCP server that Claude Code can use directly:
-
-```bash
-clawed mcp-server  # Add to Claude Code as an MCP tool
-```
-
-**Continuous improvement pipeline.** The new `clawed train` command lets your AI fleet (or you) continuously improve lesson quality:
-
-```bash
-clawed train --drive          # Ingest new files from Google Drive, refine persona
-clawed train --path ./files   # Ingest local curriculum files
-clawed train --benchmark -n 5 # Generate 5 lessons and score them
-clawed train --full           # Drive ingest + benchmark
-```
-
-Persona refinement is now incremental — new voice markers merge with existing ones instead of overwriting. Your teaching identity gets richer over time.
-
-**OAuth auth fix.** All Anthropic API calls now correctly detect OAuth tokens and use Bearer authentication with Claude Code identity headers. Fixes the 401 errors that affected fleet agents and Claw-ED direct usage.
 
 ---
 
-## What's new in v2.3.8
+## For Teachers
 
-**No more silent failures.** Every step of lesson generation now reports what happened — persona loading, material search, quality review, voice matching. If something fails, you'll know exactly what and why, with structured NLAH failure codes. Quality review runs automatically on every generated lesson and fails closed: if the review itself crashes, it reports failure instead of silently passing.
-
-**Stricter quality gates.** Lessons now require at least 6 guided notes, 3 exit ticket questions, and 2 primary sources with actual text. Topic drift is caught automatically. Voice match scoring compares generated lessons against your teaching persona.
-
-**Safer onboarding.** Teacher names and subjects are validated and truncated. Invalid grade levels get a re-prompt instead of being silently accepted. Demo mode can be forced with `CLAWED_DEMO=1` for presentations.
-
-**Async cleanup.** Background ingestion no longer risks crashing on Python 3.12+ from nested event loops. The fix is shared across all async call sites.
-
----
-
-## What's new in v2.3.7
-
-**Real images in every lesson.** Image specs are now required for every primary source and instruction section across all subjects. The LLM generates specific search queries ("Thomas Nast Boss Tweed political cartoon 1871") instead of leaving the field blank. Teacher images are found first using a three-stage progressive search (full query, individual keywords, subject fallback) with filename-weighted scoring across up to 150 candidates. External sources (Library of Congress, Wikimedia Commons, Unsplash) fill in the rest with subject-aware routing.
-
-**12 new file formats.** Your old `.doc`, `.ppt`, `.xls`, `.xlsx`, `.csv`, `.rtf`, `.html`, `.odt`, and `.odp` files are now parsed and indexed. Previously only 8 formats were supported -- teachers' archives spanning decades of file formats were 93% invisible to search. Now they're searchable.
-
-**Search actually works.** Three fixes to the search pipeline: cross-transport teacher ID fallback (files ingested via CLI now appear in Telegram searches), asset search errors are logged instead of silently swallowed, and the agent is explicitly instructed to surface results to you. Topic tags are auto-extracted from filenames and content for better matching.
-
-**Background file ingestion.** Send your files and keep chatting. The bot acknowledges immediately, processes everything in a background thread, sends progress updates ("Indexed 50/200 documents..."), and a summary when done. Max 3 concurrent ingestions, individual file failures don't abort the batch.
-
-**DEEP-tier model for lesson generation.** MasterContent routes to the DEEP tier. With a capable model (Claude Sonnet 4.6, GPT-4o), lesson quality improves dramatically.
-
-**Security hardened.** Path traversal protection on all file-reading tools. XSS escaping on the web dashboard. Thread-safe tool definitions. ZIP bomb protection. Debug info no longer leaked to users. Ingest paths restricted to home directory.
-
-**50 MB lighter.** Removed unused `anthropic` and `openai` SDK dependencies. API key resolution unified across all code paths (env var + keyring + secrets file).
-
-**Everything from v2.3.5 still applies:** Master Content Track, stimulus-based assessment, zero silent failures, parallel image pipeline, identity protection.
-
----
-
-## What is this?
-
-Claw-ED is a personal AI agent for teachers. It uses the same architecture as Hermes Agent -- SOUL.md for identity, layered memory, a workspace, cron jobs, tool use, and autonomous operation. The difference is what it knows: your lesson plans, your teaching style, your standards, your students.
-
-You feed it your curriculum files and it learns your voice. Not a generic "teacher tone" -- your actual patterns, your vocabulary, the way you structure a Do Now or frame an essential question. Then it works: drafting lessons that sound like you wrote them, organizing your Google Drive, answering student questions in your voice, prepping your week before you wake up.
-
-Everything runs on your own computer. Your files never leave your machine unless you choose a cloud LLM provider. No accounts, no subscriptions, no data collection. You own the agent, you own the data.
-
----
-
-## How it works
-
-```
-Your files (PDF, DOCX, PPTX, DOC, PPT, XLS, XLSX, CSV, RTF, HTML, ODT, TXT, and more)
-        |
-        v
-Claw-ED learns your teaching style
-  -- chunks and embeds every document
-  -- extracts your voice, structure, vocabulary
-        |
-        v
-You talk naturally
-  "Prep my week"
-  "Make a quiz on chapter 5"
-  "What standards haven't I covered?"
-        |
-        v
-Agent acts
-  -- searches your materials first
-  -- generates in your voice
-  -- exports professional documents
-  -- suggests next steps
-        |
-        v
-You teach, give feedback, it improves
-```
-
-The agent has autonomous capabilities beyond chat. Morning prep runs before you wake up -- it checks your pacing guide and drafts the day's materials. Weekly planning assembles next week's lessons on Sunday evening. Memory improves over time: every rating, every edit, every approval teaches it what you want. The more you use it, the less you have to say.
-
----
-
-## Setup
-
-**Step 1: Install and run**
+**Feed it your files. Get lessons in your voice.**
 
 ```bash
-pip install clawed && clawed
+clawed ingest ~/Documents/Lessons/   # Teach it your style
+clawed lesson "The Missouri Compromise" -g 8 -s "US History"   # Generate a lesson
 ```
 
-**Step 2: First-run onboarding**
+Claw-ED reads your existing lesson plans, handouts, slideshows, and assessments. It extracts your pedagogical fingerprint: how you structure a Do Now, what graphic organizers you use, how you scaffold for ELL and IEP students, your favorite primary source types, your questioning patterns, your signature teaching moves.
 
-The terminal walks you through model selection (Ollama Cloud, Gemini, Claude, or GPT) and creates your workspace at `~/.eduagent/`.
+Then it generates new lessons that match. Not "inspired by" — actually match. Same structure, same voice, same scaffolding, same assessment alignment.
 
-**Step 3: Define your teaching identity**
+**What you get:**
 
-Edit `~/.eduagent/workspace/SOUL.md` with your teaching philosophy, subject, grade levels, and how you want the agent to behave. This is the agent's personality file -- plain text, version-controllable, yours.
+- Complete daily lesson plans in your format (DOCX, PPTX, PDF)
+- Unit plans with essential questions and pacing
+- Assessments aligned to your state standards (50 states supported)
+- Differentiated materials for ELL, IEP, and gifted students
+- Homework, rubrics, sub plans, parent communications
+- Gap analysis showing what standards you haven't covered
+- Morning prep that runs before you wake up
 
-**Step 4: Feed it your files**
+**What makes it different:**
+
+- **Your voice, not generic AI.** Lessons sound like you, not like a chatbot.
+- **Your files stay on your machine.** Local-first architecture. No accounts, no subscriptions, no data collection.
+- **Works with any AI provider.** Claude, GPT, Gemini, Ollama (free local models), or your own fine-tuned model.
+- **Gets better over time.** Rate lessons, give feedback — it learns what you want.
+- **Open source.** MIT license. Free forever.
+
+---
+
+## Quick Start
 
 ```bash
+# Install
+pip install clawed
+
+# First run — picks your AI provider and creates your workspace
+clawed
+
+# Feed it your curriculum files (PDF, DOCX, PPTX, and 20+ formats)
 clawed ingest ~/Documents/Lessons/
-```
 
-The agent chunks every document into searchable sections and stores them in a local semantic database. When it generates, it searches your materials first.
-
-**Step 5: Start using it**
-
-```bash
-clawed              # terminal chat
-clawed bot --token TOKEN   # connect Telegram
-clawed serve        # web dashboard
+# Generate
+clawed lesson "Causes of World War I" -g 10 -s "Global History"
+clawed unit "The Renaissance" -g 9 -s "Global History" -w 3
+clawed full "Westward Expansion" -g 8 -s "US History"
 ```
 
 ---
 
-## Daily workflow
+## How It Works
 
-- Wake up, check Telegram -- the agent has drafted today's lessons overnight
-- On the commute, message the bot: "make a quiz on chapter 5"
-- In the copy room, export to DOCX and print
-- After school, rate what worked and what didn't -- the agent learns
-- Sunday evening, the agent drafts next week's plan based on your pacing guide
-
----
-
-## Configuring your agent
-
-The agent's intelligence lives in its workspace files, not in a static prompt. Two plain text files and automatic memory control everything:
-
-**`~/.eduagent/workspace/SOUL.md`** -- A living document the agent co-authors with you. It starts as a template, then evolves: when you feed the agent your files, it writes what it learned about your voice, strategies, and signature moves. When you set up your profile, it records your identity. You can read and edit SOUL.md at any time -- full transparency. The agent reads it at the start of every important interaction to remember who you are and how you work.
-
-**`~/.eduagent/workspace/HEARTBEAT.md`** -- Autonomous task schedule. What the agent does on its own: morning prep, weekly planning, feedback digests. Edit to add or remove scheduled behaviors. The agent reads this to know what it should be doing without being asked.
-
-**Memory (automatic)** -- Three-layer cognitive memory that builds over time. Identity layer (your teaching fingerprint), curriculum state (what you've covered), and episodic memory (past interactions recalled by semantic similarity). You do not edit this directly -- it learns from your usage.
-
-The system prompt is thin -- it points to workspace files instead of carrying all context inline. This means more token budget goes to actual lesson generation, and the agent's identity can grow without hitting prompt limits.
+```
+Your curriculum files (PDF, DOCX, PPTX, and 20+ formats)
+        |
+        v
+  Claw-ED learns your teaching style
+    - Extracts your voice, structure, vocabulary
+    - Maps your pedagogical fingerprint
+    - Builds a searchable knowledge base
+        |
+        v
+  You talk naturally
+    "Prep my week"
+    "Make a quiz on chapter 5"
+    "What standards haven't I covered?"
+        |
+        v
+  The agent acts
+    - Searches your existing materials first
+    - Generates in your voice
+    - Exports professional documents
+    - Aligns to your state standards
+        |
+        v
+  You teach, give feedback, it improves
+```
 
 ---
 
@@ -178,61 +107,177 @@ The system prompt is thin -- it points to workspace files instead of carrying al
 
 | Command | What it does |
 |---------|-------------|
-| `clawed` | Start chatting with your agent |
-| `clawed chat` | Terminal chat (explicit) |
+| `clawed` | Chat with your agent |
+| `clawed ingest <path>` | Teach it your style from your files |
+| `clawed lesson "Topic" -g 8 -s "Subject"` | Generate a daily lesson plan |
+| `clawed lesson "Topic" --multi-agent` | Multi-agent generation (higher quality) |
+| `clawed unit "Topic" -g 9 -w 3` | Plan a 3-week unit |
+| `clawed full "Topic" -g 10` | Full package: unit + lessons + materials |
+| `clawed materials -l lesson.json` | Generate supporting materials |
+| `clawed assess "Topic" --type dbq` | Generate assessments (DBQ, quiz, rubric) |
+| `clawed differentiate -l lesson.json` | Create IEP/504/ELL modifications |
+| `clawed standards list -g 8 -s "Math"` | Browse state standards |
+| `clawed gap-analyze` | Find curriculum gaps |
+| `clawed train --benchmark -n 5` | Score lesson quality |
 | `clawed bot --token TOKEN` | Connect Telegram bot |
 | `clawed serve` | Web dashboard |
-| `clawed ingest <path>` | Feed files to the agent's knowledge base |
-| `clawed unit "Topic" -g 8 -s "Subject"` | Generate a unit plan |
-| `clawed lesson "Topic" -g 8 -s "Subject"` | Generate a lesson |
-| `clawed lesson "Topic" --format pptx` | Export as PowerPoint |
-| `clawed standards list -g 8 -s math` | Browse standards |
-| `clawed gap-analyze -s "Math" -g 8` | Find curriculum gaps |
-| `clawed demo` | See example output (no API key needed) |
-| `clawed setup --reset` | Re-run setup |
+| `clawed mcp-server` | MCP server (for Claude Code integration) |
+| `clawed demo` | Try it without an API key |
 
-Run `clawed --help` for the full list.
+---
+
+## Features
+
+### Voice Learning
+
+Claw-ED doesn't use a generic "teacher tone." It extracts your specific patterns from your files:
+
+- **Teaching structure:** How you organize lessons (I Do / We Do / You Do, stations, jigsaw, etc.)
+- **Questioning style:** Your progression from recall to analysis to evaluation
+- **Scaffolding moves:** Sentence starters, graphic organizers, writing frames you actually use
+- **Assessment patterns:** Your Do Now format, exit ticket style, essay scaffolds
+- **Classroom personality:** Your humor, your catchphrases, your signature moves
+
+### Standards Alignment
+
+Built-in support for all 50 US states:
+
+- Common Core (CCSS) — Math and ELA
+- Next Generation Science Standards (NGSS)
+- C3 Framework — Social Studies
+- State-specific frameworks (NY NGLS, TX TEKS, CA CCSS, VA SOL, and more)
+- Automatic gap analysis against your state's standards
+
+### Multi-Agent Generation
+
+For higher-quality output, the `--multi-agent` flag activates a three-agent pipeline:
+
+1. **Researcher** — Finds primary sources, historical context, and key arguments
+2. **Writer** — Drafts the lesson in your voice using your pedagogical fingerprint
+3. **Reviewer** — Scores voice fidelity, pedagogy, and differentiation. Sends back for revision if quality is below threshold.
+
+### Professional Export
+
+- **DOCX** — Print-ready with headers, differentiation callouts, and images
+- **PPTX** — Themed slideshows with section dividers and academic images
+- **PDF** — Clean layout for distribution
+- **Google Docs/Slides** — Direct export via Google Drive integration
+
+### Differentiation
+
+Every lesson can be automatically differentiated:
+
+- **ELL support:** Simplified vocabulary, sentence frames, visual organizers
+- **IEP modifications:** Chunked tasks, explicit instructions, modified assessments
+- **504 accommodations:** Extended time, preferential seating, scribe access
+- **Gifted extensions:** Deeper inquiry, independent research, cross-topic connections
+
+### Autonomous Operation
+
+Claw-ED can work while you sleep:
+
+- **Morning prep** — Drafts today's materials before you wake up
+- **Weekly planning** — Assembles next week's lessons on Sunday evening
+- **Continuous improvement** — Ingests new files, refines your persona, measures quality
+- **Telegram bot** — Message it from your phone anytime
 
 ---
 
 ## Architecture
 
-The agent's intelligence lives in its workspace files, not in a static prompt. SOUL.md defines identity and evolves over time. HEARTBEAT.md defines the schedule. The system prompt is a thin pointer -- the workspace is the brain.
-
-Claw-ED is agent-first. Natural-language messages go through an LLM that decides which tools to call. Deterministic operations (file ingestion, onboarding, approvals) bypass the agent for reliability.
-
 ```
-Teacher's message (Telegram, CLI, TUI, Web)
-        |
-    Gateway
-    |-- Control Plane (deterministic: files, callbacks, onboarding)
-    |-- Agent Loop (LLM decides -> calls tools -> returns result)
-              |                         |
-        28 Tools (auto-discovered)   Workspace (the brain)
-              |                       SOUL.md (identity, evolves)
-        Curriculum KB                 HEARTBEAT.md (schedule)
-        search_materials              reading_report.md
-        ingest_materials              |
-              |                   Memory (3-layer)
-        Standards (50 states)     identity
-        CCSS, NGSS, C3           curriculum state
-        state-specific           episodic (embeddings)
-        gap analysis
+Teacher (Telegram, CLI, Web, MCP)
+       |
+   Gateway (feature-flag router)
+   |-- Control Plane (deterministic: files, onboarding, export)
+   |-- Agent Loop (LLM with 28 typed tools)
+              |                        |
+       Tool Registry              Workspace
+       - generate_lesson          - SOUL.md (identity)
+       - search_materials         - HEARTBEAT.md (schedule)
+       - generate_assessment      - Memory (3-layer cognitive)
+       - curriculum_map           |
+       - export_document     Curriculum KB
+       - 23 more tools       (semantic search over your files)
               |
-    Professional exports (DOCX, PPTX, PDF, Google Slides/Docs)
+       Professional exports (DOCX, PPTX, PDF, Google Docs)
 ```
 
-Custom YAML tools live in `~/.eduagent/tools/`. Define a name, description, parameters, and prompt template -- no code needed. The tool registry auto-discovers them alongside the built-in tools.
+**Key design decisions:**
+
+- **Agent-first.** Natural language goes through an LLM that decides which tools to call. No rigid command parsing.
+- **Master Content Track.** One LLM generation produces a unified `MasterContent` object. Teacher view, student packet, and slideshow are compiled mechanically — no redundant AI calls.
+- **Fail-closed quality gates.** Every generation is validated. If quality review crashes, it reports failure instead of silently passing.
+- **Subject-specific skills.** 13 built-in subject skills (Math, Science, History, ELA, Music, Art, PE, CS, Foreign Language, Library, Special Ed, and more) tune the generation for each discipline's pedagogy.
 
 ---
 
 ## Privacy
 
-- **Local-first.** Your files stay on your machine. The curriculum knowledge base is a local SQLite database, never uploaded.
+- **Local-first.** Your files stay on your machine. The knowledge base is a local database.
 - **API keys in OS keychain.** macOS Keychain, Linux Secret Service, Windows Credential Manager.
 - **No telemetry, no data collection, no accounts.**
-- **Cloud disclaimer:** When using cloud AI providers, prompts are sent to their APIs. Review your provider's data policy. For maximum privacy, use local Ollama.
+- **Your choice of AI provider.** Use free local models (Ollama) for complete privacy, or cloud providers (Claude, GPT, Gemini) for maximum quality.
 
 ---
 
-Built by Mr. Mac — Social Studies Educator — Long Island, NY
+## For Developers
+
+### Contributing
+
+```bash
+git clone https://github.com/SirhanMacx/Claw-ED.git
+cd Claw-ED
+pip install -e ".[dev]"
+pytest tests/
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines and [ARCHITECTURE.md](docs/ARCHITECTURE.md) for system design.
+
+### MCP Server
+
+Claw-ED exposes its tools as an MCP server for integration with Claude Code, VS Code, and other AI-powered editors:
+
+```bash
+clawed mcp-server
+```
+
+### Custom Tools
+
+Define custom tools in `~/.eduagent/tools/` using YAML templates — no code required:
+
+```yaml
+name: bell_ringer
+description: Generate a warm-up question for the start of class
+parameters:
+  topic: string
+  grade: string
+prompt: |
+  Generate a bell ringer question about {topic} for grade {grade}.
+  Use a visual stimulus or thought experiment. Never use recall questions.
+```
+
+### API
+
+```python
+from clawed.lesson import generate_lesson
+from clawed.models import AppConfig
+
+config = AppConfig.load()
+lesson = await generate_lesson(
+    lesson_number=1,
+    unit=unit_plan,
+    persona=persona,
+    config=config,
+)
+```
+
+---
+
+## License
+
+MIT License. Free for personal and commercial use.
+
+Built by educators, for educators.
+
+[GitHub](https://github.com/SirhanMacx/Claw-ED) | [PyPI](https://pypi.org/project/clawed/) | [Changelog](CHANGELOG.md)
