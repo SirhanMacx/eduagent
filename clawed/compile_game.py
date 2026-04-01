@@ -48,11 +48,23 @@ without a <head> or <body> wrapper.
 - The game MUST work on phones, tablets, Chromebooks (responsive, touch).
 - The game MUST be genuinely FUN — not a boring quiz with buttons.
 - Include scoring, feedback, progression (levels or rounds).
-- Use modern CSS (gradients, animations, shadows) for visual polish.
 - Include a start screen with the lesson title and instructions.
 - Include an end screen with score and "play again" button.
 - ALL educational content must be embedded as data in the JS.
 - Add a small footer: "Made with Claw-ED — github.com/SirhanMacx/Claw-ED"
+
+VISUALS — DO NOT USE IMAGE FILES. Create ALL visuals programmatically:
+- Use Three.js for immersive 3D scenes themed to the lesson content. \
+  Age of Exploration = 3D ocean with ships. Civil War = battlefields. \
+  Renaissance = marble halls. Science = molecular structures.
+- Use CSS gradients, animations, box-shadows, and transforms for 2D polish.
+- Use HTML Canvas for custom diagrams, maps, or illustrations.
+- Use CSS shapes and emoji for icons — never <img> tags.
+- Use SVG inline for any detailed graphics (maps, diagrams, symbols).
+- The game should feel IMMERSIVE — like the student is inside the topic, \
+  not reading a quiz. 3D environments, particle effects, ambient animation.
+- Go ABOVE AND BEYOND visually. This should look like a real game, not a \
+  school worksheet with buttons.
 
 WHAT MAKES A GREAT LEARNING GAME:
 - The mechanic TEACHES, not just tests. Students learn through the gameplay.
