@@ -338,15 +338,10 @@ async def compile_game(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     config = config or AppConfig.load()
-    # Games require maximum intelligence — always Opus.
-    from clawed.config import get_api_key
-    from clawed.models import LLMProvider
-    anthropic_key = get_api_key("anthropic")
-    if anthropic_key:
-        config.provider = LLMProvider.ANTHROPIC
-        config.anthropic_model = "claude-opus-4-6"
-    else:
-        config = route_model("game_generate", config)
+    # Route to DEEP tier within the teacher's chosen provider.
+    # Teacher picked Ollama? Gets their best Ollama model.
+    # Teacher picked Anthropic? Gets Opus. Their choice.
+    config = route_model("game_generate", config)
     client = LLMClient(config)
 
     # Build the game generation prompt
