@@ -115,8 +115,8 @@ export type ThemeSetting = (typeof THEME_SETTINGS)[number]
 const lightTheme: Theme = {
   autoAccept: 'rgb(135,0,255)', // Electric violet
   bashBorder: 'rgb(255,0,135)', // Vibrant pink
-  claude: 'rgb(215,119,87)', // Claude orange
-  claudeShimmer: 'rgb(245,149,117)', // Lighter claude orange for shimmer effect
+  claude: 'rgb(212,168,67)', // Warm Gold (Claw-ED)
+  claudeShimmer: 'rgb(232,198,107)', // Lighter warm gold for shimmer effect
   claudeBlue_FOR_SYSTEM_SPINNER: 'rgb(87,105,247)', // Medium blue for system spinner
   claudeBlueShimmer_FOR_SYSTEM_SPINNER: 'rgb(117,135,255)', // Lighter blue for system spinner shimmer
   permission: 'rgb(87,105,247)', // Medium blue
@@ -133,9 +133,9 @@ const lightTheme: Theme = {
   suggestion: 'rgb(87,105,247)', // Medium blue
   remember: 'rgb(0,0,255)', // Blue
   background: 'rgb(0,153,153)', // Cyan
-  success: 'rgb(44,122,57)', // Green
-  error: 'rgb(171,43,63)', // Red
-  warning: 'rgb(150,108,30)', // Amber
+  success: 'rgb(45,95,60)', // Deep Green (Claw-ED)
+  error: 'rgb(193,57,43)', // Apple Red (Claw-ED)
+  warning: 'rgb(193,123,74)', // Terracotta (Claw-ED)
   merged: 'rgb(135,0,255)', // Electric violet (matches autoAccept)
   warningShimmer: 'rgb(200,158,80)', // Lighter amber for shimmer effect
   diffAdded: 'rgb(105,219,124)', // Light green
@@ -158,9 +158,9 @@ const lightTheme: Theme = {
   // Chrome colors
   chromeYellow: 'rgb(251,188,4)', // Chrome yellow
   // TUI V2 colors
-  clawd_body: 'rgb(215,119,87)',
-  clawd_background: 'rgb(0,0,0)',
-  userMessageBackground: 'rgb(240, 240, 240)', // Slightly darker grey for optimal contrast
+  clawd_body: 'rgb(212,168,67)',
+  clawd_background: 'rgb(255,248,231)', // Cream (Claw-ED light)
+  userMessageBackground: 'rgb(255,248,231)', // Cream (Claw-ED)
   userMessageBackgroundHover: 'rgb(252, 252, 252)', // ≥250 to quantize distinct from base at 256-color level
   messageActionsBackground: 'rgb(232, 236, 244)', // cool gray — darker than userMsg 240 (visible on white), slight blue toward `suggestion`
   selectionBg: 'rgb(180, 213, 255)', // classic light-mode selection blue (macOS/VS Code-ish); dark fgs stay readable
@@ -173,7 +173,7 @@ const lightTheme: Theme = {
   fastModeShimmer: 'rgb(255,150,50)', // Lighter orange for shimmer
   // Brief/assistant mode
   briefLabelYou: 'rgb(37,99,235)', // Blue
-  briefLabelClaude: 'rgb(215,119,87)', // Brand orange
+  briefLabelClaude: 'rgb(212,168,67)', // Warm Gold (Claw-ED)
   rainbow_red: 'rgb(235,95,87)',
   rainbow_orange: 'rgb(245,139,87)',
   rainbow_yellow: 'rgb(250,195,95)',
@@ -402,7 +402,7 @@ const lightDaltonizedTheme: Theme = {
   // Chrome colors
   chromeYellow: 'rgb(251,188,4)', // Chrome yellow
   // TUI V2 colors
-  clawd_body: 'rgb(215,119,87)',
+  clawd_body: 'rgb(212,168,67)',
   clawd_background: 'rgb(0,0,0)',
   userMessageBackground: 'rgb(220, 220, 220)', // Slightly darker grey for optimal contrast
   userMessageBackgroundHover: 'rgb(232, 232, 232)', // ≥230 to quantize distinct from base at 256-color level
@@ -440,8 +440,8 @@ const lightDaltonizedTheme: Theme = {
 const darkTheme: Theme = {
   autoAccept: 'rgb(175,135,255)', // Electric violet
   bashBorder: 'rgb(253,93,177)', // Bright pink
-  claude: 'rgb(215,119,87)', // Claude orange
-  claudeShimmer: 'rgb(235,159,127)', // Lighter claude orange for shimmer effect
+  claude: 'rgb(212,168,67)', // Warm Gold (Claw-ED)
+  claudeShimmer: 'rgb(232,198,107)', // Lighter warm gold for shimmer effect
   claudeBlue_FOR_SYSTEM_SPINNER: 'rgb(147,165,255)', // Blue for system spinner
   claudeBlueShimmer_FOR_SYSTEM_SPINNER: 'rgb(177,195,255)', // Lighter blue for system spinner shimmer
   permission: 'rgb(177,185,249)', // Light blue-purple
@@ -458,9 +458,9 @@ const darkTheme: Theme = {
   suggestion: 'rgb(177,185,249)', // Light blue-purple
   remember: 'rgb(177,185,249)', // Light blue-purple
   background: 'rgb(0,204,204)', // Bright cyan
-  success: 'rgb(78,186,101)', // Bright green
-  error: 'rgb(255,107,128)', // Bright red
-  warning: 'rgb(255,193,7)', // Bright amber
+  success: 'rgb(78,186,101)', // Bright green (dark theme keeps bright variants)
+  error: 'rgb(193,57,43)', // Apple Red (Claw-ED)
+  warning: 'rgb(212,168,67)', // Warm Gold (Claw-ED)
   merged: 'rgb(175,135,255)', // Electric violet (matches autoAccept)
   warningShimmer: 'rgb(255,223,57)', // Lighter amber for shimmer
   diffAdded: 'rgb(34,92,43)', // Dark green
@@ -483,21 +483,21 @@ const darkTheme: Theme = {
   // Chrome colors
   chromeYellow: 'rgb(251,188,4)', // Chrome yellow
   // TUI V2 colors
-  clawd_body: 'rgb(215,119,87)',
-  clawd_background: 'rgb(0,0,0)',
-  userMessageBackground: 'rgb(55, 55, 55)', // Lighter grey for better visual contrast
-  userMessageBackgroundHover: 'rgb(70, 70, 70)',
-  messageActionsBackground: 'rgb(44, 50, 62)', // cool gray, slight blue
-  selectionBg: 'rgb(38, 79, 120)', // classic dark-mode selection blue (VS Code dark default); light fgs stay readable
-  bashMessageBackgroundColor: 'rgb(65, 60, 65)',
+  clawd_body: 'rgb(212,168,67)',
+  clawd_background: 'rgb(26,58,42)', // Chalkboard (Claw-ED dark)
+  userMessageBackground: 'rgb(36,68,52)', // Slightly lighter chalkboard
+  userMessageBackgroundHover: 'rgb(46,78,62)',
+  messageActionsBackground: 'rgb(32,62,48)', // Chalkboard variant
+  selectionBg: 'rgb(38, 79, 120)', // classic dark-mode selection blue
+  bashMessageBackgroundColor: 'rgb(30,55,40)',
 
-  memoryBackgroundColor: 'rgb(55, 65, 70)',
-  rate_limit_fill: 'rgb(177,185,249)', // Light blue-purple
-  rate_limit_empty: 'rgb(80,83,112)', // Medium blue-purple
-  fastMode: 'rgb(255,120,20)', // Electric orange for dark bg
-  fastModeShimmer: 'rgb(255,165,70)', // Lighter orange for shimmer
+  memoryBackgroundColor: 'rgb(32,62,48)',
+  rate_limit_fill: 'rgb(212,168,67)', // Warm Gold
+  rate_limit_empty: 'rgb(45,95,60)', // Deep Green
+  fastMode: 'rgb(212,168,67)', // Warm Gold for dark bg
+  fastModeShimmer: 'rgb(232,198,107)', // Lighter warm gold for shimmer
   briefLabelYou: 'rgb(122,180,232)', // Light blue
-  briefLabelClaude: 'rgb(215,119,87)', // Brand orange
+  briefLabelClaude: 'rgb(212,168,67)', // Warm Gold (Claw-ED)
   rainbow_red: 'rgb(235,95,87)',
   rainbow_orange: 'rgb(245,139,87)',
   rainbow_yellow: 'rgb(250,195,95)',
@@ -564,7 +564,7 @@ const darkDaltonizedTheme: Theme = {
   // Chrome colors
   chromeYellow: 'rgb(251,188,4)', // Chrome yellow
   // TUI V2 colors
-  clawd_body: 'rgb(215,119,87)',
+  clawd_body: 'rgb(212,168,67)',
   clawd_background: 'rgb(0,0,0)',
   userMessageBackground: 'rgb(55, 55, 55)', // Lighter grey for better visual contrast
   userMessageBackgroundHover: 'rgb(70, 70, 70)',
