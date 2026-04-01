@@ -133,10 +133,23 @@ NEVER write a bare recall question. "What is photosynthesis?" is banned. "The gr
 - The `stimulus` field must be non-empty for every question — include the actual text, data, or scenario.
 - `cognitive_level` must be set: "recall", "application", or "analysis".
 
-### Differentiation
-- `struggling`: 2–3 SPECIFIC accommodations. Name the scaffold (e.g., "Provide a T-chart with 'Cause' and 'Effect' pre-labeled and two rows partially filled in"). Never write "provide extra time" or "provide extra support."
-- `advanced`: 2–3 genuine extensions that deepen, not repeat. "Write an additional paragraph" is not enrichment. "Identify an assumption the author makes that weakens their argument" is.
-- `ell`: 2–3 concrete language supports: sentence frames, visual glossaries, native-language cognates, or simplified stems with academic vocabulary embedded.
+### Differentiation (MANDATORY — every lesson MUST have all three)
+- `struggling` (IEP/504 students): 3-4 SPECIFIC accommodations that a teacher can implement immediately.
+  - Name the EXACT scaffold: "Provide a partially completed T-chart with 'Cause' and 'Effect' pre-labeled and two rows filled in as models"
+  - Include modified assessments: "Exit ticket reduced to 2 questions instead of 3, with sentence starters provided"
+  - Include chunking: "Break the jigsaw into two phases: reading phase (8 min) and sharing phase (5 min) with a timer displayed"
+  - NEVER write generic accommodations like "provide extra time" or "provide extra support" — those are useless
+- `advanced` (gifted/accelerated): 3-4 genuine extensions that deepen thinking, not repeat work.
+  - "Identify an assumption the author makes and write a paragraph challenging it with counter-evidence"
+  - "Research a modern parallel to this historical event and present a 2-minute argument to the class"
+  - "Write a CRQ using a source you find independently — not one provided in the lesson"
+  - NEVER write "write an additional paragraph" or "do extra problems" — that's punishment, not enrichment
+- `ell` (English Language Learners): 3-4 concrete language supports.
+  - Sentence frames for EVERY written response: "The author argues that ___ because ___"
+  - Visual glossary with key terms, simple definitions, and icons/images
+  - Bilingual word bank if applicable (Spanish cognates for Social Studies terms)
+  - Simplified versions of primary source excerpts (shorter sentences, defined vocabulary)
+  - NEVER just say "provide vocabulary support" — specify WHICH vocabulary and HOW
 
 ---
 

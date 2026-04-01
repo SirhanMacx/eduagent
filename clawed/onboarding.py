@@ -406,13 +406,13 @@ def _ask_provider_wizard() -> tuple[LLMProvider, str | None, str | None, str | N
     # Show alternatives with plain-English descriptions
     console.print("\n[bold]Other options:[/bold]\n")
     console.print(
-        "  [bold][1][/bold] Claude (by Anthropic) — highest quality output, but expensive (~$20+ per lesson)"
+        "  [bold][1][/bold] Claude (by Anthropic) — highest quality, ~$0.10/lesson"
     )
     console.print(
         "        Sign up: [cyan]https://console.anthropic.com[/cyan] \u2192 API Keys"
     )
     console.print(
-        "  [bold][2][/bold] GPT (by OpenAI) — high quality, also expensive (~$20+ per lesson)"
+        "  [bold][2][/bold] GPT (by OpenAI) — high quality, ~$0.15/lesson"
     )
     console.print(
         "        Sign up: [cyan]https://platform.openai.com/api-keys[/cyan]"
@@ -485,52 +485,148 @@ def quick_model_setup() -> str:
 
     console.print("\n[bold]Which AI service?[/bold]\n")
     console.print(
-        "  [bold cyan][1][/bold cyan] \u2605 Ollama Cloud \u2014 $20/month, unlimited lessons "
-        "[dim](recommended)[/dim]"
+        "  [bold cyan][1][/bold cyan] \u2605 Google Gemini \u2014 free tier available, "
+        "good quality [dim](easiest to start)[/dim]"
     )
     console.print(
-        "        Sign up: [cyan]https://ollama.com[/cyan] \u2192 Settings \u2192 API Keys"
+        "        Sign up: [cyan]https://aistudio.google.com/apikey[/cyan]"
+    )
+    console.print(
+        "  [bold cyan][2][/bold cyan] Claude (Anthropic) \u2014 highest quality, "
+        "~$0.10/lesson"
+    )
+    console.print(
+        "        Sign up: [cyan]https://console.anthropic.com[/cyan] "
+        "\u2192 API Keys"
+    )
+    console.print(
+        "  [bold cyan][3][/bold cyan] Ollama Cloud \u2014 $20/month, unlimited "
+        "lessons"
+    )
+    console.print(
+        "        Sign up: [cyan]https://ollama.com[/cyan] \u2192 Settings "
+        "\u2192 API Keys"
     )
     if local_ollama:
         console.print(
-            "  [bold cyan][2][/bold cyan] Local Ollama \u2014 detected on this machine, free"
+            "  [bold cyan][4][/bold cyan] Local Ollama \u2014 detected on "
+            "this machine, completely free"
         )
     else:
         console.print(
-            "  [bold cyan][2][/bold cyan] Local Ollama \u2014 free, runs on your computer"
+            "  [bold cyan][4][/bold cyan] Local Ollama \u2014 free, runs on "
+            "your computer"
         )
         console.print(
             "        Install: [cyan]https://ollama.com/download[/cyan]"
         )
-    console.print("  [bold cyan][3][/bold cyan] OpenRouter \u2014 many models, pay per use")
     console.print(
-        "        Sign up: [cyan]https://openrouter.ai/keys[/cyan]"
+        "  [bold cyan][5][/bold cyan] GPT (OpenAI) \u2014 high quality, "
+        "~$0.15/lesson"
     )
-    console.print("  [bold cyan][4][/bold cyan] Claude (Anthropic) \u2014 highest quality, ~$20+/lesson")
-    console.print(
-        "        Sign up: [cyan]https://console.anthropic.com[/cyan] \u2192 API Keys"
-    )
-    console.print("  [bold cyan][5][/bold cyan] GPT (OpenAI) \u2014 high quality, ~$20+/lesson")
     console.print(
         "        Sign up: [cyan]https://platform.openai.com/api-keys[/cyan]"
     )
-    console.print("  [bold cyan][6][/bold cyan] Skip \u2014 I'll set this up later\n")
+    console.print(
+        "  [bold cyan][6][/bold cyan] Try demo mode \u2014 no API key needed, "
+        "see example output first"
+    )
+    console.print(
+        "  [bold cyan][7][/bold cyan] Skip \u2014 I'll set this up later\n"
+    )
 
-    choice = Prompt.ask("Choice", choices=["1", "2", "3", "4", "5", "6"], default="1")
+    choice = Prompt.ask(
+        "Choice", choices=["1", "2", "3", "4", "5", "6", "7"], default="1"
+    )
 
-    if choice == "6":
+    if choice == "7":
         config = AppConfig()
         config.save()
-        console.print("\n  [yellow]No AI configured. Run 'clawed setup' when you're ready.[/yellow]\n")
+        console.print(
+            "\n  [yellow]No AI configured. "
+            "Run 'clawed setup' when you're ready.[/yellow]\n"
+        )
         return "skip"
+
+    if choice == "6":
+        # Demo mode — no API key needed
+        config = AppConfig()
+        config.save()
+        console.print(
+            "\n  [green]\u2713 Demo mode active![/green] "
+            "Try: [bold]clawed demo[/bold] to see sample output.\n"
+            "  When you're ready for real generation, "
+            "run [bold]clawed setup[/bold].\n"
+        )
+        return "terminal"
 
     # ── Step 2: Configure based on choice ──
     if choice == "1":
-        # Ollama Cloud — API key required
-        console.print("\n  [dim]Paste your Ollama Cloud API key:[/dim]")
+        # Google Gemini — free tier available
+        console.print(
+            "\n  Get your free API key at: "
+            "[cyan]https://aistudio.google.com/apikey[/cyan]\n"
+        )
+        key = Prompt.ask(
+            "  [bold]Gemini API key[/bold]"
+        )
+        if not key.strip():
+            console.print(
+                "  [yellow]No key entered. "
+                "Run 'clawed setup' when ready.[/yellow]\n"
+            )
+            config = AppConfig()
+            config.save()
+            return "skip"
+        key = key.strip()
+        config = AppConfig(provider=LLMProvider.GOOGLE)
+        config.google_model = "gemini-2.5-flash"
+        set_api_key("google", key)
+        console.print(
+            f"  [green]\u2713 Key saved ({key[:8]}...)[/green]"
+        )
+
+    elif choice == "2":
+        # Claude (Anthropic) — highest quality
+        console.print(
+            "\n  Get your API key at: "
+            "[cyan]https://console.anthropic.com[/cyan] "
+            "\u2192 API Keys\n"
+            "  Cost: ~$0.10 per lesson with Sonnet, "
+            "~$0.50 with Opus\n"
+        )
+        key = Prompt.ask(
+            "  [bold]Claude API key (starts with sk-ant-)[/bold]"
+        )
+        if not key.strip():
+            console.print(
+                "  [yellow]No key. "
+                "Run 'clawed setup' when ready.[/yellow]\n"
+            )
+            config = AppConfig()
+            config.save()
+            return "skip"
+        key = key.strip()
+        config = AppConfig(provider=LLMProvider.ANTHROPIC)
+        config.anthropic_model = "claude-sonnet-4-6"
+        set_api_key("anthropic", key)
+        console.print(
+            f"  [green]\u2713 Key saved ({key[:8]}...)[/green]"
+        )
+
+    elif choice == "3":
+        # Ollama Cloud
+        console.print(
+            "\n  Sign up at: "
+            "[cyan]https://ollama.com[/cyan] "
+            "\u2192 Settings \u2192 API Keys\n"
+        )
         key = Prompt.ask("  [bold]Ollama API key[/bold]")
         if not key.strip():
-            console.print("  [yellow]No key entered. Run 'clawed setup' when ready.[/yellow]\n")
+            console.print(
+                "  [yellow]No key. "
+                "Run 'clawed setup' when ready.[/yellow]\n"
+            )
             config = AppConfig()
             config.save()
             return "skip"
@@ -540,9 +636,11 @@ def quick_model_setup() -> str:
         config.ollama_model = "minimax-m2.7:cloud"
         config.ollama_api_key = key
         set_api_key("ollama", key)
-        console.print(f"  [green]\u2713 Key saved ({key[:8]}...)[/green]")
+        console.print(
+            f"  [green]\u2713 Key saved ({key[:8]}...)[/green]"
+        )
 
-    elif choice == "2":
+    elif choice == "4":
         # Local Ollama — no API key, detect models
         config = AppConfig(provider=LLMProvider.OLLAMA)
         config.ollama_base_url = "http://localhost:11434"
@@ -588,42 +686,30 @@ def quick_model_setup() -> str:
             config.ollama_model = "qwen3.5"
         key = ""
 
-    elif choice == "3":
-        # OpenRouter — OpenAI-compatible API
-        console.print("\n  [dim]Paste your OpenRouter API key:[/dim]")
-        key = Prompt.ask("  [bold]OpenRouter API key (starts with sk-or-)[/bold]")
+    elif choice == "5":
+        # OpenAI GPT
+        console.print(
+            "\n  Get your API key at: "
+            "[cyan]https://platform.openai.com/api-keys[/cyan]\n"
+            "  Cost: ~$0.15 per lesson with GPT-4o\n"
+        )
+        key = Prompt.ask(
+            "  [bold]OpenAI API key (starts with sk-)[/bold]"
+        )
         if not key.strip():
-            console.print("  [yellow]No key entered. Run 'clawed setup' when ready.[/yellow]\n")
+            console.print(
+                "  [yellow]No key. "
+                "Run 'clawed setup' when ready.[/yellow]\n"
+            )
             config = AppConfig()
             config.save()
             return "skip"
         key = key.strip()
         config = AppConfig(provider=LLMProvider.OPENAI)
-        config.openai_model = "anthropic/claude-sonnet-4"
         set_api_key("openai", key)
-        # OpenRouter uses OpenAI-compatible API with a different base URL
-        os.environ["OPENAI_BASE_URL"] = "https://openrouter.ai/api/v1"
-        console.print(f"  [green]\u2713 Key saved ({key[:8]}...)[/green]")
-        console.print("  [dim]Using OpenRouter with Claude Sonnet 4 (change model in config)[/dim]")
-
-    elif choice in ("4", "5"):
-        # Claude or OpenAI
-        key_labels = {
-            "4": "Claude API key (starts with sk-ant-)",
-            "5": "OpenAI API key (starts with sk-)",
-        }
-        console.print("\n  [dim]Paste your key below:[/dim]")
-        key = Prompt.ask(f"  [bold]{key_labels[choice]}[/bold]")
-        if not key.strip():
-            console.print("  [yellow]No key entered. Run 'clawed setup' when ready.[/yellow]\n")
-            config = AppConfig()
-            config.save()
-            return "skip"
-        key = key.strip()
-        provider_map = {"4": LLMProvider.ANTHROPIC, "5": LLMProvider.OPENAI}
-        config = AppConfig(provider=provider_map[choice])
-        set_api_key(config.provider.value, key)
-        console.print(f"  [green]\u2713 Key saved ({key[:8]}...)[/green]")
+        console.print(
+            f"  [green]\u2713 Key saved ({key[:8]}...)[/green]"
+        )
 
     config.save()
 

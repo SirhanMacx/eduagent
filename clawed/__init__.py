@@ -17,7 +17,7 @@ if hasattr(sys.stderr, "reconfigure"):
     except Exception:
         pass
 
-__version__ = "2.4.0"
+__version__ = "2.5.0"
 __author__ = "Jon Maccarello & Claw-ED contributors"
 __description__ = "Personal AI teaching agent. Learns your voice, works while you sleep."
 

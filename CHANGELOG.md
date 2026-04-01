@@ -5,6 +5,31 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.5.0] - 2026-04-01
+
+Teacher-first release — onboarding for any teacher, not just developers.
+
+### Added
+- **Google Gemini as primary onboarding option** — free tier, simplest setup for teachers
+- **Demo mode in onboarding** — try Claw-ED without any API key
+- **Differentiation enforcement** — 3-4 specific IEP/504 accommodations, 3-4 ELL scaffolds, 3-4 gifted extensions per lesson. No more generic "provide extra time"
+- **RLHF auto-posting** — every generated lesson auto-posts to Starwisp for teacher feedback
+- **Sirhan lesson-generator cron** — lesson engine generates 2 lessons/day from 26K curriculum files
+- **Bob regents-prep cron** — daily lesson generation targeting closest Regents exam date
+
+### Changed
+- **Multi-agent generation is now default** (--single-agent flag for speed)
+- **Cost messaging fixed** — Claude ~$0.10/lesson, GPT ~$0.15/lesson (was incorrectly showing ~$20+)
+- **OpenRouter removed from onboarding** — banned per fleet policy, was confusing teachers
+- **X outreach disabled** — not producing value without API credentials
+- **Autonomous-growth reduced 6x→2x daily** — quality over quantity
+- **Fleet crons optimized** — disabled 5 never-fired jobs, focused remaining jobs on value production
+
+### Fixed
+- Differentiation gap — lessons were scoring 2/5 on differentiation axis, prompt now enforces specific accommodations
+- Onboarding cost copy — $20+/lesson was wrong, scared away teachers
+- Fleet node thread delivery — 23 cron jobs on 3 machines were delivering to deleted Starwisp threads
+
 ## [2.4.0] - 2026-04-01
 
 Fleet upgrade release — all 4 nodes producing autonomously, self-monitoring, self-improving.

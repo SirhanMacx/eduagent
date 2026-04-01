@@ -299,8 +299,8 @@ def lesson(
         True, "--homework/--no-homework", help="Include homework"
     ),
     multi_agent: bool = typer.Option(
-        False, "--multi-agent/--no-multi-agent",
-        help="Use multi-agent pipeline (researcher→writer→reviewer) for higher quality",
+        True, "--multi-agent/--single-agent",
+        help="Multi-agent pipeline (researcher→writer→reviewer) for higher quality. Use --single-agent for speed.",
     ),
     fmt: str = typer.Option("markdown", "--format", "-f", help="Export format: markdown, pptx, docx, pdf, handout"),
 ):

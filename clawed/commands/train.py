@@ -18,7 +18,8 @@ from typing import Optional
 import typer
 from rich.table import Table
 
-from clawed.commands._helpers import console, run_async as _run_async
+from clawed.commands._helpers import console
+from clawed.commands._helpers import run_async as _run_async
 
 train_app = typer.Typer(help="Continuous improvement pipeline.")
 
@@ -29,9 +30,9 @@ _TRAINING_DIR = Path("~/.eduagent/training").expanduser()
 
 async def _refine_persona(documents: list) -> None:
     """Extract persona traits from new documents and merge into existing."""
-    from clawed.models import AppConfig, TeacherPersona
-    from clawed.persona import extract_persona, merge_persona, load_persona, save_persona
     from clawed.commands._helpers import persona_path
+    from clawed.models import AppConfig, TeacherPersona
+    from clawed.persona import extract_persona, load_persona, merge_persona, save_persona
 
     config = AppConfig.load()
     new_persona = await extract_persona(documents, config)
@@ -52,9 +53,8 @@ async def _refine_persona(documents: list) -> None:
 
 async def _drive_ingest() -> list:
     """Download and ingest from configured Drive URLs. Returns documents."""
-    from clawed.models import AppConfig
     from clawed.drive import ingest_drive_folder
-    from clawed.ingestor import ingest_path
+    from clawed.models import AppConfig
 
     config = AppConfig.load()
     drive_urls = config.teacher_profile.drive_urls
@@ -100,12 +100,12 @@ def _path_ingest(path: Path) -> list:
 
 async def _run_benchmark(n: int) -> dict:
     """Generate N lessons on random topics and score them. Returns report."""
-    from clawed.models import AppConfig, UnitPlan, LessonBrief, TeacherPersona
+    from clawed.commands._helpers import load_persona_or_exit
     from clawed.lesson import generate_master_content
+    from clawed.llm import LLMClient
+    from clawed.models import AppConfig, LessonBrief, UnitPlan
     from clawed.quality import score_voice_match
     from clawed.validation import validate_master_content
-    from clawed.llm import LLMClient
-    from clawed.commands._helpers import load_persona_or_exit
 
     persona = load_persona_or_exit()
     config = AppConfig.load()
