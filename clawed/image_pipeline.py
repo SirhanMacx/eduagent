@@ -18,6 +18,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+_CONCURRENT_LIMIT = 5
+
 
 def _collect_image_specs(master: "MasterContent") -> set[str]:
     """Collect all unique non-empty image_spec strings from a MasterContent."""
@@ -90,9 +92,15 @@ async def fetch_all_images(
 
     subject = getattr(master, "subject", "")
 
-    logger.info("Fetching %d images (timeout=%ds, subject=%s)", len(specs), timeout, subject)
+    logger.info("Fetching %d images (timeout=%ds, subject=%s, concurrency=%d)", len(specs), timeout, subject, _CONCURRENT_LIMIT)
 
-    tasks = [_fetch_one(spec, subject=subject, timeout=timeout) for spec in specs]
+    semaphore = asyncio.Semaphore(_CONCURRENT_LIMIT)
+
+    async def _limited_fetch(spec: str) -> tuple[str, Path | None]:
+        async with semaphore:
+            return await _fetch_one(spec, subject=subject, timeout=timeout)
+
+    tasks = [_limited_fetch(spec) for spec in specs]
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
     images: dict[str, Path] = {}
