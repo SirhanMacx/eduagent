@@ -7,6 +7,7 @@ from typing import Optional
 
 import typer
 
+from clawed._json_output import run_json_command
 from clawed.commands._helpers import (
     _safe_progress,
     console,
@@ -18,6 +19,50 @@ from clawed.commands._helpers import (
 )
 
 game_app = typer.Typer()
+
+
+def _game_create_json(*, topic, grade, subject, style, students):
+    """Run game creation and return structured result for JSON output."""
+    from clawed.compile_game import compile_game
+    from clawed.lesson import generate_master_content
+    from clawed.models import LessonBrief, UnitPlan
+
+    persona = load_persona_or_exit()
+
+    unit_plan = UnitPlan(
+        title=f"{topic} Lesson",
+        subject=subject,
+        grade_level=grade,
+        topic=topic,
+        duration_weeks=1,
+        overview=f"A lesson on {topic} for grade {grade} {subject}.",
+        essential_questions=[f"What are the key concepts of {topic}?"],
+        daily_lessons=[
+            LessonBrief(
+                lesson_number=1,
+                topic=topic,
+                description=f"Explore {topic}.",
+                lesson_type="direct_instruction",
+            )
+        ],
+    )
+
+    master = _run_async(
+        generate_master_content(lesson_number=1, unit=unit_plan, persona=persona)
+    )
+
+    out_dir = _output_dir()
+    game_path = _run_async(
+        compile_game(
+            master=master, persona=persona, output_dir=out_dir,
+            student_preferences=students, game_style=style,
+        )
+    )
+
+    return {
+        "data": {"title": topic, "mechanic": style or "auto"},
+        "files": [str(game_path)] if game_path else [],
+    }
 
 
 @game_app.command("create")
@@ -47,6 +92,7 @@ def create(
         "-l",
         help="Generate game from existing lesson JSON file",
     ),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
     """Generate an interactive HTML learning game.
 
@@ -63,6 +109,13 @@ def create(
     From an existing lesson:
         clawed game create "topic" --from-lesson output/lesson_01.json
     """
+    if json_output:
+        run_json_command(
+            "game.create", _game_create_json,
+            topic=topic, grade=grade, subject=subject, style=style, students=students,
+        )
+        return
+
     from clawed.compile_game import compile_game
 
     persona = load_persona_or_exit()

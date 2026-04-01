@@ -7,6 +7,7 @@ from typing import Optional
 import typer
 from rich.panel import Panel
 
+from clawed._json_output import run_json_command
 from clawed.commands._helpers import console
 from clawed.commands.config import config_app
 from clawed.models import AppConfig, LLMProvider
@@ -142,9 +143,24 @@ def config_set_search_key(
     console.print(f"[green]\u2713 {provider.title()} search key saved.[/green]")
 
 
+def _config_show_json():
+    """Return config data for JSON output."""
+    cfg = AppConfig.load()
+    return {
+        "data": cfg.model_dump() if hasattr(cfg, "model_dump") else cfg.dict(),
+        "files": [],
+    }
+
+
 @config_app.command("show")
-def config_show():
+def config_show(
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
     """Show current configuration."""
+    if json_output:
+        run_json_command("config.show", _config_show_json)
+        return
+
     from clawed.config import get_api_key
 
     cfg = AppConfig.load()

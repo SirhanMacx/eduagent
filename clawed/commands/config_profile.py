@@ -8,6 +8,7 @@ import typer
 from rich.panel import Panel
 from rich.table import Table
 
+from clawed._json_output import run_json_command
 from clawed.commands._helpers import console, load_persona_or_exit
 from clawed.commands.config import (
     class_app,
@@ -22,8 +23,20 @@ from clawed.commands.config import (
 
 
 @persona_app.command("show")
-def persona_show():
+def persona_show(
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+):
     """Display the current teacher persona."""
+    if json_output:
+        def _persona_show_json():
+            persona = load_persona_or_exit()
+            return {
+                "data": {"persona": persona.model_dump() if hasattr(persona, "model_dump") else persona.dict()},
+                "files": [],
+            }
+        run_json_command("config.persona.show", _persona_show_json)
+        return
+
     persona = load_persona_or_exit()
     console.print(
         Panel(persona.to_prompt_context(), title="Teacher Persona")
@@ -41,8 +54,25 @@ def standards_list(
     subject: str = typer.Option(
         ..., "--subject", "-s", help="Subject (math, ela, science, history)"
     ),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
     """List education standards for a grade and subject."""
+    if json_output:
+        def _standards_json():
+            from clawed.standards import get_standards as _get_stds
+            results = _get_stds(subject, grade)
+            return {
+                "data": {
+                    "standards": [
+                        {"code": s.code, "description": s.description, "band": getattr(s, "band", "")}
+                        for s in results
+                    ] if results else []
+                },
+                "files": [],
+            }
+        run_json_command("config.standards.list", _standards_json)
+        return
+
     from clawed.standards import get_standards, resolve_subject
 
     canonical = resolve_subject(subject)

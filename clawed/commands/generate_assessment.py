@@ -9,6 +9,7 @@ import typer
 from rich.panel import Panel
 from rich.table import Table
 
+from clawed._json_output import run_json_command
 from clawed.commands._helpers import _safe_progress, console, load_persona_or_exit
 from clawed.commands._helpers import output_dir as _output_dir
 from clawed.commands._helpers import run_async as _run_async
@@ -18,14 +19,44 @@ from clawed.models import AppConfig
 # ── Materials generation ─────────────────────────────────────────────────
 
 
+def _materials_json(*, lesson_file):
+    """Run materials generation and return structured result for JSON output."""
+    from clawed.lesson import load_lesson
+    from clawed.materials import generate_all_materials, save_materials
+
+    persona = load_persona_or_exit()
+    daily = load_lesson(Path(lesson_file))
+    mats = _run_async(generate_all_materials(daily, persona))
+    out_dir = _output_dir()
+    json_path = save_materials(mats, out_dir)
+
+    return {
+        "data": {
+            "title": getattr(daily, "title", ""),
+            "items": {
+                "worksheet_items": len(mats.worksheet_items),
+                "assessment_questions": len(mats.assessment_questions),
+                "rubric_criteria": len(mats.rubric),
+                "slides": len(mats.slide_outline),
+            },
+        },
+        "files": [str(json_path)],
+    }
+
+
 @generate_app.command()
 def materials(
     lesson_file: str = typer.Option(
         ..., "--lesson-file", "-l", help="Path to lesson plan JSON"
     ),
     fmt: str = typer.Option("markdown", "--format", "-f", help="Export format"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
     """Generate all supporting materials for a lesson."""
+    if json_output:
+        run_json_command("gen.materials", _materials_json, lesson_file=lesson_file)
+        return
+
     from clawed.exporter import export_materials
     from clawed.lesson import load_lesson
     from clawed.materials import generate_all_materials, save_materials

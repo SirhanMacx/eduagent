@@ -18,6 +18,7 @@ from typing import Optional
 import typer
 from rich.table import Table
 
+from clawed._json_output import run_json_command
 from clawed.commands._helpers import console
 from clawed.commands._helpers import run_async as _run_async
 
@@ -212,6 +213,30 @@ async def _run_benchmark(n: int) -> dict:
 
 # ── Main command ────────────────────────────────────────────────────────
 
+def _train_json(*, benchmark, n):
+    """Run benchmark training and return structured result for JSON output."""
+    import io
+    import sys
+
+    # Suppress console output during benchmark (Rich tables go to stdout)
+    old_stdout = sys.stdout
+    sys.stdout = io.StringIO()
+    try:
+        report = _run_async(_run_benchmark(n))
+    finally:
+        sys.stdout = old_stdout
+
+    return {
+        "data": {
+            "mode": "benchmark",
+            "lessons_generated": report.get("n", 0),
+            "avg_score": report.get("avg_overall", 0),
+            "scores": report.get("results", []),
+        },
+        "files": [],
+    }
+
+
 @train_app.callback(invoke_without_command=True)
 def train(
     drive: bool = typer.Option(False, "--drive", help="Ingest from Google Drive folders"),
@@ -219,8 +244,13 @@ def train(
     benchmark: bool = typer.Option(False, "--benchmark", help="Generate & score lessons"),
     n: int = typer.Option(3, "-n", help="Number of benchmark lessons"),
     full: bool = typer.Option(False, "--full", help="Run drive + benchmark"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ) -> None:
     """Continuous improvement pipeline for Claw-ED fleet agents."""
+
+    if json_output:
+        run_json_command("train", _train_json, benchmark=benchmark, n=n)
+        return
 
     if not any([drive, path, benchmark, full]):
         console.print(

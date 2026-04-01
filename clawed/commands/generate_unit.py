@@ -9,12 +9,43 @@ import typer
 from rich.panel import Panel
 from rich.table import Table
 
+from clawed._json_output import run_json_command
 from clawed.commands._helpers import _safe_progress, console, load_persona_or_exit
 from clawed.commands._helpers import output_dir as _output_dir
 from clawed.commands._helpers import run_async as _run_async
 from clawed.commands.generate import generate_app
 
 # ── Unit planning ────────────────────────────────────────────────────────
+
+
+def _unit_json(*, topic, grade, subject, weeks, standards):
+    """Run unit planning and return structured result for JSON output."""
+    from clawed.exporter import export_unit
+    from clawed.planner import plan_unit, save_unit
+
+    persona = load_persona_or_exit()
+    std_list = [s.strip() for s in standards.split(",")] if standards else None
+
+    unit_plan = _run_async(
+        plan_unit(
+            subject=subject, grade_level=grade, topic=topic,
+            duration_weeks=weeks, persona=persona, standards=std_list,
+        )
+    )
+
+    out_dir = _output_dir()
+    json_path = save_unit(unit_plan, out_dir)
+
+    return {
+        "data": {
+            "title": unit_plan.title,
+            "subject": unit_plan.subject,
+            "grade": unit_plan.grade_level,
+            "weeks": unit_plan.duration_weeks,
+            "daily_lessons": len(unit_plan.daily_lessons),
+        },
+        "files": [str(json_path)],
+    }
 
 
 @generate_app.command()
@@ -29,8 +60,13 @@ def unit(
     fmt: str = typer.Option(
         "markdown", "--format", "-f", help="Export format: markdown, pdf, docx"
     ),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
     """Plan a complete curriculum unit."""
+    if json_output:
+        run_json_command("gen.unit", _unit_json, topic=topic, grade=grade, subject=subject, weeks=weeks, standards=standards)
+        return
+
     from clawed.exporter import export_unit
     from clawed.planner import plan_unit, save_unit
 

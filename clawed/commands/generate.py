@@ -30,6 +30,29 @@ generate_app = typer.Typer()
 # ── Ingest command ───────────────────────────────────────────────────────
 
 
+def _ingest_json(*, path):
+    """Run ingest and return structured result for JSON output."""
+    from clawed.ingestor import ingest_path as _ingest
+    from clawed.persona import extract_persona, save_persona
+
+    source = Path(path).expanduser().resolve()
+    documents = _ingest(source)
+    if not documents:
+        return {"data": {"documents_count": 0, "images_count": 0, "persona_extracted": False}, "files": []}
+
+    persona = _run_async(extract_persona(documents))
+    out = save_persona(persona, _output_dir())
+
+    return {
+        "data": {
+            "documents_count": len(documents),
+            "images_count": 0,
+            "persona_extracted": True,
+        },
+        "files": [str(out)],
+    }
+
+
 @generate_app.command()
 def ingest(
     path: str = typer.Argument(
@@ -38,8 +61,13 @@ def ingest(
     dry_run: bool = typer.Option(
         False, "--dry-run", help="Show what would be processed without actually processing"
     ),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
     """Ingest teaching materials and extract a teacher persona."""
+    if json_output:
+        run_json_command("gen.ingest", _ingest_json, path=path)
+        return
+
     from clawed.ingestor import ingest_path, scan_directory
 
     source = Path(path).expanduser().resolve()

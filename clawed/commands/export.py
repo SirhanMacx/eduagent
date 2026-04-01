@@ -15,6 +15,7 @@ import typer
 from rich.panel import Panel
 from rich.table import Table
 
+from clawed._json_output import run_json_command
 from clawed.commands._helpers import console
 from clawed.database import Database
 
@@ -305,8 +306,23 @@ def export_cmd(
         "-f",
         help="Export format: classroom",
     ),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
     """Export a lesson plan (e.g., to Google Classroom JSON)."""
+    if json_output:
+        def _export_json():
+            p = Path(lesson_file).expanduser().resolve()
+            if not p.exists():
+                raise FileNotFoundError(f"File not found: {p}")
+            data = json.loads(p.read_text(encoding="utf-8"))
+            out_path = p.with_suffix(".classroom.json")
+            return {
+                "data": {"title": data.get("title", ""), "format": fmt},
+                "files": [str(out_path)] if out_path.exists() else [],
+            }
+        run_json_command("export", _export_json)
+        return
+
     path = Path(lesson_file).expanduser().resolve()
     if not path.exists():
         console.print(f"[red]File not found:[/red] {path}")
