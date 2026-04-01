@@ -408,13 +408,14 @@ def lesson(
                 from clawed.compile_teacher import compile_teacher_view
                 from clawed.multi_agent import multi_agent_generate_master_content
                 console.print("[dim]Using multi-agent pipeline (researcher→writer→reviewer)...[/dim]")
+                _ma_config = AppConfig.load()
                 master = _run_async(
                     multi_agent_generate_master_content(
                         topic=topic,
                         grade=grade,
                         subject=subject,
                         persona=persona,
-                        config=None,
+                        config=_ma_config,
                         unit_context=kb_prompt_section,
                     )
                 )
