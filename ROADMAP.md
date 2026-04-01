@@ -88,3 +88,16 @@ The agent manages more of the operational load.
 ---
 
 Want to influence the roadmap? [Open an issue](https://github.com/SirhanMacx/Claw-ED/issues) or start a discussion.
+
+## v2.5.2 — Image Reliability
+
+Images must be iron clad and perfectly relevant every generation. No irrelevant images, ever.
+
+- [ ] **Wikipedia article thumbnail as primary source** — use the Wikipedia article lead image for each query topic (already shipped as bugfix in v2.5.1). Wikipedia editors curate these images specifically for relevance.
+- [ ] **Per-slide entity extraction** — extract the specific person, place, event, or artifact in each slide's content and search for that entity, not the lesson title
+- [ ] **Image validation pass** — after fetching, run a lightweight vision check to confirm the image is relevant to the query before embedding. Reject and retry with next source if not.
+- [ ] **Multi-query fallback chain** — if primary entity query fails, try progressively broader queries before falling back to lesson title
+- [ ] **LOC subject filter** — pass subject/date filters to LOC API to stay in the right era/topic area (currently gets first match regardless of era)
+- [ ] **Dead image detection** — detect placeholder/broken images before export; never embed a broken or empty image in a slide
+- [ ] **Teacher image priority audit** — surface which slides used teacher-uploaded images vs. external so teacher can review and override
+- [ ] **Image relevance score logging** — log which query produced which image for post-hoc debugging when a bad image slips through
