@@ -399,15 +399,17 @@ def _select_sources(subject: str, topic: str = "") -> list[str]:
     Teacher's own images are always checked first.
     Only uses academic sources (LOC, Wikimedia). No stock photos.
     """
+    # Teacher images first, then web scraping (most comprehensive),
+    # then academic sources (LOC, Wikimedia), then stock (Unsplash).
     subject_lower = subject.strip().lower()
     if any(s in subject_lower for s in ("history", "social", "civics", "government")):
-        return ["teacher_files", "loc", "wikimedia"]
+        return ["teacher_files", "web", "loc", "wikimedia", "unsplash"]
     elif any(s in subject_lower for s in ("science", "biology", "chemistry", "physics")):
-        return ["teacher_files", "wikimedia", "loc"]
+        return ["teacher_files", "web", "wikimedia", "loc", "unsplash"]
     elif any(s in subject_lower for s in ("art", "music")):
-        return ["teacher_files", "wikimedia", "loc"]
+        return ["teacher_files", "web", "wikimedia", "loc", "unsplash"]
     else:
-        return ["teacher_files", "loc", "wikimedia"]
+        return ["teacher_files", "web", "loc", "wikimedia", "unsplash"]
 
 
 # ── Cache helpers ────────────────────────────────────────────────────
@@ -848,9 +850,96 @@ async def _fetch_teacher_image(
     return None
 
 
+async def _fetch_web_scrape(
+    query: str, cache_dir: Optional[Path] = None,
+) -> Optional[Path]:
+    """Scrape an image from the web via DuckDuckGo image search.
+
+    No API key needed. Uses the DDG image search endpoint which returns
+    direct image URLs. This is the most reliable source for specific
+    educational images (diagrams, maps, historical figures, etc.).
+    """
+    import httpx
+
+    cached = _check_cache("web", query, cache_dir)
+    if cached:
+        return cached
+
+    # DDG image search endpoint
+    search_url = "https://duckduckgo.com/"
+    params = {"q": query, "iax": "images", "ia": "images"}
+
+    try:
+        async with httpx.AsyncClient(
+            timeout=8.0,
+            follow_redirects=True,
+            headers={
+                "User-Agent": (
+                    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/120.0.0.0 Safari/537.36"
+                )
+            },
+        ) as client:
+            # First get a vqd token from DDG
+            resp = await client.get(search_url, params={"q": query})
+            vqd_match = re.search(r"vqd=([^&'\"]+)", resp.text)
+            if not vqd_match:
+                logger.debug("No DDG vqd token for: %s", query)
+                return None
+            vqd = vqd_match.group(1)
+
+            # Then fetch image results
+            img_url = "https://duckduckgo.com/i.js"
+            img_params = {
+                "q": query,
+                "vqd": vqd,
+                "l": "us-en",
+                "o": "json",
+                "f": ",,,,,",
+                "p": "1",
+            }
+            img_resp = await client.get(img_url, params=img_params)
+            if img_resp.status_code != 200:
+                return None
+
+            data = img_resp.json()
+            results = data.get("results", [])
+            if not results:
+                logger.debug("No DDG image results for: %s", query)
+                return None
+
+            # Pick the first result with a reasonable image
+            image_url = None
+            for r in results[:5]:
+                url = r.get("image", "")
+                if url and url.startswith("http") and not url.endswith(".svg"):
+                    image_url = url
+                    break
+
+            if not image_url:
+                return None
+
+            # Download the image
+            dl_resp = await client.get(image_url, timeout=_FETCH_TIMEOUT)
+            dl_resp.raise_for_status()
+
+            if len(dl_resp.content) < 1000:
+                return None  # Too small, probably an error page
+
+            path = _save_to_cache(dl_resp.content, "web", query, cache_dir)
+            logger.info("Downloaded web image for '%s' -> %s", query, path)
+            return path
+
+    except Exception as e:
+        logger.debug("Web image scrape failed for '%s': %s", query, e)
+        return None
+
+
 # Source name -> fetcher function mapping
 _SOURCE_FETCHERS: dict = {
     "teacher_files": _fetch_teacher_image,
+    "web": _fetch_web_scrape,
     "loc": _fetch_loc,
     "wikimedia": _fetch_wikimedia,
     "unsplash": _fetch_unsplash,

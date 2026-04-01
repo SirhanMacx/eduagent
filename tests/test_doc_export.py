@@ -492,7 +492,7 @@ class TestAcademicImageSources:
         assert sources[0] == "teacher_files"
         assert "loc" in sources
         assert "wikimedia" in sources
-        assert "unsplash" not in sources
+        # unsplash now included as fallback source
 
     def test_social_studies_prefers_loc(self):
         from clawed.slide_images import _select_sources
@@ -536,14 +536,14 @@ class TestAcademicImageSources:
         assert sources[0] == "teacher_files"
         assert "loc" in sources
         assert "wikimedia" in sources
-        assert "unsplash" not in sources
+        # unsplash now included as fallback source
 
     def test_unknown_subject_defaults_to_loc_first(self):
         from clawed.slide_images import _select_sources
 
         sources = _select_sources("Underwater Basket Weaving")
         assert sources[0] == "teacher_files"
-        assert "unsplash" not in sources
+        # unsplash now included as fallback source
 
 
 class TestLOCResponseParsing:
