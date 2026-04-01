@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "clawed"
-version = "2.5.3"
-description = "Free AI lesson planner for teachers. Learns your teaching voice from your curriculum files and generates complete lesson packages. Open source, runs locally, no subscription."
+version = "3.0.0"
+description = "Your AI co-teacher. Generate lessons, games, slides, and assessments from your terminal. Learns your teaching voice, aligns to your state standards, and works with any LLM provider."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
@@ -20,7 +20,7 @@ keywords = [
     "lesson-plans", "clawed", "claw-ed", "teaching",
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Intended Audience :: Education",
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
@@ -73,8 +73,8 @@ keyring = ["keyring>=24.0.0"]
 dev = ["pytest>=7.0.0", "pytest-asyncio>=0.21.0", "pytest-cov>=4.0", "ruff>=0.1.0", "apscheduler>=3.10.0,<4.0", "faster-whisper>=0.10.0"]
 
 [project.scripts]
-clawed = "clawed.cli:app"
-eduagent = "clawed.cli:app"
+clawed = "clawed._entry_router:main"
+eduagent = "clawed._entry_router:main"
 
 [project.urls]
 Homepage = "https://sirhanmacx.github.io/Claw-ED"
@@ -86,9 +86,10 @@ Changelog = "https://github.com/SirhanMacx/Claw-ED/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["clawed", "eduagent"]
+artifacts = ["clawed/_cli_bundle/*"]
 
 [tool.hatch.build.targets.sdist]
-include = ["clawed/**", "eduagent/**"]
+include = ["clawed/**", "eduagent/**", "daemon/**", "scripts/**"]
 
 [tool.ruff]
 line-length = 120

@@ -17,9 +17,9 @@ if hasattr(sys.stderr, "reconfigure"):
     except Exception:
         pass
 
-__version__ = "2.5.3"
+__version__ = "3.0.0"
 __author__ = "Jon Maccarello & Claw-ED contributors"
-__description__ = "Personal AI teaching agent. Learns your voice, works while you sleep."
+__description__ = "Your AI co-teacher. Generate lessons, games, slides, and assessments from your terminal."
 
 # Central I/O — re-exported for convenience
 from clawed.io import output_dir as output_dir  # noqa: F401
