@@ -43,3 +43,11 @@ export const BRIDGE_SPINNER_FRAMES = [
 ]
 export const BRIDGE_READY_INDICATOR = '\u00b7\u2714\ufe0e\u00b7'
 export const BRIDGE_FAILED_INDICATOR = '\u00d7'
+
+// Claw-ED educational indicators
+export const PENCIL = '\u270e' // ✎ - edit/writing indicator
+export const CHECKMARK = '\u2713' // ✓ - task complete
+export const BOOK_ICON = '\u25a3' // ▣ - lesson/content indicator
+export const SCROLL_ICON = '\u25a0' // ■ - document indicator
+export const STAR_ICON = '\u2605' // ★ - achievement/quality indicator
+export const CLAW_MARK = '///' // claw scratch mark for branding
