@@ -140,8 +140,43 @@ def _repair_html_structure(html: str) -> str:
     """
     html_lower = html.lower()
 
-    # Already well-formed — has both <head> and <body>
-    if "<head>" in html_lower and "<body>" in html_lower:
+    # Strip duplicate DOCTYPE/html tags (LLM sometimes nests two documents)
+    if html.count("<!DOCTYPE") > 1:
+        # Keep only the content between the LAST <!DOCTYPE and end
+        # Actually: strip all but the first DOCTYPE
+        parts = html.split("<!DOCTYPE")
+        html = "<!DOCTYPE" + parts[1]  # keep first occurrence + content
+        for extra in parts[2:]:
+            # Append content after stripping the duplicate preamble
+            extra_content = re.sub(
+                r"^[^>]*>\s*<html[^>]*>\s*", "", extra, flags=re.IGNORECASE
+            )
+            html += extra_content
+        html_lower = html.lower()
+
+    # Check for bare JS not wrapped in <script> tags
+    has_script_tags = "<script" in html_lower
+    has_js_code = bool(re.search(
+        r"(?:function\s+\w+|const\s+\w+\s*=|let\s+\w+\s*=|document\.|addEventListener)",
+        html
+    ))
+    if not has_script_tags and has_js_code:
+        # Find where JS starts (after the last </div> or after CSS)
+        # Look for first function/const/let/document line
+        js_start = re.search(
+            r"\n((?:function |const |let |var |document\.|//\s*[-=]|class\s+\w+\s*\{))",
+            html
+        )
+        if js_start:
+            before_js = html[:js_start.start()]
+            js_code = html[js_start.start():]
+            # Strip trailing </body></html> from JS if present
+            js_code = re.sub(r"\s*</body>\s*</html>\s*$", "", js_code, flags=re.IGNORECASE)
+            html = before_js + "\n<script>\n" + js_code + "\n</script>\n</body>\n</html>"
+            html_lower = html.lower()
+
+    # Already well-formed — has <head>, <body>, and <script>
+    if "<head>" in html_lower and "<body>" in html_lower and (has_script_tags or "<script" in html_lower):
         return html
 
     # Has <head> but no <body> — unusual, leave it
