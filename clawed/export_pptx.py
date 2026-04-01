@@ -218,13 +218,35 @@ def export_lesson_pptx(
 
     from clawed.sanitize import sanitize_text
 
+    def _strip_inline_answers(text: str) -> str:
+        """Remove (Answer: ...) and similar inline answer keys from student-facing slide text.
+
+        The LLM sometimes embeds answer keys directly in guided practice /
+        independent work fill-in-the-blank text.  These must never appear on
+        projected slides — answers belong in speaker notes only.
+        """
+        if not text:
+            return text
+        # Remove (Answer: ...) and (answer: ...) patterns
+        text = re.sub(r"\s*\((?:Answer|answer|Ans|ans)\s*:\s*[^)]+\)", "", text)
+        # Remove [Answer: ...] bracket variant
+        text = re.sub(r"\s*\[(?:Answer|answer|Ans|ans)\s*:\s*[^\]]+\]", "", text)
+        # Remove inline answer keys like "_____ (Columbus)"  — parenthetical proper nouns after blanks
+        # Only strip if the blank is present — don't strip all parentheticals
+        text = re.sub(r"(_{2,})\s*\([A-Z][^)]{1,40}\)", r"\1", text)
+        return text.strip()
+
+
     # Sanitize all lesson text fields before rendering to slides
     lesson.title = sanitize_text(lesson.title)
     lesson.objective = sanitize_text(lesson.objective)
     lesson.do_now = sanitize_text(lesson.do_now) if lesson.do_now else ""
     lesson.direct_instruction = sanitize_text(lesson.direct_instruction) if lesson.direct_instruction else ""
-    lesson.guided_practice = sanitize_text(lesson.guided_practice) if lesson.guided_practice else ""
-    lesson.independent_work = sanitize_text(lesson.independent_work) if lesson.independent_work else ""
+    # Strip answers before sanitizing — keep originals for speaker notes
+    _gp_with_answers = lesson.guided_practice or ""
+    _iw_with_answers = lesson.independent_work or ""
+    lesson.guided_practice = _strip_inline_answers(sanitize_text(_gp_with_answers)) if _gp_with_answers else ""
+    lesson.independent_work = _strip_inline_answers(sanitize_text(_iw_with_answers)) if _iw_with_answers else ""
     if lesson.homework:
         lesson.homework = sanitize_text(lesson.homework)
     for q in lesson.exit_ticket:
@@ -873,10 +895,10 @@ def export_lesson_pptx(
         run.text = gp_summary
         _set_text_props(run, 24, theme["text_dark"])
 
-        # Full guided practice in speaker notes
+        # Full guided practice + ANSWER KEY in speaker notes
         notes_slide = slide.notes_slide
         notes_tf = notes_slide.notes_text_frame
-        notes_tf.text = gp_text
+        notes_tf.text = "ANSWER KEY:\n" + _gp_with_answers + "\n\n---\nSTUDENT VIEW:\n" + gp_text
 
         # Time estimate
         minutes = lesson.time_estimates.get("guided_practice", 15)

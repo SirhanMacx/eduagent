@@ -179,6 +179,17 @@ def extract_image_subjects(lesson) -> list[dict]:
         "Analyze", "Compare", "Evaluate", "Describe", "Explain", "Identify",
         "Test", "Review", "Movement", "Act", "Age", "Era", "Period",
     }
+    # Common English verbs/adjectives that appear capitalized in headings
+    # but are never historical entity names
+    _non_name_second_words = {
+        "Left", "Right", "Home", "Away", "Back", "Up", "Down", "Out", "Over",
+        "Under", "Forever", "Together", "Apart", "Behind", "Ahead",
+        "Looks", "Looked", "Looking", "Goes", "Went", "Gone", "Comes", "Came",
+        "Changes", "Changed", "Begins", "Began", "Ends", "Ended", "Falls",
+        "Fell", "Rises", "Rose", "Grows", "Grew", "Leads", "Led",
+        "Succeeds", "Succeed", "Fails", "Failed", "Starts", "Stops",
+        "Outward", "Forward", "Onward", "Beyond", "Across",
+    }
     people_patterns = [
         r"((?:King |Queen |Emperor |Empress |President |Pope |Tsar |Czar )"
         r"[A-Z][a-z]+(?: [A-Z][a-z]+)*(?: the Great| [IVX]+)?)",
@@ -194,8 +205,10 @@ def extract_image_subjects(lesson) -> list[dict]:
         for match in re.findall(pattern, all_text):
             name = match.strip()
             if len(name) > 5:
-                first_word = name.split()[0]
-                if first_word not in common_non_names:
+                words = name.split()
+                first_word = words[0]
+                second_word = words[1] if len(words) > 1 else ""
+                if first_word not in common_non_names and second_word not in _non_name_second_words:
                     people_found.add(name)
     for person in list(people_found)[:5]:
         subjects.append({"query": person, "type": "person", "label": person})
@@ -224,10 +237,29 @@ def extract_image_subjects(lesson) -> list[dict]:
     for doc_name in set(doc_patterns[:2]):
         subjects.append({"query": doc_name, "type": "document", "label": doc_name})
 
-    # Fallback: lesson title
+    # Fallback: if no named entities found, use the lesson title as the primary query
+    # and also generate sub-topic queries from key noun phrases in the title.
     if not subjects:
         title = getattr(lesson, 'title', 'lesson')
         subjects.append({"query": title, "type": "topic", "label": title})
+
+        # Extract sub-topics from title for variety across slides
+        # e.g. "Age of Exploration: Why Europe Left Home" → ["Age of Exploration", "Europe exploration"]
+        # Strip subtitle (after colon/dash) and use main title for first query
+        main_title = re.split(r"[:—–-]", title)[0].strip()
+        if main_title and main_title != title:
+            subjects.insert(0, {"query": main_title, "type": "topic", "label": main_title})
+
+    # Always ensure we have at least 3 queries so slides 1/2/3 each get something different.
+    # Pad with progressively broader queries derived from the first subject.
+    if len(subjects) < 3 and subjects:
+        base_query = subjects[0]["query"]
+        # Add a map/overview query (good for title slide)
+        if not any("map" in s["query"].lower() for s in subjects):
+            subjects.append({"query": f"{base_query} map", "type": "topic", "label": f"{base_query} map"})
+        # Add a primary source / document query (good for instruction slides)
+        if len(subjects) < 3:
+            subjects.append({"query": f"{base_query} primary source", "type": "topic", "label": f"{base_query} document"})
 
     return subjects
 

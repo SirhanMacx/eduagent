@@ -37,6 +37,11 @@ mechanic, different visual style, different interaction pattern.
 
 RULES:
 - Output ONLY the complete HTML file. No explanation, no markdown fencing.
+- The file MUST start with <!DOCTYPE html> then <html>, then <head>, then <body>. \
+Always use this exact structure — never put CSS or text directly inside <html> \
+without a <head> or <body> wrapper.
+- The <head> MUST contain: <meta charset="UTF-8">, a <title> tag, and a <style> block.
+- The <body> contains all visible elements and <script> tags.
 - The file must be self-contained: all CSS and JS inline.
 - You may use a Three.js CDN link for 3D: \
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -121,6 +126,107 @@ def _extract_game_content(master: MasterContent) -> str:
     return "\n".join(parts)
 
 
+def _repair_html_structure(html: str) -> str:
+    """Repair common LLM HTML generation failures.
+
+    LLMs sometimes emit:
+    - CSS rules directly after <!DOCTYPE html> with no <head> or <body>
+    - <title> text as bare text instead of inside a <title> tag
+    - <style> content without the wrapping <style> tag
+    - Missing </html> closer
+
+    This function detects those patterns and wraps the content into a
+    valid HTML skeleton, preserving all the CSS and JS the LLM generated.
+    """
+    html_lower = html.lower()
+
+    # Already well-formed — has both <head> and <body>
+    if "<head>" in html_lower and "<body>" in html_lower:
+        return html
+
+    # Has <head> but no <body> — unusual, leave it
+    if "<head>" in html_lower:
+        return html
+
+    # Missing <head>/<body> — LLM dumped CSS/JS straight into <html>
+    # Strategy: find the first <script or first element tag to split on,
+    # put everything before the first block element into <head>,
+    # everything else into <body>.
+
+    # Collect lines after <!DOCTYPE html><html ...>
+    # Find where the html tag ends
+    html_tag_end = html_lower.find(">", html_lower.find("<html"))
+    if html_tag_end == -1:
+        # No <html> tag at all — wrap everything
+        title_match = re.search(r"^([^\n<@{]+)", html.strip())
+        title_text = title_match.group(1).strip() if title_match else "Learning Game"
+        return (
+            f"<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n"
+            f"<meta charset=\"UTF-8\">\n"
+            f"<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n"
+            f"<title>{title_text}</title>\n"
+            f"<style>\n{html}\n</style>\n</head>\n<body></body>\n</html>"
+        )
+
+    preamble = html[:html_tag_end + 1]  # everything up to and including <html ...>
+    rest = html[html_tag_end + 1:].strip()
+
+    # Extract bare title text (first non-tag, non-CSS line after <html>)
+    title_text = "Learning Game"
+    title_match = re.match(r"^\s*([A-Za-z][^\n@{<]{3,80})\n", rest)
+    if title_match and not title_match.group(1).strip().startswith(("@", "{", ".")):
+        title_text = title_match.group(1).strip()
+        rest = rest[title_match.end():]
+
+    # Split: CSS/meta goes in <head>, script/div/etc goes in <body>
+    head_parts: list[str] = []
+    body_parts: list[str] = []
+
+    # Collect <meta> tags floating outside <head>
+    meta_tags = re.findall(r"<meta[^>]*>", rest, re.IGNORECASE)
+    for m in meta_tags:
+        head_parts.append(m)
+        rest = rest.replace(m, "", 1)
+
+    # Wrap bare CSS (starts with @import, :root, or selector{) in <style>
+    # Find contiguous CSS blocks before the first <script or <div
+    first_script = re.search(r"<script|<div|<section|<main|<canvas", rest, re.IGNORECASE)
+    split_at = first_script.start() if first_script else len(rest)
+
+    css_block = rest[:split_at].strip()
+    body_block = rest[split_at:].strip()
+
+    if css_block:
+        # Check if it's raw CSS (no surrounding <style> tags)
+        if not re.search(r"<style", css_block, re.IGNORECASE):
+            head_parts.append(f"<style>\n{css_block}\n</style>")
+        else:
+            head_parts.append(css_block)
+
+    head_html = "\n".join(head_parts)
+    body_html = body_block
+
+    # Ensure </html> at end
+    if not body_html.rstrip().endswith("</html>"):
+        body_html = body_html.rstrip()
+        if not body_html.endswith("</body>"):
+            body_html += "\n</body>"
+        body_html += "\n</html>"
+
+    repaired = (
+        f"<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n"
+        f"<meta charset=\"UTF-8\">\n"
+        f"<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, user-scalable=no\">\n"
+        f"<title>{title_text}</title>\n"
+        f"{head_html}\n"
+        f"</head>\n<body>\n"
+        f"{body_html}"
+    )
+
+    logger.info("Repaired HTML structure (was missing <head>/<body>)")
+    return repaired
+
+
 def _validate_game_html(html: str, master: MasterContent) -> list[str]:
     """Validate that the generated HTML is a working game."""
     issues = []
@@ -130,6 +236,12 @@ def _validate_game_html(html: str, master: MasterContent) -> list[str]:
 
     if "<html" not in html.lower():
         issues.append("Missing <html> tag")
+
+    if "<head>" not in html.lower():
+        issues.append("Missing <head> tag — CSS may render broken")
+
+    if "<body>" not in html.lower():
+        issues.append("Missing <body> tag — content structure invalid")
 
     if "<script" not in html.lower():
         issues.append("Missing <script> tag — no JavaScript")
@@ -247,6 +359,10 @@ async def compile_game(
                 html = re.sub(r"^```\w*\n?", "", html)
                 html = re.sub(r"\n?```$", "", html)
             html = html.strip()
+
+            # Structural repair: LLMs sometimes emit CSS/content outside <head>/<body>.
+            # Detect and wrap into a valid HTML skeleton if needed.
+            html = _repair_html_structure(html)
 
             # Validate
             issues = _validate_game_html(html, master)
