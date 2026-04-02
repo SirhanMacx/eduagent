@@ -249,9 +249,9 @@ class GenerateLessonBundleTool:
                 report.warnings.append(f"Image fetch failed: {e}")
 
         # ── Compile three views ───────────────────────────────────────
-        output_dir = Path("clawed_output").resolve()
+        output_dir = Path("~/clawed_output").expanduser().resolve()
         if config and hasattr(config, "output_dir") and config.output_dir:
-            output_dir = Path(config.output_dir).resolve()
+            output_dir = Path(config.output_dir).expanduser().resolve()
         output_dir.mkdir(parents=True, exist_ok=True)
 
         generated_files: list[Path] = []

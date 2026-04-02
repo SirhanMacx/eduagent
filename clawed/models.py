@@ -1035,7 +1035,7 @@ class AppConfig(BaseModel):
     ollama_model: str = "minimax-m2.7:cloud"
     google_model: str = "gemini-2.5-flash"
     ollama_base_url: str = "http://localhost:11434"
-    output_dir: str = "./clawed_output"
+    output_dir: str = "~/clawed_output"
     include_homework: bool = True
     agent_gateway: bool = True
     export_format: str = "docx"

@@ -169,7 +169,7 @@ class TestAppConfigDefaults:
         assert config.openai_model == "gpt-4o"
         assert config.ollama_model == "minimax-m2.7:cloud"
         assert config.ollama_base_url == "http://localhost:11434"
-        assert config.output_dir == "./clawed_output"
+        assert config.output_dir == "~/clawed_output"
         assert config.include_homework is True
         assert config.export_format == "docx"
 
@@ -334,7 +334,7 @@ class TestVersion:
     def test_version_string(self):
         from clawed import __version__
 
-        assert __version__ == "4.2.2026.23"
+        assert __version__ == "4.2.2026.24"
 
 
 # ── Standards module ───────────────────────────────────────────────

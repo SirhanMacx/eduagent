@@ -557,18 +557,23 @@ def lesson(
                 from clawed.multi_agent import multi_agent_generate_master_content
                 console.print("[dim]Using multi-agent pipeline (researcher→writer→reviewer)...[/dim]")
                 _ma_config = AppConfig.load()
-                master = _run_async(
-                    multi_agent_generate_master_content(
-                        topic=topic,
-                        grade=grade,
-                        subject=subject,
-                        persona=persona,
-                        config=_ma_config,
-                        unit_context=kb_prompt_section,
+                try:
+                    master = _run_async(
+                        multi_agent_generate_master_content(
+                            topic=topic,
+                            grade=grade,
+                            subject=subject,
+                            persona=persona,
+                            config=_ma_config,
+                            unit_context=kb_prompt_section,
+                        )
                     )
-                )
+                except Exception:
+                    master = None
                 if master is None:
-                    console.print("[yellow]Multi-agent returned None, falling back to single-agent...[/yellow]")
+                    console.print(
+                        "[yellow]Multi-agent didn't complete. Using single-agent instead...[/yellow]"
+                    )
                     daily = _run_async(
                         generate_lesson(
                             lesson_number=lesson_num, unit=unit_plan,
