@@ -10,7 +10,7 @@ type Output = { result: unknown }
 
 export const StudentsTool = buildTool({
   name: 'get_students',
-  searchHint: 'list students in current workspace',
+  searchHint: 'students roster class list learners groups',
   maxResultSizeChars: 50_000,
   async description() {
     return 'List students configured in the current workspace.'

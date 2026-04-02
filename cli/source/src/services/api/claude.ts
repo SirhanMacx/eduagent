@@ -22,8 +22,11 @@ import type { Stream } from '@anthropic-ai/sdk/streaming.mjs'
 import { randomUUID } from 'crypto'
 import {
   getAPIProvider,
+  getClawedConfigProvider,
+  isClawedBridgeProvider,
   isFirstPartyAnthropicBaseUrl,
 } from 'src/utils/model/providers.js'
+import { bridgeChat, buildBridgeRequest } from './bridgeClient.js'
 import {
   getAttributionHeader,
   getCLISyspromptPrefix,
@@ -74,6 +77,7 @@ import { computeFingerprintFromMessages } from '../../utils/fingerprint.js'
 import { captureAPIRequest, logError } from '../../utils/log.js'
 import {
   createAssistantAPIErrorMessage,
+  createAssistantMessage,
   createUserMessage,
   ensureToolResultPairing,
   normalizeContentFromAPI,
@@ -1025,6 +1029,78 @@ async function* queryModel(
   StreamEvent | AssistantMessage | SystemAPIErrorMessage,
   void
 > {
+  // ── Claw-ED bridge: route non-Anthropic providers through Python ──
+  const bridgeProvider = getClawedConfigProvider()
+  if (bridgeProvider) {
+    // Convert messages to simple role/content pairs for the bridge
+    const simpleMsgs: Array<{ role: string; content: string }> = []
+    for (const msg of messages) {
+      if (msg.type === 'user') {
+        const content = Array.isArray(msg.message.content)
+          ? msg.message.content
+              .filter((b: any) => b.type === 'text')
+              .map((b: any) => b.text)
+              .join('\n')
+          : String(msg.message.content)
+        simpleMsgs.push({ role: 'user', content })
+      } else if (msg.type === 'assistant') {
+        const content = Array.isArray(msg.message.content)
+          ? msg.message.content
+              .filter((b: any) => b.type === 'text')
+              .map((b: any) => b.text)
+              .join('\n')
+          : ''
+        if (content) simpleMsgs.push({ role: 'assistant', content })
+      }
+    }
+
+    // Extract system prompt text
+    let sysText = ''
+    if (Array.isArray(systemPrompt)) {
+      sysText = systemPrompt
+        .map((s: any) => (typeof s === 'string' ? s : s.text || ''))
+        .join('\n')
+    } else if (typeof systemPrompt === 'string') {
+      sysText = systemPrompt
+    }
+
+    const req = buildBridgeRequest(
+      bridgeProvider,
+      options.model,
+      simpleMsgs,
+      sysText,
+    )
+
+    const resp = await bridgeChat(req, { signal })
+
+    if (resp.status === 'error') {
+      yield createAssistantAPIErrorMessage({
+        content: `[${bridgeProvider} bridge error] ${resp.error || 'Unknown error'}`,
+      })
+    } else {
+      yield createAssistantMessage({
+        content: resp.content,
+        usage: {
+          input_tokens: resp.usage?.input_tokens ?? 0,
+          output_tokens: resp.usage?.output_tokens ?? 0,
+          cache_creation_input_tokens: 0,
+          cache_read_input_tokens: 0,
+          server_tool_use: { web_search_requests: 0, web_fetch_requests: 0 },
+          service_tier: null,
+          cache_creation: {
+            ephemeral_1h_input_tokens: 0,
+            ephemeral_5m_input_tokens: 0,
+          },
+          inference_geo: null,
+          iterations: null,
+          speed: null,
+        },
+      })
+    }
+    return
+  }
+  // ── End Claw-ED bridge ──
+
   // Check cheap conditions first — the off-switch await blocks on GrowthBook
   // init (~10ms). For non-Opus models (haiku, sonnet) this skips the await
   // entirely. Subscribers don't hit this path at all.

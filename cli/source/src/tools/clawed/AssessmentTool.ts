@@ -18,7 +18,7 @@ type Output = { result: unknown }
 
 export const AssessmentTool = buildTool({
   name: 'generate_assessment',
-  searchHint: 'create quiz test or assessment',
+  searchHint: 'test quiz assessment exam evaluate formative summative diagnostic',
   maxResultSizeChars: 200_000,
   async description() {
     return 'Generate an assessment (formative, summative, or diagnostic).'

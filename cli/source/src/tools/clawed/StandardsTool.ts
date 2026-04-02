@@ -15,7 +15,7 @@ type Output = { result: unknown }
 
 export const StandardsTool = buildTool({
   name: 'get_standards',
-  searchHint: 'list curriculum standards for grade and subject',
+  searchHint: 'standards CCSS NGSS C3 TEKS alignment curriculum',
   maxResultSizeChars: 100_000,
   async description() {
     return 'List curriculum standards for a given grade and subject.'

@@ -25,7 +25,7 @@ type Output = { result: unknown }
 
 export const TrainTool = buildTool({
   name: 'train_model',
-  searchHint: 'train and benchmark the generation model',
+  searchHint: 'train benchmark fine-tune model calibrate improve',
   maxResultSizeChars: 100_000,
   async description() {
     return 'Train and benchmark the Claw-ED generation model.'

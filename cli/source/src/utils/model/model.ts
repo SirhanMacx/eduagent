@@ -23,7 +23,7 @@ import { getModelStrings, resolveOverriddenModel } from './modelStrings.js'
 import { formatModelPricing, getOpus46CostTier } from '../modelCost.js'
 import { getSettings_DEPRECATED } from '../settings/settings.js'
 import type { PermissionMode } from '../permissions/PermissionMode.js'
-import { getAPIProvider } from './providers.js'
+import { getAPIProvider, getClawedConfigProvider, isClawedBridgeProvider, CLAWED_PROVIDER_DEFAULT_MODELS } from './providers.js'
 import { LIGHTNING_BOLT } from '../../constants/figures.js'
 import { isModelAllowed } from './modelAllowlist.js'
 import { type ModelAlias, isModelAlias } from './aliases.js'
@@ -90,11 +90,43 @@ export function getUserSpecifiedModelSetting(): ModelSetting | undefined {
  * @returns The resolved model name to use
  */
 export function getMainLoopModel(): ModelName {
+  // When a non-Anthropic provider is active, return its default model
+  // unless the user explicitly overrode it.
+  const bridgeProvider = getClawedConfigProvider()
+  if (bridgeProvider) {
+    const userModel = getUserSpecifiedModelSetting()
+    if (userModel !== undefined && userModel !== null) {
+      return userModel as ModelName // pass through — the Python bridge validates it
+    }
+    return getClawedDefaultModel(bridgeProvider)
+  }
+
   const model = getUserSpecifiedModelSetting()
   if (model !== undefined && model !== null) {
     return parseUserSpecifiedModel(model)
   }
   return getDefaultMainLoopModel()
+}
+
+/**
+ * Default model for a non-Anthropic (Python-bridged) provider.
+ * Reads from ~/.eduagent/config.json model fields, falling back to built-in defaults.
+ */
+function getClawedDefaultModel(provider: 'ollama' | 'openai' | 'google'): ModelName {
+  try {
+    const { readFileSync } = require('fs')
+    const { join } = require('path')
+    const { homedir } = require('os')
+    const configPath = process.env.EDUAGENT_DATA_DIR
+      ? join(process.env.EDUAGENT_DATA_DIR, 'config.json')
+      : join(homedir(), '.eduagent', 'config.json')
+    const config = JSON.parse(readFileSync(configPath, 'utf-8'))
+    const modelField = `${provider === 'google' ? 'google' : provider}_model`
+    if (config[modelField]) return config[modelField]
+  } catch {
+    // fall through to built-in default
+  }
+  return CLAWED_PROVIDER_DEFAULT_MODELS[provider]
 }
 
 export function getBestModel(): ModelName {
@@ -393,6 +425,10 @@ function maskModelCodename(baseName: string): string {
 }
 
 export function renderModelName(model: ModelName): string {
+  // Non-Anthropic bridge models: show as-is (e.g. "gpt-4o", "gemini-2.5-flash")
+  if (isClawedBridgeProvider()) {
+    return model
+  }
   const publicName = getPublicModelDisplayName(model)
   if (publicName) {
     return publicName

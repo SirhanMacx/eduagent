@@ -20,7 +20,7 @@ type Output = { result: unknown }
 
 export const GameTool = buildTool({
   name: 'generate_game',
-  searchHint: 'create educational game for a topic',
+  searchHint: 'game interactive play review practice quiz',
   maxResultSizeChars: 200_000,
   async description() {
     return 'Generate an educational game using the Claw-ED engine.'

@@ -74,7 +74,7 @@ class Gateway:
 
     def __init__(self, config: Optional[AppConfig] = None, llm: Optional[LLMInterface] = None):
         self.config = config or AppConfig.load()
-        self.event_bus: asyncio.Queue[ActivityEvent] = asyncio.Queue(maxsize=500)
+        self._event_bus: asyncio.Queue[ActivityEvent] | None = None
         self.active_sessions: dict[str, dict] = {}
         self._stats = GatewayStats()
         self._running = False
@@ -106,6 +106,18 @@ class Gateway:
 
         self._export = ExportHandler()
         self._feedback = FeedbackHandler()
+
+    @property
+    def event_bus(self) -> asyncio.Queue[ActivityEvent]:
+        """Lazily create the event bus queue (avoids Python 3.9 event loop issues)."""
+        if self._event_bus is None:
+            try:
+                self._event_bus = asyncio.Queue(maxsize=500)
+            except RuntimeError:
+                # Python 3.9: no event loop in sync context — create one
+                asyncio.set_event_loop(asyncio.new_event_loop())
+                self._event_bus = asyncio.Queue(maxsize=500)
+        return self._event_bus
 
     # ------------------------------------------------------------------
     # Public interface (matches legacy Gateway exactly)

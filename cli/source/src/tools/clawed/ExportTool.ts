@@ -17,7 +17,7 @@ type Output = { result: unknown }
 
 export const ExportTool = buildTool({
   name: 'export_lesson',
-  searchHint: 'export lesson to pptx pdf docx',
+  searchHint: 'slides presentation PowerPoint PPTX export pdf docx html',
   maxResultSizeChars: 50_000,
   async description() {
     return 'Export a lesson to a specific format (pptx, pdf, docx, html).'

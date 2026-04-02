@@ -10,7 +10,7 @@ import {
   logEvent,
 } from 'src/services/analytics/index.js'
 import { getModelStrings } from 'src/utils/model/modelStrings.js'
-import { getAPIProvider } from 'src/utils/model/providers.js'
+import { getAPIProvider, isClawedBridgeProvider, getClawedConfigProvider } from 'src/utils/model/providers.js'
 import {
   getIsNonInteractiveSession,
   preferThirdPartyAuthentication,
@@ -98,6 +98,9 @@ function isManagedOAuthContext(): boolean {
 /** Whether we are supporting direct 1P auth. */
 // this code is closely related to getAuthTokenSource
 export function isAnthropicAuthEnabled(): boolean {
+  // Claw-ED: non-Anthropic providers bypass Anthropic auth entirely
+  if (isClawedBridgeProvider()) return false
+
   // --bare: API-key-only, never OAuth.
   if (isBareMode()) return false
 
@@ -2000,3 +2003,63 @@ export async function validateForceLoginOrg(): Promise<OrgValidationResult> {
 }
 
 class GcpCredentialsTimeoutError extends Error {}
+
+// ── Claw-ED multi-provider auth helpers ──
+
+/**
+ * Check if a non-Anthropic provider is configured and has an API key.
+ * Returns the provider name if ready, null otherwise.
+ */
+export function isProviderConfigured(): string | null {
+  const provider = getClawedConfigProvider()
+  if (!provider) return null
+
+  // Ollama local doesn't need an API key
+  if (provider === 'ollama') return 'ollama'
+
+  // Check environment first, then secrets.json
+  const key = getClawedProviderApiKey(provider)
+  return key ? provider : null
+}
+
+/**
+ * Resolve the API key for a non-Anthropic provider.
+ *
+ * Resolution order:
+ *   1. Environment variables (OPENAI_API_KEY, GOOGLE_API_KEY, etc.)
+ *   2. ~/.eduagent/secrets.json
+ *   3. null (not configured)
+ */
+export function getClawedProviderApiKey(
+  provider?: string,
+): string | null {
+  const p = provider || getClawedConfigProvider()
+  if (!p) return null
+
+  // 1. Env vars
+  const envMap: Record<string, string[]> = {
+    openai: ['OPENAI_API_KEY'],
+    google: ['GOOGLE_API_KEY', 'GEMINI_API_KEY'],
+    ollama: ['OLLAMA_API_KEY'],
+  }
+  for (const envVar of envMap[p] || []) {
+    if (process.env[envVar]) return process.env[envVar]!
+  }
+
+  // 2. secrets.json
+  try {
+    const { readFileSync } = require('fs')
+    const { join } = require('path')
+    const { homedir } = require('os')
+    const secretsPath = process.env.EDUAGENT_DATA_DIR
+      ? join(process.env.EDUAGENT_DATA_DIR, 'secrets.json')
+      : join(homedir(), '.eduagent', 'secrets.json')
+    const secrets = JSON.parse(readFileSync(secretsPath, 'utf-8'))
+    const keyField = `${p}_api_key`
+    if (secrets[keyField]) return secrets[keyField]
+  } catch {
+    // secrets file doesn't exist
+  }
+
+  return null
+}

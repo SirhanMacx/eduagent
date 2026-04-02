@@ -14,7 +14,7 @@ type Output = { result: unknown }
 
 export const ReviewTool = buildTool({
   name: 'review_output',
-  searchHint: 'review and score lesson quality',
+  searchHint: 'review score quality rubric feedback evaluate lesson',
   maxResultSizeChars: 100_000,
   async description() {
     return 'Review and score a generated lesson for quality and alignment.'

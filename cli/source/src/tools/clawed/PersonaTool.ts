@@ -10,7 +10,7 @@ type Output = { result: unknown }
 
 export const PersonaTool = buildTool({
   name: 'get_persona',
-  searchHint: 'show current teacher persona configuration',
+  searchHint: 'persona teacher profile role configuration style voice',
   maxResultSizeChars: 50_000,
   async description() {
     return 'Show the current teacher persona configuration.'

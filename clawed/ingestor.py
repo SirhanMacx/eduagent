@@ -487,8 +487,39 @@ def _extract_xlsx(path: Path) -> str:
 
 
 def _extract_xls(path: Path) -> str:
-    """Extract text from a legacy .xls file. Tries reading as raw text."""
-    # Try textutil on macOS
+    """Extract text from a legacy .xls file.
+
+    Tries xlrd (proper XLS parsing), then textutil (macOS), then falls back
+    to attempting xlsx parsing (some .xls files are actually xlsx in disguise).
+    """
+    # Strategy 1: xlrd (proper XLS parser)
+    try:
+        import xlrd
+        wb = xlrd.open_workbook(str(path))
+        rows: list[str] = []
+        for sheet in wb.sheet_names():
+            ws = wb.sheet_by_name(sheet)
+            rows.append(f"[Sheet: {sheet}]")
+            for row_idx in range(min(ws.nrows, 5000)):
+                cells = []
+                for col_idx in range(ws.ncols):
+                    cell = ws.cell(row_idx, col_idx)
+                    val = str(cell.value) if cell.value is not None else ""
+                    cells.append(val)
+                if any(c.strip() for c in cells):
+                    rows.append(" | ".join(cells))
+            if ws.nrows > 5000:
+                rows.append("... (truncated at 5000 rows)")
+        wb.release_resources()
+        text = "\n".join(rows)
+        if text.strip():
+            return text
+    except ImportError:
+        logger.debug("xlrd not installed; cannot parse .xls natively: %s", path.name)
+    except Exception as exc:
+        logger.debug("xlrd failed on %s: %s", path.name, exc)
+
+    # Strategy 2: textutil on macOS
     if shutil.which("textutil"):
         try:
             result = subprocess.run(
@@ -499,6 +530,20 @@ def _extract_xls(path: Path) -> str:
                 return result.stdout.strip()
         except (OSError, subprocess.TimeoutExpired) as e:
             logger.warning("textutil failed on %s: %s", path.name, e)
+
+    # Strategy 3: Try openpyxl (some .xls files are actually xlsx format)
+    try:
+        text = _extract_xlsx(path)
+        if text.strip():
+            logger.debug("Parsed .xls as xlsx format: %s", path.name)
+            return text
+    except Exception:
+        pass
+
+    logger.debug(
+        "Could not extract .xls file %s — install xlrd for full .xls support",
+        path.name,
+    )
     return ""
 
 
@@ -574,20 +619,87 @@ def _extract_html_file(path: Path) -> str:
         return ""
 
 
+def _odf_iter_text(element) -> str:
+    """Recursively collect all text from an XML element and its children."""
+    parts: list[str] = []
+    if element.text:
+        parts.append(element.text)
+    for child in element:
+        parts.append(_odf_iter_text(child))
+        if child.tail:
+            parts.append(child.tail)
+    return "".join(parts)
+
+
+def _parse_odf_content_xml(content_bytes: bytes) -> list[str]:
+    """Parse ODF content.xml using ElementTree to preserve structure.
+
+    Handles ODF namespaces for text:h (headings), text:p (paragraphs),
+    text:list-item (list items), and draw:page (presentation slides).
+    Returns a list of text blocks with structure preserved.
+    """
+    import xml.etree.ElementTree as ET
+
+    ns = {
+        "text": "urn:oasis:names:tc:opendocument:xmlns:text:1.0",
+        "draw": "urn:oasis:names:tc:opendocument:xmlns:drawing:1.0",
+        "presentation": "urn:oasis:names:tc:opendocument:xmlns:presentation:1.0",
+        "office": "urn:oasis:names:tc:opendocument:xmlns:office:1.0",
+    }
+
+    blocks: list[str] = []
+
+    try:
+        root = ET.fromstring(content_bytes)
+    except ET.ParseError as exc:
+        logger.debug("Failed to parse ODF content.xml: %s", exc)
+        return blocks
+
+    # Collect headings (text:h) with a prefix marker
+    for heading in root.iter(f"{{{ns['text']}}}h"):
+        text = _odf_iter_text(heading).strip()
+        if text:
+            blocks.append(f"## {text}")
+
+    # Collect paragraphs (text:p) — these live inside text:section,
+    # text:list-item, draw:text-box, etc.  We walk the whole tree.
+    for para in root.iter(f"{{{ns['text']}}}p"):
+        text = _odf_iter_text(para).strip()
+        if text:
+            blocks.append(text)
+
+    # Collect list items (text:list-item) — deduplicate with paragraphs
+    # by checking if the text is already captured.  List items contain
+    # text:p children, so we only add the bullet marker.
+    seen = set(blocks)
+    for li in root.iter(f"{{{ns['text']}}}list-item"):
+        text = _odf_iter_text(li).strip()
+        if text and text not in seen:
+            blocks.append(f"  - {text}")
+            seen.add(text)
+
+    return blocks
+
+
 def _extract_odt(path: Path) -> str:
     """Extract text from an OpenDocument Text (.odt) file.
 
-    ODT is a ZIP containing content.xml. We extract text from XML tags.
+    ODT is a ZIP containing content.xml.  Parses XML properly to preserve
+    paragraph structure, headings, and lists.
     """
     try:
         with zipfile.ZipFile(str(path), "r") as zf:
             if "content.xml" not in zf.namelist():
                 return ""
-            content_xml = zf.read("content.xml").decode("utf-8", errors="replace")
-            # Strip XML tags to get plain text
-            text = re.sub(r"<[^>]+>", " ", content_xml)
-            text = re.sub(r"\s{2,}", " ", text).strip()
-            return text
+            content_bytes = zf.read("content.xml")
+            blocks = _parse_odf_content_xml(content_bytes)
+            if not blocks:
+                # Fallback: decode and strip tags (better than nothing)
+                raw = content_bytes.decode("utf-8", errors="replace")
+                text = re.sub(r"<[^>]+>", " ", raw)
+                text = re.sub(r"\s{2,}", " ", text).strip()
+                return text
+            return "\n\n".join(blocks)
     except Exception as exc:
         logger.debug("Failed to extract .odt %s: %s", path.name, exc)
         return ""
@@ -596,16 +708,53 @@ def _extract_odt(path: Path) -> str:
 def _extract_odp(path: Path) -> str:
     """Extract text from an OpenDocument Presentation (.odp) file.
 
-    ODP is a ZIP containing content.xml.
+    ODP is a ZIP containing content.xml with <draw:page> elements for slides.
+    Parses XML properly to preserve slide structure.
     """
+    import xml.etree.ElementTree as ET
+
+    ns_draw = "urn:oasis:names:tc:opendocument:xmlns:drawing:1.0"
+    ns_text = "urn:oasis:names:tc:opendocument:xmlns:text:1.0"
+
     try:
         with zipfile.ZipFile(str(path), "r") as zf:
             if "content.xml" not in zf.namelist():
                 return ""
-            content_xml = zf.read("content.xml").decode("utf-8", errors="replace")
-            text = re.sub(r"<[^>]+>", " ", content_xml)
-            text = re.sub(r"\s{2,}", " ", text).strip()
-            return text
+            content_bytes = zf.read("content.xml")
+
+            try:
+                root = ET.fromstring(content_bytes)
+            except ET.ParseError:
+                # Fallback to naive stripping
+                raw = content_bytes.decode("utf-8", errors="replace")
+                text = re.sub(r"<[^>]+>", " ", raw)
+                text = re.sub(r"\s{2,}", " ", text).strip()
+                return text
+
+            slides_text: list[str] = []
+            slide_num = 0
+            for page in root.iter(f"{{{ns_draw}}}page"):
+                slide_num += 1
+                page_name = page.get(f"{{{ns_draw}}}name", f"Slide {slide_num}")
+                parts: list[str] = [f"[Slide {slide_num}: {page_name}]"]
+
+                # Collect all text:p and text:h elements within this slide
+                for elem in page.iter():
+                    tag = elem.tag
+                    if tag == f"{{{ns_text}}}h" or tag == f"{{{ns_text}}}p":
+                        text = _odf_iter_text(elem).strip()
+                        if text:
+                            parts.append(text)
+
+                if len(parts) > 1:
+                    slides_text.append("\n".join(parts))
+
+            if not slides_text:
+                # No draw:page elements found — try generic text extraction
+                blocks = _parse_odf_content_xml(content_bytes)
+                return "\n\n".join(blocks) if blocks else ""
+
+            return "\n\n".join(slides_text)
     except Exception as exc:
         logger.debug("Failed to extract .odp %s: %s", path.name, exc)
         return ""
@@ -625,6 +774,157 @@ _EXTENSION_EXTRACTORS: dict[str, object] = {
     ".odt": lambda p: (_extract_odt(p), None),
     ".odp": lambda p: (_extract_odp(p), None),
 }
+
+
+# ── Topic tag extraction ──────────────────────────────────────────────
+
+
+# Words too common to be useful as topic tags
+_TAG_STOPWORDS = frozenset({
+    "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for",
+    "of", "with", "by", "from", "is", "are", "was", "were", "be", "been",
+    "have", "has", "had", "do", "does", "did", "will", "would", "could",
+    "should", "may", "might", "shall", "can", "this", "that", "these",
+    "those", "it", "its", "not", "no", "so", "if", "as", "up", "out",
+    "about", "into", "through", "during", "before", "after", "above",
+    "below", "between", "under", "again", "further", "then", "once",
+    "here", "there", "when", "where", "why", "how", "all", "each",
+    "every", "both", "few", "more", "most", "other", "some", "such",
+    "than", "too", "very", "just", "also", "new", "old", "first",
+    "last", "next", "per", "page", "slide", "sheet", "file", "name",
+    "class", "grade", "date", "unit", "week", "day", "period", "mr",
+    "mrs", "ms", "dr", "student", "students", "teacher",
+})
+
+
+def _extract_topic_tags(path: Path, content: str) -> list[str]:
+    """Extract topic tags from filename, metadata, and content.
+
+    Sources (in priority order):
+    1. Filename — split on underscores/hyphens, filter stopwords
+    2. Document title/heading — first heading-like line in content
+    3. Content analysis — capitalized phrases and repeated terms in first 500 chars
+
+    Returns a deduplicated list of lowercase tags (max 10).
+    """
+    tags: list[str] = []
+    seen: set[str] = set()
+
+    def _add(tag: str) -> None:
+        t = tag.strip().lower()
+        # Filter out stopwords, too-short, or purely numeric tags
+        if t and t not in seen and t not in _TAG_STOPWORDS and len(t) > 2 and not t.isdigit():
+            seen.add(t)
+            tags.append(t)
+
+    # ── Source 1: Filename ──────────────────────────────────────────
+    stem = path.stem
+    # Split on underscores, hyphens, dots, and camelCase boundaries
+    filename_parts = re.split(r"[_\-.\s]+", stem)
+    for part in filename_parts:
+        # Split camelCase
+        sub_parts = re.sub(r"([a-z])([A-Z])", r"\1 \2", part).split()
+        for sp in sub_parts:
+            _add(sp)
+
+    # ── Source 2: First heading or title line ───────────────────────
+    # Look for lines that look like titles/headings (short, capitalized)
+    for line in content.split("\n")[:20]:
+        line = line.strip()
+        if not line:
+            continue
+        # Markdown heading
+        if line.startswith("#"):
+            heading_text = line.lstrip("#").strip()
+            for word in heading_text.split():
+                _add(word)
+            break
+        # All-caps or title-case short line (likely a heading)
+        if len(line) < 80 and (line.isupper() or line.istitle()):
+            for word in line.split():
+                _add(word)
+            break
+
+    # ── Source 3: Content analysis (first 500 chars) ───────────────
+    snippet = content[:500]
+
+    # Capitalized multi-word phrases (potential proper nouns / topic names)
+    # Use [ \t]+ instead of \s+ to avoid matching across newlines
+    cap_phrases = re.findall(r"\b([A-Z][a-z]+(?:[ \t]+[A-Z][a-z]+)+)\b", snippet)
+    for phrase in cap_phrases[:5]:
+        _add(phrase)
+
+    # Repeated terms (words appearing 3+ times suggest topicality)
+    word_counts: Counter[str] = Counter()
+    for word in re.findall(r"\b[a-zA-Z]{3,}\b", snippet):
+        word_counts[word.lower()] += 1
+    for word, count in word_counts.most_common(10):
+        if count >= 2 and word not in _TAG_STOPWORDS:
+            _add(word)
+
+    return tags[:10]
+
+
+# ── Corpus contribution helper ─────────────────────────────────────────
+
+
+def _contribute_to_corpus(doc: "Document") -> None:
+    """Contribute an extracted document to the corpus if it looks like teaching material.
+
+    Called during ingestion so that high-quality curriculum materials are
+    available as few-shot examples for future lesson generation.
+    Only contributes documents that contain teaching-related keywords.
+    Failures are logged but never block ingestion.
+    """
+    try:
+        from clawed.corpus import contribute_example
+    except ImportError:
+        return
+
+    content_lower = doc.content.lower()
+
+    # Detect lesson-plan-like documents
+    is_lesson = any(kw in content_lower for kw in [
+        "objective", "swbat", "do now", "aim", "warm up",
+        "direct instruction", "guided practice", "exit ticket",
+        "homework", "materials needed", "lesson plan",
+    ])
+    is_unit = any(kw in content_lower for kw in [
+        "unit plan", "essential question", "enduring understanding",
+        "unit overview", "unit goals", "pacing guide",
+    ])
+
+    if not (is_lesson or is_unit):
+        return
+
+    content_type = "lesson_plan" if is_lesson else "unit_plan"
+
+    # Infer subject from content heuristics (best-effort)
+    subject = "general"
+    subject_signals = {
+        "social studies": ["social studies", "history", "civilization", "government"],
+        "science": ["science", "biology", "chemistry", "physics", "hypothesis", "experiment"],
+        "math": ["math", "algebra", "geometry", "equation", "calculate"],
+        "ela": ["reading", "writing", "literature", "grammar", "essay", "author"],
+    }
+    for subj, keywords in subject_signals.items():
+        if any(kw in content_lower for kw in keywords):
+            subject = subj
+            break
+
+    try:
+        contribute_example(
+            content_type=content_type,
+            subject=subject,
+            grade_level="9-12",  # default; refined by persona later
+            content={"title": doc.title, "text": doc.content[:3000], "source_file": doc.title},
+            topic=doc.title,
+            quality_score=3.5,  # moderate default — teacher feedback raises it
+            source="ingest",
+        )
+        logger.debug("Contributed '%s' to corpus as %s (%s)", doc.title, content_type, subject)
+    except Exception as exc:
+        logger.debug("Corpus contribution failed for '%s': %s", doc.title, exc)
 
 
 # ── Dispatch ─────────────────────────────────────────────────────────────
@@ -676,13 +976,25 @@ def _extract_single(path: Path) -> Optional[Document]:
     if not content or not content.strip():
         return None
 
-    return Document(
+    cleaned_content = content.strip()
+    topic_tags = _extract_topic_tags(path, cleaned_content)
+
+    doc = Document(
         title=path.stem.replace("_", " ").replace("-", " ").title(),
-        content=content.strip(),
+        content=cleaned_content,
         doc_type=doc_type,
         source_path=str(path),
         page_count=page_count,
+        tags=topic_tags,
     )
+
+    # Contribute to corpus (best-effort, never blocks ingestion)
+    try:
+        _contribute_to_corpus(doc)
+    except Exception as exc:
+        logger.debug("Corpus contribution skipped for %s: %s", path.name, exc)
+
+    return doc
 
 
 def extract_rich(path: Path) -> Optional[ExtractionResult]:

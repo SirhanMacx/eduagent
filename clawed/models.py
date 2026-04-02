@@ -31,6 +31,7 @@ class Document(BaseModel):
     doc_type: DocType
     source_path: Optional[str] = None
     page_count: Optional[int] = None
+    tags: list[str] = Field(default_factory=list)
 
 
 class TeachingStyle(str, Enum):

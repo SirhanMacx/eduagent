@@ -20,7 +20,7 @@ type Output = { result: unknown }
 
 export const LessonTool = buildTool({
   name: 'generate_lesson',
-  searchHint: 'create lesson plan for a topic and grade',
+  searchHint: 'lesson plan teach create make unit handout worksheet',
   maxResultSizeChars: 200_000,
   async description() {
     return 'Generate a standards-aligned lesson plan using the Claw-ED engine.'

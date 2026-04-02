@@ -14,6 +14,8 @@ import { logEvent } from '../services/analytics/index.js'
 import type { AnalyticsMetadata_I_VERIFIED_THIS_IS_NOT_CODE_OR_FILEPATHS } from '../services/analytics/metadata.js'
 import { getAPIMetadata } from '../services/api/claude.js'
 import { getAnthropicClient } from '../services/api/client.js'
+import { bridgeChat } from '../services/api/bridgeClient.js'
+import { getClawedConfigProvider } from './model/providers.js'
 import { getModelBetas, modelSupportsStructuredOutputs } from './betas.js'
 import { computeFingerprint } from './fingerprint.js'
 import { normalizeModelStringForAPI } from './model/model.js'
@@ -120,6 +122,47 @@ export async function sideQuery(opts: SideQueryOptions): Promise<BetaMessage> {
     thinking,
     stop_sequences,
   } = opts
+
+  // ── Claw-ED bridge path for non-Anthropic providers ──
+  const bridgeProvider = getClawedConfigProvider()
+  if (bridgeProvider) {
+    const simpleMsgs: Array<{ role: string; content: string }> = messages.map(m => ({
+      role: m.role,
+      content: typeof m.content === 'string'
+        ? m.content
+        : (m.content as any[])
+            .filter((b: any) => b.type === 'text')
+            .map((b: any) => b.text)
+            .join('\n'),
+    }))
+
+    const sysText = Array.isArray(system)
+      ? system.map(s => ('text' in s ? s.text : '')).join('\n')
+      : system || ''
+
+    const resp = await bridgeChat(
+      { messages: simpleMsgs, system: sysText, provider: bridgeProvider, model, max_tokens, temperature },
+      { signal },
+    )
+
+    // Return a minimal BetaMessage-compatible object
+    return {
+      id: 'bridge-side-query',
+      type: 'message',
+      role: 'assistant',
+      model: resp.model || model,
+      stop_reason: 'end_turn',
+      stop_sequence: null,
+      content: [{ type: 'text', text: resp.status === 'error' ? `[Bridge error] ${resp.error}` : resp.content }],
+      usage: {
+        input_tokens: resp.usage?.input_tokens ?? 0,
+        output_tokens: resp.usage?.output_tokens ?? 0,
+        cache_creation_input_tokens: 0,
+        cache_read_input_tokens: 0,
+      },
+    } as unknown as BetaMessage
+  }
+  // ── End Claw-ED bridge path ──
 
   const client = await getAnthropicClient({
     maxRetries,

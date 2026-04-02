@@ -33,47 +33,41 @@ function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-// Claude's brand palette
-const AMBER: Color = [232, 140, 50];
-const WARM: Color = [245, 180, 100];
-const CREAM: Color = [255, 220, 170];
-const FIRE: Color = [220, 80, 30];
-const DEEP: Color = [180, 60, 20];
+// Claw-ED educational palette
+const GOLD: Color = [212, 168, 67];    // #D4A843
+const GREEN: Color = [45, 95, 60];     // #2D5F3C
+const CREAM: Color = [255, 248, 231];  // #FFF8E7
+const DEEP_GREEN: Color = [26, 58, 36]; // #1A3A24
+const WARM_GOLD: Color = [232, 198, 107];
 const BLACK: Color = [0, 0, 0];
 
-// Claude asterisk logo — converted from communityIcon_97yk0vsmp4cf1.webp
+// Claw-ED apple logo
 const LOGO = [
-  '         ███         █',
-  '        █████      ████',
-  '         █████     ████     ███',
-  '          █████    ███    ██████',
-  '  █████    █████   ███   ██████',
-  '   ███████  █████  ██  ██████',
-  '      ██████ ███████████████',
-  '         █████████████████        ██',
-  '            ████████████████████████████',
-  '██████████████████████████████',
-  '             ██████████████████████████',
-  '          ███████████████  ██████████',
-  '       █████  █████████████',
-  '    ██████   ███ ███ ████████',
-  '   ███     ███   ██   ████  ███',
-  '         ████    ██    ████   ███',
-  '        ███     ███      ███',
-  '        █       ███',
-  '                ██',
+  '            ██',
+  '           ██',
+  '       ██████████',
+  '     ██████████████',
+  '    ████████████████',
+  '   ██████████████████',
+  '   ██████████████████',
+  '   ██████████████████',
+  '   ██████████████████',
+  '    ████████████████',
+  '     ██████████████',
+  '       ██████████',
+  '        ████████',
 ];
 
 const TITLE = [
-  ' ██████╗██╗      █████╗ ██╗   ██╗██████╗ ███████╗',
-  '██╔════╝██║     ██╔══██╗██║   ██║██╔══██╗██╔════╝',
-  '██║     ██║     ███████║██║   ██║██║  ██║█████╗  ',
-  '██║     ██║     ██╔══██║██║   ██║██║  ██║██╔══╝  ',
-  '╚██████╗███████╗██║  ██║╚██████╔╝██████╔╝███████╗',
-  ' ╚═════╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚═════╝ ╚══════╝',
+  ' ██████╗██╗      █████╗ ██╗    ██╗       ███████╗██████╗ ',
+  '██╔════╝██║     ██╔══██╗██║    ██║       ██╔════╝██╔══██╗',
+  '██║     ██║     ███████║██║ █╗ ██║ █████╗█████╗  ██║  ██║',
+  '██║     ██║     ██╔══██║██║███╗██║ ╚════╝██╔══╝  ██║  ██║',
+  '╚██████╗███████╗██║  ██║╚███╔███╔╝       ███████╗██████╔╝',
+  ' ╚═════╝╚══════╝╚═╝  ╚═╝ ╚══╝╚══╝        ╚══════╝╚═════╝ ',
 ];
 
-const SUBTITLE = '  C  O  D  E';
+const SUBTITLE = 'Your AI co-teacher';
 
 interface Particle {
   x: number; y: number;
@@ -117,7 +111,7 @@ function renderParticles(particles: Particle[], globalFade: number): string {
   for (const p of particles) {
     const lifeT = p.life / p.maxLife;
     const fadeT = (lifeT < 0.3 ? lifeT / 0.3 : 1 - (lifeT - 0.3) / 0.7) * globalFade;
-    const color = lerpColor(CREAM, FIRE, lifeT);
+    const color = lerpColor(CREAM, GREEN, lifeT);
     buf += moveTo(Math.round(p.y), Math.round(p.x)) + rgb(
       Math.round(color[0] * fadeT),
       Math.round(color[1] * fadeT),
@@ -174,10 +168,10 @@ export async function playLaunchScreen(): Promise<void> {
           const charT = Math.max(0, Math.min(1, (rowT - colDelay * 0.3) / 0.6));
           if (charT <= 0) { buf += ' '; continue; }
 
-          // Flash white at birth, settle to amber gradient
+          // Flash white at birth, settle to gold-green gradient
           const birthFlash = charT < 0.4 ? (0.4 - charT) / 0.4 : 0;
           const distFromCenter = colDelay;
-          const baseColor = lerpColor(CREAM, FIRE, distFromCenter * 0.8);
+          const baseColor = lerpColor(CREAM, GREEN, distFromCenter * 0.8);
           const wave = Math.sin(frame * 0.6 + i * 0.25 + row * 0.5) * 0.15;
           const color = lerpColor(baseColor, [255, 255, 255], birthFlash + wave);
           buf += rgb(
@@ -220,7 +214,7 @@ export async function playLaunchScreen(): Promise<void> {
           const ch = line[i];
           if (ch === ' ') { buf += ' '; continue; }
           const wave = Math.sin(frame * 0.4 + i * 0.2 + row * 0.5) * 0.5 + 0.5;
-          const color = lerpColor(AMBER, CREAM, wave * 0.5);
+          const color = lerpColor(GOLD, CREAM, wave * 0.5);
           buf += rgb(color[0], color[1], color[2]) + ch;
         }
         buf += RESET;
@@ -242,7 +236,7 @@ export async function playLaunchScreen(): Promise<void> {
             buf += BOLD + rgb(255, 255, 255) + ch + RESET;
           } else {
             const gradient = i / line.length;
-            const color = lerpColor(FIRE, AMBER, gradient);
+            const color = lerpColor(GREEN, GOLD, gradient);
             const shimmer = Math.sin(frame * 0.5 + i * 0.12) * 0.12 + 0.88;
             buf += rgb(
               Math.min(255, Math.round(color[0] * shimmer)),
@@ -261,7 +255,7 @@ export async function playLaunchScreen(): Promise<void> {
         for (let i = 0; i < SUBTITLE.length; i++) {
           const charDelay = i / SUBTITLE.length;
           const charT = Math.max(0, Math.min(1, (subT - charDelay * 0.4) / 0.6));
-          const color = lerpColor(DEEP, WARM, charT);
+          const color = lerpColor(DEEP_GREEN, WARM_GOLD, charT);
           buf += rgb(color[0], color[1], color[2]) + SUBTITLE[i];
         }
         buf += RESET;
@@ -299,7 +293,7 @@ export async function playLaunchScreen(): Promise<void> {
           const ch = line[i];
           if (ch === ' ') { buf += ' '; continue; }
           const wave = Math.sin(frame * 0.3 + i * 0.15 + row * 0.4) * 0.3 + 0.7;
-          const color = lerpColor(AMBER, CREAM, wave * 0.4);
+          const color = lerpColor(GOLD, CREAM, wave * 0.4);
           buf += rgb(color[0], color[1], color[2]) + ch;
         }
         buf += RESET;
@@ -311,7 +305,7 @@ export async function playLaunchScreen(): Promise<void> {
         const line = TITLE[row];
         for (let i = 0; i < line.length; i++) {
           const gradient = i / line.length;
-          const color = lerpColor(FIRE, AMBER, gradient);
+          const color = lerpColor(GREEN, GOLD, gradient);
           buf += rgb(color[0], color[1], color[2]) + line[i];
         }
         buf += RESET;
@@ -319,12 +313,12 @@ export async function playLaunchScreen(): Promise<void> {
 
       // Subtitle
       buf += moveTo(titleTop + TITLE.length + 1, subtitleCx);
-      buf += rgb(WARM[0], WARM[1], WARM[2]) + SUBTITLE + RESET;
+      buf += rgb(WARM_GOLD[0], WARM_GOLD[1], WARM_GOLD[2]) + SUBTITLE + RESET;
 
       // Version fade in
       const versionCx = Math.floor((cols - version.length) / 2);
       const vT = Math.min(t * 2, 1);
-      const vColor = lerpColor(BLACK, [140, 100, 60], vT);
+      const vColor = lerpColor(BLACK, [45, 95, 60],vT);
       buf += moveTo(titleTop + TITLE.length + 3, versionCx);
       buf += DIM + rgb(vColor[0], vColor[1], vColor[2]) + version + RESET;
 
@@ -348,7 +342,7 @@ export async function playLaunchScreen(): Promise<void> {
         for (let i = 0; i < line.length; i++) {
           const ch = line[i];
           if (ch === ' ') { buf += ' '; continue; }
-          const color = lerpColor(BLACK, AMBER, fade);
+          const color = lerpColor(BLACK, GOLD, fade);
           buf += rgb(color[0], color[1], color[2]) + ch;
         }
         buf += RESET;
@@ -359,7 +353,7 @@ export async function playLaunchScreen(): Promise<void> {
         buf += moveTo(titleTop + row, titleCx);
         const line = TITLE[row];
         for (let i = 0; i < line.length; i++) {
-          const baseColor = lerpColor(FIRE, AMBER, i / line.length);
+          const baseColor = lerpColor(GREEN, GOLD, i / line.length);
           const color = lerpColor(BLACK, baseColor, fade);
           buf += rgb(color[0], color[1], color[2]) + line[i];
         }
@@ -367,11 +361,11 @@ export async function playLaunchScreen(): Promise<void> {
       }
 
       // Fading subtitle + version
-      const subColor = lerpColor(BLACK, WARM, fade);
+      const subColor = lerpColor(BLACK, WARM_GOLD, fade);
       buf += moveTo(titleTop + TITLE.length + 1, subtitleCx);
       buf += rgb(subColor[0], subColor[1], subColor[2]) + SUBTITLE + RESET;
 
-      const vColor = lerpColor(BLACK, [140, 100, 60], fade);
+      const vColor = lerpColor(BLACK, [45, 95, 60],fade);
       const versionCx = Math.floor((cols - version.length) / 2);
       buf += moveTo(titleTop + TITLE.length + 3, versionCx);
       buf += DIM + rgb(vColor[0], vColor[1], vColor[2]) + version + RESET;

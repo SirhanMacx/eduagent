@@ -199,6 +199,11 @@ export function getToolsForDefaultPreset(): string[] {
  */
 export function getAllBaseTools(): Tools {
   return [
+    // Claw-ED teaching tools (first for discoverability)
+    LessonTool, GameTool, UnitTool, IngestTool, TrainTool,
+    ExportTool, AssessmentTool, StandardsTool, PersonaTool,
+    DifferentiateTool, ReviewTool, SearchCurriculumTool,
+    MaterialsTool, StudentsTool,
     AgentTool,
     TaskOutputTool,
     BashTool,
@@ -249,11 +254,6 @@ export function getAllBaseTools(): Tools {
     ...(getPowerShellTool() ? [getPowerShellTool()] : []),
     ...(SnipTool ? [SnipTool] : []),
     ...(process.env.NODE_ENV === 'test' ? [TestingPermissionTool] : []),
-    // Claw-ED teaching tools
-    LessonTool, GameTool, UnitTool, IngestTool, TrainTool,
-    ExportTool, AssessmentTool, StandardsTool, PersonaTool,
-    DifferentiateTool, ReviewTool, SearchCurriculumTool,
-    MaterialsTool, StudentsTool,
     ListMcpResourcesTool,
     ReadMcpResourceTool,
     // Include ToolSearchTool when tool search might be enabled (optimistic check)

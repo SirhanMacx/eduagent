@@ -14,7 +14,7 @@ type Output = { result: unknown }
 
 export const IngestTool = buildTool({
   name: 'ingest_files',
-  searchHint: 'ingest curriculum files into knowledge base',
+  searchHint: 'ingest upload files curriculum documents materials',
   maxResultSizeChars: 100_000,
   async description() {
     return 'Ingest curriculum files into the Claw-ED knowledge base.'

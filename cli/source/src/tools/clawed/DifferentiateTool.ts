@@ -14,7 +14,7 @@ type Output = { result: unknown }
 
 export const DifferentiateTool = buildTool({
   name: 'differentiate_lesson',
-  searchHint: 'adapt lesson for different learner levels',
+  searchHint: 'differentiate adapt modify scaffold ELL gifted IEP tiered',
   maxResultSizeChars: 200_000,
   async description() {
     return 'Differentiate a lesson for various learner levels.'

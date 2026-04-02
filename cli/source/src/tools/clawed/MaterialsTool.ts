@@ -18,7 +18,7 @@ type Output = { result: unknown }
 
 export const MaterialsTool = buildTool({
   name: 'generate_materials',
-  searchHint: 'create handouts worksheets and supplemental materials',
+  searchHint: 'handout worksheet supplemental materials resource printable',
   maxResultSizeChars: 200_000,
   async description() {
     return 'Generate supplemental materials (handouts, worksheets, slides) from a lesson.'

@@ -200,10 +200,11 @@ export async function showSetupScreens(root: Root, permissionMode: PermissionMod
     }
   }
 
-  // Check for custom API key
+  // Check for custom API key — skip when using non-Anthropic provider
   // On homespace, ANTHROPIC_API_KEY is preserved in process.env for child
   // processes but ignored by Claw-ED itself (see auth.ts).
-  if (process.env.ANTHROPIC_API_KEY && !isRunningOnHomespace()) {
+  const { isClawedBridgeProvider: isBridge } = await import('./utils/model/providers.js');
+  if (!isBridge() && process.env.ANTHROPIC_API_KEY && !isRunningOnHomespace()) {
     const customApiKeyTruncated = normalizeApiKeyForConfig(process.env.ANTHROPIC_API_KEY);
     const keyStatus = getCustomApiKeyStatus(customApiKeyTruncated);
     if (keyStatus === 'new') {

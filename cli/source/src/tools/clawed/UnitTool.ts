@@ -20,7 +20,7 @@ type Output = { result: unknown }
 
 export const UnitTool = buildTool({
   name: 'generate_unit',
-  searchHint: 'create multi-week unit plan',
+  searchHint: 'unit plan multi-week scope sequence curriculum map',
   maxResultSizeChars: 300_000,
   async description() {
     return 'Generate a multi-week unit plan using the Claw-ED engine.'

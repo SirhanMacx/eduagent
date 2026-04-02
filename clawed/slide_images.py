@@ -858,7 +858,12 @@ async def _fetch_web_scrape(
     No API key needed. Uses the DDG image search endpoint which returns
     direct image URLs. This is the most reliable source for specific
     educational images (diagrams, maps, historical figures, etc.).
+
+    Includes retry logic for VQD token acquisition (DDG can be flaky)
+    and graceful fallback when DDG is unavailable.
     """
+    import asyncio
+
     import httpx
 
     cached = _check_cache("web", query, cache_dir)
@@ -867,7 +872,18 @@ async def _fetch_web_scrape(
 
     # DDG image search endpoint
     search_url = "https://duckduckgo.com/"
-    params = {"q": query, "iax": "images", "ia": "images"}  # noqa: F841
+
+    # VQD token patterns — DDG changes these periodically
+    vqd_patterns = [
+        r"vqd=([^&'\"]+)",
+        r"vqd['\"]:\s*['\"]([^'\"]+)",
+        r"vqd4=([^&'\"]+)",
+        r"vqd=\"([^\"]+)\"",
+    ]
+
+    # Retry settings for VQD acquisition
+    max_vqd_attempts = 3
+    backoff_seconds = [0.5, 1.5, 3.0]
 
     try:
         async with httpx.AsyncClient(
@@ -881,36 +897,64 @@ async def _fetch_web_scrape(
                 )
             },
         ) as client:
-            # First get a vqd token from DDG (with a tighter timeout)
-            try:
-                resp = await client.get(
-                    search_url, params={"q": query}, timeout=5.0,
-                )
-            except httpx.TimeoutException:
-                logger.info("DDG initial request timed out for: %s", query)
-                return None
-
-            # Try multiple VQD token patterns (DDG changes format)
+            # Acquire VQD token with retry logic
             vqd: str | None = None
-            for pattern in [
-                r"vqd=([^&'\"]+)",
-                r"vqd['\"]:\s*['\"]([^'\"]+)",
-                r"vqd4=([^&'\"]+)",
-            ]:
-                vqd_match = re.search(pattern, resp.text)
-                if vqd_match:
-                    vqd = vqd_match.group(1)
-                    break
+            last_error: Exception | None = None
+
+            for attempt in range(max_vqd_attempts):
+                try:
+                    resp = await client.get(
+                        search_url, params={"q": query}, timeout=5.0,
+                    )
+                    # Try multiple VQD token patterns (DDG changes format)
+                    for pattern in vqd_patterns:
+                        vqd_match = re.search(pattern, resp.text)
+                        if vqd_match:
+                            vqd = vqd_match.group(1)
+                            break
+                    if vqd:
+                        break
+                except httpx.TimeoutException as e:
+                    last_error = e
+                    logger.debug(
+                        "DDG VQD request timed out (attempt %d/%d) for: %s",
+                        attempt + 1, max_vqd_attempts, query,
+                    )
+                except httpx.HTTPStatusError as e:
+                    last_error = e
+                    logger.debug(
+                        "DDG returned HTTP %d (attempt %d/%d) for: %s",
+                        e.response.status_code, attempt + 1, max_vqd_attempts, query,
+                    )
+                except httpx.HTTPError as e:
+                    last_error = e
+                    logger.debug(
+                        "DDG request failed (attempt %d/%d) for '%s': %s",
+                        attempt + 1, max_vqd_attempts, query, e,
+                    )
+
+                # Backoff before retry (skip on last attempt)
+                if attempt < max_vqd_attempts - 1:
+                    backoff = backoff_seconds[min(attempt, len(backoff_seconds) - 1)]
+                    await asyncio.sleep(backoff)
 
             if not vqd:
-                logger.info(
-                    "Could not extract DDG vqd token for '%s'; "
-                    "web image search unavailable for this query",
-                    query,
-                )
+                if last_error:
+                    logger.warning(
+                        "DDG unavailable for '%s' after %d attempts (%s); "
+                        "falling back to next image source",
+                        query, max_vqd_attempts, type(last_error).__name__,
+                    )
+                else:
+                    logger.warning(
+                        "Could not extract DDG VQD token for '%s' after %d attempts; "
+                        "DDG may have changed their page format — "
+                        "falling back to next image source",
+                        query, max_vqd_attempts,
+                    )
                 return None
 
-            # Then fetch image results
+            # Fetch image results using the VQD token
             img_url = "https://duckduckgo.com/i.js"
             img_params = {
                 "q": query,
@@ -920,11 +964,31 @@ async def _fetch_web_scrape(
                 "f": ",,,,,",
                 "p": "1",
             }
-            img_resp = await client.get(img_url, params=img_params)
-            if img_resp.status_code != 200:
+
+            try:
+                img_resp = await client.get(img_url, params=img_params)
+            except httpx.HTTPError as e:
+                logger.warning(
+                    "DDG image results request failed for '%s': %s; "
+                    "falling back to next image source",
+                    query, e,
+                )
                 return None
 
-            data = img_resp.json()
+            if img_resp.status_code != 200:
+                logger.warning(
+                    "DDG image results returned HTTP %d for '%s'; "
+                    "falling back to next image source",
+                    img_resp.status_code, query,
+                )
+                return None
+
+            try:
+                data = img_resp.json()
+            except (ValueError, KeyError) as e:
+                logger.warning("DDG returned invalid JSON for '%s': %s", query, e)
+                return None
+
             results = data.get("results", [])
             if not results:
                 logger.debug("No DDG image results for: %s", query)
@@ -942,8 +1006,12 @@ async def _fetch_web_scrape(
                 return None
 
             # Download the image
-            dl_resp = await client.get(image_url, timeout=_FETCH_TIMEOUT)
-            dl_resp.raise_for_status()
+            try:
+                dl_resp = await client.get(image_url, timeout=_FETCH_TIMEOUT)
+                dl_resp.raise_for_status()
+            except httpx.HTTPError as e:
+                logger.debug("Failed to download DDG image from %s: %s", image_url, e)
+                return None
 
             if len(dl_resp.content) < 1000:
                 return None  # Too small, probably an error page
@@ -953,7 +1021,11 @@ async def _fetch_web_scrape(
             return path
 
     except Exception as e:
-        logger.info("Web image scrape failed for '%s': %s", query, e)
+        logger.warning(
+            "DDG web image scrape failed for '%s': %s; "
+            "falling back to next image source",
+            query, e,
+        )
         return None
 
 

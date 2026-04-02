@@ -1,8 +1,12 @@
+import { readFileSync, writeFileSync, mkdirSync } from 'fs';
+import { join } from 'path';
+import { homedir } from 'os';
 import React, { useEffect, useState } from 'react';
 import { logEvent } from 'src/services/analytics/index.js';
 import { useExitOnCtrlCDWithKeybindings } from '../hooks/useExitOnCtrlCDWithKeybindings.js';
-import { Box, Text, useTheme } from '../ink.js';
+import { Box, Text } from '../ink.js';
 import { isAnthropicAuthEnabled } from '../utils/auth.js';
+import { clearClawedProviderCache } from '../utils/model/providers.js';
 import { ConsoleOAuthFlow } from './ConsoleOAuthFlow.js';
 import { Select } from './CustomSelect/select.js';
 
@@ -30,7 +34,7 @@ function detectProviders(): DetectedProvider[] {
       name: 'Anthropic (OAuth)',
       type: 'anthropic-oauth',
       ready: true,
-      detail: 'Claude Code credentials detected',
+      detail: 'Claw-ED credentials detected',
     });
   }
 
@@ -87,11 +91,53 @@ function detectProviders(): DetectedProvider[] {
   return found;
 }
 
+/**
+ * Map Onboarding provider type strings to the provider field in ~/.eduagent/config.json.
+ * Returns null for Anthropic types (those use Anthropic's own auth flow).
+ */
+function providerTypeToConfig(type: string): string | null {
+  const map: Record<string, string> = {
+    'openai': 'openai',
+    'google': 'google',
+    'ollama-local': 'ollama',
+    'ollama-cloud': 'ollama',
+  };
+  return map[type] || null;
+}
+
+/**
+ * Write the selected provider to ~/.eduagent/config.json.
+ * Merges with existing config (teacher_profile, export_format, etc.).
+ */
+function writeProviderToConfig(providerType: string): void {
+  const configProvider = providerTypeToConfig(providerType);
+  if (!configProvider) return; // Anthropic — don't touch the config
+
+  const configDir = process.env.EDUAGENT_DATA_DIR || join(homedir(), '.eduagent');
+  const configPath = join(configDir, 'config.json');
+
+  let existing: Record<string, unknown> = {};
+  try {
+    existing = JSON.parse(readFileSync(configPath, 'utf-8'));
+  } catch {
+    // No existing config — create fresh
+  }
+
+  existing.provider = configProvider;
+
+  try {
+    mkdirSync(configDir, { recursive: true });
+    writeFileSync(configPath, JSON.stringify(existing, null, 2), 'utf-8');
+    clearClawedProviderCache(); // invalidate the cached provider
+  } catch {
+    // Best-effort — if we can't write, the Python side will use defaults
+  }
+}
+
 export function Onboarding({ onDone }: Props): React.ReactNode {
   const [step, setStep] = useState<'detect' | 'confirm' | 'select' | 'auth' | 'done'>('detect');
   const [detected, setDetected] = useState<DetectedProvider[]>([]);
   const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
-  const [_theme, _setTheme] = useTheme();
   const exitState = useExitOnCtrlCDWithKeybindings();
 
   useEffect(() => {
@@ -111,13 +157,16 @@ export function Onboarding({ onDone }: Props): React.ReactNode {
     }
   }, [step]);
 
-  // Auto-advance when done
+  // Auto-advance when done — write provider config first
   useEffect(() => {
     if (step === 'done') {
+      if (selectedProvider) {
+        writeProviderToConfig(selectedProvider);
+      }
       const timer = setTimeout(onDone, 1500);
       return () => clearTimeout(timer);
     }
-  }, [step, onDone]);
+  }, [step, onDone, selectedProvider]);
 
   // Step 1: Detecting...
   if (step === 'detect') {
@@ -260,15 +309,9 @@ export function Onboarding({ onDone }: Props): React.ReactNode {
 
     return (
       <Box flexDirection="column" paddingX={1} gap={1}>
-        <Text color="green">{'\u2713'} Connected to {name}</Text>
-        <Text>
-          Talk naturally to generate lessons:{'\n'}
-          <Text bold>{'\u201C'}Make me a lesson on the causes of WWI for 8th grade{'\u201D'}</Text>
-        </Text>
-        <Text dimColor>
-          Tip: Say {'\u201C'}set up Telegram{'\u201D'} to connect your phone{'\n'}
-          Tip: Say {'\u201C'}ingest my files at ~/Documents{'\u201D'} to learn your voice
-        </Text>
+        <Text color="green">{'\u2713'} Connected to {name}!</Text>
+        <Text bold>Starting your first session...</Text>
+        <Text dimColor>Your AI co-teacher is ready to help you get set up.</Text>
       </Box>
     );
   }

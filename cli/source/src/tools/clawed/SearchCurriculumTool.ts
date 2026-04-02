@@ -14,7 +14,7 @@ type Output = { result: unknown }
 
 export const SearchCurriculumTool = buildTool({
   name: 'search_curriculum',
-  searchHint: 'search ingested curriculum knowledge base',
+  searchHint: 'search find curriculum knowledge base look up topic',
   maxResultSizeChars: 100_000,
   async description() {
     return 'Search the ingested curriculum knowledge base.'
