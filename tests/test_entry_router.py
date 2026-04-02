@@ -124,7 +124,7 @@ def test_main_no_node_falls_back_to_python():
 
 
 def test_main_node_available_with_cli_js():
-    """When Node.js and cli.js exist, runs via subprocess."""
+    """When Node.js and cli.js exist, runs via subprocess with model injection."""
     with patch("sys.argv", ["clawed", "lesson", "test"]):
         with patch("shutil.which", return_value="/usr/bin/node"):
             with patch(
@@ -136,6 +136,9 @@ def test_main_node_available_with_cli_js():
                     with pytest.raises(SystemExit) as exc_info:
                         main()
                     assert exc_info.value.code == 0
-                    mock_run.assert_called_once_with(
-                        ["/usr/bin/node", "/fake/cli.js", "lesson", "test"]
-                    )
+                    # Entry router injects --model from eduagent config
+                    call_args = mock_run.call_args[0][0]
+                    assert call_args[0] == "/usr/bin/node"
+                    assert call_args[1] == "/fake/cli.js"
+                    assert "lesson" in call_args
+                    assert "test" in call_args

@@ -206,6 +206,32 @@ def _inject_config_env() -> None:
             os.environ.setdefault("OLLAMA_BASE_URL", base)
 
 
+def _get_configured_model() -> str | None:
+    """Read the teacher's model from ~/.eduagent/config.json (stdlib only)."""
+    import json
+
+    config_path = Path.home() / ".eduagent" / "config.json"
+    if not config_path.exists():
+        return None
+    try:
+        config = json.loads(config_path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return None
+
+    provider = config.get("provider", "anthropic")
+    # Each provider has its own model field
+    model_fields = {
+        "anthropic": "anthropic_model",
+        "openai": "openai_model",
+        "google": "google_model",
+        "ollama": "ollama_model",
+    }
+    field = model_fields.get(provider)
+    if field:
+        return config.get(field)
+    return None
+
+
 def _handle_daemon(args: list[str]) -> None:
     """Route daemon commands to the Node.js daemon process."""
     node = shutil.which("node")
@@ -273,6 +299,17 @@ def main() -> None:
             _inject_config_env()
         except Exception:
             pass  # Never block startup
+
+        # Inject --model from eduagent config so the Node CLI uses the
+        # teacher's chosen model instead of defaulting to haiku
+        if "--model" not in args:
+            try:
+                model = _get_configured_model()
+                if model:
+                    args = ["--model", model] + args
+            except Exception:
+                pass
+
         result = subprocess.run([node, cli_js] + args)
         sys.exit(result.returncode)
     else:
