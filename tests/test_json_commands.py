@@ -5,18 +5,18 @@ import sys
 
 import pytest
 
-# Commands that work without an API key (fast, always testable)
+# Commands that work fast without API key
 FAST_COMMANDS = [
     (["ingest", "/tmp/nonexistent", "--json"], "gen.ingest"),
-    (["train", "--benchmark", "-n", "0", "--json"], "train"),
-    (["config", "show", "--json"], "config.show"),
 ]
 
-# Commands that need an API key and may hang in CI (skip in CI)
+# Commands that may hang (API calls, slow imports, or timeout)
 GENERATION_COMMANDS = [
     (["unit", "Test", "-g", "8", "-s", "US History", "--json"], "gen.unit"),
     (["materials", "--lesson-file", "/tmp/nonexistent.json", "--json"], "gen.materials"),
     (["game", "create", "Test", "--json"], "game.create"),
+    (["train", "--benchmark", "-n", "0", "--json"], "train"),
+    (["config", "show", "--json"], "config.show"),
 ]
 
 
