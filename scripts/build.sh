@@ -81,7 +81,7 @@ cd "$REPO_ROOT"
 # Clean old builds
 rm -rf dist/ build/ *.egg-info
 
-python3 -m build 2>&1 | tail -5
+python3 -m build --wheel 2>&1 | tail -5
 
 if ls dist/*.whl 1>/dev/null 2>&1; then
     WHEEL=$(ls dist/*.whl | head -1)
