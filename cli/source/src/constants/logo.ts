@@ -6,29 +6,26 @@
  * box-drawing characters that might break on Windows.
  */
 
-// Full logo (12 lines) — graduation cap, apple, claw marks
+// Full logo — an apple with lobster claws (the Claw-ED creature)
 export const LOGO_FULL = [
-  '       ._________.',
-  '       |_________|',
-  '            ||',
-  '           /  \\',
-  '        .-\'    \'-.',
-  '      .\'          \'.',
-  '     /    ///        \\',
-  '    |     ///         |',
-  '    |    ///          |',
-  '     \\               /',
-  '      \'.           .\'',
-  '        \'-._____.-\'',
+  '                  _',
+  '                 ( )',
+  '            .---\'   \'---.',
+  '   __      /   ///        \\      __',
+  '  /  \\    |    ///         |    /  \\',
+  ' | .. |   |    ///         |   | .. |',
+  ' | \\/ |   |               |   | \\/ |',
+  '  \\__/     \\             /     \\__/',
+  '             \'-.       .-\'',
+  '                \'-----\'',
 ]
 
-// Compact logo (5 lines) — for status bar or tight spaces
+// Compact logo (4 lines) — for status bar or tight spaces
 export const LOGO_COMPACT = [
-  '      ||',
-  '     /  \\',
-  '    | // |',
-  '     \\  /',
-  '      \'\'',
+  '  __   .---.   __',
+  ' /..\\  | / |  /../',
+  ' \\\\/ | |   | | \\\\/',
+  '  -- \'-----\'  --',
 ]
 
 // Brand text
