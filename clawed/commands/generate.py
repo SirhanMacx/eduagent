@@ -184,8 +184,7 @@ def ingest(
         try:
             new_persona = _run_async(extract_persona(documents))
         except (RuntimeError, ValueError) as e:
-            console.print(f"[red]Generation failed:[/red] {e}")
-            console.print("[dim]Run with --debug for full details[/dim]")
+            console.print(f"[red]{friendly_error(e)}[/red]")
             raise typer.Exit(1)
         progress.update(task, description="Persona extracted!")
 
@@ -581,8 +580,7 @@ def lesson(
                     )
                 )
         except (RuntimeError, ValueError) as e:
-            console.print(f"[red]Generation failed:[/red] {e}")
-            console.print("[dim]Run with --debug for full details[/dim]")
+            console.print(f"[red]{friendly_error(e)}[/red]")
             raise typer.Exit(1)
         progress.update(task, description="Lesson plan complete!")
 
@@ -743,6 +741,8 @@ def differentiate(
     ),
 ):
     """Generate IEP modifications, 504 accommodations, and tiered assignments."""
+    check_api_key_or_exit()
+
     from clawed.differentiation import (
         generate_504_accommodations,
         generate_iep_lesson_modifications,
@@ -778,8 +778,7 @@ def differentiate(
                     generate_iep_lesson_modifications(daily, profiles)
                 )
             except (RuntimeError, ValueError) as e:
-                console.print(f"[red]Generation failed:[/red] {e}")
-                console.print("[dim]Run with --debug for full details[/dim]")
+                console.print(f"[red]{friendly_error(e)}[/red]")
                 raise typer.Exit(1)
             progress.update(
                 task,
@@ -825,8 +824,7 @@ def differentiate(
                     generate_504_accommodations(daily, acc_list)
                 )
             except (RuntimeError, ValueError) as e:
-                console.print(f"[red]Generation failed:[/red] {e}")
-                console.print("[dim]Run with --debug for full details[/dim]")
+                console.print(f"[red]{friendly_error(e)}[/red]")
                 raise typer.Exit(1)
             progress.update(
                 task, description="504 accommodations complete!"
@@ -861,8 +859,7 @@ def differentiate(
                     )
                 )
             except (RuntimeError, ValueError) as e:
-                console.print(f"[red]Generation failed:[/red] {e}")
-                console.print("[dim]Run with --debug for full details[/dim]")
+                console.print(f"[red]{friendly_error(e)}[/red]")
                 raise typer.Exit(1)
             progress.update(
                 task,
@@ -918,6 +915,8 @@ def sub_packet(
     ),
 ) -> None:
     """Generate a complete substitute teacher packet."""
+    check_api_key_or_exit()
+
     from datetime import datetime, timedelta
 
     from clawed.llm import LLMClient
@@ -965,8 +964,7 @@ def sub_packet(
         try:
             packet = _run_async(generate_sub_packet(request, llm))
         except (RuntimeError, ValueError) as e:
-            console.print(f"[red]Generation failed:[/red] {e}")
-            console.print("[dim]Run with --debug for full details[/dim]")
+            console.print(f"[red]{friendly_error(e)}[/red]")
             raise typer.Exit(1)
         progress.update(task, description="Sub packet complete!")
 
@@ -1018,6 +1016,8 @@ def parent_note(
     ),
 ) -> None:
     """Generate a parent progress update in the teacher's voice."""
+    check_api_key_or_exit()
+
     from clawed.parent_comm import (
         format_progress_update_text,
         generate_progress_update,
@@ -1059,8 +1059,7 @@ def parent_note(
                 )
             )
         except (RuntimeError, ValueError) as e:
-            console.print(f"[red]Generation failed:[/red] {e}")
-            console.print("[dim]Run with --debug for full details[/dim]")
+            console.print(f"[red]{friendly_error(e)}[/red]")
             raise typer.Exit(1)
         progress.update(task, description="Progress update complete!")
 
@@ -1108,6 +1107,8 @@ def gap_analyze(
         clawed gap-analyze --subject "Social Studies" --grade 8 \\
             --standards "8.1.a,8.2.b,8.3.c"
     """
+    check_api_key_or_exit()
+
     from datetime import datetime
 
     from clawed.curriculum_map import CurriculumMapper
@@ -1184,8 +1185,7 @@ def gap_analyze(
                 )
             )
         except (RuntimeError, ValueError) as e:
-            console.print(f"[red]Generation failed:[/red] {e}")
-            console.print("[dim]Run with --debug for full details[/dim]")
+            console.print(f"[red]{friendly_error(e)}[/red]")
             raise typer.Exit(1)
         progress.update(task, description="Analysis complete!")
 
