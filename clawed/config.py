@@ -116,7 +116,7 @@ def get_api_key(provider: str) -> Optional[str]:
     env_var = env_map.get(provider)
     if env_var:
         val = os.environ.get(env_var)
-        if val:
+        if val and val not in ("ollama-local", "ollama", "local"):
             return val
 
     # Claude Code credential store — auto-refreshing OAuth tokens
@@ -190,6 +190,11 @@ def mask_api_key(key: Optional[str]) -> str:
     return key[:3] + "..." + key[-6:]
 
 
+def is_ollama_cloud(base_url: str) -> bool:
+    """Check if an Ollama URL is a cloud endpoint (not local)."""
+    return "ollama.com" in base_url.lower() or "api.ollama.com" in base_url.lower()
+
+
 def has_config() -> bool:
     """Check if any configuration has been saved (first-run detection)."""
     return AppConfig.config_path().exists()
@@ -208,16 +213,18 @@ async def test_llm_connection(config: Optional[AppConfig] = None) -> dict:
     if provider == "ollama":
         import httpx
         base = cfg.ollama_base_url.rstrip("/")
-        is_cloud = "ollama.com" in base
+        is_cloud = is_ollama_cloud(base)
         api_key = cfg.ollama_api_key or get_api_key("ollama")
         try:
             if is_cloud:
                 # Cloud: test with a minimal chat completion
                 headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
-                v1_prefix = "" if base.endswith("/v1") else "/v1"
+                cloud_base = base.rstrip("/")
+                if not cloud_base.endswith("/v1"):
+                    cloud_base = f"{cloud_base}/v1"
                 async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
                     resp = await client.post(
-                        f"{base}{v1_prefix}/chat/completions",
+                        f"{cloud_base}/chat/completions",
                         headers=headers,
                         json={
                             "model": cfg.ollama_model,
@@ -226,7 +233,9 @@ async def test_llm_connection(config: Optional[AppConfig] = None) -> dict:
                         },
                     )
                     if resp.status_code == 401:
-                        return _result(False, cfg.ollama_model, "API key invalid", is_err=True)
+                        return _result(False, cfg.ollama_model,
+                            "API key missing or invalid for Ollama Cloud. "
+                            "Run: clawed config set-key ollama YOUR_KEY", is_err=True)
                     resp.raise_for_status()
                     return _result(True, cfg.ollama_model, f"{cfg.ollama_model} is ready")
             else:

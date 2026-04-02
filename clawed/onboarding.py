@@ -639,8 +639,8 @@ def quick_model_setup() -> str:
         config = AppConfig(provider=LLMProvider.OLLAMA)
         config.ollama_base_url = "https://ollama.com"
         config.ollama_model = "minimax-m2.7:cloud"
-        config.ollama_api_key = key
         set_api_key("ollama", key)
+        config.ollama_api_key = ""  # Don't leak to config.json
         console.print(
             f"  [green]\u2713 Key saved ({key[:8]}...)[/green]"
         )
@@ -859,7 +859,8 @@ def run_setup_wizard(reset: bool = False) -> AppConfig:
     if ollama_model:
         config_kwargs["ollama_model"] = ollama_model
     if api_key and provider == LLMProvider.OLLAMA:
-        config_kwargs["ollama_api_key"] = api_key
+        set_api_key("ollama", api_key)
+        # Don't put the key in config_kwargs — it would leak to config.json
 
     config = AppConfig(**config_kwargs)
     config.save()

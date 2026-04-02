@@ -571,8 +571,10 @@ class LLMClient:
             headers["Authorization"] = f"Bearer {api_key}"
 
         # Ollama Cloud uses OpenAI-compatible API; local uses /api/generate
+        from clawed.config import is_ollama_cloud
+
         base = self.config.ollama_base_url.rstrip("/")
-        is_cloud = "api.ollama.com" in base or "ollama.com" in base
+        is_cloud = is_ollama_cloud(base)
         model = self.config.ollama_model
 
         try:
@@ -583,10 +585,12 @@ class LLMClient:
                     messages.append({"role": "system", "content": system})
                 messages.append({"role": "user", "content": prompt})
                 async with httpx.AsyncClient(timeout=300.0, follow_redirects=True) as client:
-                    # Append /v1 only if base doesn't already end with it
-                    v1_prefix = "" if base.endswith("/v1") else "/v1"
+                    # Normalize: strip trailing slashes, append /v1 exactly once
+                    cloud_base = base.rstrip("/")
+                    if not cloud_base.endswith("/v1"):
+                        cloud_base = f"{cloud_base}/v1"
                     resp = await client.post(
-                        f"{base}{v1_prefix}/chat/completions",
+                        f"{cloud_base}/chat/completions",
                         headers=headers,
                         json={
                             "model": model,

@@ -100,6 +100,112 @@ def _check_telegram_token() -> bool:
         return False
 
 
+def _resolve_key_for_provider(provider: str, config: dict) -> str | None:
+    """Find the best API key for a provider without importing heavy modules."""
+    import json
+
+    # 1. Already in env? User knows what they're doing — skip.
+    env_map = {
+        "anthropic": "ANTHROPIC_API_KEY",
+        "openai": "OPENAI_API_KEY",
+        "google": "GOOGLE_API_KEY",
+        "ollama": "OLLAMA_API_KEY",
+    }
+    env_var = env_map.get(provider)
+    if env_var and os.environ.get(env_var):
+        return os.environ[env_var]
+
+    # 2. Anthropic: try Claude Code OAuth credentials
+    if provider == "anthropic":
+        for cred_path in [
+            Path.home() / ".claude" / ".credentials.json",
+            Path.home() / ".claude" / "credentials.json",
+        ]:
+            if cred_path.exists():
+                try:
+                    creds = json.loads(cred_path.read_text())
+                    token = creds.get("claudeAiOauth", {}).get("accessToken")
+                    if token:
+                        return token
+                except (json.JSONDecodeError, OSError):
+                    pass
+
+    # 3. Keyring
+    try:
+        import keyring
+        val = keyring.get_password("clawed", f"{provider}_api_key")
+        if val:
+            return val
+    except Exception:
+        pass
+
+    # 4. secrets.json
+    secrets_path = Path.home() / ".eduagent" / "secrets.json"
+    if secrets_path.exists():
+        try:
+            secrets = json.loads(secrets_path.read_text())
+            val = secrets.get(f"{provider}_api_key")
+            if val:
+                return val
+        except (json.JSONDecodeError, OSError):
+            pass
+
+    # 5. Inline in config (e.g. ollama_api_key field)
+    key_field = f"{provider}_api_key"
+    val = config.get(key_field)
+    if val and val != "ollama-local":  # Skip sentinel value
+        return val
+
+    return None
+
+
+def _inject_config_env() -> None:
+    """Inject teacher's config into env vars so the Node CLI can authenticate.
+
+    Reads ~/.eduagent/config.json and resolves the API key for the active
+    provider, then sets the appropriate env var (ANTHROPIC_API_KEY, etc.)
+    so the TS CLI picks it up instead of falling back to settings.json.
+
+    Never crashes — a failure here just means the TS CLI tries its own
+    auth flow (which may or may not work).
+    """
+    import json
+
+    config_path = Path.home() / ".eduagent" / "config.json"
+    if not config_path.exists():
+        return  # First run — let onboarding handle it
+
+    try:
+        config = json.loads(config_path.read_text())
+    except (json.JSONDecodeError, OSError):
+        return
+
+    provider = config.get("provider", "anthropic")
+    os.environ.setdefault("CLAWED_PROVIDER", provider)
+
+    # Resolve API key for the active provider
+    key = _resolve_key_for_provider(provider, config)
+    if key:
+        env_var_map = {
+            "anthropic": "ANTHROPIC_API_KEY",
+            "openai": "OPENAI_API_KEY",
+            "google": "GOOGLE_API_KEY",
+            "ollama": "OLLAMA_API_KEY",
+        }
+        env_var = env_var_map.get(provider)
+        if env_var:
+            os.environ.setdefault(env_var, key)
+        # Google needs both GOOGLE_API_KEY and GEMINI_API_KEY
+        if provider == "google":
+            os.environ.setdefault("GEMINI_API_KEY", key)
+
+    # Ollama base URL so the TS bridge knows where to connect
+    if provider == "ollama":
+        base = config.get("ollama_base_url", "")
+        if base:
+            os.environ.setdefault("OLLAMA_BASE_URL", base)
+
+
 def _handle_daemon(args: list[str]) -> None:
     """Route daemon commands to the Node.js daemon process."""
     node = shutil.which("node")
@@ -163,6 +269,10 @@ def main() -> None:
 
     if node and cli_js:
         os.environ['CLAWED_MODE'] = '1'
+        try:
+            _inject_config_env()
+        except Exception:
+            pass  # Never block startup
         result = subprocess.run([node, cli_js] + args)
         sys.exit(result.returncode)
     else:

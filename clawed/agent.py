@@ -284,11 +284,11 @@ async def _call_with_ollama_tools(
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
 
-    # Build the URL — ensure /v1 prefix exactly once
-    if base_url.endswith("/v1"):
-        url = f"{base_url}/chat/completions"
-    else:
-        url = f"{base_url}/v1/chat/completions"
+    # Build the URL — normalize trailing slashes, append /v1 exactly once
+    base_url = base_url.rstrip("/")
+    if not base_url.endswith("/v1"):
+        base_url = f"{base_url}/v1"
+    url = f"{base_url}/chat/completions"
 
     oai_messages: list[dict[str, Any]] = [{"role": "system", "content": system}]
     for m in messages:

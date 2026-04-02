@@ -62,7 +62,8 @@ class SwitchModelTool:
                     if config.ollama_api_key:
                         headers["Authorization"] = f"Bearer {config.ollama_api_key}"
                     # Try cloud endpoint first
-                    if "ollama.com" in base:
+                    from clawed.config import is_ollama_cloud
+                    if is_ollama_cloud(base):
                         resp = httpx.get(
                             f"{base}/api/tags",
                             headers=headers,

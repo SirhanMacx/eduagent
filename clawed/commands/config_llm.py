@@ -62,26 +62,55 @@ def config_set_model(
     import httpx as _httpx
 
     if llm_provider == LLMProvider.OLLAMA:
-        try:
-            resp = _httpx.get(
-                f"{cfg.ollama_base_url.rstrip('/')}/api/version", timeout=5,
-            )
-            version = resp.json().get("version", "unknown")
-            console.print(f"[green]Connected to Ollama v{version}[/green]")
-        except Exception:
-            console.print(
-                "[yellow]Warning: Can't reach Ollama at "
-                f"{cfg.ollama_base_url}. Is it running?[/yellow]"
-            )
+        from clawed.config import get_api_key, is_ollama_cloud, set_api_key
+
+        base = cfg.ollama_base_url.rstrip("/")
+        if is_ollama_cloud(base):
+            # Cloud: validate credentials instead of pinging /api/version
+            api_key = get_api_key("ollama") or cfg.ollama_api_key
+            if not api_key:
+                from rich.prompt import Prompt
+
+                key = Prompt.ask(
+                    "[yellow]No API key found for Ollama Cloud.[/yellow]\n"
+                    "  Enter your Ollama Cloud API key (from https://ollama.com > Settings > API Keys)"
+                )
+                if key and key.strip():
+                    set_api_key("ollama", key.strip())
+                    console.print("[green]API key saved.[/green]")
+                else:
+                    console.print(
+                        "[yellow]Warning: No API key for Ollama Cloud. "
+                        "Run: clawed config set-key ollama YOUR_KEY[/yellow]"
+                    )
+            else:
+                console.print(f"[green]Ollama Cloud configured at {base}[/green]")
+        else:
+            # Local: ping /api/version
+            try:
+                resp = _httpx.get(f"{base}/api/version", timeout=5)
+                version = resp.json().get("version", "unknown")
+                console.print(f"[green]Connected to Ollama v{version}[/green]")
+            except Exception:
+                console.print(
+                    "[yellow]Warning: Can't reach Ollama at "
+                    f"{cfg.ollama_base_url}. Is it running?[/yellow]"
+                )
     elif llm_provider == LLMProvider.ANTHROPIC:
-        import os as _os
-        key = _os.environ.get("ANTHROPIC_API_KEY", "")
-        if key and key.startswith("sk-"):
-            console.print("[green]API key format looks valid.[/green]")
-        elif not key:
+        from clawed.config import get_api_key
+
+        key = get_api_key("anthropic")
+        if key:
+            if key.startswith("sk-ant-oat"):
+                console.print("[green]Claude Code OAuth token detected.[/green]")
+            elif key.startswith("sk-"):
+                console.print("[green]API key format looks valid.[/green]")
+            else:
+                console.print("[green]Credentials found.[/green]")
+        else:
             console.print(
-                "[yellow]Warning: ANTHROPIC_API_KEY not set. "
-                "Export it before generating.[/yellow]"
+                "[yellow]Warning: No Anthropic credentials found. "
+                "Set ANTHROPIC_API_KEY or log in to Claude Code.[/yellow]"
             )
     elif llm_provider == LLMProvider.OPENAI:
         import os as _os
