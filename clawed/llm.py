@@ -456,6 +456,8 @@ class LLMClient:
     async def _anthropic(
         self, prompt: str, system: str, temperature: float, max_tokens: int
     ) -> str:
+        import anthropic
+
         from clawed.config import get_api_key
 
         api_key = get_api_key("anthropic")
@@ -464,36 +466,50 @@ class LLMClient:
                 "Anthropic API key not found. Set ANTHROPIC_API_KEY, store via "
                 "keyring, or run: clawed config set-model ollama"
             )
+
+        # Use the official SDK — handles OAuth (auth_token) and API keys properly
+        is_oauth = api_key.startswith("sk-ant-") and not api_key.startswith("sk-ant-api")
+        if is_oauth:
+            client = anthropic.Anthropic(
+                auth_token=api_key,
+                default_headers={
+                    "anthropic-beta": "oauth-2025-04-20",
+                    "x-app": "cli",
+                },
+                max_retries=3,
+            )
+        else:
+            client = anthropic.Anthropic(
+                api_key=api_key,
+                max_retries=3,
+            )
+
         try:
-            async with httpx.AsyncClient(timeout=120.0) as client:
-                body: dict[str, Any] = {
-                    "model": self.config.anthropic_model,
-                    "max_tokens": max_tokens,
-                    "temperature": temperature,
-                    "messages": [{"role": "user", "content": prompt}],
-                }
-                if system:
-                    body["system"] = system
-                from clawed.agent import _anthropic_headers
-                resp = await client.post(
-                    "https://api.anthropic.com/v1/messages",
-                    headers=_anthropic_headers(api_key),
-                    json=body,
-                )
-                resp.raise_for_status()
-                data = resp.json()
-                return data["content"][0]["text"]
-        except httpx.ConnectError:
+            kwargs: dict[str, Any] = {
+                "model": self.config.anthropic_model,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+                "messages": [{"role": "user", "content": prompt}],
+            }
+            if system:
+                kwargs["system"] = system
+
+            msg = client.messages.create(**kwargs)
+            return msg.content[0].text
+
+        except anthropic.AuthenticationError:
+            raise EnvironmentError(
+                "Invalid API key or OAuth token. Check with: clawed debug"
+            )
+        except anthropic.RateLimitError:
+            raise RuntimeError(
+                "The AI service is busy right now. Wait a minute and try again."
+            )
+        except anthropic.APIConnectionError:
             raise ConnectionError(
                 "Could not connect to the Anthropic API.\n"
                 "Check your internet connection and try again."
             )
-        except httpx.HTTPStatusError as e:
-            if e.response.status_code == 401:
-                raise EnvironmentError(
-                    "Invalid ANTHROPIC_API_KEY. Check your key at https://console.anthropic.com"
-                )
-            raise
 
     # ── OpenAI ───────────────────────────────────────────────────────────
 

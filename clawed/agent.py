@@ -116,7 +116,6 @@ async def _anthropic_with_tools(
     messages: list[dict[str, Any]], system: str, config: AppConfig
 ) -> dict[str, Any]:
     """Call Anthropic API with tool use."""
-    import httpx
 
     from clawed.config import get_api_key
 
@@ -160,33 +159,38 @@ async def _anthropic_with_tools(
         elif m.get("content"):
             anthropic_messages.append({"role": m["role"], "content": m["content"]})
 
-    async with httpx.AsyncClient(timeout=120.0) as client:
-        resp = await client.post(
-            "https://api.anthropic.com/v1/messages",
-            headers=_anthropic_headers(api_key),
-            json={
-                "model": config.anthropic_model,
-                "max_tokens": 4096,
-                "system": system,
-                "tools": tools,
-                "messages": anthropic_messages,
-            },
+    import anthropic as _anthropic
+
+    is_oauth = api_key.startswith("sk-ant-") and not api_key.startswith("sk-ant-api")
+    if is_oauth:
+        sdk_client = _anthropic.Anthropic(
+            auth_token=api_key,
+            default_headers={"anthropic-beta": "oauth-2025-04-20", "x-app": "cli"},
+            max_retries=3,
         )
-        resp.raise_for_status()
-        data = resp.json()
+    else:
+        sdk_client = _anthropic.Anthropic(api_key=api_key, max_retries=3)
+
+    msg = sdk_client.messages.create(
+        model=config.anthropic_model,
+        max_tokens=4096,
+        system=system,
+        tools=tools,
+        messages=anthropic_messages,
+    )
 
     # Collect ALL tool_use blocks and any text
     tool_calls = []
     text_parts = []
-    for block in data.get("content", []):
-        if block.get("type") == "tool_use":
+    for block in msg.content:
+        if block.type == "tool_use":
             tool_calls.append({
-                "id": block["id"],
-                "name": block["name"],
-                "arguments": block.get("input", {}),
+                "id": block.id,
+                "name": block.name,
+                "arguments": block.input,
             })
-        elif block.get("type") == "text" and block.get("text"):
-            text_parts.append(block["text"])
+        elif block.type == "text" and block.text:
+            text_parts.append(block.text)
 
     if tool_calls:
         return {"type": "tool_calls", "tool_calls": tool_calls}
