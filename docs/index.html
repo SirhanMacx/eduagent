@@ -1843,26 +1843,44 @@ img { max-width: 100%; height: auto; }
   var white = '#e8e8e8';
   var cyan = '#5FAFAF';
 
+  // Colors for the Apple Lobster
+  var red = '#E8443A';
+  var lgreen = '#50B450';
+
   var logo = [
-    '                  _',
-    '                 ( )',
-    "            .---'   '---.",
-    '   __      /   ///        \\      __',
-    '  /  \\    |    ///         |    /  \\',
-    ' | .. |   |    ///         |   | .. |',
-    ' | \\/ |   |               |   | \\/ |',
-    '  \\__/     \\             /     \\__/',
-    "             '-.       .-'",
-    "                '-----'",
+    {t: '                  _',                                     c: lgreen},
+    {t: '                 / \\',                                   c: lgreen},
+    {t: "            .---'   '---.",                               c: red},
+    {t: '  _/|      /   ///        \\      |\\_',                 c: 'mixed', parts: [
+      {t: '  _/|', c: gold}, {t: "      /   ", c: red}, {t: '///', c: white}, {t: "        \\      ", c: red}, {t: '|\\_', c: gold}
+    ]},
+    {t: ' / o \\----|    ///         |----/ o \\',                 c: 'mixed', parts: [
+      {t: ' / ', c: gold}, {t: 'o', c: cyan}, {t: ' \\----', c: gold}, {t: '|    ', c: red}, {t: '///', c: white}, {t: '         |', c: red}, {t: '----/ ', c: gold}, {t: 'o', c: cyan}, {t: ' \\', c: gold}
+    ]},
+    {t: ' \\_><_/   |    ///         |   \\_><_/',                 c: 'mixed', parts: [
+      {t: ' \\_><_/', c: gold}, {t: '   |    ', c: red}, {t: '///', c: white}, {t: '         |', c: red}, {t: '   \\_><_/', c: gold}
+    ]},
+    {t: '   ||      \\             /      ||',                     c: 'mixed', parts: [
+      {t: '   ||', c: gold}, {t: "      \\             /", c: red}, {t: '      ||', c: gold}
+    ]},
+    {t: "   ||       '-.       .-'       ||",                     c: 'mixed', parts: [
+      {t: '   ||', c: gold}, {t: "       '-.       .-'", c: red}, {t: '       ||', c: gold}
+    ]},
+    {t: "   /\\          '-----'          /\\",                   c: 'mixed', parts: [
+      {t: '   /\\', c: gold}, {t: "          '-----'", c: red}, {t: '          /\\', c: gold}
+    ]},
   ];
 
-  // Scenes: each is an array of {text, color, delay, typing}
+  // Scenes: each is an array of {text, color, delay, typing, parts}
   var scenes = [
     // Scene 1: User types clawed
     [{text: '$ clawed', color: white, delay: 0, typing: true}],
-    // Scene 2: Logo draws line by line
-    ...logo.map(function(line, i) {
-      return [{text: line, color: gold, delay: 80}];
+    // Scene 2: Logo draws line by line (colored)
+    ...logo.map(function(line) {
+      if (line.c === 'mixed') {
+        return [{text: '', color: '', delay: 100, parts: line.parts}];
+      }
+      return [{text: line.t, color: line.c, delay: 100}];
     }),
     // Scene 3: Brand text
     [{text: '', color: white, delay: 200}],
@@ -1890,13 +1908,31 @@ img { max-width: 100%; height: auto; }
 
   function addLine(text, color, bold) {
     var line = document.createElement('div');
-    line.style.color = color || white;
     line.style.fontFamily = 'monospace';
     line.style.whiteSpace = 'pre';
+    line.style.margin = '0';
+    line.style.lineHeight = '1.35';
     if (bold) line.style.fontWeight = 'bold';
+    line.style.color = color || white;
     line.textContent = text;
     terminal.appendChild(line);
-    // Auto-scroll
+    terminal.scrollTop = terminal.scrollHeight;
+    return line;
+  }
+
+  function addColoredLine(parts) {
+    var line = document.createElement('div');
+    line.style.fontFamily = 'monospace';
+    line.style.whiteSpace = 'pre';
+    line.style.margin = '0';
+    line.style.lineHeight = '1.35';
+    for (var i = 0; i < parts.length; i++) {
+      var span = document.createElement('span');
+      span.style.color = parts[i].c;
+      span.textContent = parts[i].t;
+      line.appendChild(span);
+    }
+    terminal.appendChild(line);
     terminal.scrollTop = terminal.scrollHeight;
     return line;
   }
@@ -1935,6 +1971,9 @@ img { max-width: 100%; height: auto; }
       typeText(step.text, step.color, step.bold, function() {
         setTimeout(playScene, step.delay || 300);
       });
+    } else if (step.parts) {
+      addColoredLine(step.parts);
+      setTimeout(playScene, step.delay || 100);
     } else {
       addLine(step.text, step.color, step.bold);
       setTimeout(playScene, step.delay || 100);

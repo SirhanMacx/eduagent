@@ -1,38 +1,60 @@
 /**
- * Claw-ED ASCII Logo
+ * Claw-ED ASCII Logo — The Apple Lobster
  *
- * A clean apple silhouette with three claw scratches and a graduation cap.
- * Designed for terminal rendering — standard ASCII only, no emoji, no
- * box-drawing characters that might break on Windows.
+ * A red apple with green stem, white claw scratches, and gold lobster
+ * arms/claws extending from the sides. Animated with color in terminal.
  */
 
-// Full logo — an apple with lobster claws (the Claw-ED creature)
+// ANSI color codes
+const R = '\x1b[38;2;220;50;47m'   // Red (apple body)
+const G = '\x1b[38;2;80;180;80m'   // Green (stem/leaf)
+const W = '\x1b[38;2;255;255;255m' // White (claw marks)
+const Y = '\x1b[38;2;212;168;67m'  // Gold (claws/arms)
+const C = '\x1b[38;2;100;200;220m' // Cyan (eyes)
+const D = '\x1b[2m'                // Dim
+const B = '\x1b[1m'                // Bold
+const X = '\x1b[0m'                // Reset
+
+// Colored logo segments — each line is a string with embedded ANSI codes
+function coloredLogo(): string[] {
+  return [
+    `                  ${G}_${X}`,
+    `                 ${G}/ \\${X}`,
+    `            ${R}.---'   '---. ${X}`,
+    `  ${Y}_/|${X}      ${R}/${X}   ${W}///${X}        ${R}\\${X}      ${Y}|\\_${X}`,
+    `${Y} / ${C}o${Y} \\${X}${Y}----${R}|${X}    ${W}///${X}         ${R}|${X}${Y}----${Y}/ ${C}o${Y} \\${X}`,
+    `${Y} \\_${B}>${Y}<_/${X}   ${R}|${X}    ${W}///${X}         ${R}|${X}   ${Y}\\_${B}>${Y}<_/${X}`,
+    `  ${Y} ||${X}      ${R}\\${X}             ${R}/${X}      ${Y}||${X}`,
+    `  ${Y} ||${X}       ${R}'-.       .-'${X}       ${Y}||${X}`,
+    `  ${Y} /\\${X}          ${R}'-----'${X}          ${Y}/\\${X}`,
+  ]
+}
+
+// Plain text version (no ANSI, for non-TTY and --version)
 export const LOGO_FULL = [
   '                  _',
-  '                 ( )',
-  '            .---\'   \'---.',
-  '   __      /   ///        \\      __',
-  '  /  \\    |    ///         |    /  \\',
-  ' | .. |   |    ///         |   | .. |',
-  ' | \\/ |   |               |   | \\/ |',
-  '  \\__/     \\             /     \\__/',
-  '             \'-.       .-\'',
-  '                \'-----\'',
+  '                 / \\',
+  "            .---'   '---.",
+  '  _/|      /   ///        \\      |\\_',
+  ' / o \\----|    ///         |----/ o \\',
+  ' \\_><_/   |    ///         |   \\_><_/',
+  '   ||      \\             /      ||',
+  "   ||       '-.       .-'       ||",
+  "   /\\          '-----'          /\\",
 ]
 
-// Compact logo (4 lines) — for status bar or tight spaces
+// Compact (4 lines)
 export const LOGO_COMPACT = [
-  '  __   .---.   __',
-  ' /..\\  | / |  /../',
-  ' \\\\/ | |   | | \\\\/',
-  '  -- \'-----\'  --',
+  " ${Y}_/${X}${R}.-.${X}${Y}\\_${X}",
+  '${Y}(o${R}|/|${Y}o)${X}',
+  ' ${Y}>${R}---${Y}<${X}',
+  '  ${Y}/\\${X}  ${Y}/\\${X}',
 ]
 
 // Brand text
 export const BRAND_TEXT = 'Claw-ED'
 export const BRAND_TAGLINE = 'Your AI co-teacher'
 
-// Full logo with text below
 export const LOGO_WITH_TEXT = [
   ...LOGO_FULL,
   '',
@@ -41,52 +63,74 @@ export const LOGO_WITH_TEXT = [
 ]
 
 /**
- * Animate the logo in the terminal with a line-by-line reveal.
+ * Animated, colorful logo reveal for interactive terminal startup.
  *
- * Uses raw ANSI escape codes so it works in any modern terminal
- * without requiring the Ink renderer. Call before the REPL starts.
- *
- * @param color - ANSI color code string (e.g., '\x1b[33m' for gold)
- * @param skipAnimation - If true, prints instantly (for piped/non-TTY output)
+ * Phase 1: Apple body draws top-to-bottom (red + green stem)
+ * Phase 2: Claw arms extend from the sides (gold, with snap animation)
+ * Phase 3: Brand text appears
  */
 export async function animateLogo(
-  color: string = '\x1b[38;2;212;168;67m',  // Warm gold RGB
+  _color: string = '',
   skipAnimation: boolean = false,
 ): Promise<void> {
-  const reset = '\x1b[0m'
-  const dim = '\x1b[2m'
-  const bold = '\x1b[1m'
-
   if (skipAnimation || !process.stdout.isTTY) {
-    // Non-interactive: print instantly, no ANSI
     for (const line of LOGO_WITH_TEXT) {
       console.log(line)
     }
     return
   }
 
-  // Hide cursor during animation
-  process.stdout.write('\x1b[?25l')
+  process.stdout.write('\x1b[?25l') // Hide cursor
 
   try {
-    // Phase 1: Draw logo line by line (80ms per line)
-    for (const line of LOGO_FULL) {
-      process.stdout.write(`${color}${line}${reset}\n`)
-      await _sleep(80)
+    const lines = coloredLogo()
+
+    // Phase 1: Draw stem (fast)
+    process.stdout.write(lines[0] + '\n')
+    await _sleep(120)
+    process.stdout.write(lines[1] + '\n')
+    await _sleep(120)
+
+    // Phase 2: Apple body grows
+    process.stdout.write(lines[2] + '\n')
+    await _sleep(100)
+
+    // Phase 3: Arms + claws extend (slightly slower for drama)
+    for (let i = 3; i < 6; i++) {
+      process.stdout.write(lines[i] + '\n')
+      await _sleep(150)
     }
 
-    // Phase 2: Brief pause, then brand text fades in
-    await _sleep(300)
-    process.stdout.write(`\n${bold}${color}      C L A W - E D${reset}\n`)
-    await _sleep(200)
-    process.stdout.write(`${dim}     Your AI co-teacher${reset}\n`)
-    await _sleep(400)
+    // Phase 4: Legs
+    for (let i = 6; i < lines.length; i++) {
+      process.stdout.write(lines[i] + '\n')
+      await _sleep(100)
+    }
 
-    // Phase 3: Clear and transition (cursor moves back up)
+    // Phase 5: Claw snap! (redraw claw line with closed mouth)
+    await _sleep(300)
+    process.stdout.write('\x1b[5A') // Move up 5 lines
+    const snapLine = `${Y} / ${C}o${Y} \\${X}${Y}----${R}|${X}    ${W}///${X}         ${R}|${X}${Y}----${Y}/ ${C}o${Y} \\${X}`
+    process.stdout.write('\x1b[2K' + snapLine + '\n') // Clear line + redraw
+    const closedLine = `${Y} \\_${B}=${Y}=_/${X}   ${R}|${X}    ${W}///${X}         ${R}|${X}   ${Y}\\_${B}=${Y}=_/${X}`
+    process.stdout.write('\x1b[2K' + closedLine + '\n')
+    await _sleep(200)
+
+    // Snap back open
+    process.stdout.write('\x1b[2A')
+    process.stdout.write('\x1b[2K' + lines[4] + '\n')
+    process.stdout.write('\x1b[2K' + lines[5] + '\n')
+    process.stdout.write('\x1b[3B') // Move back down
+
+    // Phase 6: Brand text
+    await _sleep(300)
+    process.stdout.write(`\n${B}${Y}      C L A W - E D${X}\n`)
+    await _sleep(200)
+    process.stdout.write(`${D}     Your AI co-teacher${X}\n`)
+    await _sleep(400)
     process.stdout.write('\n')
   } finally {
-    // Always restore cursor
-    process.stdout.write('\x1b[?25h')
+    process.stdout.write('\x1b[?25h') // Show cursor
   }
 }
 
@@ -94,9 +138,6 @@ function _sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
 
-/**
- * Get logo lines for static rendering.
- */
 export function getLogoLines(size: 'full' | 'compact' = 'full'): string[] {
   return size === 'full' ? [...LOGO_FULL] : [...LOGO_COMPACT]
 }
