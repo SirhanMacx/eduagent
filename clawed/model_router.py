@@ -58,8 +58,8 @@ DEFAULT_TIER_MODELS: dict[str, str] = {
 PROVIDER_TIER_MODELS: dict[str, dict[str, str]] = {
     "ollama": DEFAULT_TIER_MODELS,
     "anthropic": {
-        "fast": "claude-haiku-4-5-20251001",
-        "work": "claude-sonnet-4-20250514",
+        "fast": "claude-opus-4-20250514",
+        "work": "claude-opus-4-20250514",
         "deep": "claude-opus-4-20250514",
     },
     "openai": {
