@@ -98,6 +98,49 @@ def _safe_progress(**kwargs):
     return Progress(*columns, **kwargs)
 
 
+def check_api_key_or_exit() -> None:
+    """Verify an API key is configured before starting expensive generation."""
+    from clawed.config import get_api_key
+
+    try:
+        cfg = AppConfig.load()
+    except Exception:
+        console.print(
+            "[red]Claw-ED is not configured yet.[/red]\n"
+            "Run [bold]clawed setup[/bold] to pick your AI provider and add an API key."
+        )
+        raise typer.Exit(1)
+
+    provider = cfg.provider.value if hasattr(cfg.provider, 'value') else str(cfg.provider)
+    if provider == "ollama":
+        return  # Ollama doesn't need an API key
+
+    key = get_api_key(provider)
+    if not key:
+        console.print(
+            f"[red]No API key found for {provider}.[/red]\n"
+            f"Set one with: [bold]clawed setup[/bold]\n"
+            f"Or set the environment variable: [bold]{provider.upper()}_API_KEY[/bold]"
+        )
+        raise typer.Exit(1)
+
+
+def friendly_error(e: Exception) -> str:
+    """Convert technical exceptions to teacher-friendly messages."""
+    msg = str(e)
+    if "429" in msg or "rate" in msg.lower():
+        return "The AI service is busy right now. Wait a minute and try again."
+    if "401" in msg or "403" in msg or "auth" in msg.lower() or "invalid" in msg.lower():
+        return "Your API key doesn't seem to work. Run 'clawed debug' to check your connection."
+    if "timeout" in msg.lower() or "timed out" in msg.lower():
+        return "The AI took too long to respond. Try again, or check your internet connection."
+    if "connection" in msg.lower() or "connect" in msg.lower():
+        return "Can't reach the AI service. Check your internet connection."
+    if "model" in msg.lower() and ("not found" in msg.lower() or "404" in msg.lower()):
+        return "The AI model wasn't found. Run 'clawed config show' to check your model setting."
+    return f"Something went wrong: {msg}\nRun 'clawed debug' for details."
+
+
 def load_persona_or_exit() -> TeacherPersona:
     path = persona_path()
     if not path.exists():

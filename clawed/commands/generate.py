@@ -18,7 +18,13 @@ from rich.panel import Panel
 from rich.table import Table
 
 from clawed._json_output import run_json_command
-from clawed.commands._helpers import _safe_progress, console, load_persona_or_exit
+from clawed.commands._helpers import (
+    _safe_progress,
+    check_api_key_or_exit,
+    console,
+    friendly_error,
+    load_persona_or_exit,
+)
 from clawed.commands._helpers import output_dir as _output_dir
 from clawed.commands._helpers import run_async as _run_async
 from clawed.io import safe_filename as _safe_filename
@@ -451,6 +457,8 @@ def lesson(
             lesson_number=lesson_num,
         )
         return
+
+    check_api_key_or_exit()
 
     from clawed.export_markdown import export_lesson
     from clawed.lesson import generate_lesson, save_lesson
