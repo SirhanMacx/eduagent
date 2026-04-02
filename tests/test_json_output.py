@@ -37,7 +37,7 @@ def test_json_envelope_serializable():
 def test_lesson_json_flag_error_without_config():
     """clawed gen lesson --json returns error envelope when not configured."""
     result = subprocess.run(
-        [sys.executable, "-m", "clawed", "lesson", "Test Topic", "-g", "8", "-s", "US History", "--json"],
+        [sys.executable, "-m", "clawed", "--python", "lesson", "Test Topic", "-g", "8", "-s", "US History", "--json"],
         capture_output=True, text=True, timeout=30,
     )
     output = json.loads(result.stdout)

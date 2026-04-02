@@ -19,7 +19,7 @@ COMMANDS_WITH_JSON = [
 def test_json_flag_produces_valid_envelope(args, expected_command):
     """Every command with --json returns a valid JSON envelope."""
     result = subprocess.run(
-        [sys.executable, "-m", "clawed"] + args,
+        [sys.executable, "-m", "clawed", "--python"] + args,
         capture_output=True, text=True, timeout=30,
     )
     # Must produce valid JSON on stdout
