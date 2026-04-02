@@ -3795,6 +3795,15 @@ async function run(): Promise<CommanderCommand> {
         }
       }
       const initialMessages = deepLinkBanner ? [deepLinkBanner, ...hookMessages] : hookMessages.length > 0 ? hookMessages : undefined;
+
+      // Claw-ED: animated logo on fresh interactive session startup
+      if (!options.print && !options.bare) {
+        try {
+          const { animateLogo } = await import('./constants/logo.js');
+          await animateLogo();
+        } catch (_e) { /* Non-critical — skip animation on failure */ }
+      }
+
       await launchRepl(root, {
         getFpsMetrics,
         stats,
