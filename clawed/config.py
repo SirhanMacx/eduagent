@@ -66,12 +66,20 @@ def _try_keyring_delete(key: str) -> bool:
 
 
 def _resolve_claude_code_token() -> Optional[str]:
-    """Read fresh OAuth token from Claude Code credential store.
+    """Get a valid OAuth token, refreshing if near expiry.
 
-    Claude Code auto-refreshes OAuth tokens and stores them in
-    ~/.claude/.credentials.json. Using this as a source means Claw-ED
-    never hits expired tokens when Claude Code is installed.
+    Uses the OAuth refresh flow from Claude Code's credential store.
+    Tokens are refreshed automatically when less than 10 minutes remain.
     """
+    try:
+        from clawed.oauth_refresh import get_oauth_token
+        token = get_oauth_token()
+        if token:
+            return token
+    except Exception:
+        pass
+
+    # Fallback: read raw token without refresh
     import json as _json
     for path in [
         Path.home() / ".claude" / ".credentials.json",
