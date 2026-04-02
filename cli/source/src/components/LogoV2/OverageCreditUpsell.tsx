@@ -46,8 +46,8 @@ export function maybeRefreshOverageCreditCache(): void {
   void refreshOverageCreditGrantCache();
 }
 export function useShowOverageCreditUpsell() {
-  const [show] = useState(_temp);
-  return show;
+  // Claw-ED: no Claude promotional content
+  return false;
 }
 function _temp() {
   maybeRefreshOverageCreditCache();

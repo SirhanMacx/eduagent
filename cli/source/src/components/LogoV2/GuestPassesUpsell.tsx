@@ -34,8 +34,8 @@ function shouldShowGuestPassesUpsell(): boolean {
   return true;
 }
 export function useShowGuestPassesUpsell() {
-  const [show] = useState(_temp);
-  return show;
+  // Claw-ED: no Claude promotional content
+  return false;
 }
 function _temp() {
   return shouldShowGuestPassesUpsell();

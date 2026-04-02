@@ -251,7 +251,7 @@ async def run_with_recovery():
             if isinstance(message, ResultMessage):
                 print(message.result)
     except CLINotFoundError:
-        print("Claude Code CLI not found. Install with: pip install claude-agent-sdk")
+        print("Claw-ED CLI not found. Install with: pip install claude-agent-sdk")
     except CLIConnectionError as e:
         print(f"Connection error: {e}")
     except ProcessError as e:
