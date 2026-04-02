@@ -94,6 +94,11 @@ class ConfigureProfileTool:
             )
             config.save()
 
+            # Mark onboarding as complete
+            marker = Path.home() / ".eduagent" / "workspace" / "onboarding_complete"
+            marker.parent.mkdir(parents=True, exist_ok=True)
+            marker.write_text(f"Completed by {teacher_name}\n")
+
             # Auto-index state standards when state is provided
             side_effects = [f"Saved profile for {teacher_name}"]
             if state:

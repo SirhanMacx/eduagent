@@ -754,6 +754,12 @@ def quick_model_setup() -> str:
             console.print("  [dim]No token entered. Falling back to terminal chat.[/dim]\n")
             return "terminal"
 
+    # Mark onboarding as complete
+    from pathlib import Path as _Path
+    marker = _Path.home() / ".eduagent" / "workspace" / "onboarding_complete"
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.write_text("Completed via setup wizard\n")
+
     console.print(
         "\n  [green]\u2713 All set![/green] "
         "Let's chat -- I'll start by getting to know you.\n"
