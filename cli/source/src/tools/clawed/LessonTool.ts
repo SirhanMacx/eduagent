@@ -12,6 +12,10 @@ const inputSchema = lazySchema(() =>
       .string()
       .optional()
       .describe('Output format (e.g. "5e", "workshop", "direct")'),
+    narrate: z
+      .boolean()
+      .optional()
+      .describe('Generate voice narration MP3 files for slides'),
   }),
 )
 type InputSchema = ReturnType<typeof inputSchema>
@@ -49,6 +53,7 @@ export const LessonTool = buildTool({
   async call(input) {
     const args = ['-m', 'clawed', 'lesson', input.topic, '-g', input.grade, '-s', input.subject]
     if (input.format) args.push('--format', input.format)
+    if (input.narrate) args.push('--narrate')
     args.push('--json')
     const result = await spawnPython(args, { timeout: TIMEOUT_BY_COMMAND.lesson })
     return { data: { result } }

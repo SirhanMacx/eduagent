@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "clawed"
-version = "4.2.2026.14"
+version = "4.2.2026.15"
 description = "Your AI co-teacher. Generate lessons, games, slides, and assessments from your terminal. Learns your teaching voice, aligns to your state standards, and works with any LLM provider."
 readme = "README.md"
 license = "MIT"
@@ -52,6 +52,7 @@ dependencies = [
     "json-repair>=0.30.0",
     "pyyaml>=6.0,<7.0",
     "apscheduler>=3.10.0,<4.0",
+    "gTTS>=2.5.0",
 ]
 
 [project.optional-dependencies]

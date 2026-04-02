@@ -426,6 +426,10 @@ def lesson(
         False, "--game/--no-game",
         help="Also generate an interactive HTML learning game",
     ),
+    narrate: bool = typer.Option(
+        False, "--narrate",
+        help="Generate voice narration MP3 files for slides",
+    ),
     fmt: str = typer.Option(
         "handout", "--format", "-f",
         help="Export: handout, docx, pptx, pdf, markdown",
@@ -617,7 +621,7 @@ def lesson(
                 export_student_handout,
             )
             if fmt == "pptx":
-                doc_path = export_lesson_pptx(daily, persona, out_dir)
+                doc_path = export_lesson_pptx(daily, persona, out_dir, narrate=narrate)
             elif fmt == "docx":
                 doc_path = export_lesson_docx(daily, persona, out_dir)
             elif fmt == "handout":

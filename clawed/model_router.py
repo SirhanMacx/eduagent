@@ -45,6 +45,7 @@ TASK_TIERS: dict[str, ModelTier] = {
     "evaluation": ModelTier.DEEP,
     "master_content": ModelTier.DEEP,
     "game_generate": ModelTier.DEEP,
+    "simulation_generate": ModelTier.DEEP,
     "multi_agent": ModelTier.DEEP,
 }
 

@@ -358,6 +358,53 @@ def _try_fetch_content_images(
     return results
 
 
+# ── Narration text builder ────────────────────────────────────────────
+
+
+def _build_narration_texts(lesson: "DailyLesson") -> list[str]:
+    """Build narration text for each slide from lesson content.
+
+    Returns a list of strings, one per slide. Empty strings are skipped
+    during narration (e.g. for image-only slides).
+    """
+    texts: list[str] = []
+
+    # Slide 1: Title slide
+    title_narration = f"Today's lesson: {lesson.title}."
+    if lesson.objective:
+        title_narration += f" {lesson.objective}"
+    texts.append(title_narration)
+
+    # Slide 2: Do Now
+    if lesson.do_now:
+        texts.append(f"Let's start with a warm-up. {lesson.do_now}")
+
+    # Direct Instruction slides
+    if lesson.direct_instruction:
+        texts.append(lesson.direct_instruction)
+
+    # Guided Practice slides
+    if lesson.guided_practice:
+        texts.append(f"Now let's practice together. {lesson.guided_practice}")
+
+    # Independent Work / Activity slides
+    if lesson.independent_work:
+        texts.append(f"Now it's your turn. {lesson.independent_work}")
+
+    # Exit Ticket slides
+    if lesson.exit_ticket:
+        et_parts = [q.question for q in lesson.exit_ticket if q.question]
+        if et_parts:
+            et_text = " ".join(et_parts)
+            texts.append(f"Before we go, let's check what you learned. {et_text}")
+
+    # Homework slide
+    if lesson.homework:
+        texts.append(f"For homework: {lesson.homework}")
+
+    return texts
+
+
 # ── Main export function ──────────────────────────────────────────────
 
 
@@ -367,6 +414,7 @@ def export_lesson_pptx(
     output_dir: Path | None = None,
     agent_name: str = "Claw-ED",
     include_images: bool = True,
+    narrate: bool = False,
 ) -> Path:
     """Generate a professional PowerPoint presentation from a lesson plan.
 
@@ -1559,4 +1607,19 @@ def export_lesson_pptx(
     out = _resolve_output(output_dir, lesson, ".pptx")
     prs.save(str(out))
     cleanup_temp_images()
+
+    # ── Narration (opt-in) ────────────────────────────────────────────
+    if narrate:
+        try:
+            from clawed.tts import narrate_slides
+
+            slide_texts = _build_narration_texts(lesson)
+            mp3_paths = narrate_slides(out, slide_texts)
+            if mp3_paths:
+                logger.info("Narrated %d slides", len(mp3_paths))
+        except ImportError:
+            logger.warning("gTTS not installed — skipping narration. Run: pip install gTTS")
+        except Exception as e:
+            logger.warning("Narration failed: %s", e)
+
     return out

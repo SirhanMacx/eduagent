@@ -13,7 +13,7 @@ import { TaskStopTool } from './tools/TaskStopTool/TaskStopTool.js'
 import { BriefTool } from './tools/BriefTool/BriefTool.js'
 // Claw-ED teaching tools
 import {
-  LessonTool, GameTool, UnitTool, IngestTool, TrainTool,
+  LessonTool, GameTool, SimulationTool, UnitTool, IngestTool, TrainTool,
   ExportTool, AssessmentTool, StandardsTool, PersonaTool,
   DifferentiateTool, ReviewTool, SearchCurriculumTool,
   MaterialsTool, StudentsTool,
@@ -200,7 +200,7 @@ export function getToolsForDefaultPreset(): string[] {
 export function getAllBaseTools(): Tools {
   return [
     // Claw-ED teaching tools (first for discoverability)
-    LessonTool, GameTool, UnitTool, IngestTool, TrainTool,
+    LessonTool, GameTool, SimulationTool, UnitTool, IngestTool, TrainTool,
     ExportTool, AssessmentTool, StandardsTool, PersonaTool,
     DifferentiateTool, ReviewTool, SearchCurriculumTool,
     MaterialsTool, StudentsTool,

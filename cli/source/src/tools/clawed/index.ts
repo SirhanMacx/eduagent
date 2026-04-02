@@ -1,5 +1,6 @@
 export { LessonTool } from './LessonTool.js'
 export { GameTool } from './GameTool.js'
+export { SimulationTool } from './SimulationTool.js'
 export { UnitTool } from './UnitTool.js'
 export { IngestTool } from './IngestTool.js'
 export { TrainTool } from './TrainTool.js'

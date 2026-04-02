@@ -105,6 +105,7 @@ export const TIMEOUT_BY_COMMAND: Record<string, number> = {
   lesson: 120_000,
   unit: 180_000,
   game: 120_000,
+  simulate: 120_000,
   ingest: 300_000,
   train: 600_000,
   export: 60_000,

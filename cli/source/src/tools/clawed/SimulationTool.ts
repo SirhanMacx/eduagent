@@ -5,29 +5,28 @@ import { spawnPython, TIMEOUT_BY_COMMAND } from './_bridge.js'
 
 const inputSchema = lazySchema(() =>
   z.strictObject({
-    lesson_file: z.string().describe('Path to the lesson JSON file to export'),
-    format: z
+    topic: z.string().describe('Simulation topic'),
+    grade: z.string().describe('Grade level'),
+    subject: z.string().describe('Subject area'),
+    type: z
       .string()
-      .describe('Export format (e.g. "pptx", "pdf", "docx", "html")'),
-    narrate: z
-      .boolean()
       .optional()
-      .describe('Generate voice narration MP3 files for slides'),
+      .describe('Simulation type (e.g. "physics", "chemistry", "math", "biology")'),
   }),
 )
 type InputSchema = ReturnType<typeof inputSchema>
 
 type Output = { result: unknown }
 
-export const ExportTool = buildTool({
-  name: 'export_lesson',
-  searchHint: 'slides presentation PowerPoint PPTX export pdf docx html',
-  maxResultSizeChars: 50_000,
+export const SimulationTool = buildTool({
+  name: 'create_simulation',
+  searchHint: 'simulation experiment explore interactive physics chemistry math biology',
+  maxResultSizeChars: 200_000,
   async description() {
-    return 'Export a lesson to a specific format (pptx, pdf, docx, html).'
+    return 'Generate an interactive HTML simulation for exploring scientific concepts.'
   },
   userFacingName() {
-    return 'Claw-ED Export'
+    return 'Claw-ED Simulation'
   },
   get inputSchema(): InputSchema {
     return inputSchema()
@@ -36,22 +35,22 @@ export const ExportTool = buildTool({
     return true
   },
   isReadOnly() {
-    return false
+    return true
   },
   async checkPermissions(input) {
     return { behavior: 'allow', updatedInput: input }
   },
   async prompt() {
-    return 'Export a lesson file. Provide the lesson file path and desired format.'
+    return 'Generate an interactive simulation. Provide topic, grade, and subject. Optionally specify a type (physics, chemistry, math, biology).'
   },
   renderToolUseMessage(input) {
-    return `Exporting: ${input.lesson_file ?? '...'} as ${input.format ?? '...'}`
+    return `Generating simulation: ${input.topic ?? '...'}`
   },
   async call(input) {
-    const args = ['-m', 'clawed', 'export', input.lesson_file, '--format', input.format]
-    if (input.narrate) args.push('--narrate')
+    const args = ['-m', 'clawed', 'simulate', 'create', input.topic, '-g', input.grade, '-s', input.subject]
+    if (input.type) args.push('--type', input.type)
     args.push('--json')
-    const result = await spawnPython(args, { timeout: TIMEOUT_BY_COMMAND.export })
+    const result = await spawnPython(args, { timeout: TIMEOUT_BY_COMMAND.simulate })
     return { data: { result } }
   },
   mapToolResultToToolResultBlockParam(output, toolUseID) {
