@@ -30,7 +30,8 @@ CREDENTIALS_PATH = Path.home() / ".claude" / ".credentials.json"
 def main():
     # Generate PKCE code verifier/challenge
     code_verifier = secrets.token_urlsafe(64)
-    import hashlib, base64
+    import base64
+    import hashlib
     code_challenge = base64.urlsafe_b64encode(
         hashlib.sha256(code_verifier.encode()).digest()
     ).rstrip(b"=").decode()
@@ -51,7 +52,7 @@ def main():
 
     print("\n  Claw-ED OAuth Login")
     print("  ===================\n")
-    print(f"  Open this URL in your browser:\n")
+    print("  Open this URL in your browser:\n")
     print(f"  {auth_url}\n")
 
     try:
