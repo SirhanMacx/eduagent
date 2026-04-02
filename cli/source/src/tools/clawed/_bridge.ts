@@ -1,4 +1,5 @@
 import { execSync, spawn } from 'child_process'
+import { platform } from 'os'
 
 export interface BridgeResult {
   status: 'success' | 'error'
@@ -18,27 +19,84 @@ const EMPTY_ERROR: BridgeResult = {
   errors: [],
 }
 
-let cachedPython: string | null = null
+export interface PythonCmd {
+  /** The executable path (e.g. "/usr/bin/python3" or "C:\\Python\\py.exe") */
+  exe: string
+  /** Extra args that go before any user args (e.g. ["-3"] for `py -3`) */
+  prefixArgs: string[]
+}
 
-export function findPythonSync(): string | null {
+let cachedPython: PythonCmd | null = null
+
+/**
+ * Resolve a Python executable name to its full path, cross-platform.
+ * Uses `where` on Windows and `which` on macOS/Linux.
+ */
+function resolvePythonPath(name: string): string | null {
+  const isWin = platform() === 'win32'
+  const cmd = isWin ? `where ${name}` : `which ${name} 2>/dev/null`
+  try {
+    const out = execSync(cmd, { encoding: 'utf-8', timeout: 3000 }).trim()
+    if (!out) return null
+    // `where` on Windows can return multiple lines; take the first
+    return out.split(/\r?\n/)[0].trim() || null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Find a Python 3.10+ executable that has the `clawed` package installed.
+ *
+ * Returns a PythonCmd with the executable path and any prefix args needed
+ * to invoke it (e.g. `py -3` on Windows), or null if none found.
+ *
+ * Search order:
+ *   python3.12, python3.11, python3.10, python3,
+ *   py -3 (Windows only),
+ *   python
+ */
+export function findPythonSync(): PythonCmd | null {
   if (cachedPython) return cachedPython
-  // Try version-specific first (more likely to have clawed installed),
-  // then generic python3/python
-  for (const name of ['python3.12', 'python3.11', 'python3.10', 'python3', 'python']) {
+
+  // Build candidate list: version-specific first, then generic.
+  // On Windows, also try `py -3` (the Windows Python Launcher) and `python`
+  // since Windows doesn't ship `python3`.
+  const isWin = platform() === 'win32'
+  const candidates: Array<{ name: string; prefixArgs?: string[] }> = [
+    { name: 'python3.12' },
+    { name: 'python3.11' },
+    { name: 'python3.10' },
+    { name: 'python3' },
+  ]
+  if (isWin) {
+    // `py -3` invokes the Windows Python Launcher with Python 3
+    candidates.push({ name: 'py', prefixArgs: ['-3'] })
+  }
+  candidates.push({ name: 'python' })
+
+  for (const { name, prefixArgs } of candidates) {
+    const exePath = resolvePythonPath(name)
+    if (!exePath) continue
+
+    const prefix = prefixArgs ?? []
+    // Build a shell command string for execSync validation.
+    // Quote the exe path in case it contains spaces (common on Windows).
+    const parts = [`"${exePath}"`, ...prefix]
+    const shellCmd = parts.join(' ')
+
+    // Verify this Python is 3.10+ and has clawed installed
     try {
-      const path = execSync(`which ${name} 2>/dev/null`, { encoding: 'utf-8', timeout: 3000 }).trim()
-      if (!path) continue
-      // Verify this Python actually has clawed installed
-      try {
-        execSync(`${path} -c "import clawed"`, { timeout: 5000, stdio: 'ignore' })
-      } catch (_e) {
-        continue // This Python doesn't have clawed, try next
-      }
-      cachedPython = path
-      return path
-    } catch (_e) {
-      continue
+      execSync(
+        `${shellCmd} -c "import sys; assert sys.version_info >= (3,10); import clawed"`,
+        { timeout: 5000, stdio: 'ignore' },
+      )
+    } catch {
+      continue // Wrong version or clawed not installed, try next
     }
+
+    cachedPython = { exe: exePath, prefixArgs: prefix }
+    return cachedPython
   }
   return null
 }
@@ -68,7 +126,10 @@ export function spawnPython(
   if (!python)
     return Promise.resolve({
       ...EMPTY_ERROR,
-      errors: ['Python 3.10+ not found'],
+      errors: [
+        'Python 3.10+ with clawed installed is required. ' +
+        'Install with: pip install clawed',
+      ],
     })
 
   const timeout = opts?.timeout ?? 120_000
@@ -79,8 +140,13 @@ export function spawnPython(
     // Inject --python after '-m clawed' to force the Python CLI path.
     // Without it, the entry router detects Node.js and routes back to
     // the Ink TUI, creating infinite recursion.
-    const fullArgs = [...args.slice(0, 2), '--python', ...args.slice(2)]
-    const proc = spawn(python, fullArgs, { stdio: ['ignore', 'pipe', 'pipe'] })
+    const fullArgs = [
+      ...python.prefixArgs,
+      ...args.slice(0, 2),
+      '--python',
+      ...args.slice(2),
+    ]
+    const proc = spawn(python.exe, fullArgs, { stdio: ['ignore', 'pipe', 'pipe'] })
     const timer = setTimeout(() => {
       killed = true
       proc.kill('SIGTERM')

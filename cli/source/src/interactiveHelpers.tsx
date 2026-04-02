@@ -127,8 +127,9 @@ export async function showSetupScreens(root: Root, permissionMode: PermissionMod
   // and checks CLAUDE.md external includes. bypassPermissions mode
   // only affects tool execution permissions, not workspace trust.
   // Note: non-interactive sessions (CI/CD with -p) never reach showSetupScreens at all.
-  // Skip permission checks in claubbit
-  if (!isEnvTruthy(process.env.CLAUBBIT)) {
+  // Skip permission checks in claubbit and Claw-ED (teachers don't need workspace trust prompts)
+  const { isClawedBridgeProvider: isClawedForTrust } = await import('./utils/model/providers.js');
+  if (!isEnvTruthy(process.env.CLAUBBIT) && !isClawedForTrust()) {
     // Fast-path: skip TrustDialog import+render when CWD is already trusted.
     // If it returns true, the TrustDialog would auto-resolve regardless of
     // security features, so we can skip the dynamic import and render cycle.
@@ -168,6 +169,11 @@ export async function showSetupScreens(root: Root, permissionMode: PermissionMod
       } = await import('./components/ClaudeMdExternalIncludesDialog.js');
       await showSetupDialog(root, done => <ClaudeMdExternalIncludesDialog onDone={done} isStandaloneDialog externalIncludes={externalIncludes} />);
     }
+  } else if (isClawedForTrust()) {
+    // Claw-ED skips the trust dialog but still needs session trust set
+    // so downstream features (GrowthBook, system context) work correctly.
+    setSessionTrustAccepted(true);
+    void getSystemContext();
   }
 
   // Track current repo path for teleport directory switching (fire-and-forget)

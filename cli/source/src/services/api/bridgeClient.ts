@@ -50,8 +50,8 @@ export function bridgeChat(
       model: request.model || '',
       usage: { input_tokens: 0, output_tokens: 0 },
       error:
-        'Python 3.10+ with clawed installed is required for non-Anthropic providers. ' +
-        'Install with: pip install -e . (from the Claw-ED project root)',
+        'Non-Anthropic providers need Python 3.10+ with clawed installed. ' +
+        'Run: pip install clawed',
     })
   }
 
@@ -64,8 +64,8 @@ export function bridgeChat(
     let killed = false
 
     const proc = spawn(
-      python,
-      ['-m', 'clawed.bridge', 'chat', '--stdin'],
+      python.exe,
+      [...python.prefixArgs, '-m', 'clawed.bridge', 'chat', '--stdin'],
       { stdio: ['pipe', 'pipe', 'pipe'] },
     )
 

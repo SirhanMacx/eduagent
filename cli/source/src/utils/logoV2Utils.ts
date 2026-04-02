@@ -9,6 +9,7 @@ import {
   truncateToWidth,
   truncateToWidthNoEllipsis,
 } from './format.js'
+import { isClawedBridgeProvider } from './model/providers.js'
 import { getStoredChangelogFromMemory, parseChangelog } from './releaseNotes.js'
 import { gt } from './semver.js'
 import { loadMessageLogs } from './sessionStorage.js'
@@ -253,9 +254,11 @@ export function getLogoDisplayData(): {
   const cwd = serverUrl
     ? `${displayPath} in ${serverUrl.replace(/^https?:\/\//, '')}`
     : displayPath
-  const billingType = isClaudeAISubscriber()
-    ? getSubscriptionName()
-    : 'API Usage Billing'
+  const billingType = isClawedBridgeProvider()
+    ? 'Your AI co-teacher'
+    : isClaudeAISubscriber()
+      ? getSubscriptionName()
+      : 'API Usage Billing'
   const agentName = getInitialSettings().agent
 
   return {

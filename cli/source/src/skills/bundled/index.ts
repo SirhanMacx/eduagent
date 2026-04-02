@@ -1,5 +1,6 @@
 import { feature } from 'bun:bundle'
 import { shouldAutoEnableClaudeInChrome } from 'src/utils/claudeInChrome/setup.js'
+import { isClawedBridgeProvider } from 'src/utils/model/providers.js'
 import { registerBatchSkill } from './batch.js'
 import { registerClaudeInChromeSkill } from './claudeInChrome.js'
 import { registerDebugSkill } from './debug.js'
@@ -22,15 +23,24 @@ import { registerVerifySkill } from './verify.js'
  * 3. Import and call that function here
  */
 export function initBundledSkills(): void {
-  registerUpdateConfigSkill()
+  const isClawED = isClawedBridgeProvider()
+
+  // In Claw-ED mode, skip developer-oriented skills that confuse teachers.
+  // /update-config causes JSON Schema errors and is irrelevant for teaching.
+  // /debug, /skillify, /batch, /lorem-ipsum are developer tools.
+  if (!isClawED) {
+    registerUpdateConfigSkill()
+    registerDebugSkill()
+    registerSkillifySkill()
+    registerBatchSkill()
+    registerLoremIpsumSkill()
+  }
+
+  // These skills are useful in both Claw-ED and standard mode
   registerKeybindingsSkill()
   registerVerifySkill()
-  registerDebugSkill()
-  registerLoremIpsumSkill()
-  registerSkillifySkill()
   registerRememberSkill()
   registerSimplifySkill()
-  registerBatchSkill()
   registerStuckSkill()
   if (feature('KAIROS') || feature('KAIROS_DREAM')) {
     /* eslint-disable @typescript-eslint/no-require-imports */
@@ -61,7 +71,7 @@ export function initBundledSkills(): void {
     /* eslint-enable @typescript-eslint/no-require-imports */
     registerScheduleRemoteAgentsSkill()
   }
-  if (feature('BUILDING_CLAUDE_APPS')) {
+  if (feature('BUILDING_CLAUDE_APPS') && !isClawED) {
     /* eslint-disable @typescript-eslint/no-require-imports */
     const { registerClaudeApiSkill } = require('./claudeApi.js')
     /* eslint-enable @typescript-eslint/no-require-imports */
