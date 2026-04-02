@@ -143,11 +143,38 @@ def friendly_error(e: Exception) -> str:
 
 def load_persona_or_exit() -> TeacherPersona:
     path = persona_path()
-    if not path.exists():
-        console.print(
-            "[red]No persona found.[/red] Run [bold]clawed ingest <path>[/bold] first."
-        )
-        raise typer.Exit(1)
-    from clawed.persona import load_persona
+    if path.exists():
+        from clawed.persona import load_persona
 
-    return load_persona(path)
+        return load_persona(path)
+
+    # No persona file -- offer a starter persona so teachers aren't blocked
+    from clawed.starter_personas import get_starter_persona
+
+    console.print(
+        "[yellow]No teaching persona found.[/yellow]\n"
+        "You can:\n"
+        "  1. Run [bold]clawed ingest <path>[/bold] to learn from your files\n"
+        "  2. Use a starter persona to get going right away\n"
+    )
+
+    # Try to detect subject from config
+    try:
+        cfg = AppConfig.load()
+        subjects = cfg.teacher_profile.subjects if cfg.teacher_profile else []
+        if subjects:
+            persona = get_starter_persona(subjects[0])
+            if persona:
+                console.print(
+                    f"[cyan]Using starter persona for {persona.subject_area}.[/cyan]"
+                )
+                return persona
+    except Exception:
+        pass
+
+    # Default starter
+    persona = get_starter_persona("social_studies")
+    console.print(
+        f"[cyan]Using default starter persona ({persona.subject_area}).[/cyan]"
+    )
+    return persona

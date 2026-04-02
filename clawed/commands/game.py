@@ -10,6 +10,7 @@ import typer
 from clawed._json_output import run_json_command
 from clawed.commands._helpers import (
     _safe_progress,
+    check_api_key_or_exit,
     console,
     load_persona_or_exit,
 )
@@ -115,6 +116,8 @@ def create(
             topic=topic, grade=grade, subject=subject, style=style, students=students,
         )
         return
+
+    check_api_key_or_exit()
 
     from clawed.compile_game import compile_game
 

@@ -7,10 +7,47 @@ from typing import Optional
 import typer
 from rich.panel import Panel
 
+from clawed._json_output import run_json_command
 from clawed.commands._helpers import _safe_progress, console
 from clawed.commands._helpers import run_async as _run_async
 
 sub_app = typer.Typer()
+
+
+def _sub_json(*, class_name, grade, subject, date, topic, context, teacher, school, period):
+    """Run sub-packet generation and return structured result for JSON output."""
+    from clawed.llm import LLMClient
+    from clawed.models import AppConfig
+    from clawed.sub_packet import (
+        SubPacketRequest,
+        generate_sub_packet,
+        save_sub_packet,
+    )
+
+    cfg = AppConfig.load()
+    teacher_name = teacher or cfg.teacher_profile.name or "Teacher"
+    school_name = school or cfg.teacher_profile.school or ""
+
+    request = SubPacketRequest(
+        teacher_name=teacher_name,
+        school=school_name,
+        class_name=class_name,
+        grade=grade,
+        subject=subject,
+        date=date,
+        period_or_time=period or class_name,
+        lesson_topic=topic or "",
+        lesson_context=context or "",
+    )
+
+    llm = LLMClient(cfg)
+    packet = _run_async(generate_sub_packet(request, llm))
+    md_path = save_sub_packet(packet)
+
+    return {
+        "data": packet.model_dump() if hasattr(packet, "model_dump") else None,
+        "files": [str(md_path)],
+    }
 
 
 @sub_app.command(name="sub")
@@ -36,8 +73,25 @@ def sub(
     period: str = typer.Option(
         "", "--period", "-p", help="Period or time slot"
     ),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ) -> None:
     """Generate a complete substitute teacher packet."""
+    if json_output:
+        run_json_command(
+            "sub.sub",
+            _sub_json,
+            class_name=class_name,
+            grade=grade,
+            subject=subject,
+            date=date,
+            topic=topic,
+            context=context,
+            teacher=teacher,
+            school=school,
+            period=period,
+        )
+        return
+
     from clawed.llm import LLMClient
     from clawed.models import AppConfig
     from clawed.sub_packet import (
@@ -87,6 +141,55 @@ def sub(
     console.print(Panel(md, title="Sub Packet Preview", border_style="blue"))
 
 
+def _parent_comm_json(*, comm_type, student_desc, context, tone, notes):
+    """Run parent-comm generation and return structured result for JSON output."""
+    from clawed.llm import LLMClient
+    from clawed.models import AppConfig
+    from clawed.parent_comm import (
+        CommType,
+        ParentCommRequest,
+        generate_parent_comm,
+        parent_comm_to_text,
+    )
+
+    type_map = {
+        "progress": CommType.PROGRESS_UPDATE,
+        "behavior": CommType.BEHAVIOR_CONCERN,
+        "positive": CommType.POSITIVE_NOTE,
+        "unit": CommType.UPCOMING_UNIT,
+        "permission": CommType.PERMISSION_REQUEST,
+        "general": CommType.GENERAL_UPDATE,
+    }
+
+    resolved_type = type_map.get(comm_type.lower())
+    if resolved_type is None:
+        raise ValueError(
+            f"Unknown type: {comm_type}. Choose from: {', '.join(type_map.keys())}"
+        )
+
+    request = ParentCommRequest(
+        comm_type=resolved_type,
+        student_description=student_desc,
+        class_context=context,
+        tone=tone,
+        additional_notes=notes or "",
+    )
+
+    cfg = AppConfig.load()
+    llm = LLMClient(cfg)
+    comm = _run_async(generate_parent_comm(request, llm))
+    text = parent_comm_to_text(comm)
+
+    return {
+        "data": {
+            "comm_type": resolved_type.value,
+            "student_description": student_desc,
+            "text": text,
+        },
+        "files": [],
+    }
+
+
 @sub_app.command(name="parent-comm")
 def parent_comm(
     comm_type: str = typer.Option(
@@ -104,8 +207,21 @@ def parent_comm(
     notes: Optional[str] = typer.Option(
         None, "--notes", "-n", help="Additional notes"
     ),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ) -> None:
     """Generate a professional parent communication email."""
+    if json_output:
+        run_json_command(
+            "sub.parent-comm",
+            _parent_comm_json,
+            comm_type=comm_type,
+            student_desc=student_desc,
+            context=context,
+            tone=tone,
+            notes=notes,
+        )
+        return
+
     from clawed.llm import LLMClient
     from clawed.models import AppConfig
     from clawed.parent_comm import (

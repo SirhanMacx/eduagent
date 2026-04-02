@@ -10,7 +10,13 @@ from rich.panel import Panel
 from rich.table import Table
 
 from clawed._json_output import run_json_command
-from clawed.commands._helpers import _safe_progress, console, load_persona_or_exit
+from clawed.commands._helpers import (
+    _safe_progress,
+    check_api_key_or_exit,
+    console,
+    friendly_error,
+    load_persona_or_exit,
+)
 from clawed.commands._helpers import output_dir as _output_dir
 from clawed.commands._helpers import run_async as _run_async
 from clawed.commands.generate import generate_app
@@ -69,6 +75,8 @@ def unit(
         )
         return
 
+    check_api_key_or_exit()
+
     from clawed.exporter import export_unit
     from clawed.planner import plan_unit, save_unit
 
@@ -96,8 +104,7 @@ def unit(
                 )
             )
         except (RuntimeError, ValueError) as e:
-            console.print(f"[red]Generation failed:[/red] {e}")
-            console.print("[dim]Run with --debug for full details[/dim]")
+            console.print(f"[red]{friendly_error(e)}[/red]")
             raise typer.Exit(1)
         progress.update(task, description="Unit plan complete!")
 
@@ -139,6 +146,8 @@ def year_map(
     ),
 ):
     """Generate a full-year curriculum map with unit sequence, big ideas, and assessment calendar."""
+    check_api_key_or_exit()
+
     from clawed.curriculum_map import CurriculumMapper, save_year_map
     from clawed.exporter import export_year_map
 
@@ -169,8 +178,7 @@ def year_map(
                 )
             )
         except (RuntimeError, ValueError) as e:
-            console.print(f"[red]Generation failed:[/red] {e}")
-            console.print("[dim]Run with --debug for full details[/dim]")
+            console.print(f"[red]{friendly_error(e)}[/red]")
             raise typer.Exit(1)
         progress.update(task, description="Year map complete!")
 
@@ -223,6 +231,8 @@ def pacing(
     ),
 ):
     """Generate a week-by-week pacing guide from a year map."""
+    check_api_key_or_exit()
+
     from clawed.curriculum_map import (
         CurriculumMapper,
         load_year_map,
@@ -269,8 +279,7 @@ def pacing(
                 )
             )
         except (RuntimeError, ValueError) as e:
-            console.print(f"[red]Generation failed:[/red] {e}")
-            console.print("[dim]Run with --debug for full details[/dim]")
+            console.print(f"[red]{friendly_error(e)}[/red]")
             raise typer.Exit(1)
         progress.update(task, description="Pacing guide complete!")
 
@@ -328,6 +337,8 @@ def full(
     ),
 ):
     """End-to-end generation: unit plan + all lesson plans + all materials."""
+    check_api_key_or_exit()
+
     from clawed.exporter import export_lesson, export_materials, export_unit
     from clawed.lesson import generate_lesson, save_lesson
     from clawed.materials import generate_all_materials, save_materials
@@ -360,8 +371,7 @@ def full(
                 )
             )
         except (RuntimeError, ValueError) as e:
-            console.print(f"[red]Generation failed:[/red] {e}")
-            console.print("[dim]Run with --debug for full details[/dim]")
+            console.print(f"[red]{friendly_error(e)}[/red]")
             raise typer.Exit(1)
         progress.update(task, description="Unit plan complete!")
 
@@ -397,8 +407,7 @@ def full(
                     )
                 )
             except (RuntimeError, ValueError) as e:
-                console.print(f"[red]Generation failed:[/red] {e}")
-                console.print("[dim]Run with --debug for full details[/dim]")
+                console.print(f"[red]{friendly_error(e)}[/red]")
                 raise typer.Exit(1)
             save_lesson(daily, out_dir)
             export_lesson(daily, out_dir, fmt=fmt)
@@ -420,8 +429,7 @@ def full(
             try:
                 mats = _run_async(generate_all_materials(daily, persona))
             except (RuntimeError, ValueError) as e:
-                console.print(f"[red]Generation failed:[/red] {e}")
-                console.print("[dim]Run with --debug for full details[/dim]")
+                console.print(f"[red]{friendly_error(e)}[/red]")
                 raise typer.Exit(1)
             save_materials(mats, out_dir)
             export_materials(mats, out_dir, fmt=fmt)
@@ -463,6 +471,8 @@ def course(
     fmt: str = typer.Option("markdown", "--format", "-f", help="Export format"),
 ):
     """Generate a full course — one unit per topic from a pacing guide."""
+    check_api_key_or_exit()
+
     from clawed.exporter import export_unit
     from clawed.planner import plan_unit, save_unit
 

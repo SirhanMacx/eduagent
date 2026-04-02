@@ -894,6 +894,48 @@ def differentiate(
 # ── Sub-Packet command ──────────────────────────────────────────────────
 
 
+def _sub_packet_json(*, date, class_name, grade, subject, topic):
+    """Run sub-packet generation and return structured result for JSON output."""
+    from datetime import datetime, timedelta
+
+    from clawed.llm import LLMClient
+    from clawed.sub_packet import (
+        SubPacketRequest,
+        generate_sub_packet,
+        save_sub_packet,
+    )
+
+    resolved_date = date.strip().lower()
+    if resolved_date == "tomorrow":
+        resolved_date = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+    elif resolved_date == "today":
+        resolved_date = datetime.now().strftime("%Y-%m-%d")
+
+    cfg = AppConfig.load()
+    teacher_name = cfg.teacher_profile.name or "Teacher"
+    school_name = cfg.teacher_profile.school or ""
+
+    request = SubPacketRequest(
+        teacher_name=teacher_name,
+        school=school_name,
+        class_name=class_name,
+        grade=grade,
+        subject=subject,
+        date=resolved_date,
+        period_or_time=class_name,
+        lesson_topic=topic or "",
+    )
+
+    llm = LLMClient(cfg)
+    packet = _run_async(generate_sub_packet(request, llm))
+    md_path = save_sub_packet(packet, _output_dir())
+
+    return {
+        "data": packet.model_dump() if hasattr(packet, "model_dump") else None,
+        "files": [str(md_path)],
+    }
+
+
 @generate_app.command(name="sub-packet")
 def sub_packet(
     date: str = typer.Option(
@@ -913,8 +955,21 @@ def sub_packet(
     fmt: str = typer.Option(
         "text", "--format", "-f", help="Output format: text, json"
     ),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ) -> None:
     """Generate a complete substitute teacher packet."""
+    if json_output:
+        run_json_command(
+            "gen.sub-packet",
+            _sub_packet_json,
+            date=date,
+            class_name=class_name,
+            grade=grade,
+            subject=subject,
+            topic=topic,
+        )
+        return
+
     check_api_key_or_exit()
 
     from datetime import datetime, timedelta
@@ -994,6 +1049,43 @@ def sub_packet(
 # ── Parent Note command ─────────────────────────────────────────────────
 
 
+def _parent_note_json(*, student, topic, strengths, growth, teacher_id):
+    """Run parent-note generation and return structured result for JSON output."""
+    from clawed.parent_comm import (
+        generate_progress_update,
+        save_progress_update,
+    )
+    from clawed.state import TeacherSession as _TeacherSession
+
+    session = _TeacherSession.load(teacher_id)
+    persona = session.persona
+
+    strength_list = (
+        [s.strip() for s in strengths.split(",")] if strengths else []
+    )
+    growth_list = (
+        [g.strip() for g in growth.split(",")] if growth else []
+    )
+
+    update = _run_async(
+        generate_progress_update(
+            student_name=student,
+            strengths=strength_list,
+            areas_to_grow=growth_list,
+            teacher_persona=persona,
+            topic=topic,
+        )
+    )
+
+    out_dir = _output_dir()
+    json_path = save_progress_update(update, out_dir)
+
+    return {
+        "data": update.model_dump() if hasattr(update, "model_dump") else None,
+        "files": [str(json_path)],
+    }
+
+
 @generate_app.command(name="parent-note")
 def parent_note(
     student: str = typer.Option(
@@ -1014,8 +1106,21 @@ def parent_note(
     teacher_id: str = typer.Option(
         "local-teacher", "--id", help="Teacher session ID"
     ),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ) -> None:
     """Generate a parent progress update in the teacher's voice."""
+    if json_output:
+        run_json_command(
+            "gen.parent-note",
+            _parent_note_json,
+            student=student,
+            topic=topic,
+            strengths=strengths,
+            growth=growth,
+            teacher_id=teacher_id,
+        )
+        return
+
     check_api_key_or_exit()
 
     from clawed.parent_comm import (
@@ -1081,6 +1186,88 @@ def parent_note(
 # ── Curriculum gap analyzer ──────────────────────────────────────────────
 
 
+def _gap_analyze_json(*, subject, grade, standards, materials_dir):
+    """Run gap analysis and return structured result for JSON output."""
+    from clawed.curriculum_map import CurriculumMapper
+    from clawed.models import CurriculumGap, TeacherPersona
+
+    persona = load_persona_or_exit()
+
+    # Resolve standards
+    standards_list: list[str] = []
+    if standards:
+        p = Path(standards).expanduser()
+        if p.exists():
+            standards_list = [
+                line.strip()
+                for line in p.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+        else:
+            standards_list = [s.strip() for s in standards.split(",") if s.strip()]
+
+    if not standards_list:
+        standards_list = [
+            f"Grade {grade} {subject} — Core Standards (auto-inferred from materials)"
+        ]
+
+    # Collect existing materials
+    mat_path: Path | None = None
+    if materials_dir:
+        mat_path = Path(materials_dir).expanduser().resolve()
+    else:
+        cfg = AppConfig.load()
+        corpus_base = Path.home() / ".eduagent"
+        if getattr(cfg, "active_teacher_id", None):
+            corpus_base = corpus_base / "teachers" / cfg.active_teacher_id / "corpus"
+        else:
+            corpus_base = corpus_base / "corpus"
+        if corpus_base.is_dir():
+            mat_path = corpus_base
+
+    materials_list: list[str] = []
+    if mat_path and mat_path.is_dir():
+        exts = {".txt", ".md", ".pdf", ".docx", ".json"}
+        files = [
+            f for f in mat_path.rglob("*") if f.suffix.lower() in exts and f.is_file()
+        ]
+        materials_list = [f.name for f in files[:200]]
+
+    if not materials_list:
+        materials_list = ["(no materials found -- analysis is standards-only)"]
+
+    mapper = CurriculumMapper()
+    teacher_persona = TeacherPersona(
+        name=getattr(persona, "name", ""),
+        grade_levels=[grade],
+        subject_area=subject,
+    )
+
+    gaps: list[CurriculumGap] = _run_async(
+        mapper.identify_curriculum_gaps(
+            existing_materials=materials_list,
+            standards=standards_list,
+            persona=teacher_persona,
+        )
+    )
+
+    return {
+        "data": {
+            "subject": subject,
+            "grade": grade,
+            "standards_count": len(standards_list),
+            "materials_count": len(materials_list),
+            "gaps": [g.model_dump() for g in gaps] if gaps else [],
+            "summary": {
+                "high": len([g for g in gaps if g.severity.lower() == "high"]),
+                "medium": len([g for g in gaps if g.severity.lower() == "medium"]),
+                "low": len([g for g in gaps if g.severity.lower() == "low"]),
+            },
+        },
+        "files": [],
+    }
+
+
 @generate_app.command(name="gap-analyze")
 def gap_analyze(
     subject: str = typer.Option(..., "--subject", "-s", help="Subject area (e.g. 'Social Studies')"),
@@ -1097,6 +1284,7 @@ def gap_analyze(
         help="Directory of teacher materials to scan (defaults to persona corpus dir)",
     ),
     fmt: str = typer.Option("html", "--format", "-f", help="Output format: html or markdown"),
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
     """Analyze existing materials against standards and identify curriculum gaps.
 
@@ -1107,6 +1295,17 @@ def gap_analyze(
         clawed gap-analyze --subject "Social Studies" --grade 8 \\
             --standards "8.1.a,8.2.b,8.3.c"
     """
+    if json_output:
+        run_json_command(
+            "gen.gap-analyze",
+            _gap_analyze_json,
+            subject=subject,
+            grade=grade,
+            standards=standards,
+            materials_dir=materials_dir,
+        )
+        return
+
     check_api_key_or_exit()
 
     from datetime import datetime

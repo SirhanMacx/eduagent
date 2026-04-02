@@ -10,7 +10,13 @@ from rich.panel import Panel
 from rich.table import Table
 
 from clawed._json_output import run_json_command
-from clawed.commands._helpers import _safe_progress, console, load_persona_or_exit
+from clawed.commands._helpers import (
+    _safe_progress,
+    check_api_key_or_exit,
+    console,
+    friendly_error,
+    load_persona_or_exit,
+)
 from clawed.commands._helpers import output_dir as _output_dir
 from clawed.commands._helpers import run_async as _run_async
 from clawed.commands.generate import generate_app
@@ -57,6 +63,8 @@ def materials(
         run_json_command("gen.materials", _materials_json, lesson_file=lesson_file)
         return
 
+    check_api_key_or_exit()
+
     from clawed.exporter import export_materials
     from clawed.lesson import load_lesson
     from clawed.materials import generate_all_materials, save_materials
@@ -69,8 +77,7 @@ def materials(
         try:
             mats = _run_async(generate_all_materials(daily, persona))
         except (RuntimeError, ValueError) as e:
-            console.print(f"[red]Generation failed:[/red] {e}")
-            console.print("[dim]Run with --debug for full details[/dim]")
+            console.print(f"[red]{friendly_error(e)}[/red]")
             raise typer.Exit(1)
         progress.update(
             task, completed=4, description="All materials generated!"
@@ -132,6 +139,8 @@ def assess(
     ),
 ):
     """Generate intelligent assessments — DBQ, summative, formative, or quiz."""
+    check_api_key_or_exit()
+
     from clawed.assessment import AssessmentGenerator, save_assessment
 
     persona = load_persona_or_exit()
@@ -162,8 +171,7 @@ def assess(
             try:
                 result = _run_async(gen.generate_formative(daily, persona))
             except (RuntimeError, ValueError) as e:
-                console.print(f"[red]Generation failed:[/red] {e}")
-                console.print("[dim]Run with --debug for full details[/dim]")
+                console.print(f"[red]{friendly_error(e)}[/red]")
                 raise typer.Exit(1)
             progress.update(task, description="Exit ticket ready!")
 
@@ -200,8 +208,7 @@ def assess(
             try:
                 result = _run_async(gen.generate_summative(unit_plan, persona))
             except (RuntimeError, ValueError) as e:
-                console.print(f"[red]Generation failed:[/red] {e}")
-                console.print("[dim]Run with --debug for full details[/dim]")
+                console.print(f"[red]{friendly_error(e)}[/red]")
                 raise typer.Exit(1)
             progress.update(task, description="Unit test ready!")
 
@@ -241,8 +248,7 @@ def assess(
                     )
                 )
             except (RuntimeError, ValueError) as e:
-                console.print(f"[red]Generation failed:[/red] {e}")
-                console.print("[dim]Run with --debug for full details[/dim]")
+                console.print(f"[red]{friendly_error(e)}[/red]")
                 raise typer.Exit(1)
             progress.update(task, description="DBQ ready!")
 
@@ -283,8 +289,7 @@ def assess(
                     )
                 )
             except (RuntimeError, ValueError) as e:
-                console.print(f"[red]Generation failed:[/red] {e}")
-                console.print("[dim]Run with --debug for full details[/dim]")
+                console.print(f"[red]{friendly_error(e)}[/red]")
                 raise typer.Exit(1)
             progress.update(task, description="Quiz ready!")
 
@@ -318,6 +323,8 @@ def rubric(
     grade: str = typer.Option("", "--grade", "-g", help="Grade level"),
 ):
     """Generate a detailed scoring rubric for any written task."""
+    check_api_key_or_exit()
+
     from clawed.assessment import AssessmentGenerator, save_assessment
 
     persona = load_persona_or_exit()
@@ -339,8 +346,7 @@ def rubric(
                 )
             )
         except (RuntimeError, ValueError) as e:
-            console.print(f"[red]Generation failed:[/red] {e}")
-            console.print("[dim]Run with --debug for full details[/dim]")
+            console.print(f"[red]{friendly_error(e)}[/red]")
             raise typer.Exit(1)
         progress.update(prog_task, description="Rubric ready!")
 
@@ -373,6 +379,8 @@ def score(
     ),
 ):
     """Score a lesson plan on quality dimensions (1-5 per dimension)."""
+    check_api_key_or_exit()
+
     import json
 
     from clawed.models import DailyLesson
@@ -392,8 +400,7 @@ def score(
         try:
             scores = _run_async(scorer.score(lesson_obj))
         except (RuntimeError, ValueError) as e:
-            console.print(f"[red]Generation failed:[/red] {e}")
-            console.print("[dim]Run with --debug for full details[/dim]")
+            console.print(f"[red]{friendly_error(e)}[/red]")
             raise typer.Exit(1)
         progress.update(task, description="Scoring complete!")
 
@@ -457,6 +464,8 @@ def improve(
 
     # Handle --analyze (existing prompt improvement + memory engine)
     if analyze:
+        check_api_key_or_exit()
+
         from clawed.database import Database
         from clawed.improver import improve_prompts
 
@@ -469,8 +478,7 @@ def improve(
             try:
                 result = _run_async(improve_prompts(db, feedback_window_days=days))
             except (RuntimeError, ValueError) as e:
-                console.print(f"[red]Generation failed:[/red] {e}")
-                console.print("[dim]Run with --debug for full details[/dim]")
+                console.print(f"[red]{friendly_error(e)}[/red]")
                 raise typer.Exit(1)
             progress.update(task, description="Done!")
 
@@ -558,6 +566,8 @@ def evaluate(
     persona, then uses the LLM to score each one on voice consistency,
     vocabulary match, and structure match.
     """
+    check_api_key_or_exit()
+
     from clawed.evaluation import evaluate_voice_consistency
     from clawed.lesson import generate_lesson
     from clawed.models import DailyLesson, LessonBrief, UnitPlan
@@ -624,8 +634,7 @@ def evaluate(
     try:
         report = _run_async(evaluate_voice_consistency(persona, generated, config))
     except (RuntimeError, ValueError) as e:
-        console.print(f"[red]Generation failed:[/red] {e}")
-        console.print("[dim]Run with --debug for full details[/dim]")
+        console.print(f"[red]{friendly_error(e)}[/red]")
         raise typer.Exit(1)
 
     # Display results
