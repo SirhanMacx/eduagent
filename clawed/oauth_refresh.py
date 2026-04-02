@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 CREDENTIALS_PATH = Path.home() / ".claude" / ".credentials.json"
 TOKEN_URL = "https://platform.claude.com/v1/oauth/token"
 CLIENT_ID = "9d1c250a-e61b-44d9-88ed-5944d1962f5e"
+OAUTH_SCOPES = "user:profile user:inference user:sessions:claude_code user:mcp_servers user:file_upload"
 
 # Refresh when less than 10 minutes remaining
 REFRESH_THRESHOLD_SECONDS = 600
@@ -67,6 +68,7 @@ def _refresh_token(refresh_token: str | None) -> str | None:
                 "grant_type": "refresh_token",
                 "refresh_token": refresh_token,
                 "client_id": CLIENT_ID,
+                "scope": OAUTH_SCOPES,
             },
             headers={"Content-Type": "application/json"},
             timeout=15,
