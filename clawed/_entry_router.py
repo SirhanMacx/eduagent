@@ -29,9 +29,13 @@ def _find_bundled_cli_js() -> str | None:
 
     # Check if we're in a dev environment with the cli/ directory
     repo_root = pkg_dir.parent
-    dev_cli = repo_root / "cli" / "source" / "cli.js"
-    if dev_cli.exists():
-        return str(dev_cli)
+    # Build output goes to cli/dist/cli.js
+    for dev_path in [
+        repo_root / "cli" / "dist" / "cli.js",
+        repo_root / "cli" / "source" / "cli.js",
+    ]:
+        if dev_path.exists():
+            return str(dev_path)
 
     return None
 

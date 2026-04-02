@@ -22,14 +22,21 @@ let cachedPython: string | null = null
 
 export function findPythonSync(): string | null {
   if (cachedPython) return cachedPython
-  for (const name of ['python3', 'python']) {
+  // Try version-specific first (more likely to have clawed installed),
+  // then generic python3/python
+  for (const name of ['python3.12', 'python3.11', 'python3.10', 'python3', 'python']) {
     try {
-      const path = execSync(`which ${name}`, { encoding: 'utf-8' }).trim()
-      if (path) {
-        cachedPython = path
-        return path
+      const path = execSync(`which ${name} 2>/dev/null`, { encoding: 'utf-8', timeout: 3000 }).trim()
+      if (!path) continue
+      // Verify this Python actually has clawed installed
+      try {
+        execSync(`${path} -c "import clawed"`, { timeout: 5000, stdio: 'ignore' })
+      } catch (_e) {
+        continue // This Python doesn't have clawed, try next
       }
-    } catch {
+      cachedPython = path
+      return path
+    } catch (_e) {
       continue
     }
   }
@@ -99,7 +106,7 @@ export function spawnPython(
       }
       try {
         resolve(JSON.parse(stdout.trim()))
-      } catch {
+      } catch (_e) {
         resolve({
           ...EMPTY_ERROR,
           errors: [`Invalid JSON: ${stdout.slice(0, 500)}`],
