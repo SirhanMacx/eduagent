@@ -251,23 +251,26 @@ async def test_llm_connection(config: Optional[AppConfig] = None) -> dict:
         model = cfg.anthropic_model
         if not api_key:
             return _result(False, model, "No API key configured", is_err=True)
-        import httpx
         try:
-            from clawed.agent import _anthropic_headers
-            async with httpx.AsyncClient(timeout=15.0) as client:
-                headers = _anthropic_headers(api_key)
-                body = {
-                    "model": model, "max_tokens": 5,
-                    "messages": [{"role": "user", "content": "Hi"}],
-                }
-                resp = await client.post(
-                    "https://api.anthropic.com/v1/messages",
-                    headers=headers, json=body,
+            import anthropic
+            is_oauth = api_key.startswith("sk-ant-") and not api_key.startswith("sk-ant-api")
+            if is_oauth:
+                client = anthropic.Anthropic(
+                    auth_token=api_key,
+                    default_headers={"anthropic-beta": "oauth-2025-04-20", "x-app": "cli"},
                 )
-                if resp.status_code == 401:
-                    return _result(False, model, "API key invalid", is_err=True)
-                resp.raise_for_status()
-                return _result(True, model, f"{model} is ready")
+            else:
+                client = anthropic.Anthropic(api_key=api_key)
+            msg = client.messages.create(
+                model=model, max_tokens=5,
+                messages=[{"role": "user", "content": "Hi"}],
+            )
+            return _result(True, model, f"{model} is ready")
+        except anthropic.AuthenticationError:
+            return _result(False, model, "API key or OAuth token invalid", is_err=True)
+        except anthropic.RateLimitError:
+            # Token works but model is rate limited — still "connected"
+            return _result(True, model, f"{model} connected (rate limited, will retry)")
         except Exception as e:
             return _result(False, model, str(e), is_err=True)
 
