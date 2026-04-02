@@ -1,5 +1,5 @@
 /**
- * Flashy animated launch screen for Claude Code CLI.
+ * Flashy animated launch screen for Claw-ED CLI.
  * Pure ANSI escape sequences — no dependencies.
  */
 

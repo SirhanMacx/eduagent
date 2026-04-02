@@ -10,9 +10,9 @@ export default {
   get description() {
     const reward = getCachedReferrerReward()
     if (reward) {
-      return 'Share a free week of Claude Code with friends and earn extra usage'
+      return 'Share a free week of Claw-ED with friends and earn extra usage'
     }
-    return 'Share a free week of Claude Code with friends'
+    return 'Share a free week of Claw-ED with friends'
   },
   get isHidden() {
     const { eligible, hasCache } = checkCachedPassesEligibility()

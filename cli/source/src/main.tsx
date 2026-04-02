@@ -3398,7 +3398,7 @@ async function run(): Promise<CommanderCommand> {
         }
       }
 
-      // --remote and --teleport both create/resume Claude Code Web (CCR) sessions.
+      // --remote and --teleport both create/resume Claw-ED Web (CCR) sessions.
       // Remote Control (--rc) is a separate feature gated in initReplBridge.ts.
       if (remote !== null || teleport) {
         await waitForPolicyLimitsToLoad();
@@ -3968,7 +3968,7 @@ async function run(): Promise<CommanderCommand> {
 
   // claude server
   if (feature('DIRECT_CONNECT')) {
-    program.command('server').description('Start a Claude Code session server').option('--port <number>', 'HTTP port', '0').option('--host <string>', 'Bind address', '0.0.0.0').option('--auth-token <token>', 'Bearer token for auth').option('--unix <path>', 'Listen on a unix domain socket').option('--workspace <dir>', 'Default working directory for sessions that do not specify cwd').option('--idle-timeout <ms>', 'Idle timeout for detached sessions in ms (0 = never expire)', '600000').option('--max-sessions <n>', 'Maximum concurrent sessions (0 = unlimited)', '32').action(async (opts: {
+    program.command('server').description('Start a Claw-ED session server').option('--port <number>', 'HTTP port', '0').option('--host <string>', 'Bind address', '0.0.0.0').option('--auth-token <token>', 'Bearer token for auth').option('--unix <path>', 'Listen on a unix domain socket').option('--workspace <dir>', 'Default working directory for sessions that do not specify cwd').option('--idle-timeout <ms>', 'Idle timeout for detached sessions in ms (0 = never expire)', '600000').option('--max-sessions <n>', 'Maximum concurrent sessions (0 = unlimited)', '32').action(async (opts: {
       port: string;
       host: string;
       authToken?: string;
@@ -4052,7 +4052,7 @@ async function run(): Promise<CommanderCommand> {
   // this action it means the argv rewrite didn't fire (e.g. user ran
   // `claude ssh` with no host) — just print usage.
   if (feature('SSH_REMOTE')) {
-    program.command('ssh <host> [dir]').description('Run Claude Code on a remote host over SSH. Deploys the binary and ' + 'tunnels API auth back through your local machine — no remote setup needed.').option('--permission-mode <mode>', 'Permission mode for the remote session').option('--dangerously-skip-permissions', 'Skip all permission prompts on the remote (dangerous)').option('--local', 'e2e test mode — spawn the child CLI locally (skip ssh/deploy). ' + 'Exercises the auth proxy and unix-socket plumbing without a remote host.').action(async () => {
+    program.command('ssh <host> [dir]').description('Run Claw-ED on a remote host over SSH. Deploys the binary and ' + 'tunnels API auth back through your local machine — no remote setup needed.').option('--permission-mode <mode>', 'Permission mode for the remote session').option('--dangerously-skip-permissions', 'Skip all permission prompts on the remote (dangerous)').option('--local', 'e2e test mode — spawn the child CLI locally (skip ssh/deploy). ' + 'Exercises the auth proxy and unix-socket plumbing without a remote host.').action(async () => {
       // Argv rewriting in main() should have consumed `ssh <host>` before
       // commander runs. Reaching here means host was missing or the
       // rewrite predicate didn't match.

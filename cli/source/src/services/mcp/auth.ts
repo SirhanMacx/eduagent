@@ -365,7 +365,7 @@ export function hasMcpDiscoveryButNoToken(
 /**
  * Revokes a single token on the OAuth server.
  *
- * Per RFC 7009, public clients (like Claude Code) should authenticate by including
+ * Per RFC 7009, public clients (like Claw-ED) should authenticate by including
  * client_id in the request body, NOT via an Authorization header. The Bearer token
  * in an Authorization header is meant for resource owner authentication, not client
  * authentication.
