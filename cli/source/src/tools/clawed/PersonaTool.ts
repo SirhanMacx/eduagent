@@ -37,7 +37,7 @@ export const PersonaTool = buildTool({
     return 'Fetching persona...'
   },
   async call(input) {
-    const args = ['-m', 'clawed', 'config', 'persona', 'show', '--json']
+    const args = ['-m', 'clawed', 'persona', 'show', '--json']
     const result = await spawnPython(args, { timeout: TIMEOUT_BY_COMMAND.persona })
     return { data: { result } }
   },

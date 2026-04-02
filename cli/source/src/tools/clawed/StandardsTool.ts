@@ -42,7 +42,7 @@ export const StandardsTool = buildTool({
     return `Fetching standards: grade ${input.grade ?? '...'}, ${input.subject ?? '...'}`
   },
   async call(input) {
-    const args = ['-m', 'clawed', 'config', 'standards', 'list', '-g', input.grade, '-s', input.subject, '--json']
+    const args = ['-m', 'clawed', 'standards', 'list', '-g', input.grade, '-s', input.subject, '--json']
     const result = await spawnPython(args, { timeout: TIMEOUT_BY_COMMAND.standards })
     return { data: { result } }
   },

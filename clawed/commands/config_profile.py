@@ -29,10 +29,14 @@ def persona_show(
     """Display the current teacher persona."""
     if json_output:
         def _persona_show_json():
-            persona = load_persona_or_exit()
+            from clawed.persona import load_persona
+            pp = _output_dir() / "persona.json"
+            if not pp.exists():
+                return {"data": {"persona": None}, "files": [], "warnings": ["No persona found. Run clawed ingest first."]}
+            persona = load_persona(pp)
             return {
                 "data": {"persona": persona.model_dump() if hasattr(persona, "model_dump") else persona.dict()},
-                "files": [],
+                "files": [str(pp)],
             }
         run_json_command("config.persona.show", _persona_show_json)
         return

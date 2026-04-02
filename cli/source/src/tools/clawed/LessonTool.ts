@@ -47,7 +47,7 @@ export const LessonTool = buildTool({
     return `Generating lesson: ${input.topic ?? '...'}`
   },
   async call(input) {
-    const args = ['-m', 'clawed', 'gen', 'lesson', input.topic, '-g', input.grade, '-s', input.subject]
+    const args = ['-m', 'clawed', 'lesson', input.topic, '-g', input.grade, '-s', input.subject]
     if (input.format) args.push('--format', input.format)
     args.push('--json')
     const result = await spawnPython(args, { timeout: TIMEOUT_BY_COMMAND.lesson })

@@ -47,7 +47,7 @@ export const UnitTool = buildTool({
     return `Generating unit: ${input.topic ?? '...'}`
   },
   async call(input) {
-    const args = ['-m', 'clawed', 'gen', 'unit', input.topic, '-g', input.grade, '-s', input.subject]
+    const args = ['-m', 'clawed', 'unit', input.topic, '-g', input.grade, '-s', input.subject]
     if (input.weeks) args.push('--weeks', String(input.weeks))
     args.push('--json')
     const result = await spawnPython(args, { timeout: TIMEOUT_BY_COMMAND.unit })

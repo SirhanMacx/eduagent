@@ -41,7 +41,7 @@ export const IngestTool = buildTool({
     return `Ingesting: ${input.path ?? '...'}`
   },
   async call(input) {
-    const args = ['-m', 'clawed', 'gen', 'ingest', input.path, '--json']
+    const args = ['-m', 'clawed', 'ingest', input.path, '--json']
     const result = await spawnPython(args, { timeout: TIMEOUT_BY_COMMAND.ingest })
     return { data: { result } }
   },

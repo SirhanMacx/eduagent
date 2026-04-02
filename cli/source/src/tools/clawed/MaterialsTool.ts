@@ -45,7 +45,7 @@ export const MaterialsTool = buildTool({
     return `Generating materials: ${input.lesson_file ?? '...'}`
   },
   async call(input) {
-    const args = ['-m', 'clawed', 'gen', 'materials', '--lesson', input.lesson_file]
+    const args = ['-m', 'clawed', 'materials', '--lesson', input.lesson_file]
     if (input.format) args.push('--format', input.format)
     args.push('--json')
     const result = await spawnPython(args, { timeout: TIMEOUT_BY_COMMAND.materials })

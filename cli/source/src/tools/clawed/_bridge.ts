@@ -76,7 +76,11 @@ export function spawnPython(
     let stdout = '',
       stderr = '',
       killed = false
-    const proc = spawn(python, args, { stdio: ['ignore', 'pipe', 'pipe'] })
+    // Inject --python after '-m clawed' to force the Python CLI path.
+    // Without it, the entry router detects Node.js and routes back to
+    // the Ink TUI, creating infinite recursion.
+    const fullArgs = [...args.slice(0, 2), '--python', ...args.slice(2)]
+    const proc = spawn(python, fullArgs, { stdio: ['ignore', 'pipe', 'pipe'] })
     const timer = setTimeout(() => {
       killed = true
       proc.kill('SIGTERM')

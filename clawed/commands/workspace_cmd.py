@@ -193,13 +193,22 @@ def workspace_memory() -> None:
 
 
 @workspace_app.command("students")
-def workspace_students() -> None:
+def workspace_students(
+    json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
+) -> None:
     """List all student profiles in the workspace."""
     from clawed.workspace import STUDENTS_DIR, _ensure_workspace, list_student_profiles
 
     _ensure_workspace()
 
     profiles = list_student_profiles()
+
+    if json_output:
+        from clawed._json_output import run_json_command
+        def _students_json():
+            return {"data": {"profiles": profiles or []}, "files": []}
+        run_json_command("workspace.students", _students_json)
+        return
     if not profiles:
         console.print(
             "[dim]No student profiles yet. They are created automatically"
