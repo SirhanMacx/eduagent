@@ -3,6 +3,8 @@ import json
 import subprocess
 import sys
 
+import pytest
+
 
 def test_json_envelope_success():
     """JSON output wraps successful results in standard envelope."""
@@ -38,7 +40,10 @@ def test_lesson_json_flag_error_without_config():
     """clawed lesson --json returns JSON envelope or times out (needs API key)."""
     try:
         result = subprocess.run(
-            [sys.executable, "-m", "clawed", "--python", "lesson", "Test Topic", "-g", "8", "-s", "US History", "--json"],
+            [
+                sys.executable, "-m", "clawed", "--python",
+                "lesson", "Test Topic", "-g", "8", "-s", "US History", "--json",
+            ],
             capture_output=True, text=True, timeout=5,
         )
         if result.stdout.strip():
