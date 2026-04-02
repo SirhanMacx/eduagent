@@ -39,7 +39,7 @@
     "price": "0",
     "priceCurrency": "USD"
   },
-  "softwareVersion": "2.3.8",
+  "softwareVersion": "4.1.2026",
   "author": {
     "@type": "Organization",
     "name": "Claw-ED",
@@ -1337,11 +1337,11 @@ img { max-width: 100%; height: auto; }
       <span class="hero-badge-dot" aria-hidden="true"></span>
       Open Source &middot; MIT Licensed &middot; Free Forever
     </div>
-    <h1 id="hero-heading">Your AI co-teacher that<br><span class="highlight">sounds like you</span></h1>
+    <h1 id="hero-heading">The agentic layer<br>for <span class="highlight">education</span></h1>
     <p class="subhead">
-      Claw-ED learns from your curriculum files and generates lessons,
-      slides, handouts, and assessments in your exact teaching voice.
-      Runs on your machine. No subscription. No data collection.
+      A persistent AI co-teacher that lives in your terminal and on your phone.
+      Talk naturally. Generate lessons, games, slides, and assessments in your voice.
+      One install. One command.
     </p>
     <div class="hero-buttons">
       <a class="btn-primary" href="#install">Get Started &mdash; Free</a>
@@ -1351,17 +1351,15 @@ img { max-width: 100%; height: auto; }
       </a>
     </div>
 
-    <!-- Terminal Demo -->
-    <div class="terminal" role="img" aria-label="Terminal demo showing Claw-ED commands">
+    <!-- Terminal Demo — Full CLI Animation -->
+    <div class="terminal" role="img" aria-label="Terminal demo showing Claw-ED interactive session">
       <div class="terminal-bar" aria-hidden="true">
         <span class="terminal-dot"></span>
         <span class="terminal-dot"></span>
         <span class="terminal-dot"></span>
-        <span class="terminal-title">Terminal</span>
+        <span class="terminal-title">Claw-ED v4.1.2026</span>
       </div>
-      <div class="terminal-body">
-        <span class="terminal-prompt" aria-hidden="true">$</span>
-        <span class="terminal-text" id="typewriter"></span><span class="terminal-cursor" id="cursor" aria-hidden="true"></span>
+      <div class="terminal-body" id="terminal-body" style="min-height:340px;font-size:13px;line-height:1.5;overflow:hidden;">
       </div>
     </div>
   </div>
@@ -1456,32 +1454,42 @@ img { max-width: 100%; height: auto; }
       <div class="feature-card">
         <div class="feature-card-icon" aria-hidden="true">&#x1F3A4;</div>
         <h3>Learns Your Voice</h3>
-        <p>Not generic AI. Claw-ED analyzes your existing files &mdash; your vocabulary, your structure, your style. Generated content matches how you actually teach.</p>
+        <p>Not generic AI. Claw-ED extracts your pedagogical fingerprint from your files &mdash; scaffolding moves, assessment style, signature activities. Lessons sound like you wrote them.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-card-icon" aria-hidden="true">&#x1F4C4;</div>
-        <h3>20+ File Formats</h3>
-        <p>PDF, DOCX, PPTX, DOC, PPT, XLS, XLSX, CSV, RTF, HTML, ODT, ODP, TXT, and more. Decades of teaching files, finally searchable.</p>
+        <div class="feature-card-icon" aria-hidden="true">&#x1F4AC;</div>
+        <h3>Talk Naturally</h3>
+        <p>"Make me a lesson on WWI for my 8th graders." No command syntax needed. The AI understands what you need and picks the right tools.</p>
       </div>
       <div class="feature-card">
         <div class="feature-card-icon" aria-hidden="true">&#x1F4E6;</div>
         <h3>Complete Packages</h3>
-        <p>Lesson plan + slides + student handout in one command. Export to DOCX, PPTX, PDF, or Google Docs. Ready to print or share.</p>
+        <p>Lesson plan + slides + student handout + interactive game in one session. Export to DOCX, PPTX, PDF. Ready to print.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon" aria-hidden="true">&#x1F4F1;</div>
+        <h3>Always On</h3>
+        <p>Background daemon keeps Telegram connected. Generate lessons from your phone, on the bus, before bed. Your co-teacher never sleeps.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon" aria-hidden="true">&#x1F3AE;</div>
+        <h3>Interactive Games</h3>
+        <p>Every lesson can generate a unique HTML5 game with 3D visuals. No templates &mdash; the AI designs the mechanic, visuals, and interaction from scratch. <a href="games/" style="color:inherit;text-decoration:underline;">Browse gallery</a></p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon" aria-hidden="true">&#x1F310;</div>
+        <h3>Any Provider</h3>
+        <p>Claude, GPT, Gemini, or free local models via Ollama. Your choice of AI, your budget. Claw-ED routes to the best model within your provider.</p>
       </div>
       <div class="feature-card">
         <div class="feature-card-icon" aria-hidden="true">&#x2705;</div>
         <h3>Quality Gates</h3>
-        <p>Every lesson is automatically checked: 6+ guided notes, 3+ exit ticket questions, 2+ primary sources with real text. No thin AI slop.</p>
+        <p>Every output scored 0-10 before delivery. Catches truncated text, answer key leaks, empty slides, broken HTML. No thin AI slop.</p>
       </div>
       <div class="feature-card">
         <div class="feature-card-icon" aria-hidden="true">&#x1F512;</div>
         <h3>Local First</h3>
-        <p>Runs on your machine. Your curriculum files never leave your computer. No accounts, no telemetry, no data collection. You own everything.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-card-icon" aria-hidden="true">&#x1F496;</div>
-        <h3>Open Source</h3>
-        <p>MIT licensed, free forever. Read every line of code. Fork it, modify it, contribute back. No lock-in, no surprise paywalls.</p>
+        <p>Runs on your machine. Your files never leave. No accounts, no telemetry, no data collection. MIT licensed, free forever.</p>
       </div>
     </div>
   </div>
@@ -1827,55 +1835,122 @@ img { max-width: 100%; height: auto; }
 <!-- ── Scripts ──────────────────────────────────────── -->
 <script>
 (function() {
-  // ── Typewriter Animation ──
-  var commands = [
-    'pip install clawed',
-    'clawed ingest ./my-lessons/',
-    'clawed lesson "The Civil War" --grade 8',
-    'clawed lesson "Photosynthesis" --export pdf',
-    'clawed unit "World War II" -g 10 -s "History"',
-    'clawed serve',
+  // ── Full CLI Terminal Animation ──
+  var terminal = document.getElementById('terminal-body');
+  var gold = '#D4A843';
+  var green = '#2D5F3C';
+  var dim = '#888';
+  var white = '#e8e8e8';
+  var cyan = '#5FAFAF';
+
+  var logo = [
+    '       ._________.',
+    '       |_________|',
+    '            ||',
+    '           /  \\',
+    "        .-'    '-.",
+    "      .'          '.",
+    '     /    ///        \\',
+    '    |     ///         |',
+    '    |    ///          |',
+    '     \\               /',
+    "      '.           .'",
+    "        '-._____.-'",
   ];
 
-  var el = document.getElementById('typewriter');
-  var cmdIndex = 0;
-  var charIndex = 0;
-  var isDeleting = false;
-  var typeSpeed = 55;
-  var deleteSpeed = 25;
-  var pauseAfterType = 2400;
-  var pauseAfterDelete = 400;
+  // Scenes: each is an array of {text, color, delay, typing}
+  var scenes = [
+    // Scene 1: User types clawed
+    [{text: '$ clawed', color: white, delay: 0, typing: true}],
+    // Scene 2: Logo draws line by line
+    ...logo.map(function(line, i) {
+      return [{text: line, color: gold, delay: 80}];
+    }),
+    // Scene 3: Brand text
+    [{text: '', color: white, delay: 200}],
+    [{text: '      C L A W - E D', color: gold, delay: 200, bold: true}],
+    [{text: '     Your AI co-teacher', color: dim, delay: 400}],
+    [{text: '', color: white, delay: 600}],
+    // Scene 4: User types natural language
+    [{text: '> make me a lesson on the causes of WWI for 8th grade', color: cyan, delay: 0, typing: true}],
+    [{text: '', color: white, delay: 400}],
+    // Scene 5: AI responds
+    [{text: '  Generating lesson: Causes of World War I', color: dim, delay: 100}],
+    [{text: '  Using persona: Jon Maccarello (Great Neck South)', color: dim, delay: 100}],
+    [{text: '  Standards: NY SS 8.6a, 8.6b, 8.6c', color: dim, delay: 100}],
+    [{text: '', color: white, delay: 400}],
+    [{text: '  Lesson generated: Causes of WWI (Score: 9.1/10)', color: green, delay: 200, bold: true}],
+    [{text: '  Files:', color: white, delay: 100}],
+    [{text: '    causes_wwi_handout.docx', color: cyan, delay: 80}],
+    [{text: '    causes_wwi_plan.docx', color: cyan, delay: 80}],
+    [{text: '', color: white, delay: 600}],
+    [{text: '  Want me to also generate slides or a game?', color: white, delay: 0}],
+  ];
 
-  function tick() {
-    var current = commands[cmdIndex];
+  var sceneIndex = 0;
+  var looping = false;
 
-    if (!isDeleting) {
-      el.textContent = current.substring(0, charIndex + 1);
-      charIndex++;
+  function addLine(text, color, bold) {
+    var line = document.createElement('div');
+    line.style.color = color || white;
+    line.style.fontFamily = 'monospace';
+    line.style.whiteSpace = 'pre';
+    if (bold) line.style.fontWeight = 'bold';
+    line.textContent = text;
+    terminal.appendChild(line);
+    // Auto-scroll
+    terminal.scrollTop = terminal.scrollHeight;
+    return line;
+  }
 
-      if (charIndex >= current.length) {
-        setTimeout(function() {
-          isDeleting = true;
-          tick();
-        }, pauseAfterType);
-        return;
+  function typeText(text, color, bold, callback) {
+    var line = addLine('', color, bold);
+    var i = 0;
+    function typeChar() {
+      if (i < text.length) {
+        line.textContent = text.substring(0, i + 1);
+        i++;
+        setTimeout(typeChar, 40 + Math.random() * 30);
+      } else {
+        if (callback) callback();
       }
-      setTimeout(tick, typeSpeed + Math.random() * 35);
+    }
+    typeChar();
+  }
+
+  function playScene() {
+    if (sceneIndex >= scenes.length) {
+      // Pause, then restart
+      setTimeout(function() {
+        terminal.innerHTML = '';
+        sceneIndex = 0;
+        playScene();
+      }, 4000);
+      return;
+    }
+
+    var steps = scenes[sceneIndex];
+    var step = steps[0];
+    sceneIndex++;
+
+    if (step.typing) {
+      typeText(step.text, step.color, step.bold, function() {
+        setTimeout(playScene, step.delay || 300);
+      });
     } else {
-      el.textContent = current.substring(0, charIndex - 1);
-      charIndex--;
-
-      if (charIndex <= 0) {
-        isDeleting = false;
-        cmdIndex = (cmdIndex + 1) % commands.length;
-        setTimeout(tick, pauseAfterDelete);
-        return;
-      }
-      setTimeout(tick, deleteSpeed);
+      addLine(step.text, step.color, step.bold);
+      setTimeout(playScene, step.delay || 100);
     }
   }
 
-  tick();
+  // Start animation when terminal is visible
+  var observer = new IntersectionObserver(function(entries) {
+    if (entries[0].isIntersecting && !looping) {
+      looping = true;
+      playScene();
+    }
+  }, {threshold: 0.3});
+  observer.observe(terminal);
 
   // ── Nav scroll shadow ──
   var nav = document.querySelector('.nav');
