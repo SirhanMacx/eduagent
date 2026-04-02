@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/),
 and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [4.2.2026] - 2026-04-02
+
+The agentic onboarding release. Claw-ED detects your existing AI connections and guides you through setup.
+
+### Added
+- **Auto-detect providers** — onboarding scans for OAuth tokens, API keys in env vars, and local Ollama. Shows what's found and recommends the best option.
+- **9 provider options** — Anthropic (OAuth + API key), OpenAI, Google Gemini, Codex, Antigravity, Ollama (local + cloud), custom API endpoint.
+- **Starter personas** — 4 built-in teaching personas (Social Studies, Science, Math, ELA) so teachers can generate immediately without ingesting files.
+- **Official Anthropic SDK** — switched from raw HTTP to the official Python SDK with proper `auth_token` for OAuth and built-in retry.
+- **OAuth token auto-refresh** — tokens refresh automatically before expiry with proper scopes.
+- **API key validation** — `check_api_key_or_exit()` runs before any generation, fails fast with teacher-friendly message.
+- **Teacher-friendly errors** — "The AI service is busy" not "Client error 429".
+- **OAuth login script** — `scripts/oauth_login.py` for independent tokens per fleet machine.
+
+### Fixed
+- **Complete rebranding** — 190 files, 379 replacements. Zero "Claude Code" in user-facing output. Claude mascot replaced with apple.
+- **Correct model names** — `claude-opus-4-20250514` (was `claude-opus-4-6-20250514` which 404'd).
+- **Connection test uses SDK** — rate limited tokens show "connected" not "failed".
+- **Upsell/promotional content disabled** — no Claude-specific ads or upgrade prompts.
+- **Async Telegram** — replaced blocking `time.sleep()` with `asyncio.sleep()`.
+
+### Changed
+- **Onboarding redesigned** — auto-detect → confirm/select → connect → tips for Telegram and curriculum ingestion.
+- **All Anthropic tiers route to Opus** — maximum intelligence for every task.
+
+---
+
 ## [4.1.2026] - 2026-04-01
 
 Quality release. Every system audited, every bug fixed, every feature verified.

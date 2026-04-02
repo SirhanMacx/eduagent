@@ -62,8 +62,8 @@ Then it generates new lessons that match. Not "inspired by" — actually match. 
 **What makes it different:**
 
 - **Your voice, not generic AI.** Lessons sound like you, not like a chatbot.
-- **Your files stay on your machine.** Local-first architecture. No accounts, no subscriptions, no data collection.
-- **Works with any AI provider.** Claude, GPT, Gemini, Ollama (free local models), or your own fine-tuned model.
+- **Auto-detects your setup.** Finds existing OAuth tokens, API keys, and local models automatically.
+- **Works with any AI provider.** Anthropic (OAuth + API), OpenAI, Google Gemini, Codex, Antigravity, Ollama (local + cloud), or custom endpoints.
 - **Gets better over time.** Rate lessons, give feedback — it learns what you want.
 - **Open source.** MIT license. Free forever.
 
