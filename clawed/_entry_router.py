@@ -119,11 +119,8 @@ def _handle_daemon(args: list[str]) -> None:
 def main() -> None:
     """Entry point for the `clawed` command.
 
-    Priority:
-    1. daemon commands → Node.js daemon
-    2. --python flag → force Python CLI
-    3. Node.js available + cli.js found → Ink TUI
-    4. Fallback → Python typer CLI
+    Currently routes to the Python CLI for all interactive use.
+    The TypeScript Ink TUI is available for --version only.
     """
     args = sys.argv[1:]
 
@@ -136,21 +133,19 @@ def main() -> None:
     if "--python" in args:
         args.remove("--python")
         sys.argv = [sys.argv[0]] + args
-        _run_python_cli()
-        return
 
-    # Try Node.js + bundled CLI for interactive/direct commands
+    # Only use Node.js CLI for --version (logo display)
+    # All interactive use goes through the Python CLI which properly
+    # supports all providers, agentic onboarding, and lesson generation.
     node = shutil.which("node")
     cli_js = _find_bundled_cli_js()
 
-    if node and cli_js:
+    if node and cli_js and args and args[0] in ("--version", "-v", "-V"):
         result = subprocess.run([node, cli_js] + args)
         sys.exit(result.returncode)
-    else:
-        if not args:
-            # Interactive mode without Node.js — show notice
-            _show_node_notice()
-        _run_python_cli()
+
+    # All other commands → Python CLI
+    _run_python_cli()
 
 
 def _run_python_cli() -> None:
