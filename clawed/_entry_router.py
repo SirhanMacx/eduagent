@@ -1,4 +1,4 @@
-"""Claw-ED v3 entry point router.
+"""Claw-ED entry point router.
 
 Routes to the TypeScript Ink TUI (if Node.js available) or falls back
 to the Python typer CLI. The teacher never needs to know about this
@@ -63,30 +63,14 @@ def _find_daemon_entry() -> str | None:
 
 
 def _show_node_notice() -> None:
-    """One-time notice when Node.js is not installed."""
-    notice_file = Path.home() / ".eduagent" / ".node_notice_shown"
-    if notice_file.exists():
-        return
-
-    print(
-        "\n"
-        "  Claw-ED v3.0 — running in classic mode (Python CLI)\n"
-        "\n"
-        "  For the full interactive AI assistant experience,\n"
-        "  install Node.js 18+: https://nodejs.org\n"
-        "\n"
-        "  Classic mode supports all commands:\n"
-        "    clawed lesson \"Topic\" -g 8 -s \"US History\"\n"
-        "    clawed game create \"Topic\"\n"
-        "    clawed ingest ~/Documents/\n"
-        "\n"
-    )
-
-    try:
-        notice_file.parent.mkdir(parents=True, exist_ok=True)
-        notice_file.touch()
-    except OSError:
-        pass  # Non-critical: notice may show again next time
+    """Show branded startup when running in Python-only mode."""
+    from clawed import __version__
+    print("\n")
+    print("  \033[33m🍎 C L A W - E D\033[0m")
+    print(f"  \033[32mYour AI co-teacher  v{__version__}\033[0m")
+    print()
+    print("  \033[90mRunning in Python mode. Install Node.js for the full interactive TUI.\033[0m")
+    print()
 
 
 def _handle_daemon(args: list[str]) -> None:
@@ -134,8 +118,7 @@ def main() -> None:
         args.remove("--python")
         sys.argv = [sys.argv[0]] + args
 
-    # Use the Ink TUI for interactive mode — the full Claude Code UX
-    # repurposed as a teaching assistant
+    # Use the Ink TUI for interactive mode — the full Claw-ED TUI
     node = shutil.which("node")
     cli_js = _find_bundled_cli_js()
 

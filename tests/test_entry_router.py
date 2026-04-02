@@ -85,29 +85,14 @@ def test_find_daemon_entry_returns_none_when_nothing_exists(tmp_path):
 # -- _show_node_notice -----------------------------------------------------
 
 
-def test_show_node_notice_creates_marker(tmp_path, capsys):
-    """Node notice creates .node_notice_shown marker file."""
-    notice_file = tmp_path / ".eduagent" / ".node_notice_shown"
-
-    with patch.object(Path, "home", return_value=tmp_path):
-        _show_node_notice()
+def test_show_node_notice_branded(capsys):
+    """Node notice shows branded Claw-ED startup."""
+    _show_node_notice()
 
     captured = capsys.readouterr()
-    assert "Claw-ED v3.0" in captured.out
-    assert notice_file.exists()
-
-
-def test_show_node_notice_skips_when_marker_exists(tmp_path, capsys):
-    """Does not print notice when marker file already exists."""
-    notice_file = tmp_path / ".eduagent" / ".node_notice_shown"
-    notice_file.parent.mkdir(parents=True, exist_ok=True)
-    notice_file.touch()
-
-    with patch.object(Path, "home", return_value=tmp_path):
-        _show_node_notice()
-
-    captured = capsys.readouterr()
-    assert captured.out == ""
+    assert "C L A W - E D" in captured.out
+    assert "Your AI co-teacher" in captured.out
+    assert "Python mode" in captured.out
 
 
 # -- main ------------------------------------------------------------------

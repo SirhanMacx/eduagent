@@ -466,10 +466,15 @@ def quick_model_setup() -> str:
         "skip" — teacher skipped setup
     """
     console.print(Panel(
-        "[bold]Welcome to Claw-ED![/bold] \U0001f393\n\n"
-        "I need an AI service to generate your lessons.\n"
-        "Pick a provider and paste your API key.",
+        "[bold]Hey there, fellow educator![/bold] \U0001f393\n\n"
+        "I'm Claw-ED -- think of me as a colleague who's really good\n"
+        "at turning your ideas into polished lesson plans, handouts,\n"
+        "and slides.\n\n"
+        "First, let's connect me to an AI service so I can start\n"
+        "creating for you. This takes about 30 seconds.",
+        title="[bold green]Claw-ED Setup[/bold green]",
         border_style="green",
+        padding=(1, 2),
     ))
 
     # ── Step 1: Pick provider ──
@@ -715,12 +720,13 @@ def quick_model_setup() -> str:
 
     # ── Step 3: Choose interface ──
     console.print(
-        "\n[bold]How do you want to use Claw-ED?[/bold]\n"
-        "  [bold cyan][1][/bold cyan] \u2605 Telegram bot \u2014 use from your phone "
-        "[dim](recommended)[/dim]\n"
-        "  [bold cyan][2][/bold cyan] Terminal chat \u2014 use right here\n"
+        "\n[bold]Great -- you're all set up![/bold] One last thing:\n\n"
+        "  [bold cyan][1][/bold cyan] Telegram bot \u2014 chat with me from your phone "
+        "[dim](great for on-the-go planning)[/dim]\n"
+        "  [bold cyan][2][/bold cyan] \u2605 Start chatting right here \u2014 "
+        "I'll get to know you and your classroom\n"
     )
-    interface = Prompt.ask("Choice", choices=["1", "2"], default="1")
+    interface = Prompt.ask("Choice", choices=["1", "2"], default="2")
 
     if interface == "1":
         # Get Telegram bot token
@@ -748,7 +754,10 @@ def quick_model_setup() -> str:
             console.print("  [dim]No token entered. Falling back to terminal chat.[/dim]\n")
             return "terminal"
 
-    console.print("\n  [green]\u2713 Ready![/green]\n")
+    console.print(
+        "\n  [green]\u2713 All set![/green] "
+        "Let's chat -- I'll start by getting to know you.\n"
+    )
     return "terminal"
 
 

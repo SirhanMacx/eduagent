@@ -15,27 +15,22 @@ from clawed.gateway import Gateway
 from clawed.state import TeacherSession
 
 _WELCOME = """\
-👋 Welcome to **Claw-ED** — your AI teaching partner.
+**Welcome back to Claw-ED!** Ready to plan some great lessons.
 
-**Get started:**
-• Tell me what you teach: *"I teach 8th grade science"*
-• Share your materials: *"use my files at ~/Documents/Lessons/"*
-• Plan something: *"plan a unit on photosynthesis for 8th grade, 2 weeks"*
+**Quick ideas:**
+- *"plan a unit on photosynthesis for 8th grade, 2 weeks"*
+- *"make a vocabulary worksheet for chapter 5"*
+- *"use my files at ~/Documents/Lessons/"*
 
-**Commands:**
-• `/quit` — exit the chat
-• `/status` — show your current session
-• `/clear` — reset your session
-
-Type anything to begin!
+**Commands:** `/quit` to exit | `/status` for session info | `/clear` to reset
 """
 
 _WELCOME_NEW = """\
-🎓 **Welcome to Claw-ED!**
+**Welcome to Claw-ED** -- your AI co-teacher.
 
-Your AI setup is ready. Let's get to know each other.
+Your AI connection is ready. I'll introduce myself in a moment.
 
-**Commands:** `/quit` to exit, `/status` for session info, `/clear` to reset.
+**Commands:** `/quit` to exit | `/status` for session info | `/clear` to reset
 """
 
 
@@ -56,7 +51,7 @@ async def run_chat(teacher_id: str = "local-teacher") -> None:
         )
         # Auto-trigger the agent's onboarding greeting
         with Live(
-            Spinner("dots", text="[dim]Starting up...[/dim]", style="green"),
+            Spinner("dots", text="[dim]Getting ready...[/dim]", style="green"),
             console=console,
             transient=True,
         ):
@@ -64,20 +59,20 @@ async def run_chat(teacher_id: str = "local-teacher") -> None:
                 result = await gateway.handle("hello", teacher_id)
             except Exception:
                 result = None
-            else:
-                pass
 
         if result and result.text and "provider key" not in result.text.lower():
             response_text = result.text
         else:
             # LLM failed or returned an error — show a friendly offline greeting
             response_text = (
-                "Hi! I'm Claw-ED, your AI teaching assistant.\n\n"
-                "It looks like your AI provider isn't connected yet. "
-                "Exit chat (/quit) and run:\n"
-                "  clawed setup --reset\n\n"
-                "Or if you just want to see what I can do, try:\n"
-                "  clawed demo"
+                "Hi there! I'm Claw-ED, your AI co-teacher.\n\n"
+                "I can help you create lesson plans, handouts, slides, and "
+                "assessments -- all tailored to your standards and style.\n\n"
+                "It looks like the AI connection isn't working yet. "
+                "Exit chat (`/quit`) and run:\n"
+                "  `clawed setup --reset`\n\n"
+                "Or see example output first with:\n"
+                "  `clawed demo`"
             )
 
         console.print()
@@ -91,17 +86,16 @@ async def run_chat(teacher_id: str = "local-teacher") -> None:
         )
         console.print()
     else:
-        # Returning user: show the full welcome banner
+        # Returning user: show the welcome banner with their name
+        name = session.persona.name if session.persona else teacher_id
         console.print(
             Panel(
                 Markdown(_WELCOME),
-                title="[bold green]Claw-ED Chat[/bold green]",
+                title=f"[bold green]Claw-ED Chat -- {name}[/bold green]",
                 border_style="green",
                 padding=(1, 2),
             )
         )
-        name = session.persona.name if session.persona else teacher_id
-        console.print(f"[dim]Resuming session for {name}[/dim]\n")
 
     while True:
         try:
