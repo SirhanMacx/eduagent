@@ -10,11 +10,25 @@
   <a href="https://pepy.tech/project/clawed"><img src="https://static.pepy.tech/badge/clawed" alt="Downloads"></a>
 </p>
 
+```
+                   ⢸⡷⠶⠶⢾⠃
+                   ⢸⡇
+ ⢀⣤⣤⣤⣀          ⢀⣀⣤⣬⣥⣤⣀⡀          ⣀⣤⣤⣦⡀
+⣼⠟⣡⣤⡀⠉⢻⡄     ⢀⣴⣾⣿⣿⣿⣿⣿⣿⣿⣷⣦⡀     ⢠⡟⠉⢀⣤⣌⠻⣧
+⠁ ⠻⠿⠃ ⣄⣀    ⣰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣆    ⣀⣠ ⠘⠿⠟
+      ⠉⠙⠛⠻⠶⣶⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣶⠶⠟⠛⠋⠉
+⢻⣦⡀  ⣀⣼⠃   ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿   ⠘⣧⣀  ⢀⣴⡟
+ ⠈⠻⠛⠛⠉     ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿     ⠉⠛⠛⠛⠁
+              ⠙⠻⢿⣿⣿⣿⣿⣿⣿⡿⠟⠋
+               ⢠⡟ ⠉⠉⠉⠉ ⠘⣧
+              ⢀⡿        ⠸⣇
+```
+
 ---
 
 Claw-ED is a persistent AI teaching assistant that lives in your terminal and on your phone. Talk naturally — "make me a lesson on WWI for my 8th graders" — and it generates complete lesson packages in your voice. Not a chatbot. An agent that knows your curriculum, your standards, your students, and your teaching style.
 
-Beautiful interactive terminal, always-on Telegram bot, multi-provider LLM support (Anthropic, OpenAI, Google, Ollama), natural language routing.
+Beautiful interactive terminal with animated braille-art logo, always-on Telegram bot, multi-provider LLM support (Anthropic, OpenAI, Google, Ollama).
 
 ```bash
 pip install clawed

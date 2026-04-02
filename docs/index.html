@@ -1847,27 +1847,38 @@ img { max-width: 100%; height: auto; }
   var red = '#E8443A';
   var lgreen = '#50B450';
 
+  // Braille art Apple Lobster — colored segments
   var logo = [
-    {t: '                  _',                                     c: lgreen},
-    {t: '                 / \\',                                   c: lgreen},
-    {t: "            .---'   '---.",                               c: red},
-    {t: '  _/|      /   ///        \\      |\\_',                 c: 'mixed', parts: [
-      {t: '  _/|', c: gold}, {t: "      /   ", c: red}, {t: '///', c: white}, {t: "        \\      ", c: red}, {t: '|\\_', c: gold}
+    {t: '                   \u2878\u2877\u2836\u2836\u287E\u2803', c: lgreen},
+    {t: '                   \u2878\u2847', c: lgreen},
+    {t: ' \u2880\u28E4\u28E4\u28E4\u2840          \u2880\u2840\u28E4\u28EC\u28E5\u28E4\u2840\u2845          \u28C0\u28E4\u28E4\u28E6\u2845', c: 'mixed', parts: [
+      {t: ' \u2880\u28E4\u28E4\u28E4\u2840', c: gold},
+      {t: '          \u2880\u2840\u28E4\u28EC\u28E5\u28E4\u2840\u2845', c: red},
+      {t: '          \u28C0\u28E4\u28E4\u28E6\u2845', c: gold}
     ]},
-    {t: ' / o \\----|    ///         |----/ o \\',                 c: 'mixed', parts: [
-      {t: ' / ', c: gold}, {t: 'o', c: cyan}, {t: ' \\----', c: gold}, {t: '|    ', c: red}, {t: '///', c: white}, {t: '         |', c: red}, {t: '----/ ', c: gold}, {t: 'o', c: cyan}, {t: ' \\', c: gold}
+    {t: '\u28BC\u281F\u28E1\u28E4\u2840\u2849\u283B\u2844     \u2880\u28B4\u28BE\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28B7\u28E6\u2845     \u28A0\u285F\u2849\u2880\u28E4\u28CC\u283B\u28E7', c: 'mixed', parts: [
+      {t: '\u28BC\u281F', c: gold}, {t: '\u28E1\u28E4\u2840', c: cyan}, {t: '\u2849\u283B\u2844', c: gold},
+      {t: '     \u2880\u28B4', c: red}, {t: '\u28BE', c: white}, {t: '\u28FF', c: '#E64646'}, {t: '\u28FF\u28FF', c: white}, {t: '\u28FF', c: red}, {t: '\u28FF', c: white}, {t: '\u28FF\u28FF\u28FF\u28B7\u28E6\u2845', c: red},
+      {t: '     \u28A0\u285F\u2849', c: gold}, {t: '\u2880\u28E4\u28CC', c: cyan}, {t: '\u283B\u28E7', c: gold}
     ]},
-    {t: ' \\_><_/   |    ///         |   \\_><_/',                 c: 'mixed', parts: [
-      {t: ' \\_><_/', c: gold}, {t: '   |    ', c: red}, {t: '///', c: white}, {t: '         |', c: red}, {t: '   \\_><_/', c: gold}
+    {t: '\u2801 \u283B\u283F\u2803 \u28C4\u28C0    \u28B0\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28C6    \u28C0\u28E0 \u2818\u283F\u281F', c: 'mixed', parts: [
+      {t: '\u2801 ', c: gold}, {t: '\u283B\u283F\u2803', c: cyan}, {t: ' \u28C4\u28C0', c: gold},
+      {t: '    \u28B0\u28FF', c: red}, {t: '\u28FF\u28FF', c: white}, {t: '\u28FF', c: '#E64646'}, {t: '\u28FF', c: white}, {t: '\u28FF', c: '#E64646'}, {t: '\u28FF\u28FF', c: white}, {t: '\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28C6', c: red},
+      {t: '    \u28C0\u28E0', c: gold}, {t: ' \u2818\u283F\u281F', c: cyan}
     ]},
-    {t: '   ||      \\             /      ||',                     c: 'mixed', parts: [
-      {t: '   ||', c: gold}, {t: "      \\             /", c: red}, {t: '      ||', c: gold}
+    {t: '      \u2849\u2819\u281B\u283B\u2836\u28B6\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28B6\u2836\u281F\u281B\u280B\u2849', c: 'mixed', parts: [
+      {t: '      \u2849\u2819\u281B\u283B\u2836\u28B6', c: gold},
+      {t: '\u28FF\u28FF', c: red}, {t: '\u28FF', c: white}, {t: '\u28FF', c: '#E64646'}, {t: '\u28FF\u28FF', c: white}, {t: '\u28FF', c: '#E64646'}, {t: '\u28FF', c: white}, {t: '\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF', c: red},
+      {t: '\u28B6\u2836\u281F\u281B\u280B\u2849', c: gold}
     ]},
-    {t: "   ||       '-.       .-'       ||",                     c: 'mixed', parts: [
-      {t: '   ||', c: gold}, {t: "       '-.       .-'", c: red}, {t: '       ||', c: gold}
+    {t: '\u283B\u28E6\u2845  \u28C0\u28BC\u2803   \u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF   \u2818\u28E7\u28C0  \u2880\u28B4\u285F', c: 'mixed', parts: [
+      {t: '\u283B\u28E6\u2845  \u28C0\u28BC\u2803', c: gold},
+      {t: '   \u28FF\u28FF', c: red}, {t: '\u28FF\u28FF', c: white}, {t: '\u28FF', c: '#E64646'}, {t: '\u28FF', c: white}, {t: '\u28FF', c: '#E64646'}, {t: '\u28FF\u28FF', c: white}, {t: '\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF', c: red},
+      {t: '   \u2818\u28E7\u28C0  \u2880\u28B4\u285F', c: gold}
     ]},
-    {t: "   /\\          '-----'          /\\",                   c: 'mixed', parts: [
-      {t: '   /\\', c: gold}, {t: "          '-----'", c: red}, {t: '          /\\', c: gold}
+    {t: '              \u2819\u283B\u283F\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u287F\u281F\u280B', c: red},
+    {t: '               \u28A0\u285F \u2849\u2849\u2849\u2849 \u2818\u28E7', c: 'mixed', parts: [
+      {t: '               \u28A0\u285F', c: gold}, {t: ' \u2849\u2849\u2849\u2849 ', c: red}, {t: '\u2818\u28E7', c: gold}
     ]},
   ];
 
