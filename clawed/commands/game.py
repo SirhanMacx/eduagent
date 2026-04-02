@@ -19,7 +19,7 @@ from clawed.commands._helpers import (
     run_async as _run_async,
 )
 
-game_app = typer.Typer()
+game_app = typer.Typer(help="Create interactive HTML learning games from lesson content.")
 
 
 def _game_create_json(*, topic, grade, subject, style, students):

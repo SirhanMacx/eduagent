@@ -19,7 +19,7 @@ from clawed.commands._helpers import (
     run_async as _run_async,
 )
 
-simulation_app = typer.Typer()
+simulation_app = typer.Typer(help="Create interactive HTML simulations for science exploration.")
 
 
 def _simulation_create_json(*, topic, grade, subject, sim_type):

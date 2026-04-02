@@ -192,16 +192,27 @@ def debug() -> None:
         except Exception as e:
             console.print(f"  Secrets read error: {e}")
 
-    console.print(f"\n  Provider: {cfg.provider.value}")
-    console.print(f"  Model: {cfg.ollama_model}")
-    console.print(f"  Base URL: {cfg.ollama_base_url}")
+    provider = cfg.provider.value
+    model_map = {
+        "anthropic": cfg.anthropic_model,
+        "openai": cfg.openai_model,
+        "google": cfg.google_model,
+        "ollama": cfg.ollama_model,
+    }
+    active_model = model_map.get(provider, "unknown")
+    console.print(f"\n  Provider: {provider}")
+    console.print(f"  Model: {active_model}")
+    if provider == "ollama":
+        console.print(f"  Base URL: {cfg.ollama_base_url}")
     console.print(f"  Agent gateway: {cfg.agent_gateway}")
 
-    # API key status
-    key_from_config = cfg.ollama_api_key
-    key_from_get = get_api_key("ollama")
-    console.print(f"\n  ollama_api_key (config obj): {key_from_config[:12] + '...' if key_from_config else 'NONE'}")
-    console.print(f"  get_api_key('ollama'): {key_from_get[:12] + '...' if key_from_get else 'NONE'}")
+    # API key status for the active provider
+    key = get_api_key(provider)
+    if key:
+        masked = key[:8] + "..." + key[-4:] if len(key) > 16 else "***"
+        console.print(f"\n  {provider} key: {masked}")
+    else:
+        console.print(f"\n  {provider} key: [red]NONE[/red]")
 
     # Telegram
     console.print(f"\n  Telegram token: {cfg.telegram_bot_token[:12] + '...' if cfg.telegram_bot_token else 'NONE'}")

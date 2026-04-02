@@ -259,26 +259,32 @@ async def test_llm_connection(config: Optional[AppConfig] = None) -> dict:
         api_key = get_api_key("anthropic")
         model = cfg.anthropic_model
         if not api_key:
-            return _result(False, model, "No API key configured", is_err=True)
+            return _result(
+                False, model,
+                "No API key configured. Set ANTHROPIC_API_KEY or log in to Claude Code.",
+                is_err=True,
+            )
         try:
-            import anthropic
+            import anthropic as _anthropic
+        except ImportError:
+            return _result(False, model, "Anthropic SDK not installed. Run: pip install anthropic", is_err=True)
+        try:
             is_oauth = api_key.startswith("sk-ant-") and not api_key.startswith("sk-ant-api")
             if is_oauth:
-                client = anthropic.Anthropic(
+                client = _anthropic.Anthropic(
                     auth_token=api_key,
                     default_headers={"anthropic-beta": "oauth-2025-04-20", "x-app": "cli"},
                 )
             else:
-                client = anthropic.Anthropic(api_key=api_key)
-            msg = client.messages.create(
+                client = _anthropic.Anthropic(api_key=api_key)
+            client.messages.create(
                 model=model, max_tokens=5,
                 messages=[{"role": "user", "content": "Hi"}],
             )
             return _result(True, model, f"{model} is ready")
-        except anthropic.AuthenticationError:
+        except _anthropic.AuthenticationError:
             return _result(False, model, "API key or OAuth token invalid", is_err=True)
-        except anthropic.RateLimitError:
-            # Token works but model is rate limited — still "connected"
+        except _anthropic.RateLimitError:
             return _result(True, model, f"{model} connected (rate limited, will retry)")
         except Exception as e:
             return _result(False, model, str(e), is_err=True)
