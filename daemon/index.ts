@@ -10,19 +10,47 @@
  *   clawed daemon logs -f  — Follow daemon log
  */
 import { readFileSync, existsSync } from 'fs'
+import { execSync } from 'child_process'
 import { join } from 'path'
 import { homedir } from 'os'
 import { ProcessManager } from './process-manager.js'
 import { TelegramBridge } from './telegram-bridge.js'
 
 function loadConfig() {
+  // Use Python's config system to get the full config including secrets.
+  // This ensures the daemon reads telegram tokens from the same source
+  // (keychain, secrets.json, env vars) as the Python CLI.
+  try {
+    const pythonNames = ['python3.12', 'python3.11', 'python3.10', 'python3']
+    for (const py of pythonNames) {
+      try {
+        const result = execSync(`${py} -m clawed --python config show --json`, {
+          encoding: 'utf-8',
+          timeout: 15000,
+        }).trim()
+        const envelope = JSON.parse(result)
+        if (envelope.status === 'success' && envelope.data) {
+          return {
+            ...envelope.data,
+            telegram_token: envelope.data.telegram_bot_token,
+          }
+        }
+      } catch (_e) {
+        continue
+      }
+    }
+  } catch (_e) {
+    // Fall through to raw config
+  }
+
+  // Fallback: read raw config file
   const configPath = join(homedir(), '.eduagent', 'config.json')
   if (!existsSync(configPath)) {
     return null
   }
   try {
     return JSON.parse(readFileSync(configPath, 'utf-8'))
-  } catch {
+  } catch (_e) {
     return null
   }
 }
