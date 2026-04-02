@@ -128,7 +128,7 @@ export async function showSetupScreens(root: Root, permissionMode: PermissionMod
   // only affects tool execution permissions, not workspace trust.
   // Note: non-interactive sessions (CI/CD with -p) never reach showSetupScreens at all.
   // Skip permission checks in claubbit and Claw-ED (teachers don't need workspace trust prompts)
-  const { isClawedBridgeProvider: isClawedForTrust } = await import('./utils/model/providers.js');
+  const { isClawedMode: isClawedForTrust } = await import('./utils/model/providers.js');
   if (!isEnvTruthy(process.env.CLAUBBIT) && !isClawedForTrust()) {
     // Fast-path: skip TrustDialog import+render when CWD is already trusted.
     // If it returns true, the TrustDialog would auto-resolve regardless of
@@ -209,7 +209,7 @@ export async function showSetupScreens(root: Root, permissionMode: PermissionMod
   // Check for custom API key — skip when using non-Anthropic provider
   // On homespace, ANTHROPIC_API_KEY is preserved in process.env for child
   // processes but ignored by Claw-ED itself (see auth.ts).
-  const { isClawedBridgeProvider: isBridge } = await import('./utils/model/providers.js');
+  const { isClawedMode: isBridge } = await import('./utils/model/providers.js');
   if (!isBridge() && process.env.ANTHROPIC_API_KEY && !isRunningOnHomespace()) {
     const customApiKeyTruncated = normalizeApiKeyForConfig(process.env.ANTHROPIC_API_KEY);
     const keyStatus = getCustomApiKeyStatus(customApiKeyTruncated);

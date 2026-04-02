@@ -9,7 +9,7 @@ import {
   truncateToWidth,
   truncateToWidthNoEllipsis,
 } from './format.js'
-import { isClawedBridgeProvider } from './model/providers.js'
+import { isClawedBridgeProvider, isClawedMode } from './model/providers.js'
 import { getStoredChangelogFromMemory, parseChangelog } from './releaseNotes.js'
 import { gt } from './semver.js'
 import { loadMessageLogs } from './sessionStorage.js'
@@ -93,9 +93,25 @@ export function calculateOptimalLeftWidth(
 }
 
 /**
- * Formats the welcome message based on username
+ * Formats the welcome message based on username and mode.
+ *
+ * Claw-ED first run (no name / generic name): teaching-focused prompt.
+ * Claw-ED returning user: personalised greeting.
+ * Non-Claw-ED sessions: original behaviour.
  */
 export function formatWelcomeMessage(username: string | null): string {
+  if (isClawedMode()) {
+    const isFirstRun =
+      !username ||
+      username.length > MAX_USERNAME_LENGTH ||
+      username === 'User'
+    if (isFirstRun) {
+      return 'Welcome to Claw-ED! Tell me what you\u2019re teaching.'
+    }
+    return `Welcome back, ${username}!`
+  }
+
+  // Non-Claw-ED (standard Claude Code) behaviour
   if (!username || username.length > MAX_USERNAME_LENGTH) {
     return 'Welcome back!'
   }
@@ -254,11 +270,7 @@ export function getLogoDisplayData(): {
   const cwd = serverUrl
     ? `${displayPath} in ${serverUrl.replace(/^https?:\/\//, '')}`
     : displayPath
-  const billingType = isClawedBridgeProvider()
-    ? 'Your AI co-teacher'
-    : isClaudeAISubscriber()
-      ? getSubscriptionName()
-      : 'API Usage Billing'
+  const billingType = 'Your AI co-teacher'
   const agentName = getInitialSettings().agent
 
   return {

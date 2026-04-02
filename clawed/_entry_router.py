@@ -12,6 +12,7 @@ Usage:
 """
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import sys
@@ -73,19 +74,49 @@ def _show_node_notice() -> None:
     print()
 
 
+def _check_telegram_token() -> bool:
+    """Return True if a Telegram bot token is configured, False otherwise.
+
+    Reads ~/.eduagent/config.json directly — no clawed package imports.
+    """
+    import json
+
+    config_path = Path.home() / ".eduagent" / "config.json"
+    if not config_path.exists():
+        return False
+    try:
+        data = json.loads(config_path.read_text())
+        token = data.get("telegram_bot_token", "")
+        return bool(token and token.strip())
+    except (json.JSONDecodeError, OSError):
+        return False
+
+
 def _handle_daemon(args: list[str]) -> None:
     """Route daemon commands to the Node.js daemon process."""
     node = shutil.which("node")
     daemon_entry = _find_daemon_entry()
 
     if not node:
-        print("The Telegram daemon requires Node.js 18+.")
-        print("Install from: https://nodejs.org")
+        print("The Telegram bot requires Node.js. Install from https://nodejs.org and try again.")
         sys.exit(1)
 
     if not daemon_entry:
-        print("Daemon entry point not found. Reinstall clawed or check your installation.")
+        print("Telegram bot files not found. Try reinstalling: pip install --force-reinstall clawed")
         sys.exit(1)
+
+    # Pre-check: Telegram token must be configured before spawning the daemon
+    if not _check_telegram_token():
+        print(
+            "\nNo Telegram bot token found.\n"
+            "\n"
+            "To set up Telegram:\n"
+            "1. Open Telegram and message @BotFather\n"
+            "2. Send /newbot and follow the steps\n"
+            "3. Copy the bot token\n"
+            "4. Run: clawed config set-token --telegram YOUR_TOKEN\n"
+        )
+        sys.exit(0)
 
     # Check if it's a .ts file (dev mode) — use tsx or ts-node
     if daemon_entry.endswith(".ts"):
@@ -123,6 +154,7 @@ def main() -> None:
     cli_js = _find_bundled_cli_js()
 
     if node and cli_js:
+        os.environ['CLAWED_MODE'] = '1'
         result = subprocess.run([node, cli_js] + args)
         sys.exit(result.returncode)
     else:

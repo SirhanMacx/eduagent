@@ -1,6 +1,6 @@
 import { feature } from 'bun:bundle'
 import { shouldAutoEnableClaudeInChrome } from 'src/utils/claudeInChrome/setup.js'
-import { isClawedBridgeProvider } from 'src/utils/model/providers.js'
+import { isClawedMode } from 'src/utils/model/providers.js'
 import { registerBatchSkill } from './batch.js'
 import { registerClaudeInChromeSkill } from './claudeInChrome.js'
 import { registerDebugSkill } from './debug.js'
@@ -23,7 +23,7 @@ import { registerVerifySkill } from './verify.js'
  * 3. Import and call that function here
  */
 export function initBundledSkills(): void {
-  const isClawED = isClawedBridgeProvider()
+  const isClawED = isClawedMode()
 
   // In Claw-ED mode, skip developer-oriented skills that confuse teachers.
   // /update-config causes JSON Schema errors and is irrelevant for teaching.
@@ -77,10 +77,10 @@ export function initBundledSkills(): void {
     /* eslint-enable @typescript-eslint/no-require-imports */
     registerClaudeApiSkill()
   }
-  if (shouldAutoEnableClaudeInChrome()) {
+  if (shouldAutoEnableClaudeInChrome() && !isClawED) {
     registerClaudeInChromeSkill()
   }
-  if (feature('RUN_SKILL_GENERATOR')) {
+  if (feature('RUN_SKILL_GENERATOR') && !isClawED) {
     /* eslint-disable @typescript-eslint/no-require-imports */
     const { registerRunSkillGeneratorSkill } = require('./runSkillGenerator.js')
     /* eslint-enable @typescript-eslint/no-require-imports */

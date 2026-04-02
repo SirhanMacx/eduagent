@@ -50,8 +50,7 @@ export function bridgeChat(
       model: request.model || '',
       usage: { input_tokens: 0, output_tokens: 0 },
       error:
-        'Non-Anthropic providers need Python 3.10+ with clawed installed. ' +
-        'Run: pip install clawed',
+        'Python is required. Install from python.org, then run: pip install clawed',
     })
   }
 
@@ -108,7 +107,7 @@ export function bridgeChat(
           usage: { input_tokens: 0, output_tokens: 0 },
           error: signal?.aborted
             ? 'Request aborted'
-            : `Bridge timed out after ${timeout}ms`,
+            : 'This is taking longer than expected. Please try again.',
         })
         return
       }
@@ -118,7 +117,14 @@ export function bridgeChat(
           content: '',
           model: request.model || '',
           usage: { input_tokens: 0, output_tokens: 0 },
-          error: stderr || `Bridge exited with code ${code}`,
+          error: (() => {
+            let msg = stderr || `Something went wrong (exit code ${code}).`
+            if (msg.includes('Traceback')) {
+              const lines = msg.trim().split('\n')
+              msg = lines[lines.length - 1].trim() || msg
+            }
+            return msg
+          })(),
         })
         return
       }
@@ -130,7 +136,7 @@ export function bridgeChat(
           content: '',
           model: request.model || '',
           usage: { input_tokens: 0, output_tokens: 0 },
-          error: `Invalid JSON from bridge: ${stdout.slice(0, 500)}`,
+          error: 'Something went wrong. Please try again.',
         })
       }
     })

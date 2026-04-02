@@ -84,57 +84,7 @@ export function pickDiverseCoreFiles(
 }
 
 async function getFrequentlyModifiedFiles(): Promise<string[]> {
-  if (process.env.NODE_ENV === 'test') return []
-  if (env.platform === 'win32') return []
-  if (!(await getIsGit())) return []
-
-  try {
-    // Collect frequently-modified files, preferring the user's own commits.
-    const userEmail = await getGitEmail()
-
-    const logArgs = [
-      'log',
-      '-n',
-      '1000',
-      '--pretty=format:',
-      '--name-only',
-      '--diff-filter=M',
-    ]
-
-    const counts = new Map<string, number>()
-    const tallyInto = (stdout: string) => {
-      for (const line of stdout.split('\n')) {
-        const f = line.trim()
-        if (f) counts.set(f, (counts.get(f) ?? 0) + 1)
-      }
-    }
-
-    if (userEmail) {
-      const { stdout } = await execFileNoThrowWithCwd(
-        'git',
-        [...logArgs, `--author=${userEmail}`],
-        { cwd: getCwd() },
-      )
-      tallyInto(stdout)
-    }
-
-    // Fall back to all authors if the user's own history is thin.
-    if (counts.size < 10) {
-      const { stdout } = await execFileNoThrowWithCwd(gitExe(), logArgs, {
-        cwd: getCwd(),
-      })
-      tallyInto(stdout)
-    }
-
-    const sorted = Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1])
-      .map(([p]) => p)
-
-    return pickDiverseCoreFiles(sorted, 5)
-  } catch (err) {
-    logError(err as Error)
-    return []
-  }
+  return []
 }
 
 const ONE_WEEK_IN_MS = 7 * 24 * 60 * 60 * 1000
@@ -146,39 +96,19 @@ export const getExampleCommandFromCache = memoize(() => {
     : '<filepath>'
 
   const commands = [
-    'fix lint errors',
-    'fix typecheck errors',
-    `how does ${frequentFile} work?`,
-    `refactor ${frequentFile}`,
-    'how do I log an error?',
-    `edit ${frequentFile} to...`,
-    `write a test for ${frequentFile}`,
-    'create a util logging.py that...',
+    'Create a 5th grade lesson on fractions',
+    'Build a vocabulary game for my students',
+    'Design a unit plan on the American Revolution',
+    'Make an exit ticket for today\'s lesson',
+    'Generate a differentiated reading passage',
+    'Help me align my lesson to Common Core',
+    'Create a bell ringer on the water cycle',
+    'Design a rubric for persuasive essays',
   ]
 
   return `Try "${sample(commands)}"`
 })
 
 export const refreshExampleCommands = memoize(async (): Promise<void> => {
-  const projectConfig = getCurrentProjectConfig()
-  const now = Date.now()
-  const lastGenerated = projectConfig.exampleFilesGeneratedAt ?? 0
-
-  // Regenerate examples if they're over a week old
-  if (now - lastGenerated > ONE_WEEK_IN_MS) {
-    projectConfig.exampleFiles = []
-  }
-
-  // If no example files cached, kickstart fetch in background
-  if (!projectConfig.exampleFiles?.length) {
-    void getFrequentlyModifiedFiles().then(files => {
-      if (files.length) {
-        saveCurrentProjectConfig(current => ({
-          ...current,
-          exampleFiles: files,
-          exampleFilesGeneratedAt: Date.now(),
-        }))
-      }
-    })
-  }
+  return
 })

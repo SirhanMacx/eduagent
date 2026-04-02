@@ -127,8 +127,7 @@ export function spawnPython(
     return Promise.resolve({
       ...EMPTY_ERROR,
       errors: [
-        'Python 3.10+ with clawed installed is required. ' +
-        'Install with: pip install clawed',
+        'Python is required. Install from python.org, then run: pip install clawed',
       ],
     })
 
@@ -163,14 +162,20 @@ export function spawnPython(
       if (killed) {
         resolve({
           ...EMPTY_ERROR,
-          errors: [`Timed out after ${timeout}ms`],
+          errors: ['This is taking longer than expected. Please try again.'],
         })
         return
       }
       if (code !== 0) {
+        // Hide Python tracebacks: extract only the last line (the actual error)
+        let errorMsg = stderr || `Something went wrong (exit code ${code}).`
+        if (errorMsg.includes('Traceback')) {
+          const lines = errorMsg.trim().split('\n')
+          errorMsg = lines[lines.length - 1].trim() || errorMsg
+        }
         resolve({
           ...EMPTY_ERROR,
-          errors: [stderr || `Exit code ${code}`],
+          errors: [errorMsg],
         })
         return
       }
@@ -179,7 +184,7 @@ export function spawnPython(
       } catch (_e) {
         resolve({
           ...EMPTY_ERROR,
-          errors: [`Invalid JSON: ${stdout.slice(0, 500)}`],
+          errors: ['Something went wrong. Please try again.'],
         })
       }
     })

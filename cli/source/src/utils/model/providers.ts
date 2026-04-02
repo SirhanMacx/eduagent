@@ -70,6 +70,11 @@ export function clearClawedProviderCache(): void {
   _cachedClawedProvider = null
 }
 
+/** True when launched via the `clawed` command (any provider, including Anthropic). */
+export function isClawedMode(): boolean {
+  return isEnvTruthy(process.env.CLAWED_MODE) || isClawedBridgeProvider()
+}
+
 export function getAPIProvider(): APIProvider {
   return isEnvTruthy(process.env.CLAUDE_CODE_USE_BEDROCK)
     ? 'bedrock'
