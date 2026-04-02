@@ -37,9 +37,9 @@ from clawed.commands.export import (
 )
 from clawed.commands.game import game_app
 from clawed.commands.generate import generate_app
-from clawed.commands.simulation import simulation_app
 from clawed.commands.queue import queue_app
 from clawed.commands.schedule_cmd import schedule_app
+from clawed.commands.simulation import simulation_app
 from clawed.commands.sub import sub_app
 from clawed.commands.train import train_app
 from clawed.commands.workspace_cmd import workspace_app
