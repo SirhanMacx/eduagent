@@ -151,7 +151,13 @@ def _release_bot_lock() -> None:
 
 
 class TelegramAPI:
-    """Thin sync wrapper around the Telegram Bot API using httpx."""
+    """Thin sync wrapper around the Telegram Bot API using httpx.
+
+    Retry sleeps in this class use time.sleep() intentionally — the
+    httpx.Client is synchronous by design and these methods execute
+    blocking I/O.  The polling loop in EduAgentTelegramBot.run() uses
+    asyncio.sleep() via the event loop for non-blocking error recovery.
+    """
 
     def __init__(self, token: str, timeout: float = 60.0):
         self.token = token
@@ -468,7 +474,7 @@ class EduAgentTelegramBot:
             except Exception as e:
                 logger.error("Error in polling loop: %s", e)
                 _log_error(e)
-                time.sleep(2)
+                self._loop.run_until_complete(asyncio.sleep(2))
 
         print("\nBot stopped.")
         _release_bot_lock()
