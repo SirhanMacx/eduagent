@@ -111,7 +111,7 @@ jobs:
           path: dist/
       - name: Publish to PyPI
         run: |
-          pip install twine
+          pip install "twine<6"
           twine upload dist/*
         env:
           TWINE_USERNAME: __token__
