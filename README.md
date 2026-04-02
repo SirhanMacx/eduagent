@@ -1,4 +1,4 @@
-# Claw-ED v3
+# Claw-ED
 
 **The agentic layer for education. Your AI co-teacher that lives in the terminal.**
 
@@ -12,9 +12,9 @@
 
 ---
 
-Claw-ED v3 is a persistent AI teaching assistant that lives in your terminal and on your phone. Talk naturally — "make me a lesson on WWI for my 8th graders" — and it generates complete lesson packages in your voice. Not a chatbot. An agent that knows your curriculum, your standards, your students, and your teaching style.
+Claw-ED is a persistent AI teaching assistant that lives in your terminal and on your phone. Talk naturally — "make me a lesson on WWI for my 8th graders" — and it generates complete lesson packages in your voice. Not a chatbot. An agent that knows your curriculum, your standards, your students, and your teaching style.
 
-**New in v3:** Beautiful interactive terminal (Ink TUI), always-on Telegram bot, multi-provider LLM support (Anthropic, OpenAI, Google, Ollama), natural language routing.
+Beautiful interactive terminal, always-on Telegram bot, multi-provider LLM support (Anthropic, OpenAI, Google, Ollama), natural language routing.
 
 ```bash
 pip install clawed
