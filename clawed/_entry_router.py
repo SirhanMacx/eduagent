@@ -134,18 +134,18 @@ def main() -> None:
         args.remove("--python")
         sys.argv = [sys.argv[0]] + args
 
-    # Only use Node.js CLI for --version (logo display)
-    # All interactive use goes through the Python CLI which properly
-    # supports all providers, agentic onboarding, and lesson generation.
+    # Use the Ink TUI for interactive mode — the full Claude Code UX
+    # repurposed as a teaching assistant
     node = shutil.which("node")
     cli_js = _find_bundled_cli_js()
 
-    if node and cli_js and args and args[0] in ("--version", "-v", "-V"):
+    if node and cli_js:
         result = subprocess.run([node, cli_js] + args)
         sys.exit(result.returncode)
-
-    # All other commands → Python CLI
-    _run_python_cli()
+    else:
+        if not args:
+            _show_node_notice()
+        _run_python_cli()
 
 
 def _run_python_cli() -> None:
