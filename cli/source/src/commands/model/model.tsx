@@ -15,6 +15,48 @@ import { checkOpus1mAccess, checkSonnet1mAccess } from '../../utils/model/check1
 import { getDefaultMainLoopModelSetting, isOpus1mMergeEnabled, renderDefaultModelSetting } from '../../utils/model/model.js';
 import { isModelAllowed } from '../../utils/model/modelAllowlist.js';
 import { validateModel } from '../../utils/model/validateModel.js';
+import { clearClawedProviderCache, isClawedMode } from '../../utils/model/providers.js';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
+import { homedir } from 'os';
+import { join } from 'path';
+
+/**
+ * Persist a model change back to ~/.eduagent/config.json so the entry_router
+ * picks it up on next CLI launch. Only runs when in Claw-ED mode.
+ */
+function persistModelToClawedConfig(model: string | null): void {
+  if (!isClawedMode()) return;
+  try {
+    const configDir = process.env.EDUAGENT_DATA_DIR || join(homedir(), '.eduagent');
+    const configPath = join(configDir, 'config.json');
+    mkdirSync(configDir, { recursive: true });
+
+    let config: Record<string, unknown> = {};
+    if (existsSync(configPath)) {
+      config = JSON.parse(readFileSync(configPath, 'utf-8'));
+    }
+
+    const provider = (config.provider as string) || 'anthropic';
+
+    // Map provider to the correct model field
+    const fieldMap: Record<string, string> = {
+      anthropic: 'anthropic_model',
+      openai: 'openai_model',
+      ollama: 'ollama_model',
+      google: 'google_model',
+    };
+    const field = fieldMap[provider];
+    if (field && model) {
+      config[field] = model;
+      writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
+    }
+
+    // Clear the cached provider so the bridge picks up any change
+    clearClawedProviderCache();
+  } catch {
+    // Never block the model switch on a persistence failure
+  }
+}
 function ModelPickerWrapper(t0) {
   const $ = _c(17);
   const {
@@ -55,6 +97,8 @@ function ModelPickerWrapper(t0) {
         mainLoopModel: model,
         mainLoopModelForSession: null
       }));
+      // Persist model choice to ~/.eduagent/config.json for next launch
+      persistModelToClawedConfig(model);
       let message = `Set model to ${chalk.bold(renderModelLabel(model))}`;
       if (effort !== undefined) {
         message = message + ` with ${chalk.bold(effort)} effort`;
@@ -201,6 +245,8 @@ function SetModelAndClose({
         mainLoopModel: modelValue,
         mainLoopModelForSession: null
       }));
+      // Persist model choice to ~/.eduagent/config.json for next launch
+      persistModelToClawedConfig(modelValue);
       let message = `Set model to ${chalk.bold(renderModelLabel(modelValue))}`;
       let wasFastModeToggledOn = undefined;
       if (isFastModeEnabled()) {

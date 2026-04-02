@@ -64,19 +64,11 @@ def _find_daemon_entry() -> str | None:
 
 
 def _show_node_notice() -> None:
-    """Show branded startup with Ed mascot when running in Python-only mode."""
+    """Show clean branded startup when running in Python-only mode."""
     from clawed import __version__
     print()
-    print("         \033[32m🎓\033[0m")
-    print("    \033[31m🦞\033[0m  \033[31m████████\033[0m  \033[31m🦞\033[0m")
-    print("   \033[31m██ ██████████ ██\033[0m")
-    print("   \033[31m██\033[0m \033[37m◕\033[0m    \033[37m◕\033[0m \033[31m██\033[0m")
-    print("   \033[31m██\033[0m  \033[37m╰──╯\033[0m  \033[31m██\033[0m")
-    print("    \033[31m██████████\033[0m")
-    print("     \033[33m┌─ Ed ─┐\033[0m")
-    print()
-    print(f"  \033[33mC L A W - E D  v{__version__}\033[0m")
-    print("  \033[32mYour AI co-teacher\033[0m")
+    print("  🍎 C L A W - E D")
+    print(f"  Your AI co-teacher  v{__version__}")
     print()
     print("  \033[90mRunning in Python mode. Install Node.js for the full TUI.\033[0m")
     print()

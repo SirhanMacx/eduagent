@@ -479,14 +479,27 @@ function getSimpleToneAndStyleSection(): string {
 
 /**
  * Detect whether this is the teacher's first run.
- * Returns true if ~/.eduagent/config.json is missing or has no teacher_profile.name set.
+ * Returns true if:
+ *   - ~/.eduagent/config.json is missing, OR
+ *   - config exists but has no teacher_profile.name, OR
+ *   - the onboarding_complete marker file does not exist
+ *     (handles re-installs where config exists from a previous install)
  */
 function isFirstRunTeacher(): boolean {
   try {
     const configDir =
       process.env.EDUAGENT_DATA_DIR || join(homedir(), '.eduagent')
     const configPath = join(configDir, 'config.json')
+    const workspaceDir = join(configDir, 'workspace')
+    const markerPath = join(workspaceDir, 'onboarding_complete')
+
+    // No config at all -- definitely first run
     if (!existsSync(configPath)) return true
+
+    // Config exists but onboarding marker is missing -- treat as first run
+    // (handles re-installs where config persists from a previous install)
+    if (!existsSync(markerPath)) return true
+
     const config = JSON.parse(readFileSync(configPath, 'utf-8'))
     if (
       !config.teacher_profile ||
@@ -502,6 +515,30 @@ function isFirstRunTeacher(): boolean {
 }
 
 /**
+ * Check if there's a previous teacher profile on disk (from a prior install).
+ * Returns the profile name if found, null otherwise.
+ */
+function getExistingTeacherName(): string | null {
+  try {
+    const configDir =
+      process.env.EDUAGENT_DATA_DIR || join(homedir(), '.eduagent')
+    const configPath = join(configDir, 'config.json')
+    if (!existsSync(configPath)) return null
+    const config = JSON.parse(readFileSync(configPath, 'utf-8'))
+    if (
+      config.teacher_profile &&
+      typeof config.teacher_profile === 'object' &&
+      config.teacher_profile.name
+    ) {
+      return config.teacher_profile.name
+    }
+    return null
+  } catch {
+    return null
+  }
+}
+
+/**
  * First-run onboarding prompt section.
  * Injected into the system prompt only when the teacher has not completed setup.
  * This is NOT a separate mode — it's just extra context so the normal REPL
@@ -510,8 +547,18 @@ function isFirstRunTeacher(): boolean {
 function getFirstRunOnboardingSection(): string | null {
   if (!isFirstRunTeacher()) return null
 
-  return `# First-Run Onboarding
+  const existingName = getExistingTeacherName()
+  const returningTeacherBlock = existingName
+    ? `
+IMPORTANT: I found a previous profile for a teacher named "${existingName}". Before starting onboarding, ask:
+"Welcome back! I found a previous profile for ${existingName}. Is that you, or are you a new teacher?"
+- If they confirm they ARE ${existingName}, skip to step 8 (transition to normal use) and create the onboarding_complete marker file.
+- If they say they are a NEW teacher, proceed with onboarding from step 1 and clear the old teacher_profile from config.
+`
+    : ''
 
+  return `# First-Run Onboarding
+${returningTeacherBlock}
 This is the teacher's FIRST TIME using Claw-ED. Their provider is connected but they have not set up their profile yet. Guide them through setup as a natural conversation — do not dump all questions at once.
 
 Follow this flow, one step at a time:
@@ -543,6 +590,7 @@ Follow this flow, one step at a time:
      }
    }
    Merge with the existing config — do not overwrite provider or other fields.
+   Also create the marker file ~/.eduagent/workspace/onboarding_complete (mkdir -p the directory first, then touch the file) so onboarding is not repeated.
 
 8. TRANSITION to normal use: "You're all set! From now on, just tell me what you need — 'Make me a lesson on the water cycle for 5th grade' or 'Create a review game for the Civil War unit.' I'm here whenever you need me."
 

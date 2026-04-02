@@ -90,7 +90,7 @@ def _resolve_claude_code_token() -> Optional[str]:
                 data = _json.loads(path.read_text(encoding="utf-8"))
                 oauth = data.get("claudeAiOauth", {})
                 token = oauth.get("accessToken", "")
-                if token and token.startswith("sk-ant-"):
+                if token:
                     return token
             except (ValueError, KeyError, OSError):
                 continue
@@ -269,7 +269,7 @@ async def test_llm_connection(config: Optional[AppConfig] = None) -> dict:
         except ImportError:
             return _result(False, model, "Anthropic SDK not installed. Run: pip install anthropic", is_err=True)
         try:
-            is_oauth = api_key.startswith("sk-ant-") and not api_key.startswith("sk-ant-api")
+            is_oauth = not api_key.startswith("sk-ant-api")
             if is_oauth:
                 client = _anthropic.Anthropic(
                     auth_token=api_key,

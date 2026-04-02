@@ -41,69 +41,8 @@ const DEEP_GREEN: Color = [26, 58, 36]; // #1A3A24
 const WARM_GOLD: Color = [232, 198, 107];
 const BLACK: Color = [0, 0, 0];
 
-// Ed mascot colors
-const APPLE_RED: Color = [190, 45, 35];
-const DARK_RED: Color = [145, 28, 18];
-const CAP_BLACK: Color = [35, 35, 40];
-const LEAF_GREEN: Color = [55, 140, 55];
-const EYE_WHITE: Color = [250, 250, 250];
-const FACE_FEAT: Color = [220, 200, 180];
-const TAG_GOLD: Color = [212, 175, 80];
-
-// Ed — the apple-with-claws mascot (color-mapped)
-// Each row: chars = what to render, colors = color code per character
-// R=red K=cap G=leaf D=dark-red(claws) W=white(eyes) F=face O=gold(tag) .=space
-const LOGO_CHARS = [
-  '           ▄▄▄▄▄▄▄           ',
-  '          █████████          ',
-  '         ▀▀▀▀▀▀▀▀▀▀▀        ',
-  '             │●              ',
-  '          ▄▀ │               ',
-  '   ╔══╗ ▄████████████▄ ╔══╗ ',
-  '   ║██╠████████████████╣██║ ',
-  '   ╚══╝████████████████╚══╝ ',
-  '        ██  ◕    ◕  ██      ',
-  '        ████  ▿  ████       ',
-  '        ██  ╰──╯  ██        ',
-  '        ██ ┌─Ed─┐ ██        ',
-  '         ████████████        ',
-  '          ██████████         ',
-  '          ██      ██         ',
-];
-
-const LOGO_COLOR_MAP = [
-  '           KKKKKKK           ',
-  '          KKKKKKKKK          ',
-  '         KKKKKKKKKKK        ',
-  '             OOOO            ',
-  '          GG OG              ',
-  '   DDDD RRRRRRRRRRRRRR DDDD ',
-  '   DDDDRRRRRRRRRRRRRRRRDDDDD',
-  '   DDDDRRRRRRRRRRRRRRRRDDDDD',
-  '        RR  WW    WW  RR    ',
-  '        RRRR  FF  RRRR      ',
-  '        RR  FFFF  RR        ',
-  '        RR OOOOOO RR        ',
-  '         RRRRRRRRRRRR       ',
-  '          RRRRRRRRRR        ',
-  '          RR      RR        ',
-];
-
-function getEdColor(code: string): Color {
-  switch (code) {
-    case 'R': return APPLE_RED;
-    case 'D': return DARK_RED;
-    case 'K': return CAP_BLACK;
-    case 'G': return LEAF_GREEN;
-    case 'W': return EYE_WHITE;
-    case 'F': return FACE_FEAT;
-    case 'O': return TAG_GOLD;
-    default: return CREAM;
-  }
-}
-
-// Backward-compat: LOGO used for layout measurements
-const LOGO = LOGO_CHARS;
+// Simple, clean logo — just the apple emoji centered
+const LOGO = ['🍎'];
 
 const TITLE = [
   ' ██████╗██╗      █████╗ ██╗    ██╗       ███████╗██████╗ ',
@@ -229,8 +168,8 @@ export async function playLaunchScreen(): Promise<void> {
   const out = process.stdout;
   const write = (s: string) => out.write(s);
 
-  // Try to show the real Ed PNG on supported terminals
-  const showedImage = tryShowEdImage(cols, rows);
+  // Try to show the real Ed PNG on supported terminals (iTerm2, WezTerm, etc.)
+  tryShowEdImage(cols, rows);
 
   const logoWidth = Math.max(...LOGO.map(l => l.length));
   const titleWidth = TITLE[0].length;
@@ -247,48 +186,26 @@ export async function playLaunchScreen(): Promise<void> {
     write(HIDE_CURSOR + CLEAR);
 
     // ═══════════════════════════════════════════════════════════
-    // PHASE 1: Logo materializes from center outward (1.2s)
+    // PHASE 1: Apple emoji fades in centered (1.2s)
     // ═══════════════════════════════════════════════════════════
     for (let frame = 0; frame < 24; frame++) {
-      let buf = CLEAR; // clear each frame for clean render
+      let buf = CLEAR;
       const t = frame / 23;
 
-      for (let row = 0; row < LOGO.length; row++) {
-        const line = LOGO[row];
-        const logoMidRow = Math.floor(LOGO.length / 2);
-        const rowDelay = Math.abs(row - logoMidRow) / logoMidRow; // center-out
-        const rowT = Math.max(0, Math.min(1, (t - rowDelay * 0.25) / 0.5));
-        if (rowT <= 0) continue;
-
-        buf += moveTo(logoTop + row, logoCx);
-        for (let i = 0; i < line.length; i++) {
-          const ch = line[i];
-          if (ch === ' ') { buf += ' '; continue; }
-          const colDelay = Math.abs(i - line.length / 2) / (line.length / 2);
-          const charT = Math.max(0, Math.min(1, (rowT - colDelay * 0.3) / 0.6));
-          if (charT <= 0) { buf += ' '; continue; }
-
-          // Flash white at birth, settle to Ed's per-character color
-          const birthFlash = charT < 0.4 ? (0.4 - charT) / 0.4 : 0;
-          const colorCode = (LOGO_COLOR_MAP[row] || '')[i] || ' ';
-          const baseColor = getEdColor(colorCode);
-          const wave = Math.sin(frame * 0.6 + i * 0.25 + row * 0.5) * 0.12;
-          const color = lerpColor(baseColor, [255, 255, 255], birthFlash + wave);
-          buf += rgb(
-            Math.min(255, color[0]),
-            Math.min(255, color[1]),
-            Math.min(255, color[2]),
-          ) + ch;
-        }
-        buf += RESET;
+      // Center the apple emoji
+      const emojiText = LOGO[0];
+      const emojiFade = Math.min(1, t * 2);
+      buf += moveTo(logoTop, logoCx);
+      if (emojiFade > 0.1) {
+        buf += emojiText;
       }
 
       // Spawn particles during logo reveal
       if (frame > 5 && frame % 2 === 0) {
         for (let i = 0; i < 3; i++) {
           particles.push(createParticle(
-            logoCx + logoWidth / 2 + (Math.random() - 0.5) * logoWidth * 0.8,
-            logoTop + LOGO.length / 2 + (Math.random() - 0.5) * 4,
+            logoCx + logoWidth / 2 + (Math.random() - 0.5) * 6,
+            logoTop + (Math.random() - 0.5) * 2,
           ));
         }
       }
@@ -306,25 +223,8 @@ export async function playLaunchScreen(): Promise<void> {
       let buf = CLEAR;
       const t = frame / 29;
 
-      // Logo shimmer
-      for (let row = 0; row < LOGO.length; row++) {
-        buf += moveTo(logoTop + row, logoCx);
-        const line = LOGO[row];
-        for (let i = 0; i < line.length; i++) {
-          const ch = line[i];
-          if (ch === ' ') { buf += ' '; continue; }
-          const wave = Math.sin(frame * 0.4 + i * 0.2 + row * 0.5) * 0.25 + 0.75;
-          const colorCode = (LOGO_COLOR_MAP[row] || '')[i] || ' ';
-          const base = getEdColor(colorCode);
-          const color: Color = [
-            Math.min(255, Math.round(base[0] * (0.9 + wave * 0.3))),
-            Math.min(255, Math.round(base[1] * (0.9 + wave * 0.3))),
-            Math.min(255, Math.round(base[2] * (0.9 + wave * 0.3))),
-          ];
-          buf += rgb(color[0], color[1], color[2]) + ch;
-        }
-        buf += RESET;
-      }
+      // Apple emoji (static)
+      buf += moveTo(logoTop, logoCx) + LOGO[0];
 
       // Title sweep left to right with glow
       const eased = 1 - Math.pow(1 - t, 3); // ease-out cubic
@@ -391,25 +291,8 @@ export async function playLaunchScreen(): Promise<void> {
       let buf = CLEAR;
       const t = frame / 15;
 
-      // Full logo
-      for (let row = 0; row < LOGO.length; row++) {
-        buf += moveTo(logoTop + row, logoCx);
-        const line = LOGO[row];
-        for (let i = 0; i < line.length; i++) {
-          const ch = line[i];
-          if (ch === ' ') { buf += ' '; continue; }
-          const wave = Math.sin(frame * 0.3 + i * 0.15 + row * 0.4) * 0.15 + 0.85;
-          const colorCode = (LOGO_COLOR_MAP[row] || '')[i] || ' ';
-          const base = getEdColor(colorCode);
-          const color: Color = [
-            Math.min(255, Math.round(base[0] * wave)),
-            Math.min(255, Math.round(base[1] * wave)),
-            Math.min(255, Math.round(base[2] * wave)),
-          ];
-          buf += rgb(color[0], color[1], color[2]) + ch;
-        }
-        buf += RESET;
-      }
+      // Apple emoji (static)
+      buf += moveTo(logoTop, logoCx) + LOGO[0];
 
       // Full title
       for (let row = 0; row < TITLE.length; row++) {
@@ -447,19 +330,9 @@ export async function playLaunchScreen(): Promise<void> {
       let buf = CLEAR;
       const fade = 1 - frame / 11; // 1 → 0
 
-      // Fading logo (Ed retains his colors as he fades)
-      for (let row = 0; row < LOGO.length; row++) {
-        buf += moveTo(logoTop + row, logoCx);
-        const line = LOGO[row];
-        for (let i = 0; i < line.length; i++) {
-          const ch = line[i];
-          if (ch === ' ') { buf += ' '; continue; }
-          const colorCode = (LOGO_COLOR_MAP[row] || '')[i] || ' ';
-          const base = getEdColor(colorCode);
-          const color = lerpColor(BLACK, base, fade);
-          buf += rgb(color[0], color[1], color[2]) + ch;
-        }
-        buf += RESET;
+      // Apple emoji (fades with overall screen)
+      if (fade > 0.3) {
+        buf += moveTo(logoTop, logoCx) + LOGO[0];
       }
 
       // Fading title

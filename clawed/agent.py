@@ -19,14 +19,25 @@ from clawed.models import AppConfig, LLMProvider
 from clawed.tools import TOOL_DEFINITIONS, execute_tool
 
 
+def _is_oauth_token(api_key: str) -> bool:
+    """Detect if a token is an OAuth token vs a regular API key.
+
+    Regular API keys start with 'sk-ant-api'. Everything else from
+    Claude Code credential store is an OAuth token.
+    """
+    if api_key.startswith("sk-ant-api"):
+        return False
+    # OAuth tokens: sk-ant-oat*, sk-ant-sid*, or other non-api prefixes
+    return True
+
+
 def _anthropic_headers(api_key: str) -> dict[str, str]:
     """Build Anthropic API headers, auto-detecting OAuth vs regular API keys.
 
-    OAuth tokens (sk-ant-oat01-*) need Bearer auth + Claude Code identity
-    headers. Regular API keys (sk-ant-api*) use x-api-key.
+    OAuth tokens need Bearer auth + Claude Code identity headers.
+    Regular API keys (sk-ant-api*) use x-api-key.
     """
-    is_oauth = api_key.startswith("sk-ant-") and not api_key.startswith("sk-ant-api")
-    if is_oauth:
+    if _is_oauth_token(api_key):
         return {
             "authorization": f"Bearer {api_key}",
             "anthropic-version": "2023-06-01",
@@ -161,8 +172,7 @@ async def _anthropic_with_tools(
 
     import anthropic as _anthropic
 
-    is_oauth = api_key.startswith("sk-ant-") and not api_key.startswith("sk-ant-api")
-    if is_oauth:
+    if _is_oauth_token(api_key):
         sdk_client = _anthropic.Anthropic(
             auth_token=api_key,
             default_headers={"anthropic-beta": "oauth-2025-04-20", "x-app": "cli"},
