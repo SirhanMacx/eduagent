@@ -39,23 +39,25 @@ const GREEN: Color = [45, 95, 60];     // #2D5F3C
 const CREAM: Color = [255, 248, 231];  // #FFF8E7
 const DEEP_GREEN: Color = [26, 58, 36]; // #1A3A24
 const WARM_GOLD: Color = [232, 198, 107];
+const RED: Color = [180, 40, 40];      // Apple red
 const BLACK: Color = [0, 0, 0];
 
-// Claw-ED apple logo
+// Ed — the apple-with-claws mascot
+// Red apple body, lobster claws, graduation cap, diploma, friendly face
 const LOGO = [
-  '            ██',
-  '           ██',
-  '       ██████████',
-  '     ██████████████',
-  '    ████████████████',
-  '   ██████████████████',
-  '   ██████████████████',
-  '   ██████████████████',
-  '   ██████████████████',
-  '    ████████████████',
-  '     ██████████████',
-  '       ██████████',
-  '        ████████',
+  '              🎓',
+  '         🍃',
+  '    🦞  ████████  🦞',
+  '   ██  ██████████  ██',
+  '  ███ ████████████ ███',
+  '  ██ ██████████████ ██',
+  '     ██  ◕  ◕  ██',
+  '     ████  ▽  ████',
+  '     ██  ╰──╯  ██',
+  '      ██████████',
+  '       ┌─Ed─┐',
+  '       ████████',
+  '        ██  ██',
 ];
 
 const TITLE = [

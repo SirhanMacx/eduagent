@@ -10,19 +10,9 @@
   <a href="https://pepy.tech/project/clawed"><img src="https://static.pepy.tech/badge/clawed" alt="Downloads"></a>
 </p>
 
-```
-                   ⢸⡷⠶⠶⢾⠃
-                   ⢸⡇
- ⢀⣤⣤⣤⣀          ⢀⣀⣤⣬⣥⣤⣀⡀          ⣀⣤⣤⣦⡀
-⣼⠟⣡⣤⡀⠉⢻⡄     ⢀⣴⣾⣿⣿⣿⣿⣿⣿⣿⣷⣦⡀     ⢠⡟⠉⢀⣤⣌⠻⣧
-⠁ ⠻⠿⠃ ⣄⣀    ⣰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣆    ⣀⣠ ⠘⠿⠟
-      ⠉⠙⠛⠻⠶⣶⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣶⠶⠟⠛⠋⠉
-⢻⣦⡀  ⣀⣼⠃   ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿   ⠘⣧⣀  ⢀⣴⡟
- ⠈⠻⠛⠛⠉     ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿     ⠉⠛⠛⠛⠁
-              ⠙⠻⢿⣿⣿⣿⣿⣿⣿⡿⠟⠋
-               ⢠⡟ ⠉⠉⠉⠉ ⠘⣧
-              ⢀⡿        ⠸⣇
-```
+<p align="center">
+  <img src="docs/ed-mascot.png" alt="Ed — the Claw-ED mascot. A red apple with lobster claws, graduation cap, and diploma." width="280">
+</p>
 
 ---
 
