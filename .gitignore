@@ -46,6 +46,11 @@ cli/.bun/
 cli/source/cli.js
 cli/source/cli.js.map
 
+# Bundled CLI (build artifact, included in wheel via build.sh)
+clawed/_cli_bundle/cli.js
+clawed/_cli_bundle/cli.bundle/
+!clawed/_cli_bundle/package.json
+
 # Build prompts (internal)
 BUILD_PROMPT.md
 
