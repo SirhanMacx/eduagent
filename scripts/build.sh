@@ -65,13 +65,13 @@ mkdir -p "$REPO_ROOT/clawed/_cli_bundle"
 
 if [ -d "$REPO_ROOT/cli/dist" ]; then
     cp -r "$REPO_ROOT/cli/dist/"* "$REPO_ROOT/clawed/_cli_bundle/"
-    # Ensure ESM package.json exists for top-level await support
-    echo '{"type": "module"}' > "$REPO_ROOT/clawed/_cli_bundle/package.json"
     BUNDLE_SIZE=$(du -sh "$REPO_ROOT/clawed/_cli_bundle/" | cut -f1)
     echo "  Copied: clawed/_cli_bundle/ ($BUNDLE_SIZE)"
 else
     echo "  WARNING: cli/dist/ not found. Python package will use fallback CLI."
 fi
+# Ensure ESM package.json always exists (needed by hatch force-include)
+echo '{"type": "module"}' > "$REPO_ROOT/clawed/_cli_bundle/package.json"
 
 # Step 3: Build Python wheel
 echo ""
