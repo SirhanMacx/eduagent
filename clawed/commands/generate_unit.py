@@ -20,7 +20,6 @@ from clawed.commands.generate import generate_app
 
 def _unit_json(*, topic, grade, subject, weeks, standards):
     """Run unit planning and return structured result for JSON output."""
-    from clawed.exporter import export_unit
     from clawed.planner import plan_unit, save_unit
 
     persona = load_persona_or_exit()
@@ -64,7 +63,10 @@ def unit(
 ):
     """Plan a complete curriculum unit."""
     if json_output:
-        run_json_command("gen.unit", _unit_json, topic=topic, grade=grade, subject=subject, weeks=weeks, standards=standards)
+        run_json_command(
+            "gen.unit", _unit_json,
+            topic=topic, grade=grade, subject=subject, weeks=weeks, standards=standards,
+        )
         return
 
     from clawed.exporter import export_unit

@@ -92,7 +92,10 @@ async def fetch_all_images(
 
     subject = getattr(master, "subject", "")
 
-    logger.info("Fetching %d images (timeout=%ds, subject=%s, concurrency=%d)", len(specs), timeout, subject, _CONCURRENT_LIMIT)
+    logger.info(
+        "Fetching %d images (timeout=%ds, subject=%s, concurrency=%d)",
+        len(specs), timeout, subject, _CONCURRENT_LIMIT,
+    )
 
     semaphore = asyncio.Semaphore(_CONCURRENT_LIMIT)
 

@@ -88,7 +88,7 @@ def review_pptx(pptx_path: Path) -> OutputReview:
                     if t:
                         texts.append(t)
             if shape.shape_type == 13:
-                has_image = True
+                has_image = True  # noqa: F841
 
         all_text = " ".join(texts)
 

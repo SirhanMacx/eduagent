@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Optional
 
 from clawed.async_utils import run_async_safe
-from clawed.export_theme import _hex_to_rgb, _resolve_output, get_color_theme
+from clawed.export_theme import _hex_to_rgb, _resolve_output
 
 if TYPE_CHECKING:
     from clawed.models import DailyLesson, TeacherPersona
@@ -1133,7 +1133,7 @@ def export_lesson_pptx(
                 ps_title = getattr(ps, "title", "") or getattr(ps, "document_label", "")
                 ps_author = getattr(ps, "author", "")
                 ps_date = getattr(ps, "date", "")
-                ps_context = getattr(ps, "context", "")
+                ps_context = getattr(ps, "context", "")  # noqa: F841
                 ps_text = getattr(ps, "full_text", "")
                 ps_questions = getattr(ps, "analysis_questions", [])
 

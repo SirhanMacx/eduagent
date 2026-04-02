@@ -17,7 +17,7 @@ import typer
 from rich.panel import Panel
 from rich.table import Table
 
-from clawed._json_output import emit_json, json_envelope, run_json_command
+from clawed._json_output import run_json_command
 from clawed.commands._helpers import _safe_progress, console, load_persona_or_exit
 from clawed.commands._helpers import output_dir as _output_dir
 from clawed.commands._helpers import run_async as _run_async
@@ -32,7 +32,8 @@ generate_app = typer.Typer()
 
 def _ingest_json(*, path):
     """Run ingest and return structured result for JSON output."""
-    from clawed.ingestor import extract_rich, ingest_path as _ingest
+    from clawed.ingestor import extract_rich
+    from clawed.ingestor import ingest_path as _ingest
     from clawed.persona import extract_persona, load_persona, merge_persona, save_persona
 
     source = Path(path).expanduser().resolve()

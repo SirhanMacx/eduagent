@@ -357,9 +357,9 @@ async def compile_game(
 
     # Game generation requires code-capable models. Warn if using a model
     # that is known to produce broken HTML (small local Ollama models).
-    _CODE_WEAK_MODELS = {"qwen3.5:cloud", "llama3.2:latest", "phi3:latest"}
+    code_weak_models = {"qwen3.5:cloud", "llama3.2:latest", "phi3:latest"}
     resolved_model = getattr(config, "ollama_model", "") or ""
-    if resolved_model in _CODE_WEAK_MODELS:
+    if resolved_model in code_weak_models:
         logger.warning(
             "Game generation works best with code-capable models. "
             "Model '%s' may produce broken HTML. Consider using a larger "
