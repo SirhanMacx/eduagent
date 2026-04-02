@@ -9,6 +9,7 @@ Protocol (stdin JSON):
   {
     "messages": [{"role": "user", "content": "..."}],
     "system":   "optional system prompt",
+    "tools":    [{"type": "function", "function": {"name": "...", ...}}],
     "provider": "openai",         # from config if omitted
     "model":    "gpt-4o",         # from config if omitted
     "max_tokens": 4096,
@@ -18,11 +19,18 @@ Protocol (stdin JSON):
 Protocol (stdout JSON):
   {
     "status":  "success" | "error",
-    "content": "the LLM response text",
+    "content": [
+      {"type": "text", "text": "..."},
+      {"type": "tool_use", "id": "...", "name": "...", "input": {...}}
+    ],
     "model":   "gpt-4o",
     "usage":   {"input_tokens": 123, "output_tokens": 456},
+    "stop_reason": "end_turn" | "tool_use",
     "error":   null | "description"
   }
+
+  When no tools are provided, "content" may be a plain string (backward
+  compat).  The TS side handles both.
 """
 from __future__ import annotations
 
@@ -100,8 +108,101 @@ def _build_config(provider: str | None, model: str | None):
     return config
 
 
+def _resolve_model(config, model: str | None) -> str:
+    """Determine the actual model name from config and override."""
+    if model:
+        return model
+    from clawed.models import LLMProvider
+    _model_fields = {
+        LLMProvider.OPENAI: "openai_model",
+        LLMProvider.GOOGLE: "google_model",
+        LLMProvider.OLLAMA: "ollama_model",
+        LLMProvider.ANTHROPIC: "anthropic_model",
+    }
+    return getattr(config, _model_fields.get(config.provider, ""), "") or ""
+
+
+def _convert_messages_for_agent(messages: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Convert TS-side messages (Anthropic content-block format) to the
+    internal format expected by agent.py tool-calling functions.
+
+    Handles:
+      - Plain text messages (role + string content)
+      - User messages with tool_result content blocks
+      - Assistant messages with tool_use content blocks
+    """
+    converted: list[dict[str, Any]] = []
+    for msg in messages:
+        role = msg.get("role", "user")
+        content = msg.get("content", "")
+
+        # ── User message with structured content (may contain tool_result) ──
+        if role == "user" and isinstance(content, list):
+            tool_results = [b for b in content if isinstance(b, dict) and b.get("type") == "tool_result"]
+            if tool_results:
+                # Each tool_result becomes a separate "tool" message for
+                # the OpenAI-compatible format that agent.py uses internally.
+                for tr in tool_results:
+                    tr_content = tr.get("content", "")
+                    # content can be a string or a list of blocks
+                    if isinstance(tr_content, list):
+                        tr_content = "\n".join(
+                            b.get("text", "") for b in tr_content
+                            if isinstance(b, dict) and b.get("type") == "text"
+                        )
+                    converted.append({
+                        "role": "tool",
+                        "tool_call_id": tr.get("tool_use_id", ""),
+                        "content": str(tr_content),
+                    })
+            else:
+                # Regular user message with text blocks
+                text = "\n".join(
+                    b.get("text", "") for b in content
+                    if isinstance(b, dict) and b.get("type") == "text"
+                )
+                if text:
+                    converted.append({"role": "user", "content": text})
+            continue
+
+        # ── Assistant message with structured content (may contain tool_use) ──
+        if role == "assistant" and isinstance(content, list):
+            tool_uses = [b for b in content if isinstance(b, dict) and b.get("type") == "tool_use"]
+            if tool_uses:
+                tool_calls = []
+                for tu in tool_uses:
+                    tool_calls.append({
+                        "id": tu.get("id", tu.get("name", "")),
+                        "name": tu.get("name", ""),
+                        "arguments": tu.get("input", {}),
+                    })
+                converted.append({
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": tool_calls,
+                })
+            else:
+                text = "\n".join(
+                    b.get("text", "") for b in content
+                    if isinstance(b, dict) and b.get("type") == "text"
+                )
+                if text:
+                    converted.append({"role": "assistant", "content": text})
+            continue
+
+        # ── Plain string content ──
+        if isinstance(content, str) and content:
+            converted.append({"role": role, "content": content})
+
+    return converted
+
+
 async def _handle_chat(request: dict[str, Any]) -> dict[str, Any]:
-    """Process a single chat request and return a response dict."""
+    """Process a single chat request and return a response dict.
+
+    When ``tools`` are provided in the request, routes through the
+    agent.py tool-calling functions instead of the plain LLMClient.
+    """
     from clawed.llm import LLMClient
 
     provider = request.get("provider")
@@ -110,6 +211,7 @@ async def _handle_chat(request: dict[str, Any]) -> dict[str, Any]:
     system = request.get("system", "")
     max_tokens = request.get("max_tokens", 4096)
     temperature = request.get("temperature", 0.7)
+    tools = request.get("tools")  # may be None or []
 
     try:
         config = _build_config(provider, model)
@@ -122,14 +224,26 @@ async def _handle_chat(request: dict[str, Any]) -> dict[str, Any]:
             "error": str(exc),
         }
 
-    # Build the prompt from messages array
-    # For simple chat: take the last user message as prompt
+    used_model = _resolve_model(config, model)
+
+    # ── Tool-calling path ──────────────────────────────────────────────
+    if tools:
+        try:
+            return await _handle_chat_with_tools(
+                messages, system, tools, config, used_model,
+            )
+        except Exception as exc:
+            logger.warning(
+                "Tool-calling path failed (%s), falling back to text-only", exc,
+            )
+            # Fall through to the text-only path below
+
+    # ── Text-only path (original behaviour, backward compat) ───────────
     prompt_parts: list[str] = []
     for msg in messages:
         role = msg.get("role", "user")
         content = msg.get("content", "")
         if isinstance(content, list):
-            # Handle structured content blocks
             text_parts = [
                 b.get("text", "") for b in content
                 if isinstance(b, dict) and b.get("type") == "text"
@@ -151,24 +265,12 @@ async def _handle_chat(request: dict[str, Any]) -> dict[str, Any]:
             max_tokens=max_tokens,
         )
 
-        # Determine actual model used
-        used_model = model
-        if not used_model:
-            if config.provider.value == "openai":
-                used_model = config.openai_model
-            elif config.provider.value == "google":
-                used_model = config.google_model
-            elif config.provider.value == "ollama":
-                used_model = config.ollama_model
-            elif config.provider.value == "anthropic":
-                used_model = config.anthropic_model
-
         return {
             "status": "success",
             "content": response_text,
-            "model": used_model or "",
+            "model": used_model,
             "usage": {
-                "input_tokens": len(prompt.split()),  # rough estimate
+                "input_tokens": len(prompt.split()),
                 "output_tokens": len(response_text.split()),
             },
             "error": None,
@@ -179,10 +281,109 @@ async def _handle_chat(request: dict[str, Any]) -> dict[str, Any]:
         return {
             "status": "error",
             "content": "",
-            "model": model or "",
+            "model": used_model,
             "usage": {"input_tokens": 0, "output_tokens": 0},
             "error": f"{type(exc).__name__}: {exc}",
         }
+
+
+async def _handle_chat_with_tools(
+    messages: list[dict[str, Any]],
+    system: str,
+    tools: list[dict[str, Any]],
+    config,
+    used_model: str,
+) -> dict[str, Any]:
+    """Route a tool-capable request through agent.py's native tool functions.
+
+    Sets the module-level ``TOOL_DEFINITIONS`` so that ``_openai_with_tools``
+    and ``_call_with_ollama_tools`` pick up the caller's tool definitions
+    instead of the built-in Claw-ED ones.
+    """
+    import clawed.tools as _tools_mod
+    from clawed.agent import (
+        _call_with_native_tools,
+        _call_with_ollama_tools,
+    )
+    from clawed.models import LLMProvider
+
+    # Inject the caller's tool definitions into the module-level list that
+    # agent.py reads from.  Save the originals so we can restore them.
+    original_defs = _tools_mod.TOOL_DEFINITIONS
+    try:
+        _tools_mod.TOOL_DEFINITIONS = tools
+
+        # Also patch the reference inside agent.py (it imported at module load)
+        import clawed.agent as _agent_mod
+        _agent_mod.TOOL_DEFINITIONS = tools
+
+        # Convert messages from Anthropic content-block format to the
+        # internal dict format that agent.py expects.
+        agent_messages = _convert_messages_for_agent(messages)
+
+        # Route to the right tool-calling function
+        if config.provider in (LLMProvider.ANTHROPIC, LLMProvider.OPENAI):
+            response = await _call_with_native_tools(agent_messages, system, config)
+        else:
+            response = await _call_with_ollama_tools(agent_messages, system, config)
+
+    finally:
+        # Restore original definitions
+        _tools_mod.TOOL_DEFINITIONS = original_defs
+        import clawed.agent as _agent_mod
+        _agent_mod.TOOL_DEFINITIONS = original_defs
+
+    # ── Build the response in Anthropic content-block format ───────────
+    if response["type"] == "text":
+        content_blocks: list[dict[str, Any]] = [
+            {"type": "text", "text": response.get("content", "")},
+        ]
+        return {
+            "status": "success",
+            "content": content_blocks,
+            "model": used_model,
+            "usage": {
+                "input_tokens": len(system.split()) + sum(
+                    len(str(m.get("content", "")).split()) for m in messages
+                ),
+                "output_tokens": len(response.get("content", "").split()),
+            },
+            "stop_reason": "end_turn",
+            "error": None,
+        }
+
+    if response["type"] == "tool_calls":
+        content_blocks = []
+        for tc in response["tool_calls"]:
+            content_blocks.append({
+                "type": "tool_use",
+                "id": tc.get("id", tc.get("name", "")),
+                "name": tc["name"],
+                "input": tc.get("arguments", {}),
+            })
+        return {
+            "status": "success",
+            "content": content_blocks,
+            "model": used_model,
+            "usage": {
+                "input_tokens": len(system.split()) + sum(
+                    len(str(m.get("content", "")).split()) for m in messages
+                ),
+                "output_tokens": 0,
+            },
+            "stop_reason": "tool_use",
+            "error": None,
+        }
+
+    # Unexpected response type -- return empty text
+    return {
+        "status": "success",
+        "content": [{"type": "text", "text": ""}],
+        "model": used_model,
+        "usage": {"input_tokens": 0, "output_tokens": 0},
+        "stop_reason": "end_turn",
+        "error": None,
+    }
 
 
 def _run_chat_stdin() -> None:

@@ -168,6 +168,56 @@ function renderParticles(particles: Particle[], globalFade: number): string {
   return buf;
 }
 
+/**
+ * Try to display Ed mascot PNG inline using iTerm2 image protocol.
+ * Works on: iTerm2, WezTerm, Mintty, Konsole, foot.
+ * Returns true if the image was displayed.
+ */
+function tryShowEdImage(cols: number, rows: number): boolean {
+  // Only iTerm2 and compatible terminals support inline images
+  const term = process.env.TERM_PROGRAM || ''
+  const lc = process.env.LC_TERMINAL || ''
+  const supportsImages =
+    term === 'iTerm.app' ||
+    term === 'WezTerm' ||
+    lc === 'iTerm2' ||
+    process.env.KONSOLE_VERSION ||
+    process.env.WEZTERM_EXECUTABLE
+
+  if (!supportsImages) return false
+
+  try {
+    const { readFileSync } = require('fs')
+    const { join, dirname } = require('path')
+
+    // Find the Ed PNG relative to the cli.js bundle
+    const candidates = [
+      join(dirname(process.argv[1] || ''), '..', 'docs', 'ed-terminal.png'),
+      join(dirname(process.argv[1] || ''), 'ed-terminal.png'),
+      join(process.cwd(), 'docs', 'ed-terminal.png'),
+    ]
+
+    let imgData: Buffer | null = null
+    for (const p of candidates) {
+      try { imgData = readFileSync(p); break } catch { /* skip */ }
+    }
+    if (!imgData) return false
+
+    const b64 = imgData.toString('base64')
+    const width = Math.min(24, Math.floor(cols * 0.3))
+
+    // iTerm2 inline image protocol
+    const imgSeq = `\x1b]1337;File=inline=1;width=${width};preserveAspectRatio=1:${b64}\x07`
+
+    // Center it
+    const pad = ' '.repeat(Math.max(0, Math.floor((cols - width * 2) / 2)))
+    process.stdout.write(`${pad}${imgSeq}\n`)
+    return true
+  } catch {
+    return false
+  }
+}
+
 export async function playLaunchScreen(): Promise<void> {
   if (!process.stdout.isTTY) return;
   if (process.env.NO_LAUNCH_SCREEN) return;
@@ -178,6 +228,9 @@ export async function playLaunchScreen(): Promise<void> {
 
   const out = process.stdout;
   const write = (s: string) => out.write(s);
+
+  // Try to show the real Ed PNG on supported terminals
+  const showedImage = tryShowEdImage(cols, rows);
 
   const logoWidth = Math.max(...LOGO.map(l => l.length));
   const titleWidth = TITLE[0].length;

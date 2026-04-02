@@ -1,6 +1,6 @@
 {
   "name": "clawed",
-  "version": "4.2.2026.20",
+  "version": "4.2.2026.21",
   "bin": {
     "clawed": "cli.js"
   },

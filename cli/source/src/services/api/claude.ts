@@ -26,7 +26,11 @@ import {
   isClawedBridgeProvider,
   isFirstPartyAnthropicBaseUrl,
 } from 'src/utils/model/providers.js'
-import { bridgeChat, buildBridgeRequest } from './bridgeClient.js'
+import {
+  bridgeChat,
+  buildBridgeRequest,
+  type BridgeChatRequest,
+} from './bridgeClient.js'
 import {
   getAttributionHeader,
   getCLISyspromptPrefix,
@@ -1032,25 +1036,48 @@ async function* queryModel(
   // ── Claw-ED bridge: route non-Anthropic providers through Python ──
   const bridgeProvider = getClawedConfigProvider()
   if (bridgeProvider) {
-    // Convert messages to simple role/content pairs for the bridge
-    const simpleMsgs: Array<{ role: string; content: string }> = []
+    // Convert messages preserving ALL content block types (text, tool_use,
+    // tool_result) so the Python bridge can handle the full tool-calling loop.
+    const bridgeMsgs: Array<{ role: string; content: string | unknown[] }> = []
     for (const msg of messages) {
       if (msg.type === 'user') {
-        const content = Array.isArray(msg.message.content)
-          ? msg.message.content
+        const rawContent = msg.message.content
+        if (Array.isArray(rawContent)) {
+          // Check if any block is a tool_result -- pass structured content through
+          const hasToolResult = rawContent.some(
+            (b: any) => b.type === 'tool_result',
+          )
+          if (hasToolResult) {
+            // Pass the full content array so the bridge gets tool_result blocks
+            bridgeMsgs.push({ role: 'user', content: rawContent as unknown[] })
+          } else {
+            // Text-only user message -- flatten for simplicity
+            const text = rawContent
               .filter((b: any) => b.type === 'text')
               .map((b: any) => b.text)
               .join('\n')
-          : String(msg.message.content)
-        simpleMsgs.push({ role: 'user', content })
+            bridgeMsgs.push({ role: 'user', content: text })
+          }
+        } else {
+          bridgeMsgs.push({ role: 'user', content: String(rawContent) })
+        }
       } else if (msg.type === 'assistant') {
-        const content = Array.isArray(msg.message.content)
-          ? msg.message.content
+        const rawContent = msg.message.content
+        if (Array.isArray(rawContent)) {
+          // Check if any block is a tool_use -- pass structured content through
+          const hasToolUse = rawContent.some(
+            (b: any) => b.type === 'tool_use',
+          )
+          if (hasToolUse) {
+            bridgeMsgs.push({ role: 'assistant', content: rawContent as unknown[] })
+          } else {
+            const text = rawContent
               .filter((b: any) => b.type === 'text')
               .map((b: any) => b.text)
               .join('\n')
-          : ''
-        if (content) simpleMsgs.push({ role: 'assistant', content })
+            if (text) bridgeMsgs.push({ role: 'assistant', content: text })
+          }
+        }
       }
     }
 
@@ -1064,38 +1091,89 @@ async function* queryModel(
       sysText = systemPrompt
     }
 
+    // Build tool definitions in OpenAI function-calling format for the bridge.
+    // Uses toolToAPISchema to get the Anthropic schema (name + description +
+    // input_schema) then converts to OpenAI format ({type: "function", ...}).
+    const allTools = [...tools, ...(options.mcpTools || [])]
+    const enabledTools = allTools.filter(t => t.isEnabled())
+
+    let toolDefs: BridgeChatRequest['tools'] | undefined
+    if (enabledTools.length > 0) {
+      const schemas = await Promise.all(
+        enabledTools.map(t =>
+          toolToAPISchema(t, {
+            getToolPermissionContext: options.getToolPermissionContext,
+            tools,
+            agents: options.agents,
+            allowedAgentTypes: options.allowedAgentTypes,
+            model: options.model,
+          }),
+        ),
+      )
+      toolDefs = schemas.map(s => ({
+        type: 'function' as const,
+        function: {
+          name: s.name,
+          description: s.description ?? '',
+          parameters: s.input_schema as unknown,
+        },
+      }))
+    }
+
     const req = buildBridgeRequest(
       bridgeProvider,
       options.model,
-      simpleMsgs,
+      bridgeMsgs,
       sysText,
+      toolDefs,
     )
 
     const resp = await bridgeChat(req, { signal })
+
+    const bridgeUsage = {
+      input_tokens: resp.usage?.input_tokens ?? 0,
+      output_tokens: resp.usage?.output_tokens ?? 0,
+      cache_creation_input_tokens: 0,
+      cache_read_input_tokens: 0,
+      server_tool_use: { web_search_requests: 0, web_fetch_requests: 0 },
+      service_tier: null,
+      cache_creation: {
+        ephemeral_1h_input_tokens: 0,
+        ephemeral_5m_input_tokens: 0,
+      },
+      inference_geo: null,
+      iterations: null,
+      speed: null,
+    }
 
     if (resp.status === 'error') {
       yield createAssistantAPIErrorMessage({
         content: `[${bridgeProvider} bridge error] ${resp.error || 'Unknown error'}`,
       })
-    } else {
-      yield createAssistantMessage({
-        content: resp.content,
-        usage: {
-          input_tokens: resp.usage?.input_tokens ?? 0,
-          output_tokens: resp.usage?.output_tokens ?? 0,
-          cache_creation_input_tokens: 0,
-          cache_read_input_tokens: 0,
-          server_tool_use: { web_search_requests: 0, web_fetch_requests: 0 },
-          service_tier: null,
-          cache_creation: {
-            ephemeral_1h_input_tokens: 0,
-            ephemeral_5m_input_tokens: 0,
-          },
-          inference_geo: null,
-          iterations: null,
-          speed: null,
-        },
+    } else if (typeof resp.content === 'string') {
+      // Backward-compat: plain text response (no tools were used)
+      yield createAssistantMessage({ content: resp.content, usage: bridgeUsage })
+    } else if (Array.isArray(resp.content)) {
+      // Structured response: array of content blocks (text + tool_use)
+      const contentBlocks: BetaContentBlock[] = resp.content.map((block: any) => {
+        if (block.type === 'tool_use') {
+          return {
+            type: 'tool_use' as const,
+            id: block.id ?? randomUUID(),
+            name: block.name ?? '',
+            input: block.input ?? {},
+          } as BetaContentBlock
+        }
+        // Default to text block
+        return {
+          type: 'text' as const,
+          text: block.text ?? '',
+        } as BetaContentBlock
       })
+      yield createAssistantMessage({ content: contentBlocks, usage: bridgeUsage })
+    } else {
+      // Fallback: treat as empty text
+      yield createAssistantMessage({ content: '', usage: bridgeUsage })
     }
     return
   }

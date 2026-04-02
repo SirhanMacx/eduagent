@@ -18,6 +18,10 @@ import {
 export interface BridgeChatRequest {
   messages: Array<{ role: string; content: string | unknown[] }>
   system?: string
+  tools?: Array<{
+    type: string
+    function: { name: string; description: string; parameters: unknown }
+  }>
   provider?: string
   model?: string
   max_tokens?: number
@@ -26,9 +30,18 @@ export interface BridgeChatRequest {
 
 export interface BridgeChatResponse {
   status: 'success' | 'error'
-  content: string
+  content:
+    | string
+    | Array<{
+        type: string
+        text?: string
+        id?: string
+        name?: string
+        input?: unknown
+      }>
   model: string
   usage: { input_tokens: number; output_tokens: number }
+  stop_reason?: string
   error: string | null
 }
 
@@ -160,13 +173,18 @@ export function bridgeChat(
 export function buildBridgeRequest(
   provider: ClawedProvider,
   model: string,
-  messages: Array<{ role: string; content: string }>,
+  messages: Array<{ role: string; content: string | unknown[] }>,
   systemPrompt?: string,
+  tools?: BridgeChatRequest['tools'],
 ): BridgeChatRequest {
-  return {
+  const req: BridgeChatRequest = {
     messages,
     system: systemPrompt || '',
     provider,
     model: model || CLAWED_PROVIDER_DEFAULT_MODELS[provider],
   }
+  if (tools && tools.length > 0) {
+    req.tools = tools
+  }
+  return req
 }
