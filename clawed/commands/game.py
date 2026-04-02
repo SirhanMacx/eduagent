@@ -72,8 +72,8 @@ def create(
         ..., help="Lesson topic (e.g. 'The Missouri Compromise')"
     ),
     grade: str = typer.Option("8", "--grade", "-g", help="Grade level"),
-    subject: str = typer.Option(
-        "Social Studies", "--subject", "-s", help="Subject area"
+    subject: Optional[str] = typer.Option(
+        None, "--subject", "-s", help="Subject area (reads from your profile if not set)"
     ),
     style: str = typer.Option(
         "",
@@ -110,6 +110,11 @@ def create(
     From an existing lesson:
         clawed game create "topic" --from-lesson output/lesson_01.json
     """
+    # Resolve subject from teacher profile if not provided
+    if subject is None:
+        from clawed.commands._helpers import get_default_subject
+        subject = get_default_subject()
+
     if json_output:
         run_json_command(
             "game.create", _game_create_json,

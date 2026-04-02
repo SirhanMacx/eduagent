@@ -40,7 +40,7 @@ def workspace_init() -> None:
 def workspace_regenerate(
     force: bool = typer.Option(False, "--force", "-f", help="Skip confirmation"),
 ) -> None:
-    """Regenerate identity.md and soul.md from the current persona. Overwrites existing files."""
+    """Regenerate identity.md and soul.md from persona.json (overwrites existing)."""
     from clawed.models import AppConfig, TeacherPersona
     from clawed.workspace import (
         IDENTITY_PATH,
@@ -60,15 +60,42 @@ def workspace_regenerate(
             raise typer.Exit()
 
     cfg = AppConfig.load()
+
+    # persona.json is the canonical source of truth for regeneration.
+    # Try multiple known locations.
+    persona = None
     try:
         from clawed.commands._helpers import persona_path
         from clawed.persona import load_persona
+
         pp = persona_path()
-        persona = load_persona(pp) if pp.exists() else TeacherPersona()
+        if pp.exists():
+            persona = load_persona(pp)
+            console.print(f"[dim]Loaded persona from {pp}[/dim]")
     except Exception:
+        pass
+
+    if persona is None:
+        # Check the data dir directly
+        import os
+        from pathlib import Path as _Path
+        data_dir = _Path(os.environ.get("EDUAGENT_DATA_DIR", str(_Path.home() / ".eduagent")))
+        alt_path = data_dir / "persona.json"
+        if alt_path.exists():
+            try:
+                from clawed.persona import load_persona
+                persona = load_persona(alt_path)
+                console.print(f"[dim]Loaded persona from {alt_path}[/dim]")
+            except Exception:
+                pass
+
+    if persona is None:
         persona = TeacherPersona()
+        console.print("[dim]No persona.json found — using defaults.[/dim]")
 
     WORKSPACE_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Overwrite (not append) — write_text replaces the entire file
     IDENTITY_PATH.write_text(generate_identity(persona, cfg), encoding="utf-8")
     SOUL_PATH.write_text(generate_soul(persona, cfg), encoding="utf-8")
     console.print("[green]identity.md and soul.md regenerated from persona.[/green]")

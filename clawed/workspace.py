@@ -465,6 +465,24 @@ async def consolidate_soul() -> bool:
 # ── Workspace init ─────────────────────────────────────────────────────
 
 
+def _is_corrupted(path: Path) -> bool:
+    """Detect corruption: returns True if a file has the same content repeated.
+
+    Checks whether more than 50% of non-empty lines are duplicates, which
+    indicates the file got its content appended repeatedly instead of overwritten.
+    """
+    if not path.exists():
+        return False
+    content = path.read_text(encoding="utf-8").strip()
+    if not content:
+        return False
+    lines = [ln for ln in content.split("\n") if ln.strip()]
+    if len(lines) < 4:
+        return False  # Too small to judge
+    unique = set(lines)
+    return len(unique) < len(lines) * 0.5
+
+
 def init_workspace(
     persona: Optional[TeacherPersona] = None,
     config: Optional[AppConfig] = None,
@@ -493,6 +511,16 @@ def init_workspace(
     # Create directories
     for d in (WORKSPACE_DIR, NOTES_DIR, STUDENTS_DIR):
         d.mkdir(parents=True, exist_ok=True)
+
+    # Detect corrupted files (same content repeated) and auto-fix
+    for check_path, label in [(SOUL_PATH, "soul.md"), (IDENTITY_PATH, "identity.md")]:
+        if _is_corrupted(check_path):
+            logger.warning(
+                "%s appears corrupted (duplicate content detected). "
+                "Regenerating from persona...",
+                label,
+            )
+            check_path.unlink()
 
     # All workspace docs are teacher-editable. Never overwrite existing files.
     # Teachers can freely edit identity.md, soul.md, memory.md, heartbeat.md.

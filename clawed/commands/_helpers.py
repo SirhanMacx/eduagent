@@ -74,6 +74,18 @@ def persona_path() -> Path:
     return output_dir() / "persona.json"
 
 
+def get_default_subject() -> str:
+    """Get default subject from the teacher's profile, or a generic fallback."""
+    try:
+        cfg = AppConfig.load()
+        subjects = cfg.teacher_profile.subjects
+        if subjects:
+            return subjects[0]
+    except Exception:
+        pass
+    return "General"
+
+
 def _safe_progress(**kwargs):
     """Create a Progress bar that works on all platforms.
 

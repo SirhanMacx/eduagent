@@ -412,8 +412,8 @@ def lesson(
     grade: str = typer.Option(
         "8", "--grade", "-g", help="Grade level (for standalone lesson)"
     ),
-    subject: str = typer.Option(
-        "Social Studies", "--subject", "-s", help="Subject area (for standalone lesson)"
+    subject: Optional[str] = typer.Option(
+        None, "--subject", "-s", help="Subject area (reads from your profile if not set)"
     ),
     homework: bool = typer.Option(
         True, "--homework/--no-homework", help="Include homework"
@@ -448,6 +448,11 @@ def lesson(
     From a unit plan:
         clawed lesson "Photosynthesis" --unit-file output/unit_photosynthesis.json -n 1
     """
+    # Resolve subject from teacher profile if not provided
+    if subject is None:
+        from clawed.commands._helpers import get_default_subject
+        subject = get_default_subject()
+
     if json_output:
         run_json_command(
             "gen.lesson",
@@ -952,7 +957,9 @@ def sub_packet(
         "My Class", "--class", "-c", help="Class name"
     ),
     grade: str = typer.Option("8", "--grade", "-g", help="Grade level"),
-    subject: str = typer.Option("General", "--subject", "-s", help="Subject"),
+    subject: Optional[str] = typer.Option(
+        None, "--subject", "-s", help="Subject (reads from your profile if not set)"
+    ),
     topic: Optional[str] = typer.Option(
         None, "--topic", "-t", help="Lesson topic"
     ),
@@ -962,6 +969,11 @@ def sub_packet(
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ) -> None:
     """Generate a complete substitute teacher packet."""
+    # Resolve subject from teacher profile if not provided
+    if subject is None:
+        from clawed.commands._helpers import get_default_subject
+        subject = get_default_subject()
+
     if json_output:
         run_json_command(
             "gen.sub-packet",

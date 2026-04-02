@@ -37,6 +37,7 @@ from clawed.commands.export import (
 )
 from clawed.commands.game import game_app
 from clawed.commands.generate import generate_app
+from clawed.commands.kb import kb_app
 from clawed.commands.queue import queue_app
 from clawed.commands.schedule_cmd import schedule_app
 from clawed.commands.simulation import simulation_app
@@ -254,6 +255,7 @@ app.add_typer(school_app, name="school")
 app.add_typer(class_app, name="class")
 app.add_typer(queue_app, name="queue")
 app.add_typer(workspace_app, name="workspace")
+app.add_typer(kb_app, name="kb")
 app.add_typer(schedule_app, name="schedule")
 app.add_typer(train_app, name="train")
 app.add_typer(game_app, name="game")

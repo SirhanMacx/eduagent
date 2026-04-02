@@ -72,8 +72,8 @@ def create(
         ..., help="Simulation topic (e.g. 'Pendulum Motion')"
     ),
     grade: str = typer.Option("8", "--grade", "-g", help="Grade level"),
-    subject: str = typer.Option(
-        "Science", "--subject", "-s", help="Subject area"
+    subject: Optional[str] = typer.Option(
+        None, "--subject", "-s", help="Subject area (reads from your profile if not set)"
     ),
     sim_type: str = typer.Option(
         "",
@@ -101,6 +101,11 @@ def create(
     From an existing lesson:
         clawed simulate create "topic" --from-lesson output/lesson_01.json
     """
+    # Resolve subject from teacher profile if not provided
+    if subject is None:
+        from clawed.commands._helpers import get_default_subject
+        subject = get_default_subject()
+
     if json_output:
         run_json_command(
             "simulate.create", _simulation_create_json,
