@@ -39,26 +39,71 @@ const GREEN: Color = [45, 95, 60];     // #2D5F3C
 const CREAM: Color = [255, 248, 231];  // #FFF8E7
 const DEEP_GREEN: Color = [26, 58, 36]; // #1A3A24
 const WARM_GOLD: Color = [232, 198, 107];
-const RED: Color = [180, 40, 40];      // Apple red
 const BLACK: Color = [0, 0, 0];
 
-// Ed — the apple-with-claws mascot
-// Red apple body, lobster claws, graduation cap, diploma, friendly face
-const LOGO = [
-  '              🎓',
-  '         🍃',
-  '    🦞  ████████  🦞',
-  '   ██  ██████████  ██',
-  '  ███ ████████████ ███',
-  '  ██ ██████████████ ██',
-  '     ██  ◕  ◕  ██',
-  '     ████  ▽  ████',
-  '     ██  ╰──╯  ██',
-  '      ██████████',
-  '       ┌─Ed─┐',
-  '       ████████',
-  '        ██  ██',
+// Ed mascot colors
+const APPLE_RED: Color = [190, 45, 35];
+const DARK_RED: Color = [145, 28, 18];
+const CAP_BLACK: Color = [35, 35, 40];
+const LEAF_GREEN: Color = [55, 140, 55];
+const EYE_WHITE: Color = [250, 250, 250];
+const FACE_FEAT: Color = [220, 200, 180];
+const TAG_GOLD: Color = [212, 175, 80];
+
+// Ed — the apple-with-claws mascot (color-mapped)
+// Each row: chars = what to render, colors = color code per character
+// R=red K=cap G=leaf D=dark-red(claws) W=white(eyes) F=face O=gold(tag) .=space
+const LOGO_CHARS = [
+  '           ▄▄▄▄▄▄▄           ',
+  '          █████████          ',
+  '         ▀▀▀▀▀▀▀▀▀▀▀        ',
+  '             │●              ',
+  '          ▄▀ │               ',
+  '   ╔══╗ ▄████████████▄ ╔══╗ ',
+  '   ║██╠████████████████╣██║ ',
+  '   ╚══╝████████████████╚══╝ ',
+  '        ██  ◕    ◕  ██      ',
+  '        ████  ▿  ████       ',
+  '        ██  ╰──╯  ██        ',
+  '        ██ ┌─Ed─┐ ██        ',
+  '         ████████████        ',
+  '          ██████████         ',
+  '          ██      ██         ',
 ];
+
+const LOGO_COLOR_MAP = [
+  '           KKKKKKK           ',
+  '          KKKKKKKKK          ',
+  '         KKKKKKKKKKK        ',
+  '             OOOO            ',
+  '          GG OG              ',
+  '   DDDD RRRRRRRRRRRRRR DDDD ',
+  '   DDDDRRRRRRRRRRRRRRRRDDDDD',
+  '   DDDDRRRRRRRRRRRRRRRRDDDDD',
+  '        RR  WW    WW  RR    ',
+  '        RRRR  FF  RRRR      ',
+  '        RR  FFFF  RR        ',
+  '        RR OOOOOO RR        ',
+  '         RRRRRRRRRRRR       ',
+  '          RRRRRRRRRR        ',
+  '          RR      RR        ',
+];
+
+function getEdColor(code: string): Color {
+  switch (code) {
+    case 'R': return APPLE_RED;
+    case 'D': return DARK_RED;
+    case 'K': return CAP_BLACK;
+    case 'G': return LEAF_GREEN;
+    case 'W': return EYE_WHITE;
+    case 'F': return FACE_FEAT;
+    case 'O': return TAG_GOLD;
+    default: return CREAM;
+  }
+}
+
+// Backward-compat: LOGO used for layout measurements
+const LOGO = LOGO_CHARS;
 
 const TITLE = [
   ' ██████╗██╗      █████╗ ██╗    ██╗       ███████╗██████╗ ',
@@ -170,11 +215,11 @@ export async function playLaunchScreen(): Promise<void> {
           const charT = Math.max(0, Math.min(1, (rowT - colDelay * 0.3) / 0.6));
           if (charT <= 0) { buf += ' '; continue; }
 
-          // Flash white at birth, settle to gold-green gradient
+          // Flash white at birth, settle to Ed's per-character color
           const birthFlash = charT < 0.4 ? (0.4 - charT) / 0.4 : 0;
-          const distFromCenter = colDelay;
-          const baseColor = lerpColor(CREAM, GREEN, distFromCenter * 0.8);
-          const wave = Math.sin(frame * 0.6 + i * 0.25 + row * 0.5) * 0.15;
+          const colorCode = (LOGO_COLOR_MAP[row] || '')[i] || ' ';
+          const baseColor = getEdColor(colorCode);
+          const wave = Math.sin(frame * 0.6 + i * 0.25 + row * 0.5) * 0.12;
           const color = lerpColor(baseColor, [255, 255, 255], birthFlash + wave);
           buf += rgb(
             Math.min(255, color[0]),
@@ -215,8 +260,14 @@ export async function playLaunchScreen(): Promise<void> {
         for (let i = 0; i < line.length; i++) {
           const ch = line[i];
           if (ch === ' ') { buf += ' '; continue; }
-          const wave = Math.sin(frame * 0.4 + i * 0.2 + row * 0.5) * 0.5 + 0.5;
-          const color = lerpColor(GOLD, CREAM, wave * 0.5);
+          const wave = Math.sin(frame * 0.4 + i * 0.2 + row * 0.5) * 0.25 + 0.75;
+          const colorCode = (LOGO_COLOR_MAP[row] || '')[i] || ' ';
+          const base = getEdColor(colorCode);
+          const color: Color = [
+            Math.min(255, Math.round(base[0] * (0.9 + wave * 0.3))),
+            Math.min(255, Math.round(base[1] * (0.9 + wave * 0.3))),
+            Math.min(255, Math.round(base[2] * (0.9 + wave * 0.3))),
+          ];
           buf += rgb(color[0], color[1], color[2]) + ch;
         }
         buf += RESET;
@@ -294,8 +345,14 @@ export async function playLaunchScreen(): Promise<void> {
         for (let i = 0; i < line.length; i++) {
           const ch = line[i];
           if (ch === ' ') { buf += ' '; continue; }
-          const wave = Math.sin(frame * 0.3 + i * 0.15 + row * 0.4) * 0.3 + 0.7;
-          const color = lerpColor(GOLD, CREAM, wave * 0.4);
+          const wave = Math.sin(frame * 0.3 + i * 0.15 + row * 0.4) * 0.15 + 0.85;
+          const colorCode = (LOGO_COLOR_MAP[row] || '')[i] || ' ';
+          const base = getEdColor(colorCode);
+          const color: Color = [
+            Math.min(255, Math.round(base[0] * wave)),
+            Math.min(255, Math.round(base[1] * wave)),
+            Math.min(255, Math.round(base[2] * wave)),
+          ];
           buf += rgb(color[0], color[1], color[2]) + ch;
         }
         buf += RESET;
@@ -337,14 +394,16 @@ export async function playLaunchScreen(): Promise<void> {
       let buf = CLEAR;
       const fade = 1 - frame / 11; // 1 → 0
 
-      // Fading logo
+      // Fading logo (Ed retains his colors as he fades)
       for (let row = 0; row < LOGO.length; row++) {
         buf += moveTo(logoTop + row, logoCx);
         const line = LOGO[row];
         for (let i = 0; i < line.length; i++) {
           const ch = line[i];
           if (ch === ' ') { buf += ' '; continue; }
-          const color = lerpColor(BLACK, GOLD, fade);
+          const colorCode = (LOGO_COLOR_MAP[row] || '')[i] || ' ';
+          const base = getEdColor(colorCode);
+          const color = lerpColor(BLACK, base, fade);
           buf += rgb(color[0], color[1], color[2]) + ch;
         }
         buf += RESET;
