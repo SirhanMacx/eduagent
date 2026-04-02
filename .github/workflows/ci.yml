@@ -63,6 +63,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Create CLI bundle placeholder
+        run: |
+          mkdir -p clawed/_cli_bundle
+          echo '{"type": "module"}' > clawed/_cli_bundle/package.json
       - name: Build wheel
         run: |
           pip install build
@@ -94,6 +98,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
+      - name: Create CLI bundle placeholder
+        run: |
+          mkdir -p clawed/_cli_bundle
+          echo '{"type": "module"}' > clawed/_cli_bundle/package.json
       - name: Build and publish
         run: |
           pip install build twine

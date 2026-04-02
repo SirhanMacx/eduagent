@@ -5,23 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <!-- SEO Critical -->
-<title>Claw-ED — Free AI Lesson Planner for Teachers | Open Source</title>
-<meta name="description" content="Claw-ED is a free, open-source AI teaching assistant that learns your voice from your lesson plans. Generate complete lesson packages — plans, slides, handouts — in your style. Runs locally, no cloud, no subscription.">
-<meta name="keywords" content="AI lesson planner, free AI for teachers, lesson plan generator, AI teaching assistant, open source education AI, lesson plan AI, teacher AI tool, AI lesson plan, curriculum AI, teaching assistant AI">
+<title>Claw-ED — Your AI Co-Teacher | Free Open Source Lesson Planner</title>
+<meta name="description" content="Claw-ED is your AI co-teacher. Feed it your files, get lessons in your voice. Works with any AI provider — Anthropic, OpenAI, Google, Ollama. Beautiful interactive terminal. Free, open source.">
+<meta name="keywords" content="AI lesson planner, free AI for teachers, lesson plan generator, AI teaching assistant, open source education AI, lesson plan AI, teacher AI tool, AI lesson plan, curriculum AI, teaching assistant AI, multi-provider AI, Telegram bot teacher">
 <link rel="canonical" href="https://sirhanmacx.github.io/Claw-ED/">
 
 <!-- Open Graph -->
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://sirhanmacx.github.io/Claw-ED/">
-<meta property="og:title" content="Claw-ED — Free AI Lesson Planner for Teachers">
-<meta property="og:description" content="Your AI co-teacher that sounds like you. Learns from your curriculum files, generates lessons, slides, and handouts in your voice. Free, open source, runs locally.">
+<meta property="og:title" content="Claw-ED — Your AI Co-Teacher">
+<meta property="og:description" content="Feed it your files. Get lessons in your voice. Works with any AI provider. Beautiful interactive terminal. Free, open source.">
 <meta property="og:image" content="https://sirhanmacx.github.io/Claw-ED/og-image.png">
 <meta property="og:site_name" content="Claw-ED">
 
 <!-- Twitter Card -->
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Claw-ED — Free AI Lesson Planner for Teachers">
-<meta name="twitter:description" content="Your AI co-teacher that sounds like you. Learns from your files, generates in your voice. Free, open source, local-first.">
+<meta name="twitter:title" content="Claw-ED — Your AI Co-Teacher">
+<meta name="twitter:description" content="Feed it your files. Get lessons in your voice. Works with any AI provider. Free, open source.">
 <meta name="twitter:image" content="https://sirhanmacx.github.io/Claw-ED/og-image.png">
 
 <!-- Schema.org JSON-LD -->
@@ -30,7 +30,7 @@
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
   "name": "Claw-ED",
-  "description": "Free, open-source AI teaching assistant that learns your voice from your lesson plans. Generate complete lesson packages in your style.",
+  "description": "Your AI co-teacher. Feed it your files, get lessons in your voice. Works with any AI provider. Beautiful interactive terminal with 22+ file format ingestion, interactive HTML games, Telegram bot, and 50-state standards alignment.",
   "url": "https://sirhanmacx.github.io/Claw-ED/",
   "applicationCategory": "EducationalApplication",
   "operatingSystem": "macOS, Windows, Linux",
@@ -39,7 +39,7 @@
     "price": "0",
     "priceCurrency": "USD"
   },
-  "softwareVersion": "4.1.2026",
+  "softwareVersion": "4.2.2026.9",
   "author": {
     "@type": "Organization",
     "name": "Claw-ED",
@@ -50,11 +50,14 @@
   "installUrl": "https://pypi.org/project/clawed/",
   "screenshot": "https://sirhanmacx.github.io/Claw-ED/og-image.png",
   "featureList": [
-    "Learns your teaching voice from your curriculum files",
-    "Supports 20+ file formats including PDF, DOCX, PPTX, DOC, PPT, XLS",
-    "Generates complete lesson packages with plans, slides, and handouts",
-    "Built-in quality gates: 6+ guided notes, 3+ exit tickets, 2+ primary sources",
-    "Runs locally on your machine — your data never leaves",
+    "Beautiful interactive terminal (Ink/React TUI)",
+    "Multi-provider: Anthropic, OpenAI, Google Gemini, Ollama",
+    "Agentic onboarding — AI guides you through setup",
+    "Voice learning from your curriculum files",
+    "22+ file format ingestion",
+    "Interactive HTML games",
+    "Telegram bot for mobile access",
+    "50-state standards alignment",
     "MIT licensed, free forever, open source"
   ]
 }
@@ -71,7 +74,15 @@
       "name": "Is Claw-ED really free?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes. Claw-ED is MIT licensed and free forever. The software itself costs nothing. You bring your own AI provider — we recommend Ollama Cloud ($20/month for unlimited use), but it works with free-tier options too."
+        "text": "Yes. Claw-ED is MIT licensed and free forever. The software itself costs nothing. You bring your own AI provider. We recommend Claude Opus 4 for best quality (~$0.10/lesson) or Gemini 2.5 Flash for budget (free tier available). Ollama gives you full privacy with local models."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What AI providers does Claw-ED work with?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Claw-ED works with any major AI provider: Anthropic (Claude), OpenAI (GPT-4o), Google (Gemini), and Ollama (local or cloud). The agentic onboarding helps you pick and configure the best option for your budget and needs."
       }
     },
     {
@@ -79,7 +90,7 @@
       "name": "Does Claw-ED need internet access?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Only to talk to your AI provider (like any chatbot). Your curriculum files are processed and stored entirely on your machine. If you use a local model like Ollama, everything runs offline."
+        "text": "Only to talk to your AI provider (like any chatbot). Your curriculum files are processed and stored entirely on your machine. If you use a local model like Ollama with Llama 3.3, everything runs offline with complete privacy."
       }
     },
     {
@@ -105,14 +116,6 @@
         "@type": "Answer",
         "text": "Your files never leave your computer. Claw-ED processes and stores everything locally in a semantic database on your machine. The only external call is to your chosen AI provider for text generation. No accounts, no telemetry, no data collection."
       }
-    },
-    {
-      "@type": "Question",
-      "name": "Can I contribute to Claw-ED?",
-      "acceptedAnswer": {
-        "@type": "Answer",
-        "text": "Absolutely. Claw-ED is open source on GitHub. Teachers with domain expertise are especially welcome — if you know what makes a great lesson in your subject, open a PR. Bug reports and feature requests via GitHub Issues are also valued."
-      }
     }
   ]
 }
@@ -127,27 +130,29 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --primary: #1a365d;
-  --primary-light: #2a4a7f;
-  --primary-dark: #0f2340;
-  --accent: #f6ad55;
-  --accent-hover: #ed8936;
-  --accent-dark: #dd6b20;
+  --gold: #D4A843;
+  --gold-light: #E5C06A;
+  --gold-dark: #B8922E;
+  --green: #2D5F3C;
+  --green-light: #3D7A50;
+  --green-deep: #1A3A24;
+  --cream: #FFF8E7;
+  --cream-dark: #F5EDDA;
   --white: #ffffff;
-  --bg: #ffffff;
-  --bg-alt: #f7fafc;
-  --bg-dark: #1a365d;
-  --text: #2d3748;
-  --text-light: #4a5568;
-  --text-muted: #718096;
-  --text-on-dark: #e2e8f0;
-  --text-bright: #ffffff;
-  --border: #e2e8f0;
-  --border-light: #edf2f7;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
-  --shadow-md: 0 4px 14px rgba(0,0,0,0.08);
-  --shadow-lg: 0 10px 40px rgba(0,0,0,0.1);
-  --shadow-xl: 0 20px 60px rgba(0,0,0,0.12);
+  --bg: #FFF8E7;
+  --bg-alt: #F5EDDA;
+  --bg-dark: #1A3A24;
+  --text: #2D3228;
+  --text-light: #4A5542;
+  --text-muted: #6B7A62;
+  --text-on-dark: #E8E0D0;
+  --text-bright: #FFF8E7;
+  --border: #D4CEA8;
+  --border-light: #E8E0D0;
+  --shadow-sm: 0 1px 3px rgba(26,58,36,0.06);
+  --shadow-md: 0 4px 14px rgba(26,58,36,0.08);
+  --shadow-lg: 0 10px 40px rgba(26,58,36,0.1);
+  --shadow-xl: 0 20px 60px rgba(26,58,36,0.12);
   --radius-sm: 8px;
   --radius-md: 12px;
   --radius-lg: 20px;
@@ -165,8 +170,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-a { color: var(--primary); text-decoration: none; transition: color 0.2s; }
-a:hover { color: var(--accent-dark); }
+a { color: var(--green); text-decoration: none; transition: color 0.2s; }
+a:hover { color: var(--gold-dark); }
 
 img { max-width: 100%; height: auto; }
 
@@ -190,7 +195,7 @@ img { max-width: 100%; height: auto; }
   left: 0;
   right: 0;
   z-index: 1000;
-  background: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 248, 231, 0.95);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-bottom: 1px solid var(--border-light);
@@ -217,7 +222,7 @@ img { max-width: 100%; height: auto; }
   gap: 0.5rem;
   font-weight: 800;
   font-size: 1.2rem;
-  color: var(--primary);
+  color: var(--green-deep);
   letter-spacing: -0.02em;
 }
 
@@ -241,14 +246,14 @@ img { max-width: 100%; height: auto; }
 }
 
 .nav-links a:hover {
-  color: var(--primary);
+  color: var(--green);
 }
 
 .nav-cta {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  background: var(--primary);
+  background: var(--green);
   color: var(--text-bright) !important;
   padding: 0.5rem 1.2rem;
   border-radius: var(--radius-sm);
@@ -258,7 +263,7 @@ img { max-width: 100%; height: auto; }
 }
 
 .nav-cta:hover {
-  background: var(--primary-light);
+  background: var(--green-light);
   color: var(--text-bright) !important;
   transform: translateY(-1px);
 }
@@ -278,7 +283,7 @@ img { max-width: 100%; height: auto; }
   text-align: center;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(180deg, #f0f5ff 0%, var(--bg) 100%);
+  background: linear-gradient(180deg, #1A3A24 0%, #2D5F3C 40%, var(--bg) 100%);
 }
 
 .hero::before {
@@ -288,7 +293,7 @@ img { max-width: 100%; height: auto; }
   right: -200px;
   width: 600px;
   height: 600px;
-  background: radial-gradient(circle, rgba(246, 173, 85, 0.08) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(212, 168, 67, 0.15) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -299,7 +304,7 @@ img { max-width: 100%; height: auto; }
   left: -200px;
   width: 600px;
   height: 600px;
-  background: radial-gradient(circle, rgba(26, 54, 93, 0.05) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(45, 95, 60, 0.1) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -307,22 +312,22 @@ img { max-width: 100%; height: auto; }
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: var(--white);
-  border: 1px solid var(--border);
+  background: rgba(255,248,231,0.12);
+  border: 1px solid rgba(212,168,67,0.3);
   padding: 0.4rem 1rem;
   border-radius: 100px;
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--text-light);
+  color: var(--gold-light);
   margin-bottom: 1.5rem;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.15);
 }
 
 .hero-badge-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #48bb78;
+  background: var(--gold);
   animation: pulse-dot 2s ease-in-out infinite;
 }
 
@@ -334,7 +339,7 @@ img { max-width: 100%; height: auto; }
 .hero h1 {
   font-size: clamp(2.4rem, 5.5vw, 3.8rem);
   font-weight: 900;
-  color: var(--primary);
+  color: var(--cream);
   margin-bottom: 1.25rem;
   letter-spacing: -0.03em;
   line-height: 1.1;
@@ -342,16 +347,29 @@ img { max-width: 100%; height: auto; }
 }
 
 .hero h1 .highlight {
-  color: var(--accent-dark);
+  color: var(--gold);
   position: relative;
 }
 
 .hero .subhead {
   font-size: clamp(1.05rem, 2.2vw, 1.25rem);
-  color: var(--text-light);
+  color: var(--text-on-dark);
   max-width: 620px;
-  margin: 0 auto 2.5rem;
+  margin: 0 auto 1.5rem;
   line-height: 1.7;
+}
+
+.hero .tagline-mono {
+  font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+  font-size: clamp(0.85rem, 1.8vw, 1rem);
+  color: var(--gold);
+  background: rgba(26,58,36,0.5);
+  display: inline-block;
+  padding: 0.5rem 1.2rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(212,168,67,0.25);
+  margin-bottom: 2.5rem;
+  letter-spacing: 0.01em;
 }
 
 .hero-buttons {
@@ -366,23 +384,23 @@ img { max-width: 100%; height: auto; }
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: var(--accent);
-  color: var(--primary-dark);
+  background: var(--gold);
+  color: var(--green-deep);
   padding: 0.9rem 2rem;
   border-radius: var(--radius-sm);
   font-size: 1.05rem;
   font-weight: 700;
   transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
-  box-shadow: 0 4px 14px rgba(246, 173, 85, 0.3);
+  box-shadow: 0 4px 14px rgba(212, 168, 67, 0.3);
   border: none;
   cursor: pointer;
 }
 
 .btn-primary:hover {
-  background: var(--accent-hover);
-  color: var(--primary-dark);
+  background: var(--gold-light);
+  color: var(--green-deep);
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(246, 173, 85, 0.4);
+  box-shadow: 0 6px 20px rgba(212, 168, 67, 0.4);
 }
 
 .btn-secondary {
@@ -390,7 +408,7 @@ img { max-width: 100%; height: auto; }
   align-items: center;
   gap: 0.5rem;
   background: var(--white);
-  color: var(--primary);
+  color: var(--green);
   padding: 0.9rem 2rem;
   border-radius: var(--radius-sm);
   font-size: 1.05rem;
@@ -401,8 +419,8 @@ img { max-width: 100%; height: auto; }
 }
 
 .btn-secondary:hover {
-  border-color: var(--primary);
-  color: var(--primary);
+  border-color: var(--green);
+  color: var(--green);
   transform: translateY(-2px);
   box-shadow: var(--shadow-md);
 }
@@ -415,18 +433,18 @@ img { max-width: 100%; height: auto; }
 
 /* ── Terminal Demo ───────────────────────────────── */
 .terminal {
-  max-width: 620px;
+  max-width: 680px;
   margin: 0 auto;
   border-radius: var(--radius-md);
   overflow: hidden;
-  background: #1a202c;
-  border: 1px solid #2d3748;
-  box-shadow: var(--shadow-xl);
+  background: #0F1A12;
+  border: 1px solid #2D5F3C;
+  box-shadow: var(--shadow-xl), 0 0 60px rgba(212,168,67,0.08);
   text-align: left;
 }
 
 .terminal-bar {
-  background: #2d3748;
+  background: #1A3A24;
   padding: 0.75rem 1rem;
   display: flex;
   align-items: center;
@@ -438,15 +456,15 @@ img { max-width: 100%; height: auto; }
   height: 12px;
   border-radius: 50%;
 }
-.terminal-dot:nth-child(1) { background: #fc8181; }
-.terminal-dot:nth-child(2) { background: #f6e05e; }
-.terminal-dot:nth-child(3) { background: #68d391; }
+.terminal-dot:nth-child(1) { background: #E8443A; }
+.terminal-dot:nth-child(2) { background: #D4A843; }
+.terminal-dot:nth-child(3) { background: #2D5F3C; }
 
 .terminal-title {
   flex: 1;
   text-align: center;
   font-size: 0.8rem;
-  color: #a0aec0;
+  color: #8BA88B;
   font-weight: 500;
 }
 
@@ -461,7 +479,7 @@ img { max-width: 100%; height: auto; }
 }
 
 .terminal-prompt {
-  color: var(--accent);
+  color: var(--gold);
   margin-right: 0.6rem;
   user-select: none;
   flex-shrink: 0;
@@ -477,7 +495,7 @@ img { max-width: 100%; height: auto; }
   display: inline-block;
   width: 9px;
   height: 1.15em;
-  background: var(--accent);
+  background: var(--gold);
   vertical-align: text-bottom;
   animation: blink 1s step-end infinite;
 }
@@ -492,6 +510,7 @@ img { max-width: 100%; height: auto; }
   padding: 2rem 0;
   text-align: center;
   border-bottom: 1px solid var(--border-light);
+  background: var(--cream);
 }
 
 .social-proof-inner {
@@ -512,7 +531,7 @@ img { max-width: 100%; height: auto; }
 }
 
 .proof-item strong {
-  color: var(--primary);
+  color: var(--green);
   font-weight: 700;
 }
 
@@ -532,7 +551,7 @@ img { max-width: 100%; height: auto; }
 }
 
 .section-dark {
-  background: var(--primary);
+  background: var(--green-deep);
   color: var(--text-on-dark);
 }
 
@@ -547,18 +566,18 @@ img { max-width: 100%; height: auto; }
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--accent-dark);
+  color: var(--gold-dark);
   margin-bottom: 0.75rem;
 }
 
 .section-dark .section-header .eyebrow {
-  color: var(--accent);
+  color: var(--gold);
 }
 
 .section-header h2 {
   font-size: clamp(1.7rem, 3.5vw, 2.4rem);
   font-weight: 800;
-  color: var(--primary);
+  color: var(--green-deep);
   margin-bottom: 0.75rem;
   letter-spacing: -0.02em;
   line-height: 1.2;
@@ -599,7 +618,7 @@ img { max-width: 100%; height: auto; }
 .problem-stat .stat-number {
   font-size: clamp(2rem, 4vw, 2.8rem);
   font-weight: 900;
-  color: var(--accent-dark);
+  color: var(--gold-dark);
   line-height: 1;
   margin-bottom: 0.5rem;
 }
@@ -626,7 +645,7 @@ img { max-width: 100%; height: auto; }
   left: 16%;
   right: 16%;
   height: 2px;
-  background: linear-gradient(90deg, var(--border), var(--accent), var(--border));
+  background: linear-gradient(90deg, var(--border), var(--gold), var(--border));
   z-index: 0;
 }
 
@@ -640,7 +659,7 @@ img { max-width: 100%; height: auto; }
   height: 88px;
   border-radius: 50%;
   background: var(--white);
-  border: 3px solid var(--accent);
+  border: 3px solid var(--gold);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -648,13 +667,13 @@ img { max-width: 100%; height: auto; }
   margin: 0 auto 1.25rem;
   position: relative;
   z-index: 1;
-  box-shadow: 0 4px 20px rgba(246, 173, 85, 0.15);
+  box-shadow: 0 4px 20px rgba(212, 168, 67, 0.15);
 }
 
 .step h3 {
   font-size: 1.15rem;
   font-weight: 700;
-  color: var(--primary);
+  color: var(--green-deep);
   margin-bottom: 0.5rem;
 }
 
@@ -669,8 +688,8 @@ img { max-width: 100%; height: auto; }
 .step code {
   display: inline-block;
   margin-top: 0.75rem;
-  background: var(--primary);
-  color: var(--accent);
+  background: var(--green-deep);
+  color: var(--gold);
   padding: 0.4rem 0.9rem;
   border-radius: 6px;
   font-family: "SF Mono", "Fira Code", monospace;
@@ -696,14 +715,14 @@ img { max-width: 100%; height: auto; }
 .feature-card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-lg);
-  border-color: var(--accent);
+  border-color: var(--gold);
 }
 
 .feature-card-icon {
   width: 52px;
   height: 52px;
   border-radius: var(--radius-sm);
-  background: linear-gradient(135deg, rgba(26, 54, 93, 0.06), rgba(246, 173, 85, 0.1));
+  background: linear-gradient(135deg, rgba(45, 95, 60, 0.08), rgba(212, 168, 67, 0.12));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -714,7 +733,7 @@ img { max-width: 100%; height: auto; }
 .feature-card h3 {
   font-size: 1.1rem;
   font-weight: 700;
-  color: var(--primary);
+  color: var(--green-deep);
   margin-bottom: 0.5rem;
 }
 
@@ -747,8 +766,8 @@ img { max-width: 100%; height: auto; }
 }
 
 .subject-pill:hover {
-  border-color: var(--accent);
-  box-shadow: 0 2px 8px rgba(246, 173, 85, 0.15);
+  border-color: var(--gold);
+  box-shadow: 0 2px 8px rgba(212, 168, 67, 0.15);
   transform: translateY(-2px);
 }
 
@@ -768,7 +787,7 @@ img { max-width: 100%; height: auto; }
 }
 
 .output-bar {
-  background: var(--primary);
+  background: var(--green-deep);
   color: var(--text-bright);
   padding: 0.75rem 1.25rem;
   display: flex;
@@ -779,7 +798,8 @@ img { max-width: 100%; height: auto; }
 }
 
 .output-bar-badge {
-  background: rgba(255,255,255,0.15);
+  background: rgba(212,168,67,0.2);
+  color: var(--gold-light);
   padding: 0.25rem 0.7rem;
   border-radius: 100px;
   font-size: 0.78rem;
@@ -795,7 +815,7 @@ img { max-width: 100%; height: auto; }
 .output-body h4 {
   font-size: 1.05rem;
   font-weight: 700;
-  color: var(--primary);
+  color: var(--green-deep);
   margin-bottom: 0.25rem;
 }
 
@@ -810,7 +830,7 @@ img { max-width: 100%; height: auto; }
 .output-body .output-section-title {
   font-size: 0.88rem;
   font-weight: 700;
-  color: var(--accent-dark);
+  color: var(--gold-dark);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   margin-top: 1.25rem;
@@ -872,7 +892,7 @@ img { max-width: 100%; height: auto; }
 }
 
 .comparison-table thead {
-  background: var(--primary);
+  background: var(--green-deep);
   color: var(--text-bright);
 }
 
@@ -888,8 +908,8 @@ img { max-width: 100%; height: auto; }
 }
 
 .comparison-table th.highlight-col {
-  background: var(--accent);
-  color: var(--primary-dark);
+  background: var(--gold);
+  color: var(--green-deep);
   position: relative;
 }
 
@@ -908,9 +928,9 @@ img { max-width: 100%; height: auto; }
 }
 
 .comparison-table td.highlight-col {
-  background: rgba(246, 173, 85, 0.04);
+  background: rgba(212, 168, 67, 0.06);
   font-weight: 600;
-  color: var(--primary);
+  color: var(--green-deep);
 }
 
 .comparison-table tbody tr:hover {
@@ -918,20 +938,132 @@ img { max-width: 100%; height: auto; }
 }
 
 .check-yes {
-  color: #48bb78;
+  color: var(--green);
   font-weight: 700;
   font-size: 1.1rem;
 }
 
 .check-no {
-  color: #fc8181;
+  color: #c0392b;
   font-weight: 500;
 }
 
 .check-partial {
-  color: var(--accent-dark);
+  color: var(--gold-dark);
   font-weight: 500;
   font-size: 0.85rem;
+}
+
+/* ── Model Recommendations ─────────────────────── */
+.models-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+.model-card {
+  background: var(--white);
+  border-radius: var(--radius-md);
+  padding: 1.75rem;
+  border: 1px solid var(--border-light);
+  transition: transform 0.25s, box-shadow 0.25s, border-color 0.25s;
+  position: relative;
+}
+
+.model-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--gold);
+}
+
+.model-card.recommended {
+  border: 2px solid var(--gold);
+  box-shadow: 0 4px 20px rgba(212, 168, 67, 0.15);
+}
+
+.model-card.recommended::after {
+  content: "Recommended";
+  position: absolute;
+  top: -11px;
+  right: 16px;
+  background: var(--gold);
+  color: var(--green-deep);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.2rem 0.6rem;
+  border-radius: 100px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.model-card h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--green-deep);
+  margin-bottom: 0.25rem;
+}
+
+.model-card .model-provider {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.model-card .model-price {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--gold-dark);
+  margin-bottom: 0.25rem;
+}
+
+.model-card .model-price-note {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-bottom: 0.75rem;
+}
+
+.model-card .model-quality {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--text-light);
+  margin-bottom: 0.25rem;
+}
+
+.model-card .model-quality .quality-bar {
+  display: flex;
+  gap: 2px;
+}
+
+.model-card .model-quality .quality-bar span {
+  width: 18px;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--border);
+}
+
+.model-card .model-quality .quality-bar span.filled {
+  background: var(--green);
+}
+
+.model-recommendation {
+  text-align: center;
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: var(--white);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+}
+
+.model-recommendation p {
+  font-size: 1rem;
+  color: var(--text);
+  line-height: 1.6;
+}
+
+.model-recommendation strong {
+  color: var(--green-deep);
 }
 
 /* ── Install Section ────────────────────────────── */
@@ -939,14 +1071,14 @@ img { max-width: 100%; height: auto; }
   background: var(--white);
   border-radius: var(--radius-lg);
   padding: 3rem;
-  border: 2px solid var(--accent);
-  box-shadow: 0 8px 30px rgba(246, 173, 85, 0.12);
+  border: 2px solid var(--gold);
+  box-shadow: 0 8px 30px rgba(212, 168, 67, 0.12);
   max-width: 700px;
   margin: 0 auto;
 }
 
 .install-code-block {
-  background: var(--primary-dark);
+  background: var(--green-deep);
   border-radius: var(--radius-sm);
   padding: 1.5rem 1.75rem;
   margin: 1.5rem 0;
@@ -958,28 +1090,28 @@ img { max-width: 100%; height: auto; }
   font-family: "SF Mono", "Fira Code", "Cascadia Code", "JetBrains Mono", monospace;
   font-size: 0.92rem;
   line-height: 2;
-  color: #e2e8f0;
+  color: var(--text-on-dark);
   display: block;
   white-space: pre-wrap;
   word-break: break-all;
 }
 
 .install-code-block .line-prompt {
-  color: var(--accent);
+  color: var(--gold);
   user-select: none;
 }
 
 .install-code-block .line-comment {
-  color: #718096;
+  color: #6B7A62;
 }
 
 .copy-btn {
   position: absolute;
   top: 0.75rem;
   right: 0.75rem;
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.15);
-  color: #a0aec0;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: #8BA88B;
   padding: 0.35rem 0.75rem;
   border-radius: 6px;
   font-size: 0.78rem;
@@ -990,7 +1122,7 @@ img { max-width: 100%; height: auto; }
 }
 
 .copy-btn:hover {
-  background: rgba(255,255,255,0.2);
+  background: rgba(255,255,255,0.15);
   color: var(--text-bright);
 }
 
@@ -1032,13 +1164,13 @@ img { max-width: 100%; height: auto; }
   font-family: inherit;
   font-size: 1.05rem;
   font-weight: 600;
-  color: var(--primary);
+  color: var(--green-deep);
   transition: color 0.2s;
   line-height: 1.4;
 }
 
 .faq-question:hover {
-  color: var(--accent-dark);
+  color: var(--gold-dark);
 }
 
 .faq-chevron {
@@ -1073,7 +1205,7 @@ img { max-width: 100%; height: auto; }
 
 /* ── Footer ──────────────────────────────────────── */
 .footer {
-  background: var(--primary-dark);
+  background: var(--green-deep);
   color: var(--text-on-dark);
   padding: 3.5rem 1.5rem 2rem;
 }
@@ -1091,13 +1223,13 @@ img { max-width: 100%; height: auto; }
 .footer-brand {
   font-size: 1.15rem;
   font-weight: 800;
-  color: var(--text-bright);
+  color: var(--gold);
   margin-bottom: 0.5rem;
 }
 
 .footer-tagline {
   font-size: 0.88rem;
-  color: #a0aec0;
+  color: #8BA88B;
   max-width: 280px;
   line-height: 1.6;
 }
@@ -1107,7 +1239,7 @@ img { max-width: 100%; height: auto; }
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #a0aec0;
+  color: var(--gold);
   margin-bottom: 0.75rem;
 }
 
@@ -1120,14 +1252,14 @@ img { max-width: 100%; height: auto; }
 }
 
 .footer-links-group a:hover {
-  color: var(--accent);
+  color: var(--gold);
 }
 
 .footer-bottom {
   max-width: 1120px;
   margin: 2rem auto 0;
   padding-top: 1.5rem;
-  border-top: 1px solid rgba(255,255,255,0.08);
+  border-top: 1px solid rgba(212,168,67,0.15);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -1137,7 +1269,7 @@ img { max-width: 100%; height: auto; }
 
 .footer-copy {
   font-size: 0.82rem;
-  color: #718096;
+  color: #6B7A62;
 }
 
 .footer-social {
@@ -1147,13 +1279,13 @@ img { max-width: 100%; height: auto; }
 }
 
 .footer-social a {
-  color: #a0aec0;
+  color: #8BA88B;
   transition: color 0.2s;
   display: flex;
 }
 
 .footer-social a:hover {
-  color: var(--accent);
+  color: var(--gold);
 }
 
 .footer-social svg {
@@ -1179,6 +1311,9 @@ img { max-width: 100%; height: auto; }
     grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
   }
+  .models-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @media (max-width: 768px) {
@@ -1188,7 +1323,7 @@ img { max-width: 100%; height: auto; }
     top: 64px;
     left: 0;
     right: 0;
-    background: var(--white);
+    background: var(--cream);
     flex-direction: column;
     padding: 1rem 1.5rem;
     border-bottom: 1px solid var(--border);
@@ -1233,6 +1368,11 @@ img { max-width: 100%; height: auto; }
   }
 
   .problem-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .models-grid {
     grid-template-columns: 1fr;
     gap: 1rem;
   }
@@ -1299,7 +1439,7 @@ img { max-width: 100%; height: auto; }
 }
 
 :focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--gold);
   outline-offset: 2px;
 }
 </style>
@@ -1311,8 +1451,8 @@ img { max-width: 100%; height: auto; }
   <div class="nav-inner">
     <a class="nav-brand" href="#" aria-label="Claw-ED home">
       <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <rect width="32" height="32" rx="8" fill="#1a365d"/>
-        <path d="M8 10h16v2H8zm0 5h12v2H8zm0 5h14v2H8z" fill="#f6ad55"/>
+        <rect width="32" height="32" rx="8" fill="#1A3A24"/>
+        <path d="M8 10h16v2H8zm0 5h12v2H8zm0 5h14v2H8z" fill="#D4A843"/>
       </svg>
       Claw-ED
     </a>
@@ -1322,10 +1462,11 @@ img { max-width: 100%; height: auto; }
     <ul class="nav-links">
       <li><a href="#features">Features</a></li>
       <li><a href="#how-it-works">How It Works</a></li>
-      <li><a href="#subjects">Subjects</a></li>
+      <li><a href="#models">AI Models</a></li>
       <li><a href="#compare">Compare</a></li>
       <li><a href="#faq">FAQ</a></li>
-      <li><a href="#install" class="nav-cta">Get Started</a></li>
+      <li><a href="games/">Game Gallery</a></li>
+      <li><a href="#install" class="nav-cta">pip install clawed</a></li>
     </ul>
   </div>
 </nav>
@@ -1335,29 +1476,29 @@ img { max-width: 100%; height: auto; }
   <div class="container">
     <div class="hero-badge">
       <span class="hero-badge-dot" aria-hidden="true"></span>
-      Open Source &middot; MIT Licensed &middot; Free Forever
+      v4.2.2026 &middot; Open Source &middot; MIT Licensed
     </div>
-    <h1 id="hero-heading">The agentic layer<br>for <span class="highlight">education</span></h1>
+    <h1 id="hero-heading">Your AI <span class="highlight">co-teacher</span></h1>
     <p class="subhead">
-      A persistent AI co-teacher that lives in your terminal and on your phone.
-      Talk naturally. Generate lessons, games, slides, and assessments in your voice.
-      One install. One command.
+      Feed it your files. Get lessons in your voice.
+      Works with any AI provider.
     </p>
+    <div class="tagline-mono">pip install clawed</div>
     <div class="hero-buttons">
       <a class="btn-primary" href="#install">Get Started &mdash; Free</a>
-      <a class="btn-secondary" href="https://github.com/SirhanMacx/Claw-ED" target="_blank" rel="noopener noreferrer">
+      <a class="btn-secondary" href="https://github.com/SirhanMacx/Claw-ED" target="_blank" rel="noopener noreferrer" style="background:rgba(255,248,231,0.1);border-color:rgba(212,168,67,0.3);color:var(--cream);">
         <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
         View on GitHub
       </a>
     </div>
 
-    <!-- Terminal Demo — Full CLI Animation -->
-    <div class="terminal" role="img" aria-label="Terminal demo showing Claw-ED interactive session">
+    <!-- Terminal Demo -->
+    <div class="terminal" role="img" aria-label="Terminal demo showing Claw-ED interactive teaching session">
       <div class="terminal-bar" aria-hidden="true">
         <span class="terminal-dot"></span>
         <span class="terminal-dot"></span>
         <span class="terminal-dot"></span>
-        <span class="terminal-title">Claw-ED v4.1.2026</span>
+        <span class="terminal-title">Claw-ED v4.2.2026</span>
       </div>
       <div class="terminal-body" id="terminal-body" style="display:block!important;min-height:380px;font-size:12px;line-height:1.4;overflow:hidden;padding:16px 20px;">
       </div>
@@ -1369,20 +1510,20 @@ img { max-width: 100%; height: auto; }
 <div class="social-proof" aria-label="Project statistics">
   <div class="social-proof-inner">
     <div class="proof-item">
-      <svg viewBox="0 0 20 20" fill="#48bb78" aria-hidden="true"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
-      <span>Open Source on <strong>GitHub</strong></span>
+      <svg viewBox="0 0 20 20" fill="#2D5F3C" aria-hidden="true"><path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z"/></svg>
+      <span><strong>22+ file formats</strong> ingested</span>
     </div>
     <div class="proof-item">
-      <svg viewBox="0 0 20 20" fill="#4299e1" aria-hidden="true"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z"/></svg>
-      <span>Supports <strong>20+ file formats</strong></span>
+      <svg viewBox="0 0 20 20" fill="#D4A843" aria-hidden="true"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm1 11H9v-2h2v2zm0-4H9V5h2v4z"/></svg>
+      <span><strong>Any AI provider</strong> &mdash; your choice</span>
     </div>
     <div class="proof-item">
-      <svg viewBox="0 0 20 20" fill="#ed8936" aria-hidden="true"><path d="M2 6a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm2 0v8h12V6H4z"/></svg>
-      <span>Works for <strong>every subject</strong></span>
+      <svg viewBox="0 0 20 20" fill="#2D5F3C" aria-hidden="true"><path d="M2 6a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V6zm2 0v8h12V6H4z"/></svg>
+      <span><strong>50-state standards</strong> built in</span>
     </div>
     <div class="proof-item">
-      <svg viewBox="0 0 20 20" fill="#48bb78" aria-hidden="true"><path d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"/></svg>
-      <span><strong>100% local</strong> &mdash; your data stays yours</span>
+      <svg viewBox="0 0 20 20" fill="#D4A843" aria-hidden="true"><path d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"/></svg>
+      <span><strong>100% open source</strong> &mdash; MIT licensed</span>
     </div>
   </div>
 </div>
@@ -1417,26 +1558,26 @@ img { max-width: 100%; height: auto; }
   <div class="container">
     <div class="section-header">
       <span class="eyebrow">How It Works</span>
-      <h2 id="how-heading">Three steps. Five minutes. Then it works for you.</h2>
+      <h2 id="how-heading">Three steps. Five minutes. Your AI co-teacher is ready.</h2>
     </div>
     <div class="steps">
       <div class="step">
         <div class="step-icon" aria-hidden="true">&#x1F4C1;</div>
-        <h3>Upload Your Files</h3>
-        <p>Point Claw-ED at your lesson folders. It reads PDFs, DOCX, PPTX, and 17 more formats.</p>
+        <h3>Feed It Your Files</h3>
+        <p>Point Claw-ED at your lesson folders. It reads PDFs, DOCX, PPTX, and 19 more formats &mdash; 22+ total.</p>
         <code>clawed ingest ./my-lessons/</code>
       </div>
       <div class="step">
         <div class="step-icon" aria-hidden="true">&#x1F9E0;</div>
         <h3>AI Learns Your Voice</h3>
-        <p>It extracts your vocabulary, structure, how you frame questions, your pedagogical style.</p>
+        <p>It extracts your vocabulary, structure, how you frame questions &mdash; your pedagogical fingerprint.</p>
         <code>Persona extracted: "Ms. Rivera"</code>
       </div>
       <div class="step">
         <div class="step-icon" aria-hidden="true">&#x2728;</div>
-        <h3>Generate Lessons</h3>
-        <p>Get complete lesson packages &mdash; plans, slides, handouts &mdash; that sound like you wrote them.</p>
-        <code>clawed lesson "WW2" --export pdf</code>
+        <h3>Talk Naturally</h3>
+        <p>Just ask for what you need. Lessons, games, slides, assessments &mdash; all in your voice.</p>
+        <code>clawed lesson "The Civil War"</code>
       </div>
     </div>
   </div>
@@ -1452,51 +1593,150 @@ img { max-width: 100%; height: auto; }
     </div>
     <div class="features-grid">
       <div class="feature-card">
+        <div class="feature-card-icon" aria-hidden="true">&#x1F5A5;</div>
+        <h3>Beautiful Interactive Terminal</h3>
+        <p>A full Ink/React TUI with warm educational colors. Not a bare command line &mdash; a polished interface designed for teachers who have never touched a terminal.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon" aria-hidden="true">&#x1F310;</div>
+        <h3>Multi-Provider: Your Choice</h3>
+        <p>Anthropic Claude, OpenAI GPT-4o, Google Gemini, Ollama local &mdash; pick the AI that fits your budget and needs. Switch anytime. No lock-in.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon" aria-hidden="true">&#x1F916;</div>
+        <h3>Agentic Onboarding</h3>
+        <p>The AI guides you through setup step by step. Picks your provider, configures your workspace, ingests your first files. No manual config needed.</p>
+      </div>
+      <div class="feature-card">
         <div class="feature-card-icon" aria-hidden="true">&#x1F3A4;</div>
         <h3>Learns Your Voice</h3>
         <p>Not generic AI. Claw-ED extracts your pedagogical fingerprint from your files &mdash; scaffolding moves, assessment style, signature activities. Lessons sound like you wrote them.</p>
       </div>
       <div class="feature-card">
-        <div class="feature-card-icon" aria-hidden="true">&#x1F4AC;</div>
-        <h3>Talk Naturally</h3>
-        <p>"Make me a lesson on WWI for my 8th graders." No command syntax needed. The AI understands what you need and picks the right tools.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-card-icon" aria-hidden="true">&#x1F4E6;</div>
-        <h3>Complete Packages</h3>
-        <p>Lesson plan + slides + student handout + interactive game in one session. Export to DOCX, PPTX, PDF. Ready to print.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-card-icon" aria-hidden="true">&#x1F4F1;</div>
-        <h3>Always On</h3>
-        <p>Background daemon keeps Telegram connected. Generate lessons from your phone, on the bus, before bed. Your co-teacher never sleeps.</p>
+        <div class="feature-card-icon" aria-hidden="true">&#x1F4C2;</div>
+        <h3>22+ File Formats</h3>
+        <p>PDF, DOCX, PPTX, DOC, PPT, XLS, TXT, HTML, Markdown, images, and more. Point it at your messy curriculum folder and it handles the rest.</p>
       </div>
       <div class="feature-card">
         <div class="feature-card-icon" aria-hidden="true">&#x1F3AE;</div>
-        <h3>Interactive Games</h3>
-        <p>Every lesson can generate a unique HTML5 game with 3D visuals. No templates &mdash; the AI designs the mechanic, visuals, and interaction from scratch. <a href="games/" style="color:inherit;text-decoration:underline;">Browse gallery</a></p>
+        <h3>Interactive HTML Games</h3>
+        <p>Every lesson can generate a unique HTML5 game with 3D visuals. No templates &mdash; the AI designs the mechanic, visuals, and interaction from scratch. <a href="games/" style="color:var(--gold-dark);text-decoration:underline;">Browse the gallery</a></p>
       </div>
       <div class="feature-card">
-        <div class="feature-card-icon" aria-hidden="true">&#x1F310;</div>
-        <h3>Any Provider</h3>
-        <p>Anthropic (OAuth + API), OpenAI, Gemini, Codex, Antigravity, Ollama (local + cloud), or custom endpoints. Auto-detects your existing connections.</p>
+        <div class="feature-card-icon" aria-hidden="true">&#x1F4F1;</div>
+        <h3>Telegram Bot</h3>
+        <p>Generate lessons from your phone. Background daemon keeps Telegram connected. On the bus, before bed &mdash; your co-teacher never sleeps.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-card-icon" aria-hidden="true">&#x1F3DB;</div>
+        <h3>50-State Standards</h3>
+        <p>Built-in standards databases covering CCSS, NGSS, C3, and state-specific standards for all 50 US states. Every lesson auto-aligns.</p>
       </div>
       <div class="feature-card">
         <div class="feature-card-icon" aria-hidden="true">&#x2705;</div>
         <h3>Quality Gates</h3>
-        <p>Every output scored 0-10 before delivery. Catches truncated text, answer key leaks, empty slides, broken HTML. No thin AI slop.</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-card-icon" aria-hidden="true">&#x1F512;</div>
-        <h3>Local First</h3>
-        <p>Runs on your machine. Your files never leave. No accounts, no telemetry, no data collection. MIT licensed, free forever.</p>
+        <p>Every output scored 0-10 before delivery. Catches truncated text, answer key leaks, empty slides, broken HTML. No thin AI slop gets through.</p>
       </div>
     </div>
   </div>
 </section>
 
+<!-- ── Cloud Model Recommendations ─────────────────── -->
+<section class="section" id="models" aria-labelledby="models-heading">
+  <div class="container">
+    <div class="section-header">
+      <span class="eyebrow">AI Models</span>
+      <h2 id="models-heading">Choose the AI that fits your budget</h2>
+      <p>Claw-ED works with any provider. Here is what each one costs per lesson.</p>
+    </div>
+    <div class="models-grid">
+      <div class="model-card recommended">
+        <h3>Claude Opus 4</h3>
+        <div class="model-provider">Anthropic</div>
+        <div class="model-price">~$0.10</div>
+        <div class="model-price-note">per lesson</div>
+        <div class="model-quality">
+          Quality:
+          <div class="quality-bar">
+            <span class="filled"></span><span class="filled"></span><span class="filled"></span><span class="filled"></span><span class="filled"></span>
+          </div>
+        </div>
+        <div class="model-quality" style="margin-top:0.25rem;font-size:0.82rem;color:var(--text-muted);">Maximum quality. Best voice matching.</div>
+      </div>
+      <div class="model-card">
+        <h3>Claude Sonnet 4</h3>
+        <div class="model-provider">Anthropic</div>
+        <div class="model-price">~$0.03</div>
+        <div class="model-price-note">per lesson</div>
+        <div class="model-quality">
+          Quality:
+          <div class="quality-bar">
+            <span class="filled"></span><span class="filled"></span><span class="filled"></span><span class="filled"></span><span></span>
+          </div>
+        </div>
+        <div class="model-quality" style="margin-top:0.25rem;font-size:0.82rem;color:var(--text-muted);">Great quality at lower cost.</div>
+      </div>
+      <div class="model-card recommended">
+        <h3>Gemini 2.5 Flash</h3>
+        <div class="model-provider">Google</div>
+        <div class="model-price">Free</div>
+        <div class="model-price-note">free tier available</div>
+        <div class="model-quality">
+          Quality:
+          <div class="quality-bar">
+            <span class="filled"></span><span class="filled"></span><span class="filled"></span><span></span><span></span>
+          </div>
+        </div>
+        <div class="model-quality" style="margin-top:0.25rem;font-size:0.82rem;color:var(--text-muted);">Best budget option. Good results.</div>
+      </div>
+      <div class="model-card">
+        <h3>GPT-4o</h3>
+        <div class="model-provider">OpenAI</div>
+        <div class="model-price">~$0.05</div>
+        <div class="model-price-note">per lesson</div>
+        <div class="model-quality">
+          Quality:
+          <div class="quality-bar">
+            <span class="filled"></span><span class="filled"></span><span class="filled"></span><span class="filled"></span><span></span>
+          </div>
+        </div>
+        <div class="model-quality" style="margin-top:0.25rem;font-size:0.82rem;color:var(--text-muted);">Strong general quality.</div>
+      </div>
+      <div class="model-card">
+        <h3>Ollama Cloud (Minimax)</h3>
+        <div class="model-provider">Ollama</div>
+        <div class="model-price">$20/mo</div>
+        <div class="model-price-note">unlimited lessons</div>
+        <div class="model-quality">
+          Quality:
+          <div class="quality-bar">
+            <span class="filled"></span><span class="filled"></span><span class="filled"></span><span></span><span></span>
+          </div>
+        </div>
+        <div class="model-quality" style="margin-top:0.25rem;font-size:0.82rem;color:var(--text-muted);">Flat rate. No per-lesson cost.</div>
+      </div>
+      <div class="model-card">
+        <h3>Ollama Local (Llama 3.3)</h3>
+        <div class="model-provider">Your Machine</div>
+        <div class="model-price">Free</div>
+        <div class="model-price-note">runs on your computer</div>
+        <div class="model-quality">
+          Quality:
+          <div class="quality-bar">
+            <span class="filled"></span><span class="filled"></span><span></span><span></span><span></span>
+          </div>
+        </div>
+        <div class="model-quality" style="margin-top:0.25rem;font-size:0.82rem;color:var(--text-muted);">Complete privacy. No internet needed.</div>
+      </div>
+    </div>
+    <div class="model-recommendation">
+      <p><strong>Our recommendation:</strong> Claude Opus 4 for quality. Gemini 2.5 Flash for budget. The agentic onboarding helps you choose.</p>
+    </div>
+  </div>
+</section>
+
 <!-- ── Subjects ─────────────────────────────────────── -->
-<section class="section" id="subjects" aria-labelledby="subjects-heading">
+<section class="section section-alt" id="subjects" aria-labelledby="subjects-heading">
   <div class="container">
     <div class="section-header">
       <span class="eyebrow">Every Subject</span>
@@ -1529,7 +1769,7 @@ img { max-width: 100%; height: auto; }
 </section>
 
 <!-- ── Sample Output ────────────────────────────────── -->
-<section class="section section-alt" aria-labelledby="output-heading">
+<section class="section" aria-labelledby="output-heading">
   <div class="container">
     <div class="section-header">
       <span class="eyebrow">Sample Output</span>
@@ -1569,7 +1809,7 @@ img { max-width: 100%; height: auto; }
 </section>
 
 <!-- ── Comparison ────────────────────────────────────── -->
-<section class="section" id="compare" aria-labelledby="compare-heading">
+<section class="section section-alt" id="compare" aria-labelledby="compare-heading">
   <div class="container">
     <div class="section-header">
       <span class="eyebrow">Compare</span>
@@ -1597,10 +1837,24 @@ img { max-width: 100%; height: auto; }
           </tr>
           <tr>
             <td>Ingests your files (PDF, DOCX, PPT...)</td>
-            <td class="highlight-col"><span class="check-yes" aria-label="Yes">&#x2713; 20+</span></td>
+            <td class="highlight-col"><span class="check-yes" aria-label="Yes">&#x2713; 22+</span></td>
             <td><span class="check-no">No</span></td>
             <td><span class="check-partial">Limited</span></td>
             <td><span class="check-partial">Upload</span></td>
+          </tr>
+          <tr>
+            <td>Multi-provider (Claude, GPT, Gemini, Ollama)</td>
+            <td class="highlight-col"><span class="check-yes" aria-label="Yes">&#x2713; All 4</span></td>
+            <td><span class="check-no">Locked</span></td>
+            <td><span class="check-no">Locked</span></td>
+            <td><span class="check-no">GPT only</span></td>
+          </tr>
+          <tr>
+            <td>Interactive HTML games</td>
+            <td class="highlight-col"><span class="check-yes" aria-label="Yes">&#x2713;</span></td>
+            <td><span class="check-no">No</span></td>
+            <td><span class="check-no">No</span></td>
+            <td><span class="check-no">No</span></td>
           </tr>
           <tr>
             <td>Complete packages (plan + slides + handout)</td>
@@ -1610,11 +1864,11 @@ img { max-width: 100%; height: auto; }
             <td><span class="check-no">No</span></td>
           </tr>
           <tr>
-            <td>Built-in quality gates</td>
-            <td class="highlight-col"><span class="check-yes" aria-label="Yes">&#x2713; 6 checks</span></td>
-            <td><span class="check-no">No</span></td>
-            <td><span class="check-no">No</span></td>
-            <td><span class="check-no">No</span></td>
+            <td>Telegram / CLI / Web</td>
+            <td class="highlight-col"><span class="check-yes" aria-label="Yes">&#x2713; All 3</span></td>
+            <td><span class="check-partial">Web only</span></td>
+            <td><span class="check-partial">Web only</span></td>
+            <td><span class="check-partial">Web + App</span></td>
           </tr>
           <tr>
             <td>Data stays on your machine</td>
@@ -1622,6 +1876,13 @@ img { max-width: 100%; height: auto; }
             <td><span class="check-no">Cloud</span></td>
             <td><span class="check-no">Cloud</span></td>
             <td><span class="check-no">Cloud</span></td>
+          </tr>
+          <tr>
+            <td>Standards alignment (50 states)</td>
+            <td class="highlight-col"><span class="check-yes" aria-label="Yes">&#x2713;</span></td>
+            <td><span class="check-yes" aria-label="Yes">&#x2713;</span></td>
+            <td><span class="check-partial">Some</span></td>
+            <td><span class="check-no">No</span></td>
           </tr>
           <tr>
             <td>Open source</td>
@@ -1636,20 +1897,6 @@ img { max-width: 100%; height: auto; }
             <td><span class="check-partial">Freemium</span></td>
             <td><span class="check-partial">Freemium</span></td>
             <td><span class="check-partial">$20/mo</span></td>
-          </tr>
-          <tr>
-            <td>Standards alignment (50 states)</td>
-            <td class="highlight-col"><span class="check-yes" aria-label="Yes">&#x2713;</span></td>
-            <td><span class="check-yes" aria-label="Yes">&#x2713;</span></td>
-            <td><span class="check-partial">Some</span></td>
-            <td><span class="check-no">No</span></td>
-          </tr>
-          <tr>
-            <td>Telegram / CLI / Web interface</td>
-            <td class="highlight-col"><span class="check-yes" aria-label="Yes">&#x2713; All 3</span></td>
-            <td><span class="check-partial">Web only</span></td>
-            <td><span class="check-partial">Web only</span></td>
-            <td><span class="check-partial">Web + App</span></td>
           </tr>
         </tbody>
       </table>
@@ -1671,21 +1918,21 @@ img { max-width: 100%; height: auto; }
         <code><span class="line-comment"># Install</span>
 <span class="line-prompt">$ </span>pip install clawed
 
-<span class="line-comment"># Run setup (picks your AI model, creates workspace)</span>
+<span class="line-comment"># AI-guided setup (picks your provider, creates workspace)</span>
 <span class="line-prompt">$ </span>clawed setup
 
 <span class="line-comment"># Generate your first lesson</span>
 <span class="line-prompt">$ </span>clawed lesson "Your Topic Here"</code>
       </div>
       <p class="install-note" style="color: var(--text-light);">
-        The software is free. You bring your own AI provider &mdash; we recommend <strong>Ollama Cloud</strong> ($20/month unlimited) or use free-tier options to try it out. No account with us required.<br>
-        <a href="https://github.com/SirhanMacx/Claw-ED#setup" target="_blank" rel="noopener" style="color: var(--accent-dark);">Full setup guide with screenshots &rarr;</a>
+        The software is free. You bring your own AI provider. The agentic setup walks you through choosing one &mdash; from free options like <strong>Gemini 2.5 Flash</strong> to premium quality with <strong>Claude Opus 4</strong>.<br>
+        <a href="https://github.com/SirhanMacx/Claw-ED#setup" target="_blank" rel="noopener" style="color: var(--gold-dark);">Full setup guide with screenshots &rarr;</a>
       </p>
       <div class="install-links">
         <a class="btn-primary" href="https://pypi.org/project/clawed/" target="_blank" rel="noopener noreferrer">
           View on PyPI
         </a>
-        <a class="btn-secondary" href="https://github.com/SirhanMacx/Claw-ED" target="_blank" rel="noopener noreferrer" style="border-color: var(--border); color: var(--primary);">
+        <a class="btn-secondary" href="https://github.com/SirhanMacx/Claw-ED" target="_blank" rel="noopener noreferrer" style="border-color: var(--border); color: var(--green);">
           <svg viewBox="0 0 16 16" aria-hidden="true" style="width:18px;height:18px;fill:currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
           GitHub Repo
         </a>
@@ -1695,7 +1942,7 @@ img { max-width: 100%; height: auto; }
 </section>
 
 <!-- ── FAQ ───────────────────────────────────────────── -->
-<section class="section section-alt" id="faq" aria-labelledby="faq-heading">
+<section class="section" id="faq" aria-labelledby="faq-heading">
   <div class="container">
     <div class="section-header">
       <span class="eyebrow">FAQ</span>
@@ -1709,7 +1956,18 @@ img { max-width: 100%; height: auto; }
         </button>
         <div class="faq-answer" role="region">
           <div class="faq-answer-inner">
-            Yes. Claw-ED is MIT licensed and free forever. The software itself costs nothing. You bring your own AI provider &mdash; we recommend Ollama Cloud ($20/month for unlimited use), but it also works with Gemini, Claude, or GPT. There is no account, no paywall, and no freemium upsell.
+            Yes. Claw-ED is MIT licensed and free forever. The software itself costs nothing. You bring your own AI provider &mdash; we recommend Claude Opus 4 for quality (~$0.10/lesson) or Gemini 2.5 Flash for budget (free tier available). There is no account, no paywall, and no freemium upsell.
+          </div>
+        </div>
+      </div>
+      <div class="faq-item" role="listitem">
+        <button class="faq-question" aria-expanded="false" onclick="toggleFaq(this)">
+          What AI providers does it work with?
+          <svg class="faq-chevron" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
+        </button>
+        <div class="faq-answer" role="region">
+          <div class="faq-answer-inner">
+            Claw-ED works with Anthropic (Claude Opus 4, Claude Sonnet 4), OpenAI (GPT-4o), Google (Gemini 2.5 Flash), and Ollama (cloud or local with Llama 3.3). The agentic onboarding helps you pick and configure the best option. You can switch providers anytime.
           </div>
         </div>
       </div>
@@ -1720,7 +1978,7 @@ img { max-width: 100%; height: auto; }
         </button>
         <div class="faq-answer" role="region">
           <div class="faq-answer-inner">
-            Only to talk to your AI provider (like any chatbot). Your curriculum files are processed and stored entirely on your machine. If you use a local model through Ollama, everything runs fully offline.
+            Only to talk to your AI provider (like any chatbot). Your curriculum files are processed and stored entirely on your machine. If you use a local model through Ollama with Llama 3.3, everything runs fully offline with complete privacy.
           </div>
         </div>
       </div>
@@ -1773,10 +2031,11 @@ img { max-width: 100%; height: auto; }
 </section>
 
 <!-- ── Final CTA ────────────────────────────────────── -->
-<section class="section" aria-labelledby="final-cta-heading">
+<section class="section section-alt" aria-labelledby="final-cta-heading">
   <div class="container" style="text-align: center;">
-    <h2 id="final-cta-heading" style="font-size: clamp(1.7rem, 3.5vw, 2.4rem); font-weight: 800; color: var(--primary); margin-bottom: 0.75rem; letter-spacing: -0.02em;">Ready to get your weekends back?</h2>
+    <h2 id="final-cta-heading" style="font-size: clamp(1.7rem, 3.5vw, 2.4rem); font-weight: 800; color: var(--green-deep); margin-bottom: 0.75rem; letter-spacing: -0.02em;">Ready to get your weekends back?</h2>
     <p style="color: var(--text-muted); font-size: 1.1rem; max-width: 500px; margin: 0 auto 2rem;">Install Claw-ED in five minutes. Generate your first lesson today.</p>
+    <div style="font-family: 'SF Mono', 'Fira Code', monospace; font-size: 1.1rem; background: var(--green-deep); color: var(--gold); display: inline-block; padding: 0.75rem 2rem; border-radius: var(--radius-sm); margin-bottom: 2rem; letter-spacing: 0.01em;">pip install clawed</div>
     <div class="hero-buttons" style="margin-bottom: 0;">
       <a class="btn-primary" href="#install">Install Now &mdash; Free</a>
       <a class="btn-secondary" href="https://github.com/SirhanMacx/Claw-ED" target="_blank" rel="noopener noreferrer">
@@ -1798,13 +2057,14 @@ img { max-width: 100%; height: auto; }
       <h4>Product</h4>
       <a href="#features">Features</a>
       <a href="#how-it-works">How It Works</a>
+      <a href="#models">AI Models</a>
       <a href="#install">Install</a>
       <a href="#faq">FAQ</a>
     </div>
     <div class="footer-links-group">
       <h4>Resources</h4>
       <a href="https://github.com/SirhanMacx/Claw-ED" target="_blank" rel="noopener">GitHub</a>
-      <a href="https://github.com/SirhanMacx/Claw-ED/discussions" target="_blank" rel="noopener">Community</a>
+      <a href="https://github.com/SirhanMacx/Claw-ED/discussions" target="_blank" rel="noopener">Discussions</a>
       <a href="games/" rel="noopener">Game Gallery</a>
       <a href="https://pypi.org/project/clawed/" target="_blank" rel="noopener">PyPI</a>
       <a href="https://github.com/SirhanMacx/Claw-ED/issues" target="_blank" rel="noopener">Report a Bug</a>
@@ -1826,7 +2086,7 @@ img { max-width: 100%; height: auto; }
         <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
       </a>
       <a href="https://pypi.org/project/clawed/" target="_blank" rel="noopener noreferrer" aria-label="PyPI">
-        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/><path d="M12 22V12M2 7v10M22 7v10" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
       </a>
     </div>
   </div>
@@ -1839,8 +2099,8 @@ img { max-width: 100%; height: auto; }
   var terminal = document.getElementById('terminal-body');
   var gold = '#D4A843';
   var green = '#2D5F3C';
-  var dim = '#888';
-  var white = '#e8e8e8';
+  var dim = '#8BA88B';
+  var white = '#E8E0D0';
   var cyan = '#5FAFAF';
 
   // Colors for the Apple Lobster
@@ -1882,7 +2142,7 @@ img { max-width: 100%; height: auto; }
     ]},
   ];
 
-  // Scenes: each is an array of {text, color, delay, typing, parts}
+  // Teaching-focused terminal animation
   var scenes = [
     // Scene 1: User types clawed
     [{text: '$ clawed', color: white, delay: 0, typing: true}],
@@ -1898,20 +2158,25 @@ img { max-width: 100%; height: auto; }
     [{text: '      C L A W - E D', color: gold, delay: 200, bold: true}],
     [{text: '     Your AI co-teacher', color: dim, delay: 400}],
     [{text: '', color: white, delay: 600}],
-    // Scene 4: User types natural language
-    [{text: '> make me a lesson on the causes of WWI for 8th grade', color: cyan, delay: 0, typing: true}],
+    // Scene 4: Teacher asks a natural language question
+    [{text: '> I need a lesson on photosynthesis for my 7th graders', color: cyan, delay: 0, typing: true}],
     [{text: '', color: white, delay: 400}],
-    // Scene 5: AI responds
-    [{text: '  Generating lesson: Causes of World War I', color: dim, delay: 100}],
-    [{text: '  Using persona: Jon Maccarello (Great Neck South)', color: dim, delay: 100}],
-    [{text: '  Standards: NY SS 8.6a, 8.6b, 8.6c', color: dim, delay: 100}],
+    // Scene 5: AI teaching response
+    [{text: '  Building lesson: Photosynthesis - How Plants Make Food', color: dim, delay: 100}],
+    [{text: '  Using your voice: Ms. Chen (Lincoln Middle School)', color: dim, delay: 100}],
+    [{text: '  Standards: NGSS MS-LS1-6, NY 7.LS.1', color: dim, delay: 100}],
+    [{text: '  Provider: Claude Opus 4', color: dim, delay: 100}],
     [{text: '', color: white, delay: 400}],
-    [{text: '  Lesson generated: Causes of WWI (Score: 9.1/10)', color: green, delay: 200, bold: true}],
+    [{text: '  Lesson generated! (Score: 9.4/10)', color: green, delay: 200, bold: true}],
     [{text: '  Files:', color: white, delay: 100}],
-    [{text: '    causes_wwi_handout.docx', color: cyan, delay: 80}],
-    [{text: '    causes_wwi_plan.docx', color: cyan, delay: 80}],
+    [{text: '    photosynthesis_lesson.docx', color: cyan, delay: 80}],
+    [{text: '    photosynthesis_slides.pptx', color: cyan, delay: 80}],
+    [{text: '    photosynthesis_handout.docx', color: cyan, delay: 80}],
+    [{text: '    photosynthesis_game.html', color: gold, delay: 80}],
     [{text: '', color: white, delay: 600}],
-    [{text: '  Want me to also generate slides or a game?', color: white, delay: 0}],
+    [{text: '> That looks great. Can you also make an exit ticket?', color: cyan, delay: 0, typing: true}],
+    [{text: '', color: white, delay: 300}],
+    [{text: '  Done! Exit ticket added to your handout.', color: green, delay: 200, bold: true}],
   ];
 
   var sceneIndex = 0;

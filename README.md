@@ -89,6 +89,18 @@ clawed full "Westward Expansion" -g 8 -s "US History"
 
 ---
 
+## What's New in v4.2
+
+- **Beautiful interactive terminal.** Animated startup, educational color palette, polished Ink/React TUI
+- **Agentic onboarding.** First run auto-detects your providers, then the AI guides you through setup conversationally
+- **Multi-provider support.** Anthropic (OAuth + API), OpenAI, Google Gemini, Ollama (local + cloud) — all from one CLI
+- **Smarter ingestion.** Proper ODT/ODP parsing, XLS extraction, automatic topic tagging, corpus contribution on every ingest
+- **Better image search.** Retry logic for DuckDuckGo, graceful fallback through 5 image sources
+- **Teaching-first AI.** System prompt completely rewritten for pedagogy — standards, differentiation, Bloom's taxonomy, voice matching
+- **14 teaching tools prioritized.** The AI reaches for lesson generation before file operations
+
+---
+
 ## How It Works
 
 ```
@@ -259,6 +271,25 @@ Teacher (Terminal or Phone)
 - **API keys in OS keychain.** macOS Keychain, Linux Secret Service, Windows Credential Manager.
 - **No telemetry, no data collection, no accounts.**
 - **Your choice of AI provider.** Use free local models (Ollama) for complete privacy, or cloud providers (Claude, GPT, Gemini) for maximum quality.
+
+---
+
+## Recommended Cloud Models
+
+For teachers who want the best lesson quality, here are our cloud model recommendations:
+
+| Provider | Model | Best For | Cost | Setup |
+|----------|-------|----------|------|-------|
+| **Anthropic** | Claude Opus 4 | Maximum quality — rich pedagogy, nuanced voice matching, deep differentiation | ~$0.10/lesson | `clawed` → select Anthropic → OAuth or API key |
+| **Anthropic** | Claude Sonnet 4 | Great quality at lower cost — fast generation, strong standards alignment | ~$0.03/lesson | Same as above |
+| **Google** | Gemini 2.5 Flash | Free tier available — solid quality, fast, good for getting started | Free / pay-as-you-go | `clawed` → select Google → API key from ai.google.dev |
+| **OpenAI** | GPT-4o | Strong general quality — good at structured output, reliable formatting | ~$0.05/lesson | `clawed` → select OpenAI → API key from platform.openai.com |
+| **Ollama** | Minimax M2.7 Cloud | $20/month unlimited — no per-token costs, great for heavy users | $20/mo flat | `clawed` → select Ollama → cloud key |
+| **Ollama** | Llama 3.3 (local) | Completely free and private — runs on your machine, no data leaves | Free | Install Ollama → `clawed` → select Ollama → local |
+
+**Our pick:** Claude Opus 4 for quality, Gemini 2.5 Flash for budget. Teachers generating 5+ lessons/day should consider Ollama Cloud ($20/month unlimited).
+
+> Claw-ED always routes to the best model within your chosen provider. You pick the provider — we pick the smartest model available.
 
 ---
 
