@@ -64,7 +64,9 @@ jobs:
         with:
           node-version: '20'
       - name: Build wheel
-        run: bash scripts/build.sh --skip-ts  # TS build done separately; wheel works without bundled cli.js
+        run: |
+          pip install build
+          bash scripts/build.sh --skip-ts
       - name: Verify wheel size
         run: |
           ls -lh dist/*.whl
@@ -94,8 +96,8 @@ jobs:
           node-version: '20'
       - name: Build and publish
         run: |
+          pip install build twine
           bash scripts/build.sh --skip-ts
-          pip install twine
           twine upload dist/*
         env:
           TWINE_USERNAME: __token__
