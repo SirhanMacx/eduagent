@@ -102,6 +102,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     needs: [wheel-build]
     runs-on: ubuntu-latest
+    environment: pypi
     permissions:
       id-token: write
     steps:
@@ -109,9 +110,12 @@ jobs:
         with:
           name: wheel
           path: dist/
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Publish to PyPI
         run: |
-          pip install "twine<6"
+          pip install twine==4.0.2
           twine upload dist/*
         env:
           TWINE_USERNAME: __token__
