@@ -1,89 +1,50 @@
 /**
- * Claw-ED ASCII Logo — The Apple Lobster
+ * Claw-ED Logo & Branding
  *
- * A red apple with green stem, white claw scratches, and gold lobster
- * arms/claws extending from the sides. Animated with color in terminal.
+ * Terminal wordmark with ANSI colors for interactive mode.
+ * Clean text for static output (--version, non-TTY).
+ * Detailed visuals belong on the landing page, not in ASCII art.
  */
 
-// ANSI color codes
-const R = '\x1b[38;2;220;50;47m'   // Red (apple body)
-const G = '\x1b[38;2;80;180;80m'   // Green (stem/leaf)
-const W = '\x1b[38;2;255;255;255m' // White (claw marks)
-const Y = '\x1b[38;2;212;168;67m'  // Gold (claws/arms)
-const C = '\x1b[38;2;100;200;220m' // Cyan (eyes)
-const D = '\x1b[2m'                // Dim
-const B = '\x1b[1m'                // Bold
-const X = '\x1b[0m'                // Reset
+// ANSI codes
+const GOLD = '\x1b[38;2;212;168;67m'
+const GREEN = '\x1b[38;2;80;180;80m'
+const DIM = '\x1b[2m'
+const BOLD = '\x1b[1m'
+const RESET = '\x1b[0m'
 
-// Braille-art colored logo — generated from PIL image, high-resolution
-function coloredLogo(): string[] {
-  return [
-    '                   \x1b[38;2;80;180;80m⢸⡷⠶⠶⢾⠃\x1b[0m',
-    '                   \x1b[38;2;80;180;80m⢸⡇\x1b[0m',
-    ' \x1b[38;2;212;168;67m⢀⣤⣤⣤⣀\x1b[0m          \x1b[38;2;200;45;45m⢀⣀⣤\x1b[0m\x1b[38;2;80;180;80m⣬⣥\x1b[0m\x1b[38;2;200;45;45m⣤⣀⡀\x1b[0m          \x1b[38;2;212;168;67m⣀⣤⣤⣦⡀\x1b[0m',
-    '\x1b[38;2;212;168;67m⣼⠟\x1b[0m\x1b[38;2;100;200;220m⣡⣤⡀\x1b[0m\x1b[38;2;212;168;67m⠉⢻⡄\x1b[0m     \x1b[38;2;200;45;45m⢀⣴\x1b[0m\x1b[38;2;230;230;230m⣾\x1b[0m\x1b[38;2;230;70;70m⣿\x1b[0m\x1b[38;2;230;230;230m⣿⣿\x1b[0m\x1b[38;2;200;45;45m⣿\x1b[0m\x1b[38;2;230;230;230m⣿\x1b[0m\x1b[38;2;200;45;45m⣿⣿⣿⣷⣦⡀\x1b[0m     \x1b[38;2;212;168;67m⢠⡟⠉\x1b[0m\x1b[38;2;100;200;220m⢀⣤⣌\x1b[0m\x1b[38;2;212;168;67m⠻⣧\x1b[0m',
-    '\x1b[38;2;212;168;67m⠁\x1b[0m \x1b[38;2;100;200;220m⠻⠿⠃\x1b[0m \x1b[38;2;212;168;67m⣄⣀\x1b[0m    \x1b[38;2;200;45;45m⣰⣿\x1b[0m\x1b[38;2;230;230;230m⣿⣿\x1b[0m\x1b[38;2;230;70;70m⣿\x1b[0m\x1b[38;2;230;230;230m⣿\x1b[0m\x1b[38;2;230;70;70m⣿\x1b[0m\x1b[38;2;230;230;230m⣿⣿\x1b[0m\x1b[38;2;200;45;45m⣿⣿⣿⣿⣿⣿⣆\x1b[0m    \x1b[38;2;212;168;67m⣀⣠\x1b[0m \x1b[38;2;100;200;220m⠘⠿⠟\x1b[0m',
-    '      \x1b[38;2;212;168;67m⠉⠙⠛⠻⠶⣶\x1b[0m\x1b[38;2;200;45;45m⣿⣿\x1b[0m\x1b[38;2;230;230;230m⣿\x1b[0m\x1b[38;2;230;70;70m⣿\x1b[0m\x1b[38;2;230;230;230m⣿⣿\x1b[0m\x1b[38;2;230;70;70m⣿\x1b[0m\x1b[38;2;230;230;230m⣿\x1b[0m\x1b[38;2;200;45;45m⣿⣿⣿⣿⣿⣿⣿⣿\x1b[0m\x1b[38;2;212;168;67m⣶⠶⠟⠛⠋⠉\x1b[0m     \x1b[38;2;212;168;67m⢀\x1b[0m',
-    '\x1b[38;2;212;168;67m⢻⣦⡀\x1b[0m  \x1b[38;2;212;168;67m⣀⣼⠃\x1b[0m   \x1b[38;2;200;45;45m⣿⣿\x1b[0m\x1b[38;2;230;230;230m⣿⣿\x1b[0m\x1b[38;2;230;70;70m⣿\x1b[0m\x1b[38;2;230;230;230m⣿\x1b[0m\x1b[38;2;230;70;70m⣿\x1b[0m\x1b[38;2;230;230;230m⣿⣿\x1b[0m\x1b[38;2;200;45;45m⣿⣿⣿⣿⣿⣿⣿⣿⣿\x1b[0m   \x1b[38;2;212;168;67m⠘⣧⣀\x1b[0m  \x1b[38;2;212;168;67m⢀⣴⡟\x1b[0m',
-    ' \x1b[38;2;212;168;67m⠈⠻⠛⠛⠉\x1b[0m     \x1b[38;2;200;45;45m⣿⣿\x1b[0m\x1b[38;2;230;230;230m⣿\x1b[0m\x1b[38;2;200;45;45m⣿\x1b[0m\x1b[38;2;230;230;230m⣿⣿\x1b[0m\x1b[38;2;200;45;45m⣿\x1b[0m\x1b[38;2;230;230;230m⣿\x1b[0m\x1b[38;2;200;45;45m⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿\x1b[0m     \x1b[38;2;212;168;67m⠉⠛⠛⠛⠁\x1b[0m',
-    '           \x1b[38;2;200;45;45m⠘\x1b[0m\x1b[38;2;230;230;230m⣿⣿\x1b[0m\x1b[38;2;200;45;45m⣿\x1b[0m\x1b[38;2;230;230;230m⣿\x1b[0m\x1b[38;2;200;45;45m⣿\x1b[0m\x1b[38;2;230;230;230m⣿⣿\x1b[0m\x1b[38;2;200;45;45m⣿⣿⣿⣿⣿⣿⣿⣿⣿⠃\x1b[0m',
-    '            \x1b[38;2;230;230;230m⠾\x1b[0m\x1b[38;2;200;45;45m⢿\x1b[0m\x1b[38;2;230;230;230m⣿⣿\x1b[0m\x1b[38;2;200;45;45m⣿\x1b[0m\x1b[38;2;230;230;230m⣿\x1b[0m\x1b[38;2;200;45;45m⣿⣿⣿⣿⣿⣿⣿⣿⡿⠃\x1b[0m',
-    '              \x1b[38;2;200;45;45m⠙⠻⢿⣿⣿⣿⣿⣿⣿⡿⠟⠋\x1b[0m',
-    '               \x1b[38;2;212;168;67m⢠⡟\x1b[0m \x1b[38;2;200;45;45m⠉⠉⠉⠉\x1b[0m \x1b[38;2;212;168;67m⠘⣧\x1b[0m',
-    '              \x1b[38;2;212;168;67m⢀⡿\x1b[0m        \x1b[38;2;212;168;67m⠸⣇\x1b[0m',
-    '             \x1b[38;2;212;168;67m⠓⠾⡅\x1b[0m        \x1b[38;2;212;168;67m⠘⠻⢦\x1b[0m',
-  ]
-}
-
-// Plain text fallback (braille without ANSI, for non-TTY and --version)
+// Plain text logo for --version and non-TTY
 export const LOGO_FULL = [
-  '                   ⢸⡷⠶⠶⢾⠃',
-  '                   ⢸⡇',
-  ' ⢀⣤⣤⣤⣀          ⢀⣀⣤⣬⣥⣤⣀⡀          ⣀⣤⣤⣦⡀',
-  '⣼⠟⣡⣤⡀⠉⢻⡄     ⢀⣴⣾⣿⣿⣿⣿⣿⣿⣿⣷⣦⡀     ⢠⡟⠉⢀⣤⣌⠻⣧',
-  '⠁ ⠻⠿⠃ ⣄⣀    ⣰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣆    ⣀⣠ ⠘⠿⠟',
-  '      ⠉⠙⠛⠻⠶⣶⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣶⠶⠟⠛⠋⠉     ⢀',
-  '⢻⣦⡀  ⣀⣼⠃   ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿   ⠘⣧⣀  ⢀⣴⡟',
-  ' ⠈⠻⠛⠛⠉     ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿     ⠉⠛⠛⠛⠁',
-  '           ⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠃',
-  '            ⠾⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠃',
-  '              ⠙⠻⢿⣿⣿⣿⣿⣿⣿⡿⠟⠋',
-  '               ⢠⡟ ⠉⠉⠉⠉ ⠘⣧',
-  '              ⢀⡿        ⠸⣇',
-  '             ⠓⠾⡅        ⠘⠻⢦',
+  '',
+  '  \uD83C\uDF4E  C L A W - E D',
+  '',
+  '  Your AI co-teacher',
+  '',
 ]
 
-// Compact (3 lines)
 export const LOGO_COMPACT = [
-  ' ⣤⣤⣀ ⢀⣤⣤⣤⣀ ⣀⣤⣤',
-  '⠟⣤⡀⠻⣿⣿⣿⣿⣿⠟⢀⣤⠻',
-  '  ⠛⠛  ⠻⣿⣿⠟  ⠛⠛',
+  '\uD83C\uDF4E Claw-ED',
 ]
 
-// Brand text
 export const BRAND_TEXT = 'Claw-ED'
 export const BRAND_TAGLINE = 'Your AI co-teacher'
 
 export const LOGO_WITH_TEXT = [
   ...LOGO_FULL,
-  '',
-  '      C L A W - E D',
-  '     Your AI co-teacher',
 ]
 
 /**
- * Animated, colorful logo reveal for interactive terminal startup.
+ * Animated colored startup for interactive sessions.
  *
- * Phase 1: Apple body draws top-to-bottom (red + green stem)
- * Phase 2: Claw arms extend from the sides (gold, with snap animation)
- * Phase 3: Brand text appears
+ * Simple, clean, professional. No ASCII art — just the brand
+ * rendered in warm gold with a brief reveal animation.
  */
 export async function animateLogo(
   _color: string = '',
   skipAnimation: boolean = false,
 ): Promise<void> {
   if (skipAnimation || !process.stdout.isTTY) {
-    for (const line of LOGO_WITH_TEXT) {
+    for (const line of LOGO_FULL) {
       console.log(line)
     }
     return
@@ -92,51 +53,17 @@ export async function animateLogo(
   process.stdout.write('\x1b[?25l') // Hide cursor
 
   try {
-    const lines = coloredLogo()
-
-    // Phase 1: Draw stem (fast)
-    process.stdout.write(lines[0] + '\n')
-    await _sleep(120)
-    process.stdout.write(lines[1] + '\n')
-    await _sleep(120)
-
-    // Phase 2: Apple body grows
-    process.stdout.write(lines[2] + '\n')
-    await _sleep(100)
-
-    // Phase 3: Arms + claws extend (slightly slower for drama)
-    for (let i = 3; i < 6; i++) {
-      process.stdout.write(lines[i] + '\n')
-      await _sleep(150)
-    }
-
-    // Phase 4: Legs
-    for (let i = 6; i < lines.length; i++) {
-      process.stdout.write(lines[i] + '\n')
-      await _sleep(100)
-    }
-
-    // Phase 5: Claw snap! (redraw claw line with closed mouth)
-    await _sleep(300)
-    process.stdout.write('\x1b[5A') // Move up 5 lines
-    const snapLine = `${Y} / ${C}o${Y} \\${X}${Y}----${R}|${X}    ${W}///${X}         ${R}|${X}${Y}----${Y}/ ${C}o${Y} \\${X}`
-    process.stdout.write('\x1b[2K' + snapLine + '\n') // Clear line + redraw
-    const closedLine = `${Y} \\_${B}=${Y}=_/${X}   ${R}|${X}    ${W}///${X}         ${R}|${X}   ${Y}\\_${B}=${Y}=_/${X}`
-    process.stdout.write('\x1b[2K' + closedLine + '\n')
+    process.stdout.write('\n')
     await _sleep(200)
 
-    // Snap back open
-    process.stdout.write('\x1b[2A')
-    process.stdout.write('\x1b[2K' + lines[4] + '\n')
-    process.stdout.write('\x1b[2K' + lines[5] + '\n')
-    process.stdout.write('\x1b[3B') // Move back down
-
-    // Phase 6: Brand text
-    await _sleep(300)
-    process.stdout.write(`\n${B}${Y}      C L A W - E D${X}\n`)
-    await _sleep(200)
-    process.stdout.write(`${D}     Your AI co-teacher${X}\n`)
+    // Apple emoji + brand name in gold
+    process.stdout.write(`  ${BOLD}${GOLD}\uD83C\uDF4E  C L A W - E D${RESET}\n`)
     await _sleep(400)
+
+    // Tagline fades in
+    process.stdout.write(`${DIM}  Your AI co-teacher${RESET}\n`)
+    await _sleep(300)
+
     process.stdout.write('\n')
   } finally {
     process.stdout.write('\x1b[?25h') // Show cursor
