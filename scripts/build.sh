@@ -46,12 +46,12 @@ if [[ "${1:-}" != "--skip-ts" ]]; then
     echo "  Running Bun build..."
     node scripts/build-cli.mjs
 
-    if [ ! -f "source/cli.js" ]; then
-        echo "ERROR: TypeScript build failed — source/cli.js not found"
+    if [ ! -f "dist/cli.js" ]; then
+        echo "ERROR: TypeScript build failed — dist/cli.js not found"
         exit 1
     fi
 
-    CLI_SIZE=$(du -h source/cli.js | cut -f1)
+    CLI_SIZE=$(du -sh dist/ | cut -f1)
     echo "  Built: cli.js ($CLI_SIZE)"
     cd "$REPO_ROOT"
 else
@@ -63,12 +63,14 @@ echo ""
 echo "→ Step 2: Bundling cli.js into Python package..."
 mkdir -p "$REPO_ROOT/clawed/_cli_bundle"
 
-if [ -f "$REPO_ROOT/cli/source/cli.js" ]; then
-    cp "$REPO_ROOT/cli/source/cli.js" "$REPO_ROOT/clawed/_cli_bundle/cli.js"
-    BUNDLE_SIZE=$(du -h "$REPO_ROOT/clawed/_cli_bundle/cli.js" | cut -f1)
-    echo "  Copied: clawed/_cli_bundle/cli.js ($BUNDLE_SIZE)"
+if [ -d "$REPO_ROOT/cli/dist" ]; then
+    cp -r "$REPO_ROOT/cli/dist/"* "$REPO_ROOT/clawed/_cli_bundle/"
+    # Ensure ESM package.json exists for top-level await support
+    echo '{"type": "module"}' > "$REPO_ROOT/clawed/_cli_bundle/package.json"
+    BUNDLE_SIZE=$(du -sh "$REPO_ROOT/clawed/_cli_bundle/" | cut -f1)
+    echo "  Copied: clawed/_cli_bundle/ ($BUNDLE_SIZE)"
 else
-    echo "  WARNING: cli/source/cli.js not found. Python package will use fallback CLI."
+    echo "  WARNING: cli/dist/ not found. Python package will use fallback CLI."
 fi
 
 # Step 3: Build Python wheel
