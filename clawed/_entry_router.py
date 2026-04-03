@@ -74,6 +74,67 @@ def _show_node_notice() -> None:
     print()
 
 
+def _maybe_start_bot_background() -> None:
+    """Auto-start the Telegram bot as a background subprocess if configured.
+
+    Checks for a Telegram token in config and a bot.lock file.
+    If the token exists and no bot is running, spawns `python -m clawed bot`
+    as a detached process. The bot runs silently in the background —
+    the teacher never needs to open a second terminal.
+    """
+    if not _check_telegram_token():
+        return
+
+    _cfg_dir = os.environ.get("EDUAGENT_DATA_DIR", str(Path.home() / ".eduagent"))
+    lock_file = Path(_cfg_dir) / "bot.lock"
+
+    # Check if a bot is already running
+    if lock_file.exists():
+        try:
+            pid = int(lock_file.read_text(encoding="utf-8").strip())
+            # Check if PID is alive
+            if sys.platform == "win32":
+                result = subprocess.run(
+                    ["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
+                    capture_output=True, text=True, timeout=5,
+                )
+                if str(pid) in result.stdout:
+                    return  # Bot already running
+            else:
+                os.kill(pid, 0)  # Raises OSError if dead
+                return  # Bot already running
+        except (ValueError, OSError, subprocess.TimeoutExpired):
+            # Stale lock — continue to start a new bot
+            try:
+                lock_file.unlink()
+            except OSError:
+                pass
+
+    # Spawn bot as detached background process
+    try:
+        python = sys.executable
+        if sys.platform == "win32":
+            # Windows: detached, no console window
+            subprocess.Popen(
+                [python, "-m", "clawed", "bot"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                stdin=subprocess.DEVNULL,
+                creationflags=0x08000000 | 0x00000008,  # CREATE_NO_WINDOW | DETACHED_PROCESS
+            )
+        else:
+            # Unix: nohup-style detached
+            subprocess.Popen(
+                [python, "-m", "clawed", "bot"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                stdin=subprocess.DEVNULL,
+                start_new_session=True,
+            )
+    except Exception:
+        pass  # Never block the CLI — bot is best-effort
+
+
 def _check_telegram_token() -> bool:
     """Return True if a Telegram bot token is configured, False otherwise.
 
@@ -372,6 +433,9 @@ def main() -> None:
                 args = ["Hello! I just finished setup."]
         except Exception as e:
             print(f"Setup error: {e}", file=sys.stderr)
+
+    # Auto-start Telegram bot in background if configured
+    _maybe_start_bot_background()
 
     # Use the Ink TUI for interactive mode — the full Claw-ED TUI
     node = shutil.which("node")
