@@ -469,6 +469,12 @@ async def compile_simulation(
                     "Simulation has issues but using anyway: %s",
                     "; ".join(issues),
                 )
+                logger.warning(
+                    "Note: Interactive simulations work best with code-capable "
+                    "models (Claude Sonnet/Opus, GPT-4o). Smaller models may "
+                    "produce incomplete HTML. Try: clawed config set-model "
+                    "ollama -m deepseek-coder-v2:cloud"
+                )
 
             # Save
             topic = getattr(master, "topic", master.title)

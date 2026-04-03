@@ -169,6 +169,13 @@ def create(
             )
             progress.update(task, description="Lesson content ready!")
 
+    # Warn about model capability for simulations
+    from clawed.models import AppConfig as _SimConfig
+    _sim_cfg = _SimConfig.load()
+    _sim_model = getattr(_sim_cfg, 'ollama_model', '') if _sim_cfg.provider.value == 'ollama' else ''
+    if _sim_model and any(s in _sim_model.lower() for s in ['haiku', 'flash', 'mini', 'small']):
+        console.print("[yellow]Note: Interactive simulations work best with code-capable models.[/yellow]")
+
     # Generate the simulation
     out_dir = _output_dir()
     with _safe_progress(console=console) as progress:

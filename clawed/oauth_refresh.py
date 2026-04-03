@@ -73,6 +73,16 @@ def _refresh_token(refresh_token: str | None) -> str | None:
             timeout=15,
         )
 
+        if resp.status_code == 400:
+            body = resp.text[:200]
+            if "invalid_grant" in body:
+                logger.warning(
+                    "OAuth refresh token expired. Run 'claude login' to re-authenticate."
+                )
+            else:
+                logger.warning("Token refresh returned 400: %s", body)
+            return None
+
         if resp.status_code != 200:
             logger.warning("Token refresh returned %d: %s", resp.status_code, resp.text[:200])
             return None

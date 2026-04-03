@@ -452,6 +452,12 @@ async def compile_game(
                     "Game has issues but using anyway: %s",
                     "; ".join(issues),
                 )
+                logger.warning(
+                    "Note: Interactive games work best with code-capable models "
+                    "(Claude Sonnet/Opus, GPT-4o). Smaller models may produce "
+                    "incomplete HTML. Try: clawed config set-model ollama -m "
+                    "deepseek-coder-v2:cloud"
+                )
 
             # Save
             fname = f"game_{safe_filename(master.title)}.html"

@@ -178,6 +178,13 @@ def create(
             )
             progress.update(task, description="Lesson content ready!")
 
+    # Warn about model capability for games
+    from clawed.models import AppConfig as _GameConfig
+    _game_cfg = _GameConfig.load()
+    _game_model = getattr(_game_cfg, 'ollama_model', '') if _game_cfg.provider.value == 'ollama' else ''
+    if _game_model and any(s in _game_model.lower() for s in ['haiku', 'flash', 'mini', 'small']):
+        console.print("[yellow]Note: Interactive games work best with code-capable models.[/yellow]")
+
     # Generate the game
     out_dir = _output_dir()
     with _safe_progress(console=console) as progress:

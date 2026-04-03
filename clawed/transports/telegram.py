@@ -453,7 +453,12 @@ class EduAgentTelegramBot:
         me = self.api.get_me()
         bot_name = me.get("username", "unknown")
         logger.info("Bot @%s started, entering polling loop", bot_name)
-        print(f"Claw-ED bot @{bot_name} is running. Press Ctrl+C to stop.", flush=True)
+        print(
+            f"\nClaw-ED Telegram bot is running!\n"
+            f"Send a message to @{bot_name} to start.\n"
+            f"Press Ctrl+C to stop.\n",
+            flush=True,
+        )
 
         self._running = True
         offset = 0

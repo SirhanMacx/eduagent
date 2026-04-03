@@ -450,11 +450,15 @@ def _ask_provider_wizard() -> tuple[LLMProvider, str | None, str | None, str | N
 
 
 def _clear_config() -> None:
-    """Remove existing config file for --reset."""
+    """Reset config to defaults for a fresh setup."""
     path = AppConfig.config_path()
     if path.exists():
         path.unlink()
-        console.print("  [dim]Previous configuration cleared.[/dim]")
+    # Also remove the onboarding marker so first-run triggers again
+    marker = Path.home() / ".eduagent" / "workspace" / "onboarding_complete"
+    if marker.exists():
+        marker.unlink()
+    console.print("  [dim]Previous configuration cleared.[/dim]")
 
 
 def quick_model_setup() -> str:
