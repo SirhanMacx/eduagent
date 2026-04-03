@@ -22,13 +22,11 @@ from clawed.tools import TOOL_DEFINITIONS, execute_tool
 def _is_oauth_token(api_key: str) -> bool:
     """Detect if a token is an OAuth token vs a regular API key.
 
-    Regular API keys start with 'sk-ant-api'. Everything else from
-    Claude Code credential store is an OAuth token.
+    Delegates to the shared helper in clawed.config for consistent
+    detection across all modules.
     """
-    if api_key.startswith("sk-ant-api"):
-        return False
-    # OAuth tokens: sk-ant-oat*, sk-ant-sid*, or other non-api prefixes
-    return True
+    from clawed.config import is_anthropic_oauth_token
+    return is_anthropic_oauth_token(api_key)
 
 
 def _anthropic_headers(api_key: str) -> dict[str, str]:

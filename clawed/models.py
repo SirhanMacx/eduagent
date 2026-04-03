@@ -1103,8 +1103,9 @@ class AppConfig(BaseModel):
     # Fields that contain secrets and must never be written to the JSON
     # config file.  They are stored via keyring (preferred) or env vars
     # only.  See clawed/config.py for the secure storage helpers.
-    # Note: telegram_bot_token is NOT stripped — it must be readable by
-    # the entry router (which can't import keyring) for auto-daemon start.
+    # Note: telegram_bot_token is intentionally NOT in _SECRET_FIELDS.
+    # It must be readable by the entry router (stdlib-only, no keyring import)
+    # for auto-daemon startup. It's also saved to keyring as a backup.
     _SECRET_FIELDS: tuple[str, ...] = (
         "ollama_api_key",
         "dashboard_password",

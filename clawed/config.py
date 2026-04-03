@@ -18,6 +18,9 @@ from clawed.models import AppConfig
 _BASE_DIR = Path(os.environ.get("EDUAGENT_DATA_DIR", str(Path.home() / ".eduagent")))
 _SECRETS_DIR = _BASE_DIR
 _SECRETS_FILE = _SECRETS_DIR / "secrets.json"
+# Internal service name — matches filesystem path (~/.eduagent) and keyring
+# entries. Kept as "eduagent" for backwards compatibility with existing installs.
+# The user-facing brand is "Claw-ED" / "Ed" via the CLI entry points.
 _SERVICE_NAME = "eduagent"
 
 
@@ -147,11 +150,12 @@ def resolve_credentials(config=None):
         ("ANTHROPIC_API_KEY", "anthropic"),
         ("OPENAI_API_KEY", "openai"),
         ("GOOGLE_API_KEY", "google"),
+        ("OPENROUTER_API_KEY", "openrouter"),
     ]:
         key = os.environ.get(env_var)
         if key:
             return provider, key
-    for provider in ["anthropic", "openai"]:
+    for provider in ["anthropic", "openai", "google", "openrouter"]:
         key = get_api_key(provider)
         if key:
             return provider, key
@@ -190,6 +194,17 @@ def mask_api_key(key: Optional[str]) -> str:
     if len(key) <= 8:
         return "***"
     return key[:3] + "..." + key[-6:]
+
+
+def is_anthropic_oauth_token(api_key: str) -> bool:
+    """Detect if a key is an Anthropic OAuth token vs a regular API key."""
+    if not api_key:
+        return False
+    if api_key.startswith("sk-ant-api"):
+        return False
+    if api_key.startswith("sk-ant-"):
+        return True
+    return False
 
 
 def is_ollama_cloud(base_url: str) -> bool:
@@ -271,7 +286,7 @@ async def test_llm_connection(config: Optional[AppConfig] = None) -> dict:
         except ImportError:
             return _result(False, model, "Anthropic SDK not installed. Run: pip install anthropic", is_err=True)
         try:
-            is_oauth = not api_key.startswith("sk-ant-api")
+            is_oauth = is_anthropic_oauth_token(api_key)
             if is_oauth:
                 client = _anthropic.Anthropic(
                     auth_token=api_key,

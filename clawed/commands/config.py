@@ -193,12 +193,14 @@ def register_status(app: typer.Typer) -> None:
         profile = cfg.teacher_profile
         name = profile.name or "Teacher"
         provider = cfg.provider.value
-        if provider == "ollama":
-            model = cfg.ollama_model
-        elif provider == "anthropic":
-            model = cfg.anthropic_model
-        else:
-            model = cfg.openai_model
+        model_map = {
+            "anthropic": cfg.anthropic_model,
+            "openai": cfg.openai_model,
+            "ollama": cfg.ollama_model,
+            "google": cfg.google_model,
+            "openrouter": cfg.openrouter_model,
+        }
+        model = model_map.get(provider, cfg.openai_model)
 
         has_token = bool(cfg.telegram_bot_token)
         tg_status = (

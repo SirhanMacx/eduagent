@@ -199,6 +199,7 @@ def debug() -> None:
         "openai": cfg.openai_model,
         "google": cfg.google_model,
         "ollama": cfg.ollama_model,
+        "openrouter": cfg.openrouter_model,
     }
     active_model = model_map.get(provider, "unknown")
     console.print(f"\n  Provider: {provider}")

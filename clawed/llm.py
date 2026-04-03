@@ -460,7 +460,7 @@ class LLMClient:
     ) -> str:
         import anthropic
 
-        from clawed.config import get_api_key
+        from clawed.config import get_api_key, is_anthropic_oauth_token
 
         api_key = get_api_key("anthropic")
         if not api_key:
@@ -470,7 +470,7 @@ class LLMClient:
             )
 
         # Use the official SDK — handles OAuth (auth_token) and API keys properly
-        is_oauth = api_key.startswith("sk-ant-") and not api_key.startswith("sk-ant-api")
+        is_oauth = is_anthropic_oauth_token(api_key)
         if is_oauth:
             client = anthropic.Anthropic(
                 auth_token=api_key,

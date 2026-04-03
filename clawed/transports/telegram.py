@@ -31,11 +31,14 @@ logger = logging.getLogger(__name__)
 _API_BASE = "https://api.telegram.org"
 _MAX_MESSAGE_LENGTH = 4096
 
+# Base data directory — respects EDUAGENT_DATA_DIR env override
+_BASE = Path(os.environ.get("EDUAGENT_DATA_DIR", str(Path.home() / ".eduagent")))
+
 # Lock file for preventing multiple bot instances
-_BOT_LOCK = Path.home() / ".eduagent" / "bot.lock"
+_BOT_LOCK = _BASE / "bot.lock"
 
 # Error log path
-_ERROR_LOG = Path.home() / ".eduagent" / "errors.log"
+_ERROR_LOG = _BASE / "errors.log"
 
 
 def _log_error(error: Exception) -> None:
@@ -181,9 +184,9 @@ class TelegramAPI:
                 if result.get("ok"):
                     return result.get("result", {})
                 else:
-                    err_msg = result.get("description", "Unknown error")
-                    logger.warning("Telegram API error: %s", err_msg)
-                    return {}
+                    raise RuntimeError(
+                        f"Telegram API error: {result.get('description', 'Unknown error')}"
+                    )
             except (httpx.ConnectError, httpx.ReadTimeout, httpx.WriteTimeout) as e:
                 last_err = e
                 wait = 2 ** attempt

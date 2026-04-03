@@ -19,6 +19,11 @@ import sys
 from pathlib import Path
 
 
+def _data_dir() -> str:
+    """Return the EDUAGENT_DATA_DIR, respecting the env var override."""
+    return os.environ.get("EDUAGENT_DATA_DIR", str(Path.home() / ".eduagent"))
+
+
 def _find_bundled_cli_js() -> str | None:
     """Find the pre-built cli.js bundled in the package.
 
@@ -225,14 +230,14 @@ def _resolve_key_for_provider(provider: str, config: dict) -> str | None:
     # 3. Keyring
     try:
         import keyring
-        val = keyring.get_password("clawed", f"{provider}_api_key")
+        val = keyring.get_password("eduagent", f"{provider}_api_key")
         if val:
             return val
     except Exception:
         pass
 
     # 4. secrets.json
-    secrets_path = Path.home() / ".eduagent" / "secrets.json"
+    secrets_path = Path(_data_dir()) / "secrets.json"
     if secrets_path.exists():
         try:
             secrets = json.loads(secrets_path.read_text())
@@ -263,7 +268,7 @@ def _inject_config_env() -> None:
     """
     import json
 
-    config_path = Path.home() / ".eduagent" / "config.json"
+    config_path = Path(_data_dir()) / "config.json"
     if not config_path.exists():
         return  # First run — let onboarding handle it
 
@@ -308,7 +313,7 @@ def _get_configured_model() -> str | None:
     """
     import json
 
-    config_path = Path.home() / ".eduagent" / "config.json"
+    config_path = Path(_data_dir()) / "config.json"
     if not config_path.exists():
         return None
     try:
@@ -419,7 +424,7 @@ def main() -> None:
     if args and ("-p" in args or "--print" in args):
         try:
             import json as _json
-            _cfg_path = Path.home() / ".eduagent" / "config.json"
+            _cfg_path = Path(_data_dir()) / "config.json"
             if _cfg_path.exists():
                 _cfg = _json.loads(_cfg_path.read_text())
                 if _cfg.get("provider", "anthropic") != "anthropic":

@@ -16,7 +16,7 @@ from clawed.models import AppConfig, LLMProvider
 @config_app.command("set-model")
 def config_set_model(
     provider: str = typer.Argument(
-        ..., help="LLM provider: anthropic, openai, or ollama"
+        ..., help="LLM provider: anthropic, openai, ollama, google, or openrouter"
     ),
     model: Optional[str] = typer.Option(
         None, "--model", "-m", help="Model name override"
@@ -28,7 +28,7 @@ def config_set_model(
     except ValueError:
         console.print(
             f"[red]Unknown provider: {provider}[/red]."
-            " Use: anthropic, openai, ollama"
+            " Use: anthropic, openai, ollama, google, openrouter"
         )
         raise typer.Exit(1)
 
@@ -113,14 +113,16 @@ def config_set_model(
                 "Set ANTHROPIC_API_KEY or log in to Claude Code.[/yellow]"
             )
     elif llm_provider == LLMProvider.OPENAI:
-        import os as _os
-        key = _os.environ.get("OPENAI_API_KEY", "")
+        from clawed.config import get_api_key as _get_key
+        key = _get_key("openai")
         if key and key.startswith("sk-"):
             console.print("[green]API key format looks valid.[/green]")
-        elif not key:
+        elif key:
+            console.print("[green]Credentials found.[/green]")
+        else:
             console.print(
-                "[yellow]Warning: OPENAI_API_KEY not set. "
-                "Export it before generating.[/yellow]"
+                "[yellow]Warning: No OpenAI API key found. "
+                "Set OPENAI_API_KEY or run: clawed config set-key openai YOUR_KEY[/yellow]"
             )
 
 
@@ -211,6 +213,8 @@ def config_show(
             f"[bold]Anthropic Model:[/bold] {cfg.anthropic_model}\n"
             f"[bold]OpenAI Model:[/bold] {cfg.openai_model}\n"
             f"[bold]Ollama Model:[/bold] {cfg.ollama_model}\n"
+            f"[bold]Google Model:[/bold] {cfg.google_model}\n"
+            f"[bold]OpenRouter Model:[/bold] {cfg.openrouter_model}\n"
             f"[bold]Ollama URL:[/bold] {cfg.ollama_base_url}\n"
             f"[bold]Output Dir:[/bold] {cfg.output_dir}\n"
             f"[bold]Export Format:[/bold] {cfg.export_format}\n"
