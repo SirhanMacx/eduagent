@@ -5,13 +5,9 @@ Covers: hashing, grouping, indexing, linting, and state persistence.
 """
 from __future__ import annotations
 
-import json
 import sqlite3
-import textwrap
-from pathlib import Path
 
 import pytest
-
 
 # ── Fixtures ─────────────────────────────────────────────────────────
 
@@ -49,17 +45,25 @@ def wiki_env(tmp_path, monkeypatch):
             )
         """)
         # Insert test chunks
-        conn.executemany(
-            "INSERT INTO chunks (teacher_id, doc_title, source_path, chunk_text, chunk_hash) VALUES (?, ?, ?, ?, ?)",
-            [
-                ("default", "Photosynthesis Lecture", "/docs/photo.pptx", "Plants convert sunlight into glucose.", "h1"),
-                ("default", "Photosynthesis Lecture", "/docs/photo.pptx", "Chloroplasts contain chlorophyll.", "h2"),
-                ("default", "Photosynthesis Lecture", "/docs/photo.pptx", "The Calvin cycle fixes carbon dioxide.", "h3"),
-                ("default", "Civil War Unit", "/docs/cw.docx", "The Civil War began in 1861.", "h4"),
-                ("default", "Civil War Unit", "/docs/cw.docx", "Fort Sumter was the first battle.", "h5"),
-                ("other_teacher", "Algebra Basics", "/docs/algebra.pdf", "Solve for x.", "h6"),
-            ],
+        sql = (
+            "INSERT INTO chunks "
+            "(teacher_id, doc_title, source_path, chunk_text, chunk_hash) "
+            "VALUES (?, ?, ?, ?, ?)"
         )
+        conn.executemany(sql, [
+            ("default", "Photosynthesis Lecture", "/docs/photo.pptx",
+             "Plants convert sunlight into glucose.", "h1"),
+            ("default", "Photosynthesis Lecture", "/docs/photo.pptx",
+             "Chloroplasts contain chlorophyll.", "h2"),
+            ("default", "Photosynthesis Lecture", "/docs/photo.pptx",
+             "The Calvin cycle fixes carbon dioxide.", "h3"),
+            ("default", "Civil War Unit", "/docs/cw.docx",
+             "The Civil War began in 1861.", "h4"),
+            ("default", "Civil War Unit", "/docs/cw.docx",
+             "Fort Sumter was the first battle.", "h5"),
+            ("other_teacher", "Algebra Basics", "/docs/algebra.pdf",
+             "Solve for x.", "h6"),
+        ])
 
     return tmp_path
 
