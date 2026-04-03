@@ -428,9 +428,8 @@ def main() -> None:
                 sys.argv = [sys.argv[0], "bot"]
                 _run_python_cli()
                 return
-            # Terminal mode — seed the first message so the AI greets the teacher
-            if result == "terminal" and not args:
-                args = ["Hello! I just finished setup."]
+            # Terminal mode — fall through to launch the TUI
+            # The TS onboarding prompt will greet the teacher
         except Exception as e:
             print(f"Setup error: {e}", file=sys.stderr)
 
