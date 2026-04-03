@@ -582,7 +582,16 @@ def lesson(
                         )
                     )
                 else:
-                    daily = compile_teacher_view(master)
+                    daily = master.to_daily_lesson()
+                    # Also compile teacher-view DOCX as bonus output
+                    try:
+                        _run_async(
+                            compile_teacher_view(
+                                master, images={}, output_dir=_output_dir(),
+                            )
+                        )
+                    except Exception:
+                        pass  # Non-blocking — lesson is already compiled
             else:
                 daily = _run_async(
                     generate_lesson(
