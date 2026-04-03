@@ -304,7 +304,7 @@ def main() -> None:
         _run_python_cli()
         return
 
-    # For non-Anthropic providers, route -p (headless) through Python
+    # For non-Anthropic providers, handle -p (headless/print) directly
     # because the Node CLI only supports Anthropic for direct API calls
     if args and ("-p" in args or "--print" in args):
         try:
@@ -313,11 +313,33 @@ def main() -> None:
             if _cfg_path.exists():
                 _cfg = _json.loads(_cfg_path.read_text())
                 if _cfg.get("provider", "anthropic") != "anthropic":
-                    sys.argv = [sys.argv[0], "chat"] + args
-                    _run_python_cli()
-                    return
-        except Exception:
-            pass
+                    # Extract the prompt from args (everything after -p)
+                    prompt_parts = []
+                    skip_next = False
+                    for a in args:
+                        if skip_next:
+                            skip_next = False
+                            continue
+                        if a in ("-p", "--print"):
+                            continue
+                        if a.startswith("--"):
+                            skip_next = True
+                            continue
+                        prompt_parts.append(a)
+                    prompt = " ".join(prompt_parts)
+                    if prompt:
+                        import asyncio
+
+                        from clawed.llm import LLMClient
+                        from clawed.models import AppConfig
+                        cfg = AppConfig.load()
+                        client = LLMClient(config=cfg)
+                        response = asyncio.run(client.generate(prompt))
+                        print(response)
+                        sys.exit(0)
+        except Exception as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(1)
 
     # Use the Ink TUI for interactive mode — the full Claw-ED TUI
     node = shutil.which("node")
