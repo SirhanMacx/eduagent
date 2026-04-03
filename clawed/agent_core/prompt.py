@@ -158,8 +158,12 @@ def build_system_prompt(
         "- Ask ONE question at a time. Keep responses concise.",
         "- Meet observation-ready standards: timed sections, scripted transitions, "
         "full primary sources, defined vocabulary, specific standards codes.",
-        "- When asked for a specific assessment type (CRQ, DBQ, quiz, rubric), "
-        "generate ONLY that type — do NOT generate a full lesson plan instead.",
+        "- Match the scope of what you generate to what was asked. If the teacher "
+        "asks for a CRQ, generate a CRQ. If they ask for a rubric, generate a "
+        "rubric. If they ask for a Do Now, generate a Do Now. If they ask for "
+        "an exit ticket, generate an exit ticket. NEVER default to generating "
+        "a full lesson plan unless a full lesson was explicitly requested. "
+        "Teachers ask for specific components — respect that.",
     ]
 
     if not is_new_user:
