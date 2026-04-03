@@ -104,6 +104,8 @@ def _build_config(provider: str | None, model: str | None):
             config.ollama_model = model
         elif config.provider == LLMProvider.ANTHROPIC:
             config.anthropic_model = model
+        elif config.provider == LLMProvider.OPENROUTER:
+            config.openrouter_model = model
 
     return config
 
@@ -118,6 +120,7 @@ def _resolve_model(config, model: str | None) -> str:
         LLMProvider.GOOGLE: "google_model",
         LLMProvider.OLLAMA: "ollama_model",
         LLMProvider.ANTHROPIC: "anthropic_model",
+        LLMProvider.OPENROUTER: "openrouter_model",
     }
     return getattr(config, _model_fields.get(config.provider, ""), "") or ""
 
@@ -322,7 +325,7 @@ async def _handle_chat_with_tools(
         agent_messages = _convert_messages_for_agent(messages)
 
         # Route to the right tool-calling function
-        if config.provider in (LLMProvider.ANTHROPIC, LLMProvider.OPENAI):
+        if config.provider in (LLMProvider.ANTHROPIC, LLMProvider.OPENAI, LLMProvider.OPENROUTER):
             response = await _call_with_native_tools(agent_messages, system, config)
         else:
             response = await _call_with_ollama_tools(agent_messages, system, config)

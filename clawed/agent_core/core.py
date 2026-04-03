@@ -353,7 +353,7 @@ class Gateway:
         try:
             import os
             data_dir = os.environ.get("EDUAGENT_DATA_DIR", str(Path.home() / ".eduagent"))
-            soul_path = Path(data_dir) / "workspace" / "SOUL.md"
+            soul_path = Path(data_dir) / "workspace" / "soul.md"
             if soul_path.exists():
                 soul_context = soul_path.read_text(encoding="utf-8")[:2000]
         except Exception:

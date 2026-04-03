@@ -19,10 +19,12 @@ from rich.table import Table
 
 from clawed.commands._helpers import _safe_progress, console
 from clawed.config import has_config, set_api_key, test_llm_connection
-from clawed.models import AppConfig, LLMProvider, TeacherProfile
+from clawed.models import AppConfig, LLMProvider, TeacherPersona, TeacherProfile
 from clawed.state_standards import STATE_STANDARDS_CONFIG
 
 logger = logging.getLogger(__name__)
+
+_BASE_DIR = Path(os.environ.get("EDUAGENT_DATA_DIR", str(Path.home() / ".eduagent")))
 
 # Full state names for autocomplete / fuzzy matching
 US_STATES: list[str] = sorted(
@@ -329,9 +331,8 @@ def _ingest_materials(path_str: str, config: AppConfig) -> None:
     except Exception as e:
         console.print(f"  [yellow]Could not extract teaching style: {e}[/yellow]")
         console.print("  [dim]You can try again later with: clawed ingest <path>[/dim]")
+        persona = TeacherPersona()
     console.print(f"  [green]\u2713 Persona saved — {persona.name or 'Teacher'} profile ready[/green]")
-
-    return persona
 
 
 def _ingest_drive(drive_url: str, config: AppConfig) -> None:
@@ -449,13 +450,25 @@ def _ask_provider_wizard() -> tuple[LLMProvider, str | None, str | None, str | N
             return None, None, None, None
 
 
+def _onboarding_marker() -> Path:
+    """Return the onboarding-complete marker path, respecting EDUAGENT_DATA_DIR."""
+    return _BASE_DIR / "workspace" / "onboarding_complete"
+
+
+def _write_onboarding_marker() -> None:
+    """Mark onboarding as complete so the first-run prompt doesn't re-inject."""
+    marker = _onboarding_marker()
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.write_text("Completed via setup wizard\n")
+
+
 def _clear_config() -> None:
     """Reset config to defaults for a fresh setup."""
     path = AppConfig.config_path()
     if path.exists():
         path.unlink()
     # Also remove the onboarding marker so first-run triggers again
-    marker = Path.home() / ".eduagent" / "workspace" / "onboarding_complete"
+    marker = _onboarding_marker()
     if marker.exists():
         marker.unlink()
     console.print("  [dim]Previous configuration cleared.[/dim]")
@@ -746,6 +759,7 @@ def quick_model_setup() -> str:
             set_api_key("telegram", tg_token.strip())
             config.save()
             console.print("\n  [green]\u2713 Bot configured![/green]")
+            _write_onboarding_marker()
             console.print(
                 "\n  [bold]Starting your bot now...[/bold]\n"
                 "  Open Telegram, find your bot, and send it:\n\n"
@@ -759,10 +773,7 @@ def quick_model_setup() -> str:
             return "terminal"
 
     # Mark onboarding as complete
-    from pathlib import Path as _Path
-    marker = _Path.home() / ".eduagent" / "workspace" / "onboarding_complete"
-    marker.parent.mkdir(parents=True, exist_ok=True)
-    marker.write_text("Completed via setup wizard\n")
+    _write_onboarding_marker()
 
     console.print(
         "\n  [green]\u2713 All set![/green] "
@@ -913,6 +924,7 @@ def run_setup_wizard(reset: bool = False) -> AppConfig:
             _ingest_drive(drive_url, config)
 
     # ── Step 6: Done ──
+    _write_onboarding_marker()
     console.print(
         Panel(
             "[bold green]You're all set![/bold green]\n\n"

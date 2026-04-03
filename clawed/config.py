@@ -106,6 +106,7 @@ def get_api_key(provider: str) -> Optional[str]:
     env_map = {
         "anthropic": "ANTHROPIC_API_KEY",
         "openai": "OPENAI_API_KEY",
+        "google": "GOOGLE_API_KEY",
         "ollama": "OLLAMA_API_KEY",
         "openrouter": "OPENROUTER_API_KEY",
         "telegram": "TELEGRAM_BOT_TOKEN",

@@ -195,9 +195,11 @@ class IngestMaterialsTool:
             except Exception as e:
                 logger.debug("Asset registration failed: %s", e)
 
-            # Update SOUL.md with what we learned
+            # Update soul.md with what we learned
             try:
-                soul_path = Path.home() / ".eduagent" / "workspace" / "SOUL.md"
+                import os as _os
+                _data = _os.environ.get("EDUAGENT_DATA_DIR", str(Path.home() / ".eduagent"))
+                soul_path = Path(_data) / "workspace" / "soul.md"
                 soul_path.parent.mkdir(parents=True, exist_ok=True)
 
                 # Build soul updates from reading report

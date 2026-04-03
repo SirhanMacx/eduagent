@@ -81,6 +81,7 @@ class ConfigureProfileTool:
         grades = [g.strip() for g in grade_levels_str.split(",") if g.strip()]
 
         try:
+            import os as _os
             config = context.config
 
             if agent_name:
@@ -95,7 +96,8 @@ class ConfigureProfileTool:
             config.save()
 
             # Mark onboarding as complete
-            marker = Path.home() / ".eduagent" / "workspace" / "onboarding_complete"
+            _data = _os.environ.get("EDUAGENT_DATA_DIR", str(Path.home() / ".eduagent"))
+            marker = Path(_data) / "workspace" / "onboarding_complete"
             marker.parent.mkdir(parents=True, exist_ok=True)
             marker.write_text(f"Completed by {teacher_name}\n")
 
@@ -127,9 +129,10 @@ class ConfigureProfileTool:
             except Exception:
                 pass
 
-            # Update SOUL.md "Who I Am" section with identity
+            # Update soul.md "Who I Am" section with identity
             try:
-                soul_path = Path.home() / ".eduagent" / "workspace" / "SOUL.md"
+                _data = _os.environ.get("EDUAGENT_DATA_DIR", str(Path.home() / ".eduagent"))
+                soul_path = Path(_data) / "workspace" / "soul.md"
                 soul_path.parent.mkdir(parents=True, exist_ok=True)
 
                 identity_parts = [f"Name: {teacher_name}", f"Subject: {subject}"]
