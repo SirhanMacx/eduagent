@@ -138,19 +138,37 @@ def _maybe_start_bot_background() -> None:
 def _check_telegram_token() -> bool:
     """Return True if a Telegram bot token is configured, False otherwise.
 
-    Reads ~/.eduagent/config.json directly — no clawed package imports.
+    Checks config.json first, then keyring, then env var.
     """
     import json
 
-    config_path = Path.home() / ".eduagent" / "config.json"
-    if not config_path.exists():
-        return False
+    _cfg_dir = os.environ.get("EDUAGENT_DATA_DIR", str(Path.home() / ".eduagent"))
+    config_path = Path(_cfg_dir) / "config.json"
+
+    # 1. Check config.json (fastest, no imports)
+    if config_path.exists():
+        try:
+            data = json.loads(config_path.read_text())
+            token = data.get("telegram_bot_token", "")
+            if token and token.strip():
+                return True
+        except (json.JSONDecodeError, OSError):
+            pass
+
+    # 2. Check environment variable
+    if os.environ.get("TELEGRAM_BOT_TOKEN"):
+        return True
+
+    # 3. Check keyring (slower, may not be installed)
     try:
-        data = json.loads(config_path.read_text())
-        token = data.get("telegram_bot_token", "")
-        return bool(token and token.strip())
-    except (json.JSONDecodeError, OSError):
-        return False
+        from clawed.config import get_api_key
+        token = get_api_key("telegram")
+        if token and token.strip():
+            return True
+    except Exception:
+        pass
+
+    return False
 
 
 def _resolve_key_for_provider(provider: str, config: dict) -> str | None:

@@ -773,11 +773,11 @@ def quick_model_setup() -> str:
             console.print("\n  [green]\u2713 Bot configured![/green]")
             _write_onboarding_marker()
             console.print(
-                "\n  [bold]Starting your bot now...[/bold]\n"
+                "\n  [bold]Telegram bot will start automatically![/bold]\n"
                 "  Open Telegram, find your bot, and send it:\n\n"
                 '    [bold cyan]Hello![/bold cyan]\n\n'
                 "  Claw-ED will introduce itself and get to know you.\n"
-                "  [dim]Leave this terminal window open — the bot runs here.[/dim]\n"
+                "  [dim]The bot runs in the background — no extra terminal needed.[/dim]\n"
             )
             return "telegram"
         else:
