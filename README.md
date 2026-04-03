@@ -1,6 +1,6 @@
 # Claw-ED
 
-**Your AI co-teacher. Feed it your files, get lessons in your voice.**
+**Meet Ed — your AI co-teacher. Feed him your files, get lessons in your voice.**
 
 <p align="center">
   <a href="https://pypi.org/project/clawed/"><img src="https://img.shields.io/pypi/v/clawed?color=blue" alt="PyPI version"></a>
@@ -21,18 +21,18 @@ pip install clawed
 clawed
 ```
 
-That's it. Claw-ED detects your setup, walks you through picking an AI provider, and starts learning your teaching style. No config files, no environment variables, no developer knowledge needed.
+That's it. Ed introduces himself, walks you through picking an AI provider, and starts learning your teaching style. No config files, no environment variables, no developer knowledge needed.
 
 ---
 
-## What It Does
+## What Ed Does
 
-Claw-ED reads your existing lesson plans, handouts, slideshows, and assessments. It extracts your pedagogical fingerprint — how you structure a Do Now, what graphic organizers you use, how you scaffold for ELL and IEP students, your questioning patterns, your signature teaching moves.
+Ed reads your existing lesson plans, handouts, slideshows, and assessments. He extracts your pedagogical fingerprint — how you structure a Do Now, what graphic organizers you use, how you scaffold for ELL and IEP students, your questioning patterns, your signature teaching moves.
 
-Then it generates new lessons that actually match. Same structure, same voice, same scaffolding.
+Then he generates new lessons that actually match. Same structure, same voice, same scaffolding.
 
 ```bash
-clawed ingest ~/Documents/Lessons/        # Teach it your style
+clawed ingest ~/Documents/Lessons/        # Teach him your style
 clawed lesson "The Missouri Compromise" -g 8 -s "US History"
 ```
 
@@ -51,14 +51,14 @@ clawed lesson "The Missouri Compromise" -g 8 -s "US History"
 
 ## First-Run Experience
 
-When you run `clawed` for the first time, you see a guided setup:
+When you run `clawed` for the first time, Ed greets you:
 
 1. Pick your AI provider (Google Gemini free tier, Ollama Cloud, Claude, GPT, or local Ollama)
 2. Paste your API key
 3. Choose terminal chat or Telegram bot
-4. Optionally point it at your curriculum folder
+4. Optionally point him at your curriculum folder
 
-Then you're chatting with your AI co-teacher. No command line knowledge required.
+Then Ed starts asking about you — what you teach, your grade levels, your state. He learns your style from your files and generates content in your voice from day one.
 
 ---
 
@@ -66,47 +66,52 @@ Then you're chatting with your AI co-teacher. No command line knowledge required
 
 | Command | What it does |
 |---------|-------------|
-| `clawed` | Chat with your AI co-teacher |
-| `clawed ingest <path>` | Teach it your style from your files |
+| `clawed` | Chat with Ed |
+| `clawed ingest <path>` | Teach him your style from your files |
 | `clawed lesson "Topic" -g 8 -s "Subject"` | Generate a daily lesson plan |
 | `clawed unit "Topic" -g 9 -w 3` | Plan a 3-week unit |
 | `clawed full "Topic" -g 10` | Full package: unit + lessons + materials |
 | `clawed materials -l lesson.json` | Generate supporting materials |
-| `clawed assess "Topic" --type dbq` | Generate assessments (DBQ, quiz, rubric) |
+| `clawed assess "Topic" --type dbq` | Generate assessments (DBQ, CRQ, quiz, rubric) |
 | `clawed differentiate -l lesson.json` | Create IEP/504/ELL modifications |
 | `clawed game create "Topic" -g 8` | Interactive HTML learning game |
 | `clawed simulate create "Topic" -g 9` | Interactive HTML simulation |
 | `clawed kb compile` | Compile your curriculum into a searchable wiki |
-| `clawed kb query "question"` | Ask questions against your wiki |
+| `clawed kb query "question"` | Ask Ed questions about your wiki |
 | `clawed kb lint` | Check your wiki for stale or missing articles |
 | `clawed standards list -g 8 -s "Math"` | Browse state standards |
 | `clawed gap-analyze` | Find curriculum coverage gaps |
 | `clawed score -l lesson.json` | Score lesson quality |
-| `clawed bot` | Start Telegram bot (chat from your phone) |
 | `clawed serve` | Web dashboard |
-| `clawed demo` | Try it without an API key |
+| `clawed demo` | Try Ed without an API key |
 | `clawed setup` | Re-run the setup wizard |
+
+---
+
+## Telegram
+
+Ed also works from your phone. During setup, he'll help you create a Telegram bot through @BotFather. Name the bot "Ed" (add a last name if you want — "Ed_History_Bot" or "Ed Smith"). The bot starts automatically in the background whenever you launch `clawed` — no extra terminal needed.
 
 ---
 
 ## Curriculum Wiki
 
-Claw-ED compiles your ingested materials into an organized markdown wiki. Think of it as a personal knowledge base built from your own curriculum.
+Ed compiles your ingested materials into an organized markdown wiki.
 
 ```bash
-clawed ingest ~/Documents/Curriculum/     # Ingest your files
-clawed kb compile                          # Compile into wiki articles
+clawed ingest ~/Documents/Curriculum/     # Feed him your files
+clawed kb compile                          # He compiles wiki articles
 clawed kb query "What primary sources do I have on the Civil War?"
 clawed kb lint                             # Check for stale or missing articles
 ```
 
-The wiki is stored as plain markdown files in `~/.eduagent/wiki/` — viewable in any text editor, Obsidian, or VS Code. Incremental compilation means only changed documents get reprocessed.
+The wiki is stored as plain markdown in `~/.eduagent/wiki/` — viewable in any editor or Obsidian.
 
 ---
 
 ## AI Providers
 
-Bring your own API key. Claw-ED connects to any major provider:
+Bring your own API key. Ed connects to any major provider:
 
 - **Anthropic** — Claude Opus 4.6, Sonnet 4.6
 - **OpenAI** — GPT-5.4, o3
@@ -120,24 +125,24 @@ Run `clawed setup` anytime to switch providers.
 
 ## Voice Learning
 
-Claw-ED doesn't use a generic "teacher tone." It extracts your specific patterns:
+Ed doesn't use a generic "teacher tone." He extracts your specific patterns:
 
 - **Teaching structure:** How you organize lessons (I Do / We Do / You Do, stations, jigsaw)
 - **Questioning style:** Your progression from recall to analysis to evaluation
 - **Scaffolding moves:** Sentence starters, graphic organizers, writing frames you use
-- **Assessment patterns:** Your Do Now format, exit ticket style, essay scaffolds
+- **Assessment patterns:** Your Do Now format, exit ticket style, CRQ structure, writing frameworks (TEA, RACE, CER)
 - **Classroom personality:** Your humor, your catchphrases, your signature moves
 
 ---
 
 ## Standards Alignment
 
-Built-in support for all 50 US states:
+Ed knows every state's standards and testing formats:
 
 - Common Core (CCSS) — Math and ELA
 - Next Generation Science Standards (NGSS)
 - C3 Framework — Social Studies
-- State-specific frameworks (NY NGLS, TX TEKS, CA CCSS, VA SOL, and more)
+- State-specific: NY Regents (CRQ/DBQ), TX STAAR, CA CAASPP, MA MCAS, and 46 more
 
 ---
 
@@ -168,23 +173,10 @@ pip install -e ".[dev]"
 pytest tests/
 ```
 
-**MCP Server** — Expose Claw-ED tools to Claude Code, VS Code, and other AI editors:
+**MCP Server** — Expose Ed's tools to Claude Code, VS Code, and other AI editors:
 
 ```bash
 clawed mcp-server
-```
-
-**Python API:**
-
-```python
-from clawed.lesson import generate_lesson
-from clawed.models import AppConfig
-
-config = AppConfig.load()
-lesson = await generate_lesson(
-    lesson_number=1, unit=unit_plan,
-    persona=persona, config=config,
-)
 ```
 
 ---
@@ -193,7 +185,7 @@ lesson = await generate_lesson(
 
 Built by a teacher for teachers. 20,000+ installs.
 
-- [GitHub Discussions](https://github.com/SirhanMacx/Claw-ED/discussions) — share, request, ask
+- [GitHub Discussions](https://github.com/SirhanMacx/Claw-ED/discussions)
 - [Report issues](https://github.com/SirhanMacx/Claw-ED/issues)
 - [Star the repo](https://github.com/SirhanMacx/Claw-ED)
 
