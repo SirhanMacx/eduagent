@@ -183,7 +183,7 @@ clawed mcp-server
 
 ## Community
 
-Built by a teacher for teachers. [21,000+ PyPI installs](https://pepy.tech/projects/clawed).
+Built by a teacher for teachers. [![Downloads](https://static.pepy.tech/badge/clawed)](https://pepy.tech/projects/clawed)
 
 - [GitHub Discussions](https://github.com/SirhanMacx/Claw-ED/discussions)
 - [Report issues](https://github.com/SirhanMacx/Claw-ED/issues)
