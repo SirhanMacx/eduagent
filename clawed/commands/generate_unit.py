@@ -57,7 +57,9 @@ def _unit_json(*, topic, grade, subject, weeks, standards):
 def unit(
     topic: str = typer.Argument(..., help="Unit topic (e.g., 'Photosynthesis')"),
     grade: str = typer.Option("8", "--grade", "-g", help="Grade level"),
-    subject: str = typer.Option("Science", "--subject", "-s", help="Subject area"),
+    subject: Optional[str] = typer.Option(
+        None, "--subject", "-s", help="Subject area (reads from profile if not set)"
+    ),
     weeks: int = typer.Option(3, "--weeks", "-w", help="Duration in weeks"),
     standards: Optional[str] = typer.Option(
         None, "--standards", help="Comma-separated standards"
@@ -68,6 +70,9 @@ def unit(
     json_output: bool = typer.Option(False, "--json", help="Output as JSON"),
 ):
     """Plan a complete curriculum unit."""
+    if subject is None:
+        from clawed.commands._helpers import get_default_subject
+        subject = get_default_subject()
     if json_output:
         run_json_command(
             "gen.unit", _unit_json,

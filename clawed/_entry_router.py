@@ -304,6 +304,21 @@ def main() -> None:
         _run_python_cli()
         return
 
+    # For non-Anthropic providers, route -p (headless) through Python
+    # because the Node CLI only supports Anthropic for direct API calls
+    if args and ("-p" in args or "--print" in args):
+        try:
+            import json as _json
+            _cfg_path = Path.home() / ".eduagent" / "config.json"
+            if _cfg_path.exists():
+                _cfg = _json.loads(_cfg_path.read_text())
+                if _cfg.get("provider", "anthropic") != "anthropic":
+                    sys.argv = [sys.argv[0], "chat"] + args
+                    _run_python_cli()
+                    return
+        except Exception:
+            pass
+
     # Use the Ink TUI for interactive mode — the full Claw-ED TUI
     node = shutil.which("node")
     cli_js = _find_bundled_cli_js()
