@@ -1022,13 +1022,12 @@ def _collect_files(path: Path) -> list[Path]:
     """Collect all supported files from a directory, sorted by modification
     time (newest first).
 
-    Skips Office lock files (~$*), macOS resource forks (._*),
-    and files larger than MAX_FILE_SIZE (100 MB).
+    Skips Office lock files (~$*) and macOS resource forks (._*).
+    No size limit — teachers may have years of accumulated materials.
     Sorting by mtime means the most recent materials come first, which is
     important when a cap is applied.
     """
     files: list[Path] = []
-    skipped_large = 0
     for f in path.rglob("*"):
         if not f.is_file():
             continue
@@ -1037,16 +1036,10 @@ def _collect_files(path: Path) -> list[Path]:
         if f.name.startswith(("~$", "._")):
             continue
         try:
-            size = f.stat().st_size
-            if size > MAX_FILE_SIZE:
-                skipped_large += 1
-                logger.info("Skipping large file (%d MB): %s", size // (1024 * 1024), f.name)
-                continue
+            f.stat()  # Verify accessible
             files.append(f)
         except OSError:
             continue
-    if skipped_large:
-        logger.info("Skipped %d files over %d MB", skipped_large, MAX_FILE_SIZE // (1024 * 1024))
     # Sort newest first so caps keep the most recent materials
     files.sort(key=lambda f: f.stat().st_mtime, reverse=True)
     return files
@@ -1115,7 +1108,6 @@ def ingest_directory(
     return documents
 
 
-MAX_FILE_SIZE = 100 * 1024 * 1024  # 100 MB — skip files larger than this
 MAX_UNZIP_SIZE = 500 * 1024 * 1024  # 500 MB
 
 
