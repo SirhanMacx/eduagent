@@ -235,6 +235,16 @@ class TeacherPersona(BaseModel):
     'Dense text packets with primary source excerpts and marginal annotations'
     or 'Graphic organizer-heavy with minimal text, always includes an image hook'."""
 
+    assessment_question_types: list[str] = []
+    """Assessment question formats this teacher uses, e.g.
+    'CRQ with stimulus, context, analysis, application', 'DBQ with 5-7 docs',
+    'stimulus-based multiple choice'. Extracted from ingested files."""
+
+    writing_framework: str = ""
+    """Student writing/response framework, e.g. 'TEA (Thesis-Evidence-Analysis)',
+    'RACE (Restate-Answer-Cite-Explain)', 'CER (Claim-Evidence-Reasoning)'.
+    Critical — all generated content must use the same framework."""
+
     def to_prompt_context(self) -> str:
         """Serialize persona into a string for LLM prompt injection."""
         lines = [
@@ -287,6 +297,16 @@ class TeacherPersona(BaseModel):
         if self.handout_style:
             lines.append(f"\n=== Handout Style ===\n{self.handout_style}")
             lines.append("Student packets must match this format.")
+
+        if self.assessment_question_types:
+            lines.append("\n=== Assessment Question Types (use these formats) ===")
+            for qt in self.assessment_question_types:
+                lines.append(f"- {qt}")
+
+        if self.writing_framework:
+            lines.append("\n=== Writing Framework (CRITICAL — students use this) ===")
+            lines.append(self.writing_framework)
+            lines.append("ALL generated writing prompts and responses must use this framework.")
 
         if self.voice_examples:
             lines.append("")

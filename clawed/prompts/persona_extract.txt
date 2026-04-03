@@ -92,6 +92,25 @@ Carefully read ALL provided documents and identify:
    - Creative/visual layouts with image hooks
    If the materials don't reveal a clear handout style, leave this as an empty string.
 
+20. **Assessment Question Types** — What specific question formats does this teacher use? Look for patterns like:
+   - CRQ (Constructed Response Questions — stimulus + context + analysis + application)
+   - DBQ (Document-Based Questions)
+   - Multiple choice (standard, stimulus-based, or Regents-style)
+   - Short answer / open response
+   - Essay (argumentative, expository, narrative)
+   - Fill-in-the-blank, matching, true/false
+   List only types that actually appear in the documents. Be specific about the format structure.
+
+21. **Writing/Response Frameworks** — Does this teacher use a specific student writing framework? Look for ANY of these (or others):
+   - TEA (Thesis-Evidence-Analysis — 3 sentences per paragraph)
+   - RACE (Restate-Answer-Cite-Explain)
+   - ACE (Answer-Cite-Explain)
+   - CER (Claim-Evidence-Reasoning)
+   - PEEL (Point-Evidence-Explain-Link)
+   - TAG (Title-Author-Genre)
+   - Any custom framework the teacher has created
+   If a framework appears even once, include it. These are critical — generated content must use the same framework.
+
 ## Output Format
 
 Respond with ONLY a JSON object (no markdown fencing, no explanation):
@@ -136,7 +155,13 @@ Respond with ONLY a JSON object (no markdown fencing, no explanation):
         "Uses 'connection questions' between every section to link ideas",
         "Ends class with 'one word takeaway' — every student says one word as they walk out"
     ],
-    "handout_style": "Station-based packets with 2-4 primary source documents, context paragraphs, and scaffolded analysis questions building from identify to evaluate"
+    "handout_style": "Station-based packets with 2-4 primary source documents, context paragraphs, and scaffolded analysis questions building from identify to evaluate",
+    "assessment_question_types": [
+        "CRQ with primary source stimulus, context question, analysis question, and application/outside info question",
+        "DBQ with 5-7 documents and scaffolded essay",
+        "Stimulus-based multiple choice (4 options, Regents style)"
+    ],
+    "writing_framework": "TEA (Thesis-Evidence-Analysis): each body paragraph has exactly 3 sentences — state the claim, cite specific textual evidence, analyze how the evidence supports the claim"
 }
 
 ## Documents to Analyze
