@@ -433,8 +433,8 @@ class TestGapAnalyzeCLI:
 
     def test_invalid_materials_dir_fails(self, tmp_path):
         with (
-            patch("clawed.commands.generate.check_api_key_or_exit"),
-            patch("clawed.commands.generate.load_persona_or_exit") as mock_p,
+            patch("clawed.commands.generate_standards.check_api_key_or_exit"),
+            patch("clawed.commands.generate_standards.load_persona_or_exit") as mock_p,
         ):
             mock_p.return_value = self._mock_persona()
             result = runner.invoke(
@@ -451,10 +451,10 @@ class TestGapAnalyzeCLI:
     def test_gap_analyze_runs_and_outputs(self, tmp_path):
         """Full CLI run with mocked LLM — should produce output."""
         with (
-            patch("clawed.commands.generate.check_api_key_or_exit"),
-            patch("clawed.commands.generate.load_persona_or_exit") as mock_p,
+            patch("clawed.commands.generate_standards.check_api_key_or_exit"),
+            patch("clawed.commands.generate_standards.load_persona_or_exit") as mock_p,
             patch("clawed.curriculum_map.CurriculumMapper") as mock_mapper,
-            patch("clawed.commands.generate._output_dir", return_value=tmp_path),
+            patch("clawed.commands.generate_standards._output_dir", return_value=tmp_path),
             patch("clawed.models.AppConfig.load") as mock_config,
         ):
             mock_p.return_value = self._mock_persona()
@@ -480,10 +480,10 @@ class TestGapAnalyzeCLI:
     def test_gap_analyze_no_gaps_message(self, tmp_path):
         """When LLM returns no gaps, show success message."""
         with (
-            patch("clawed.commands.generate.check_api_key_or_exit"),
-            patch("clawed.commands.generate.load_persona_or_exit") as mock_p,
+            patch("clawed.commands.generate_standards.check_api_key_or_exit"),
+            patch("clawed.commands.generate_standards.load_persona_or_exit") as mock_p,
             patch("clawed.curriculum_map.CurriculumMapper") as mock_mapper,
-            patch("clawed.commands.generate._output_dir", return_value=tmp_path),
+            patch("clawed.commands.generate_standards._output_dir", return_value=tmp_path),
             patch("clawed.models.AppConfig.load") as mock_config,
         ):
             mock_p.return_value = self._mock_persona()
@@ -510,10 +510,10 @@ class TestGapAnalyzeCLI:
         standards_file.write_text("SS.8.A.1.1\nSS.8.A.2.1\nSS.8.B.1.1\n")
 
         with (
-            patch("clawed.commands.generate.check_api_key_or_exit"),
-            patch("clawed.commands.generate.load_persona_or_exit") as mock_p,
+            patch("clawed.commands.generate_standards.check_api_key_or_exit"),
+            patch("clawed.commands.generate_standards.load_persona_or_exit") as mock_p,
             patch("clawed.curriculum_map.CurriculumMapper") as mock_mapper,
-            patch("clawed.commands.generate._output_dir", return_value=tmp_path),
+            patch("clawed.commands.generate_standards._output_dir", return_value=tmp_path),
             patch("clawed.models.AppConfig.load") as mock_config,
         ):
             mock_p.return_value = self._mock_persona()
@@ -546,10 +546,10 @@ class TestGapAnalyzeCLI:
         (mat_dir / "lesson.pdf").write_text("lesson")
 
         with (
-            patch("clawed.commands.generate.check_api_key_or_exit"),
-            patch("clawed.commands.generate.load_persona_or_exit") as mock_p,
+            patch("clawed.commands.generate_standards.check_api_key_or_exit"),
+            patch("clawed.commands.generate_standards.load_persona_or_exit") as mock_p,
             patch("clawed.curriculum_map.CurriculumMapper") as mock_mapper,
-            patch("clawed.commands.generate._output_dir", return_value=tmp_path),
+            patch("clawed.commands.generate_standards._output_dir", return_value=tmp_path),
             patch("clawed.models.AppConfig.load") as mock_config,
         ):
             mock_p.return_value = self._mock_persona()
@@ -575,10 +575,10 @@ class TestGapAnalyzeCLI:
     def test_gap_analyze_markdown_format(self, tmp_path):
         """--format markdown produces a .md file."""
         with (
-            patch("clawed.commands.generate.check_api_key_or_exit"),
-            patch("clawed.commands.generate.load_persona_or_exit") as mock_p,
+            patch("clawed.commands.generate_standards.check_api_key_or_exit"),
+            patch("clawed.commands.generate_standards.load_persona_or_exit") as mock_p,
             patch("clawed.curriculum_map.CurriculumMapper") as mock_mapper,
-            patch("clawed.commands.generate._output_dir", return_value=tmp_path),
+            patch("clawed.commands.generate_standards._output_dir", return_value=tmp_path),
             patch("clawed.models.AppConfig.load") as mock_config,
         ):
             mock_p.return_value = self._mock_persona()
@@ -608,10 +608,10 @@ class TestGapAnalyzeCLI:
     def test_gap_analyze_html_format_default(self, tmp_path):
         """Default format is html — should produce .html file."""
         with (
-            patch("clawed.commands.generate.check_api_key_or_exit"),
-            patch("clawed.commands.generate.load_persona_or_exit") as mock_p,
+            patch("clawed.commands.generate_standards.check_api_key_or_exit"),
+            patch("clawed.commands.generate_standards.load_persona_or_exit") as mock_p,
             patch("clawed.curriculum_map.CurriculumMapper") as mock_mapper,
-            patch("clawed.commands.generate._output_dir", return_value=tmp_path),
+            patch("clawed.commands.generate_standards._output_dir", return_value=tmp_path),
             patch("clawed.models.AppConfig.load") as mock_config,
         ):
             mock_p.return_value = self._mock_persona()
@@ -646,10 +646,10 @@ class TestGapAnalyzeCLI:
         ]
 
         with (
-            patch("clawed.commands.generate.check_api_key_or_exit"),
-            patch("clawed.commands.generate.load_persona_or_exit") as mock_p,
+            patch("clawed.commands.generate_standards.check_api_key_or_exit"),
+            patch("clawed.commands.generate_standards.load_persona_or_exit") as mock_p,
             patch("clawed.curriculum_map.CurriculumMapper") as mock_mapper,
-            patch("clawed.commands.generate._output_dir", return_value=tmp_path),
+            patch("clawed.commands.generate_standards._output_dir", return_value=tmp_path),
             patch("clawed.models.AppConfig.load") as mock_config,
         ):
             mock_p.return_value = self._mock_persona()

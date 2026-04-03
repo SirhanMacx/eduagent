@@ -1,463 +1,202 @@
 # Claw-ED Architecture
 
-This document describes the internal architecture of Claw-ED — how messages flow through the system, what each module does, and how components connect.
+## Overview
 
-**v0.6 architecture:** Agent-first gateway with control-plane pre-router. The legacy regex-based intent router is still available behind a feature flag (`agent_gateway: false`).
+Claw-ED is a persistent AI teaching assistant. Ed lives in your terminal and on your phone, generating lessons, assessments, and materials in your teaching voice.
+
+This document describes the v4.3 architecture -- how messages flow through the system, what each module does, and how components connect.
 
 ---
 
-## System Overview (v0.6 — Agent Core)
+## System Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                           USER INTERFACES                                   │
-│                                                                             │
-│  ┌─────────────┐   ┌──────────────────┐   ┌─────────────┐   ┌───────────┐ │
-│  │  Telegram    │   │  Terminal / TUI   │   │  Web UI     │   │  MCP      │ │
-│  │              │   │  (clawed chat/tui)│   │  (FastAPI)  │   │  Server   │ │
-│  └──────┬──────┘   └────────┬─────────┘   └──────┬──────┘   └─────┬─────┘ │
-│         │                   │                     │                │        │
-└─────────┼───────────────────┼─────────────────────┼────────────────┼────────┘
-          │                   │                     │                │
-          └───────────────────┼─────────────────────┘                │
-                              ▼                                      ▼
-              ┌──────────────────────────────────┐    ┌──────────────────────┐
-              │   gateway.py (feature-flag shim) │    │   mcp_server.py      │
-              │                                  │    └──────────┬───────────┘
-              │   agent_gateway=true ?           │               │
-              │   ├── YES → agent_core/core.py   │               │
-              │   └── NO  → _legacy_gateway.py   │               │
-              └──────────────┬───────────────────┘               │
-                             │                                    │
-                             ▼                                    │
-              ┌──────────────────────────────────┐               │
-              │   agent_core/core.py (Gateway)   │◄──────────────┘
-              │                                  │
-              │ ┌──────────────────────────────┐ │
-              │ │ Control Plane (deterministic) │ │
-              │ │ • File ingestion → IngestHdlr │ │
-              │ │ • Onboarding → OnboardHandler │ │
-              │ │ • Callbacks → callback_hdlrs  │ │
-              │ │ • Approvals → ApprovalManager │ │
-              │ └──────────────────────────────┘ │
-              │                                  │
-              │ ┌──────────────────────────────┐ │
-              │ │ Agent Loop (LLM-driven)      │ │
-              │ │ • Context loading            │ │
-              │ │ • System prompt assembly     │ │
-              │ │ • Tool-use loop (max 20)     │ │
-              │ └──────────────┬───────────────┘ │
-              └────────────────┼─────────────────┘
-                               │
-              ┌────────────────┼────────────────────────────────┐
-              │                ▼                                │
-              │   agent_core/tools/ (auto-discovered)           │
-              │                                                 │
-              │   generate_lesson  │ generate_unit  │ export    │
-              │   search_standards │ ingest         │ approval  │
-              │   curriculum_map   │ gap_analysis    │ profile   │
-              │   sub_packet       │ parent_comm     │ search    │
-              └────────────────────┼────────────────────────────┘
-                                   │
-          ┌──────────┬─────────────┼──────────┬──────────┐
-          ▼          ▼             ▼          ▼          ▼
-   ┌───────────┐┌────────┐┌───────────┐┌──────────┐┌───────────┐
-   │ ingestor  ││planner ││lesson.py  ││materials ││student_bot│
-   │           ││        ││           ││          ││           │
-   │ PDF/DOCX/ ││Unit    ││Daily      ││Worksheet ││Student Q&A│
-   │ PPTX/ZIP  ││plans   ││lesson     ││Quiz      ││in teacher │
-   │           ││        ││plans      ││Rubric    ││voice      │
-   └─────┬─────┘└───┬────┘└─────┬─────┘└────┬─────┘└─────┬─────┘
-         │          │           │            │            │
-         └──────────┴───────────┼────────────┘            │
-                                ▼                         │
-              ┌─────────────────────────────┐             │
-              │        llm.py               │◄────────────┘
-              │   Unified LLM Client        │
-              │                             │
-              │ ┌─────────────────────────┐ │
-              │ │   model_router.py       │ │
-              │ │ Task → model mapping    │ │
-              │ │ quick tasks → fast model│ │
-              │ │ heavy tasks → big model │ │
-              │ └─────────────────────────┘ │
-              │                             │
-              │  Anthropic │ OpenAI │ Ollama │
-              └──────────────┬──────────────┘
-                             │
-          ┌──────────────────┼──────────────────┐
-          ▼                  ▼                  ▼
-  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐
-  │  corpus.py   │  │  exporter.py │  │ standards.py │
-  │              │  │              │  │              │
-  │ Few-shot     │  │ MD / PDF /   │  │ CCSS / NGSS /│
-  │ examples for │  │ DOCX / HTML  │  │ C3 Framework │
-  │ prompt       │  │ export       │  │              │
-  │ injection    │  │              │  │ state_       │
-  │              │  │              │  │ standards.py │
-  │              │  │              │  │ 50-state map │
-  └──────────────┘  └──────────────┘  └──────────────┘
-                             │
-                             ▼
-              ┌─────────────────────────────┐
-              │      search.py              │
-              │  Tavily API / DuckDuckGo    │
-              │  Web search for resources   │
-              └─────────────────────────────┘
+Teacher
+  |
+  +-- Terminal: clawed --> Entry Router (_entry_router.py)
+  |                          +-- First-run? --> Python onboarding wizard
+  |                          +-- Subcommand? --> Python CLI (typer)
+  |                          +-- Interactive? --> Node.js Ink TUI
+  |                                                +-- Anthropic API (direct)
+  |                                                +-- Bridge --> Python LLM Client
+  |                                                                +-- OpenAI
+  |                                                                +-- Google Gemini
+  |                                                                +-- Ollama (cloud/local)
+  |                                                                +-- OpenRouter
+  |
+  +-- Phone: Telegram bot (auto-started as background daemon)
+                +-- Python Gateway --> Agent Loop --> Tools
 ```
 
 ---
 
-## Data Flow: Teacher Message to Generated Output
+## Entry Router (`clawed/_entry_router.py`)
 
-This is the full journey of a teacher's message through the system.
+The entry router is the single `clawed` command entry point. It handles six responsibilities before any teaching work begins:
 
-### Step 1: Message Received
+1. **First-run detection.** If `~/.eduagent/config.json` does not exist, the router launches the Python onboarding wizard (`clawed.onboarding.quick_model_setup`) before anything else. The wizard walks the teacher through provider selection, API key entry, and mode choice (terminal vs. Telegram).
 
-A teacher sends a message through any interface (Telegram, terminal, web):
+2. **Provider env injection.** `_inject_config_env()` reads the teacher's saved config and sets the appropriate environment variable (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_API_KEY`, `OLLAMA_API_KEY`, `OPENROUTER_API_KEY`) so the Node.js TUI can authenticate without its own config layer.
 
-```
-"Plan a unit on photosynthesis for my 8th graders, 3 weeks"
-```
+3. **API key resolution (5-step chain).** `_resolve_key_for_provider()` searches for credentials in order: environment variable, Claude Code OAuth credentials (`~/.claude/.credentials.json`), OS keyring (`keyring` library), `~/.eduagent/secrets.json`, and finally inline config fields. The first match wins.
 
-### Step 2: Intent Parsing (`router.py`)
+4. **Auto-daemon for Telegram.** `_maybe_start_bot_background()` checks whether a Telegram bot token is configured. If so and no bot is already running (checked via `bot.lock` PID), it spawns `python -m clawed bot` as a detached background process. The teacher never needs to start the bot manually.
 
-The router detects intent and extracts parameters using pattern matching:
+5. **Model injection.** `_get_configured_model()` reads the teacher's chosen model from config and injects `--model` into the Node CLI args so it uses the right model instead of defaulting.
 
-```python
-ParsedIntent(
-    intent=Intent.GENERATE_UNIT,
-    topic="photosynthesis",
-    grade="8",
-    weeks=3,
-    subject=None  # inferred from persona or asked
-)
-```
-
-**25+ intents recognized:** `GENERATE_UNIT`, `GENERATE_LESSON`, `GENERATE_MATERIALS`, `GENERATE_ASSESSMENT`, `GENERATE_BELLRINGER`, `WEB_SEARCH`, `SEARCH_STANDARDS`, `START_STUDENT_BOT`, `EXPORT_PDF`, `HELP`, and more.
-
-### Step 3: Session Management (`state.py`)
-
-The session manager loads the teacher's persistent state from SQLite:
-
-```
-teacher_sessions table:
-├── teacher_id (primary key)
-├── persona (JSON) ← TeacherPersona
-├── config (JSON) ← AppConfig
-├── current_unit (JSON) ← most recent UnitPlan
-├── context (JSON) ← last 10 conversation turns
-└── teacher_profile (JSON) ← state, subjects, grades
-```
-
-### Step 4: Dispatch to Handler (`openclaw_plugin.py`)
-
-The main dispatcher routes to the appropriate handler function:
-
-```
-Intent.GENERATE_UNIT    → _handle_generate_unit()
-Intent.GENERATE_LESSON  → _handle_generate_lesson()
-Intent.GENERATE_MATERIALS → _handle_generate_materials()
-Intent.CONNECT_DRIVE    → _handle_connect_drive()
-Intent.WEB_SEARCH       → _handle_web_search()
-Intent.START_STUDENT_BOT → _handle_start_student_bot()
-...
-```
-
-### Step 5: Generation Engine
-
-For a unit plan, `planner.py:plan_unit()` orchestrates:
-
-```
-1. Retrieve few-shot examples from corpus
-   corpus.py:get_few_shot_context(subject, grade)
-       ↓
-2. Build prompt from template
-   prompts/unit_plan.txt (Jinja2)
-   + persona.to_prompt_context()     ← teaching style
-   + few-shot examples               ← quality boost
-   + standards context               ← state alignment
-       ↓
-3. Route to appropriate model
-   model_router.py:route("unit_plan", config)
-   → heavy task → strong model (e.g., minimax-m2.7:cloud)
-       ↓
-4. Call LLM
-   llm.py:LLMClient.generate_json(prompt)
-   → Anthropic / OpenAI / Ollama API
-   → JSON repair if truncated
-       ↓
-5. Validate response
-   UnitPlan.model_validate(json_response)
-   → Pydantic validates all fields
-       ↓
-6. Persist to database
-   database.py → units table
-```
-
-### Step 6: Response Formatting
-
-The handler formats output for the interface:
-
-- **Telegram:** Emoji-rich, no markdown tables, compact
-- **Terminal:** Rich tables, syntax highlighting, color
-- **Web:** HTML with CSS styling
-- **MCP:** Raw JSON
-
-### Step 7: Session Save
-
-Updated context (user message + assistant response) is saved back to SQLite for conversation continuity.
+6. **Node TUI launch with permission bypass.** For interactive mode, the router launches `node cli.js` with `--dangerously-skip-permissions` so teachers never see developer-facing trust prompts about file access. Python subcommands (a set of ~50 known command names) are routed directly to the Python typer CLI instead.
 
 ---
 
-## Module Reference
+## Agent Core (`clawed/agent_core/`)
 
-### Core Pipeline
+The agent core is the LLM-driven brain that powers both Telegram and direct Python interactions.
 
-| Module | Purpose | Key Functions |
-|--------|---------|---------------|
-| `models.py` | Pydantic data models | `TeacherPersona`, `UnitPlan`, `DailyLesson`, `LessonMaterials`, `AppConfig` |
-| `router.py` | Intent detection & NLU | `parse_intent(message) → ParsedIntent` |
-| `state.py` | SQLite session management | `TeacherSession.load()`, `.save()`, `.update_context()` |
-| `persona.py` | Teaching style extraction | `extract_persona(documents) → TeacherPersona` |
-| `planner.py` | Unit plan generation | `plan_unit(subject, grade, topic, ...) → UnitPlan` |
-| `lesson.py` | Daily lesson generation | `generate_lesson(lesson_number, unit, ...) → DailyLesson` |
-| `materials.py` | Supporting materials | `generate_worksheet()`, `generate_assessment()`, `generate_slides()`, `generate_iep_notes()` |
+```
+clawed/agent_core/
++-- core.py           # Gateway.handle() entry point
++-- loop.py           # _agent_loop(): tool-use loop (max 20 iterations)
++-- prompt.py         # System prompt assembly from persona + workspace + tools
++-- context.py        # Workspace context loading (soul, memory, curriculum)
++-- tools/            # 30 auto-discovered tool modules (see below)
++-- approvals.py      # Approval manager for sensitive operations
++-- autonomy.py       # Autonomy level configuration
++-- planner.py        # Multi-step plan execution
++-- scheduler.py      # Background task scheduling
++-- memory/           # Conversation memory and retrieval
++-- drive/            # Google Drive integration tools
++-- custom_tools.py   # Teacher-defined custom tools
++-- fake_llm.py       # Mock LLM for testing
+```
 
-### Infrastructure
-
-| Module | Purpose | Key Functions |
-|--------|---------|---------------|
-| `llm.py` | Unified LLM client | `LLMClient.generate()`, `.generate_json()` — supports Anthropic, OpenAI, Ollama |
-| `model_router.py` | Task-based model selection | `route(task_type, config) → config` — fast models for Q&A, strong models for generation |
-| `config.py` | Secure API key management | OS keyring → fallback file → env vars |
-| `database.py` | SQLite storage layer | CRUD for teachers, units, lessons, feedback |
-| `corpus.py` | Few-shot example store | `get_few_shot_context()`, `contribute_example()` |
-
-### Input/Output
-
-| Module | Purpose | Key Functions |
-|--------|---------|---------------|
-| `ingestor.py` | Multi-format file ingestion | `ingest_path(path) → list[Document]` — PDF, DOCX, PPTX, TXT, MD, ZIP |
-| `drive.py` | Google Drive integration | `ingest_drive_folder(url) → list[Document]` |
-| `exporter.py` | Export to multiple formats | `lesson_to_pdf()`, `lesson_to_docx()`, `lesson_to_html()`, `unit_to_markdown()` |
-| `search.py` | Web search for teachers | `search_for_teacher()`, `find_lesson_resource()` — Tavily + DuckDuckGo |
-
-### Standards
-
-| Module | Purpose | Key Functions |
-|--------|---------|---------------|
-| `standards.py` | National standards database | `STANDARDS` dict — CCSS Math/ELA, NGSS, C3 Framework (~200+ standards) |
-| `state_standards.py` | 50-state framework mapping | `STATE_STANDARDS_CONFIG`, `get_standards_context_for_prompt()` |
-
-### Interfaces
-
-| Module | Purpose |
-|--------|---------|
-| `openclaw_plugin.py` | Telegram bot entrypoint — `handle_message()` with full intent routing |
-| `cli.py` | Terminal CLI via Typer — all commands (`unit`, `lesson`, `chat`, `serve`, etc.) |
-| `cli_chat.py` | Interactive terminal REPL with Rich formatting |
-| `api/server.py` | FastAPI web application with dashboard |
-| `api/routes/` | REST API endpoints — generate, ingest, chat, feedback, export, settings |
-| `mcp_server.py` | Model Context Protocol server — expose tools to AI agents |
-| `student_bot.py` | Student Q&A chatbot — answers in teacher's voice |
-
-### Quality & Feedback
-
-| Module | Purpose |
-|--------|---------|
-| `quality.py` | Automated quality scoring of generated content |
-| `feedback.py` | Teacher rating and feedback collection |
-| `improver.py` | Prompt improvement loop based on feedback |
-| `templates_lib.py` | Jinja2 template library for prompt rendering |
+**Message flow:** `Gateway.handle(message)` is the main entry point. It first checks deterministic control-plane handlers (file ingestion, onboarding callbacks, approval flows). If none match, it enters `_agent_loop()`, which assembles a system prompt from the teacher's persona and workspace context, then runs a tool-use loop: send message to LLM, execute any tool calls, feed results back, repeat until the LLM produces a final text response or hits the iteration limit.
 
 ---
 
-## How the Corpus Works
+## Teaching Tools
 
-The corpus is a SQLite database (`~/.eduagent/corpus/corpus.db`) that stores high-quality teaching examples used for few-shot prompt injection.
+There are 15 teaching tools exposed through the Node.js Ink TUI, each implemented as a TypeScript file in `cli/source/src/tools/clawed/`:
 
-```
-┌──────────────────┐     ┌─────────────────────┐     ┌────────────────────┐
-│ Teacher generates │────▶│ Teacher rates 4-5★  │────▶│ Example enters     │
-│ a lesson/unit     │     │ (quality gate)       │     │ corpus database    │
-└──────────────────┘     └─────────────────────┘     └─────────┬──────────┘
-                                                               │
-                                                               ▼
-┌──────────────────┐     ┌─────────────────────┐     ┌────────────────────┐
-│ Better output    │◄────│ Few-shot examples    │◄────│ Corpus retrieval   │
-│ for next teacher │     │ injected into prompt │     │ by subject/grade   │
-└──────────────────┘     └─────────────────────┘     └────────────────────┘
-```
+| Tool file | What it does |
+|-----------|-------------|
+| `LessonTool.ts` | Generate a daily lesson plan |
+| `UnitTool.ts` | Generate a multi-week unit plan |
+| `MaterialsTool.ts` | Generate worksheets, handouts, activities |
+| `AssessmentTool.ts` | Generate quizzes, tests, rubrics |
+| `DifferentiateTool.ts` | Generate IEP/504 accommodations |
+| `ExportTool.ts` | Export to PDF, DOCX, PPTX, Markdown |
+| `IngestTool.ts` | Ingest curriculum files (PDF, DOCX, PPTX, etc.) |
+| `PersonaTool.ts` | Extract or update teaching persona |
+| `StandardsTool.ts` | Search and align to standards |
+| `SearchCurriculumTool.ts` | Search existing materials |
+| `StudentsTool.ts` | Student bot and class management |
+| `TrainTool.ts` | Train Ed on your teaching voice |
+| `ReviewTool.ts` | Review and improve generated content |
+| `GameTool.ts` | Generate interactive review games |
+| `SimulationTool.ts` | Generate interactive simulations |
 
-**Index fields:** `content_type`, `subject`, `grade_level`, `topic`, `quality_score`
+**Bridge pattern:** Each TS tool spawns `python3 -m clawed <command> --json` via `_bridge.ts`, passing arguments as CLI flags. The Python side executes the generation and returns structured JSON. This lets the Node TUI handle rendering while Python handles all LLM calls and content logic.
 
-**Quality gate:** Only examples rated ≥3.5 stars are used as few-shot context.
-
-**Privacy:** Teacher identity is hashed — contributions are anonymous.
-
----
-
-## How the Student Bot Connects
-
-The student bot allows students to ask questions about their current lesson and receive answers in their teacher's voice.
-
-```
-┌───────────────┐
-│ Teacher Setup │
-│               │
-│ 1. create_class() → class_code (e.g., "BIO-8A")
-│ 2. set_active_lesson(class_code, lesson_json)
-│ 3. set_hint_mode(class_code, True/False)
-└───────┬───────┘
-        │
-        ▼
-┌────────────────────────────────────────────────────────────────┐
-│                    Student Interaction                          │
-│                                                                │
-│  Student: "I don't understand how chloroplasts make glucose"   │
-│                              │                                 │
-│                              ▼                                 │
-│  ┌─────────────────────────────────────────────────────┐      │
-│  │ StudentBot.handle_message(message, student_id, code)│      │
-│  │                                                     │      │
-│  │ 1. Load class info (teacher, active lesson)         │      │
-│  │ 2. Load teacher persona from state                  │      │
-│  │ 3. Build prompt:                                    │      │
-│  │    • Teacher persona (voice/tone)                   │      │
-│  │    • Active lesson content (context)                │      │
-│  │    • Hint mode? → give hints, not answers           │      │
-│  │    • Student's question                             │      │
-│  │ 4. Call LLM → answer in teacher's voice             │      │
-│  │ 5. Track question for teacher analytics             │      │
-│  └─────────────────────────────────────────────────────┘      │
-│                              │                                 │
-│                              ▼                                 │
-│  Bot: "Great question! Remember when we talked about the      │
-│  light reactions yesterday? The chloroplast uses that light    │
-│  energy to split water molecules..."                          │
-│  (answers in teacher's voice, with lesson context)            │
-└────────────────────────────────────────────────────────────────┘
-        │
-        ▼
-┌───────────────────┐
-│ Teacher Analytics │
-│                   │
-│ • What students asked about
-│ • Common confusion points
-│ • Question frequency by topic
-└───────────────────┘
-```
-
-**Key design decisions:**
-
-- **Hint mode:** When enabled, the bot gives hints and guiding questions instead of direct answers — designed for homework support
-- **Lesson context:** The bot only has access to the currently active lesson, keeping responses focused and accurate
-- **Teacher voice:** The persona is injected into every response, so the bot sounds like the teacher
-- **Privacy:** Student messages are stored per-class, accessible only to the class teacher
+The agent core has its own set of 30 Python-native tools in `clawed/agent_core/tools/` used by the Telegram bot and direct Python paths. These include everything the TS tools do plus Drive integration, scheduling, workspace management, and heartbeat monitoring.
 
 ---
 
-## Model Router: Smart Model Selection
+## Master Content Track
 
-Not all tasks need the same model. Quick Q&A uses a fast model; lesson generation uses a stronger one.
+Claw-ED uses a single-generation, multi-compilation architecture. One LLM call produces a `MasterContent` object (`clawed/master_content.py`) containing all the raw instructional content for a lesson. Separate compilers then mechanically transform that master into different output formats -- no additional LLM calls required.
 
 ```
-Task Type           → Default Model          → Reasoning
-─────────────────────────────────────────────────────────
-quick_answer        → qwen3.5:cloud          → Speed matters, low complexity
-bellringer          → qwen3.5:cloud          → Short, simple generation
-persona_extract     → qwen3.5:cloud          → Pattern extraction
-lesson_plan         → minimax-m2.7:cloud     → Needs depth and coherence
-unit_plan           → minimax-m2.7:cloud     → Complex multi-part structure
-materials           → minimax-m2.7:cloud     → Accuracy critical (answer keys)
-differentiation     → minimax-m2.7:cloud     → Nuance required (IEP notes)
+LLM Generation (one call)
+      |
+      v
+  MasterContent (JSON)
+      |
+      +---> compile_teacher.py   --> Teacher lesson plan (full, with answer keys)
+      +---> compile_student.py   --> Student packet (no answers, clean layout)
+      +---> export_pptx.py       --> Slide deck (via compile_slides.py)
+      +---> compile_game.py      --> Interactive review game (HTML)
+      +---> compile_simulation.py --> Interactive simulation (HTML)
 ```
 
-Teachers can override per-task via `AppConfig.task_models`.
+This means editing the master content automatically updates every downstream format on recompilation.
 
 ---
 
-## Database Schema
+## Compilation Pipeline
 
-All data lives in SQLite (either `~/.eduagent/state.db` for sessions or the web app's `database.db`).
+| Module | Input | Output |
+|--------|-------|--------|
+| `compile_teacher.py` | MasterContent | Teacher-facing lesson plan with answer keys, timing, differentiation notes |
+| `compile_student.py` | MasterContent | Student-facing packet stripped of answers and teacher notes |
+| `compile_slides.py` | MasterContent | Slide structure for PPTX export |
+| `export_pptx.py` | Slide structure | PowerPoint file via python-pptx |
+| `compile_game.py` | MasterContent | Self-contained HTML review game |
+| `compile_simulation.py` | MasterContent | Self-contained HTML interactive simulation |
+
+Additional exporters: `export_pdf.py` (ReportLab), `export_docx.py` (python-docx), `export_markdown.py`, `export_handout.py`, `doc_export.py` (unified dispatcher).
+
+---
+
+## Data Storage
+
+All persistent data lives under `$EDUAGENT_DATA_DIR` (defaults to `~/.eduagent/`):
 
 ```
-teacher_sessions
-├── teacher_id TEXT PRIMARY KEY
-├── persona TEXT (JSON)
-├── config TEXT (JSON)
-├── current_unit TEXT (JSON)
-├── context TEXT (JSON) ← last 10 messages
-└── teacher_profile TEXT (JSON)
-
-generated_units
-├── unit_id TEXT PRIMARY KEY
-├── teacher_id TEXT
-├── unit_json TEXT
-├── rating INTEGER
-└── created_at TIMESTAMP
-
-generated_lessons
-├── lesson_id TEXT PRIMARY KEY
-├── teacher_id TEXT
-├── lesson_json TEXT
-├── materials_json TEXT
-├── quality_score REAL
-├── edit_count INTEGER
-├── share_token TEXT
-└── created_at TIMESTAMP
-
-feedback
-├── id INTEGER PRIMARY KEY
-├── lesson_id TEXT
-├── rating INTEGER
-├── notes TEXT
-└── sections_edited TEXT (JSON)
-
-classes
-├── class_code TEXT PRIMARY KEY
-├── teacher_id TEXT
-├── active_lesson TEXT (JSON)
-└── hint_mode BOOLEAN
-
-student_questions
-├── id INTEGER PRIMARY KEY
-├── student_id TEXT
-├── class_code TEXT
-├── question TEXT
-├── answer TEXT
-└── lesson_topic TEXT
+~/.eduagent/
++-- config.json              # Provider, model, output dir, teacher profile
++-- secrets.json             # API keys (0600 permissions, keyring fallback)
++-- state.db                 # Teacher sessions (SQLite)
++-- task_queue.db            # Background task queue (SQLite)
++-- bot_state.db             # Telegram bot conversation state (SQLite)
++-- bot.lock                 # PID lock file for background bot daemon
++-- workspace/
+|   +-- SOUL.md              # Ed's identity and teacher's voice profile
+|   +-- MEMORY.md            # Persistent cross-session memory
+|   +-- notes/               # Teacher's working notes
++-- memory/
+|   +-- curriculum_kb.db     # Curriculum knowledge base (SQLite)
++-- wiki/                    # Compiled curriculum wiki articles
++-- corpus/
+    +-- corpus.db            # Few-shot examples for prompt injection (SQLite)
 ```
 
 ---
 
-## Configuration & Secrets
+## Multi-Provider Auth
 
-All storage defaults to `~/.eduagent/` but can be relocated by setting the
-**`EDUAGENT_DATA_DIR`** environment variable. Every module that touches disk
-(`auth.py`, `config.py`, `workspace.py`, `task_queue.py`, `corpus.py`,
-`bot_state.py`) reads this variable at import time and falls back to
-`~/.eduagent` when it is unset.
+The 5-step API key resolution chain (implemented in `_entry_router.py._resolve_key_for_provider()`):
+
+1. **Environment variable** -- `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc. If set, the teacher knows what they are doing; use it directly.
+2. **Claude Code OAuth** -- For Anthropic provider only, checks `~/.claude/.credentials.json` for an OAuth access token. This lets teachers who already use Claude Code skip API key setup entirely.
+3. **OS keyring** -- macOS Keychain, Linux Secret Service, or Windows Credential Manager via the `keyring` library. Stored under service name `clawed`.
+4. **secrets.json** -- `~/.eduagent/secrets.json`, a JSON file with `0600` permissions. Fallback when keyring is unavailable.
+5. **Config inline** -- Fields like `ollama_api_key` in `config.json`. Skips sentinel values like `"ollama-local"`.
+
+The LLM client (`clawed/llm.py`) supports Anthropic, OpenAI, Google Gemini, Ollama (cloud and local), and OpenRouter. The model router (`clawed/model_router.py`) maps task types to appropriate models -- fast models for quick Q&A, strong models for lesson generation.
+
+---
+
+## Curriculum Wiki (Karpathy Architecture)
+
+The curriculum knowledge base (`clawed/wiki.py` + `clawed/commands/kb.py`) follows a retrieve-compile-query pattern inspired by Karpathy's approach to knowledge management:
 
 ```
-$EDUAGENT_DATA_DIR/          # default: ~/.eduagent/
-├── config.json              # User preferences (provider, model, output dir, teacher profile)
-├── secrets.json             # API keys (0600 permissions) — fallback if keyring unavailable
-├── api_keys.json            # Hosted-mode API key → teacher_id mapping
-├── state.db                 # Teacher sessions (SQLite)
-├── task_queue.db            # Background task queue (SQLite)
-├── bot_state.db             # Telegram bot conversation state (SQLite)
-├── workspace/               # Teacher workspace (identity, soul, memory, notes)
-└── corpus/
-    └── corpus.db            # Few-shot examples (SQLite)
+Raw files (PDF, DOCX, PPTX, etc.)
+      |
+      v
+  ingest --> chunks (text splitting + metadata extraction)
+      |
+      v
+  kb compile --> SQLite full-text search index (curriculum_kb.db)
+      |
+      v
+  markdown articles (compiled wiki/ directory)
+      |
+      v
+  kb query --> search results injected into LLM context
 ```
 
-**API key resolution order:**
-
-1. Environment variables (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `TAVILY_API_KEY`)
-2. OS keyring (macOS Keychain, Linux Secret Service, Windows Credential Manager)
-3. `$EDUAGENT_DATA_DIR/secrets.json`
+Teachers ingest their existing curriculum materials. The system chunks them, extracts topic tags, and compiles a searchable knowledge base. When Ed generates new content, he queries this KB to ground his output in the teacher's actual curriculum rather than generic knowledge.
 
 ---
 
@@ -465,17 +204,17 @@ $EDUAGENT_DATA_DIR/          # default: ~/.eduagent/
 
 | Layer | Technology |
 |-------|-----------|
-| Language | Python 3.10+ |
+| Language | Python 3.10+ (backend), TypeScript (TUI) |
+| TUI | Ink (React for CLI) via Node.js |
+| CLI | Typer + Rich (Python fallback) |
 | Async HTTP | httpx |
-| LLM APIs | anthropic, openai (+ Ollama via HTTP) |
+| LLM APIs | anthropic, openai, google-generativeai, ollama (via HTTP) |
 | Data validation | Pydantic 2.x |
-| CLI | Typer + Rich |
-| Web framework | FastAPI + Uvicorn |
 | Templating | Jinja2 |
 | File ingestion | PyMuPDF (PDF), python-docx, python-pptx |
+| Slide export | python-pptx |
 | PDF export | ReportLab |
 | Database | SQLite (WAL mode) |
-| MCP | mcp >= 1.0.0 |
-| SSE | sse-starlette |
+| Bot | python-telegram-bot (polling mode) |
 | Linting | Ruff |
 | Testing | pytest + pytest-asyncio |

@@ -1,6 +1,6 @@
 # Setting Up Your Claw-ED Telegram Bot
 
-Get your personal AI teaching assistant right in Telegram — 5 minutes, no technical experience needed.
+Get Ed -- your personal AI teaching assistant -- right in Telegram. Five minutes, no technical experience needed.
 
 ---
 
@@ -16,11 +16,11 @@ Get your personal AI teaching assistant right in Telegram — 5 minutes, no tech
    - Must end in `bot` or `Bot`
    - Suggestion: `MrSmithTeacherBot` or `MsGarciaClawEDBot`
    - If taken, try adding your school initials: `MrSmithGNSBot`
-6. BotFather replies with your **bot token** — a long string like:
+6. BotFather replies with your **bot token** -- a long string like:
    ```
    7123456789:AAHfiqks8w3nR4xzqGhK2m8gPqRze0gY1Xs
    ```
-   **Copy this token.** You'll need it in the next step.
+   **Copy this token.** You will need it in the next step.
 
 > **Keep your token secret.** Anyone with this token can control your bot. If it leaks, send `/revoke` to @BotFather to generate a new one.
 
@@ -54,93 +54,70 @@ This saves the token to your config so you never need to type it again.
 
 ---
 
-## Step 4: Start the Bot
+## Step 4: Start Using Ed
+
+Once your token is saved, **Ed starts the Telegram bot automatically** every time you run `clawed`. There is no separate step to launch the bot -- he handles it himself.
+
+```bash
+clawed
+```
+
+Ed detects your saved Telegram token, checks that no bot instance is already running, and spawns the bot as a background daemon. You will see Ed's normal terminal interface, and your Telegram bot will be live simultaneously.
+
+Now open Telegram, find your bot by its username, and send it a message.
+
+### Manual start (if needed)
+
+If you want to start the bot without the terminal TUI, you can run it directly:
 
 ```bash
 clawed bot
 ```
 
-That's it! You should see:
+---
 
+## How Background Auto-Start Works
+
+Ed manages the Telegram bot as a background daemon so you never have to think about it:
+
+1. **On every `clawed` launch**, Ed checks for a saved Telegram bot token in your config, environment variable, or keyring.
+2. **If a token exists**, he checks `~/.eduagent/bot.lock` for a running bot process (by PID).
+3. **If no bot is running**, he spawns `python -m clawed bot` as a fully detached background process. On macOS/Linux this uses `start_new_session=True`; on Windows it uses `CREATE_NO_WINDOW`.
+4. **If a bot is already running**, he skips the spawn. No duplicates.
+5. **If the lock file is stale** (the PID is dead), Ed cleans it up and starts a fresh instance.
+
+The bot runs silently in the background until you shut down your machine or explicitly stop it. You do not need to keep a terminal window open.
+
+To manually stop the bot:
+```bash
+clawed bot --kill
 ```
-Claw-ED Telegram Bot
-
-Starting bot...
-Data directory: /Users/you/.eduagent
-Mode: polling (httpx)
-
-Press Ctrl+C to stop
-```
-
-Now open Telegram, find your bot by its username, and send it a message!
 
 ---
 
-## Step 5: Talk to Your Bot
+## Step 5: Talk to Ed
 
-Try sending these messages:
+Try sending these messages in Telegram:
 
 - `I teach 9th grade biology`
 - `Plan a 2-week unit on cell division`
 - `Write a lesson on mitosis`
 - `Make a worksheet for today's lesson`
-- `/help` to see everything it can do
+- `/help` to see everything Ed can do
 
 ---
 
 ## Alternative Ways to Pass the Token
 
-You don't have to use `config set-token`. Pick whichever feels most natural:
+You do not have to use `config set-token`. Pick whichever feels most natural:
 
 | Method | Command |
 |--------|---------|
-| **Saved config** (recommended) | `clawed config set-token TOKEN` then `clawed bot` |
+| **Saved config** (recommended) | `clawed config set-token TOKEN` then `clawed` |
 | **Command-line flag** | `clawed bot --token TOKEN` |
-| **Environment variable** | `export TELEGRAM_BOT_TOKEN=TOKEN` then `clawed bot` |
+| **Environment variable** | `export TELEGRAM_BOT_TOKEN=TOKEN` then `clawed` |
 
-The bot checks in this order: `--token` flag > `TELEGRAM_BOT_TOKEN` env var > saved config.
-
----
-
-## Keeping the Bot Running
-
-The bot stops when you close your terminal. To keep it running in the background:
-
-**On Mac/Linux (simplest):**
-```bash
-nohup clawed bot &
-```
-
-**Using screen:**
-```bash
-screen -S clawed
-clawed bot
-# Press Ctrl+A, then D to detach
-# Reattach later: screen -r clawed
-```
-
-**Using a systemd service (Linux servers):**
-```ini
-# /etc/systemd/system/clawed-bot.service
-[Unit]
-Description=Claw-ED Telegram Bot
-After=network.target
-
-[Service]
-Type=simple
-User=your-username
-ExecStart=/usr/local/bin/clawed bot
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-sudo systemctl enable clawed-bot
-sudo systemctl start clawed-bot
-```
+Ed checks in this order: `--token` flag > `TELEGRAM_BOT_TOKEN` env var > saved config.
 
 ---
 
@@ -148,14 +125,14 @@ sudo systemctl start clawed-bot
 
 ### "No bot token found"
 
-You didn't provide a token. Run:
+You have not provided a token. Run:
 ```bash
 clawed config set-token YOUR_TOKEN
 ```
 
 ### "Conflict: terminated by other getUpdates request"
 
-Another instance of your bot is already running. Only one process can poll for updates at a time. Stop the other instance first, or use `clawed bot --kill` to terminate it.
+Another instance of the bot is already running. Only one process can poll for updates at a time. Stop the other instance first with `clawed bot --kill`.
 
 ### "Unauthorized" or "401"
 
@@ -168,19 +145,19 @@ Your bot token is wrong or was revoked. Get a new one:
 
 ### "Network is unreachable" or timeout errors
 
-Check your internet connection. The bot needs to reach Telegram's servers at `api.telegram.org`.
+Check your internet connection. Ed needs to reach Telegram's servers at `api.telegram.org`.
 
 ### Bot responds but AI features fail
 
-Your LLM API key isn't set. Run `clawed setup` to configure one, or set it directly:
+Your LLM API key is not set. Run `clawed setup` to configure one, or set it directly:
 ```bash
 # Option A: Anthropic (Claude)
 export ANTHROPIC_API_KEY=sk-ant-...
 
-# Option B: OpenAI (GPT-4o)
+# Option B: OpenAI (GPT-5.4)
 export OPENAI_API_KEY=sk-...
 
-# Option C: Ollama (free, local)
+# Option C: Ollama (cloud or local)
 clawed config set-model ollama
 ```
 
@@ -189,23 +166,26 @@ clawed config set-model ollama
 ## FAQ
 
 **Can students message my bot?**
-Yes, but Claw-ED treats every Telegram user as a separate teacher session. For student-facing features, use the student bot: tell your bot `start student bot for lesson 1` and share the class code with students.
+Yes, but Ed treats every Telegram user as a separate teacher session. For student-facing features, use the student bot: tell Ed `start student bot for lesson 1` and share the class code with students.
 
 **Can I run multiple bots?**
-Yes — each bot needs its own token and its own `clawed bot` process. Use `--data-dir` to keep their data separate:
+Yes -- each bot needs its own token and its own `clawed bot` process. Use `--data-dir` to keep their data separate:
 ```bash
 clawed bot --token TOKEN_A --data-dir ~/.clawed-bio
 clawed bot --token TOKEN_B --data-dir ~/.clawed-history
 ```
 
 **Is my data sent to Telegram?**
-Only the messages you send to the bot and the bot's responses travel through Telegram's servers. Your lesson plan files stay on your machine. Your LLM API calls go directly to your chosen provider (Anthropic, OpenAI, or Ollama).
+Only the messages you send to the bot and Ed's responses travel through Telegram's servers. Your lesson plan files stay on your machine. LLM API calls go directly to your chosen provider (Anthropic, OpenAI, Google, or Ollama).
 
 **Can I customize my bot's profile picture?**
-Yes! Message @BotFather, send `/mybots`, select your bot, tap **Edit Bot** > **Edit Botpic**, and upload a photo.
+Yes. Message @BotFather, send `/mybots`, select your bot, tap **Edit Bot** > **Edit Botpic**, and upload a photo.
 
 **Can I add my bot to a group chat?**
-Not recommended — Claw-ED is designed for 1-on-1 conversations with individual teachers.
+Not recommended -- Ed is designed for 1-on-1 conversations with individual teachers.
+
+**Does the bot keep running when I close the terminal?**
+Yes. Ed runs the bot as a background daemon that persists independently of your terminal session. He will keep running until you restart your machine or explicitly stop him with `clawed bot --kill`.
 
 ---
 

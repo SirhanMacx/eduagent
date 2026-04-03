@@ -230,12 +230,41 @@ clawed/
 ├── models.py          # All Pydantic data models
 ├── llm.py             # LLM client (add provider support here)
 ├── prompts/           # LLM prompt templates (Jinja2 .txt files)
+├── commands/          # CLI subcommand modules (see note below)
 ├── api/               # FastAPI web server
 │   ├── routes/        # API route handlers
 │   ├── templates/     # Jinja2 HTML templates
 │   └── static/        # CSS/JS assets
 └── tests/             # pytest test files (test_*.py)
 ```
+
+### Command module split pattern
+
+The `clawed/commands/` directory contains focused CLI subcommand modules. **New commands should go in their own module file, not in `generate.py`.**
+
+`generate.py` was the original catch-all for generation commands, but as the CLI grew it became unwieldy. The current pattern is one module per command group:
+
+```
+clawed/commands/
+├── generate.py            # Legacy: lesson, materials, differentiate, etc.
+├── generate_unit.py       # Unit plan generation (split from generate.py)
+├── generate_assessment.py # Assessment generation (split from generate.py)
+├── game.py                # Interactive game generation
+├── simulation.py          # Interactive simulation generation
+├── kb.py                  # Curriculum knowledge base commands
+├── train.py               # Voice training commands
+├── export.py              # Export/share commands
+├── schedule_cmd.py        # Scheduling commands
+├── workspace_cmd.py       # Workspace management
+├── sub.py                 # Sub packet generation
+├── bot.py                 # Telegram bot commands
+├── config.py              # Config management
+├── config_llm.py          # LLM config commands
+├── config_profile.py      # Teacher profile config
+└── queue.py               # Background task queue
+```
+
+When adding a new command, create a new file in `clawed/commands/` and register it as a typer sub-app in `clawed/cli.py`. Do not add new commands to `generate.py`.
 
 ---
 

@@ -20,7 +20,12 @@ from pathlib import Path
 
 
 def _find_bundled_cli_js() -> str | None:
-    """Find the pre-built cli.js bundled in the package."""
+    """Find the pre-built cli.js bundled in the package.
+
+    Checks the installed package's _cli_bundle directory first, then
+    falls back to dev environment paths (cli/dist/ and cli/source/).
+    Returns the absolute path to cli.js or None if not found.
+    """
     # Check package data directory
     pkg_dir = Path(__file__).parent
     cli_js = pkg_dir / "_cli_bundle" / "cli.js"
@@ -41,7 +46,12 @@ def _find_bundled_cli_js() -> str | None:
 
 
 def _find_daemon_entry() -> str | None:
-    """Find the daemon entry point."""
+    """Find the Telegram daemon entry point (JS or TS).
+
+    Checks for compiled JS in daemon/dist/, raw TS in daemon/ (for dev
+    mode with tsx), and the bundled daemon.js in the package. Returns
+    the absolute path or None if not found.
+    """
     pkg_dir = Path(__file__).parent
     repo_root = pkg_dir.parent
 
@@ -64,7 +74,12 @@ def _find_daemon_entry() -> str | None:
 
 
 def _show_node_notice() -> None:
-    """Show clean branded startup when running in Python-only mode."""
+    """Show clean branded startup banner when running in Python-only mode.
+
+    Displays the Claw-ED logo, version, and a note that Node.js is not
+    installed. This only appears when the teacher has no arguments and
+    the Ink TUI is unavailable.
+    """
     from clawed import __version__
     print()
     print("  🍎 C L A W - E D")
@@ -172,7 +187,12 @@ def _check_telegram_token() -> bool:
 
 
 def _resolve_key_for_provider(provider: str, config: dict) -> str | None:
-    """Find the best API key for a provider without importing heavy modules."""
+    """Find the best API key for a provider using a 5-step resolution chain.
+
+    Checks in order: environment variable, Claude Code OAuth credentials,
+    OS keyring, secrets.json, and inline config fields. Returns the first
+    match or None if no key is found anywhere.
+    """
     import json
 
     # 1. Already in env? User knows what they're doing — skip.
@@ -280,7 +300,12 @@ def _inject_config_env() -> None:
 
 
 def _get_configured_model() -> str | None:
-    """Read the teacher's model from ~/.eduagent/config.json (stdlib only)."""
+    """Read the teacher's chosen model from ~/.eduagent/config.json.
+
+    Looks up the provider-specific model field (e.g. anthropic_model,
+    openai_model) based on the active provider. Uses only stdlib imports
+    so this runs before any third-party packages are loaded.
+    """
     import json
 
     config_path = Path.home() / ".eduagent" / "config.json"
@@ -307,7 +332,12 @@ def _get_configured_model() -> str | None:
 
 
 def _handle_daemon(args: list[str]) -> None:
-    """Route daemon commands to the Node.js daemon process."""
+    """Route daemon subcommands to the Node.js daemon process.
+
+    Validates that Node.js is installed and the daemon entry point exists,
+    checks for a configured Telegram token, then executes the daemon with
+    the provided arguments. Exits the process with the daemon's return code.
+    """
     node = shutil.which("node")
     daemon_entry = _find_daemon_entry()
 
@@ -490,7 +520,11 @@ def main() -> None:
 
 
 def _run_python_cli() -> None:
-    """Run the Python typer CLI (fallback or forced mode)."""
+    """Run the Python typer CLI as the command handler.
+
+    Used when Node.js is unavailable, the teacher passes --python,
+    or the command is a known Python subcommand (setup, lesson, etc.).
+    """
     from clawed.cli import app
     app()
 
