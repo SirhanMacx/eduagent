@@ -453,7 +453,9 @@ def export_lesson_pptx(
         return text.strip()
 
 
-    # Sanitize all lesson text fields before rendering to slides
+    # Sanitize all lesson text fields into local vars — never mutate the input
+    import copy as _copy
+    lesson = _copy.deepcopy(lesson)
     lesson.title = sanitize_text(lesson.title)
     lesson.objective = sanitize_text(lesson.objective)
     lesson.do_now = sanitize_text(lesson.do_now) if lesson.do_now else ""

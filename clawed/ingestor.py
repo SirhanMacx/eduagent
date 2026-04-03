@@ -9,6 +9,7 @@ from __future__ import annotations
 import csv
 import io
 import logging
+import os
 import re
 import shutil
 import subprocess
@@ -1116,7 +1117,15 @@ def ingest_zip(path: Path, *, progress_callback=None) -> list[Document]:
                     total_size,
                 )
                 return []
-            zf.extractall(tmp_dir)
+            # Guard against zip-slip (path traversal) — only extract safe entries
+            safe_members = []
+            for info in zf.infolist():
+                target = os.path.realpath(os.path.join(tmp_dir, info.filename))
+                if not target.startswith(os.path.realpath(tmp_dir)):
+                    logger.warning("Skipping suspicious ZIP entry: %s", info.filename)
+                else:
+                    safe_members.append(info)
+            zf.extractall(tmp_dir, members=safe_members)
         return ingest_directory(Path(tmp_dir), progress_callback=progress_callback)
 
 
@@ -1157,7 +1166,12 @@ def ingest_path(
                             total_size,
                         )
                         return []
-                    zf.extractall(tmp_dir)
+                    safe_members = []
+                    for info in zf.infolist():
+                        target = os.path.realpath(os.path.join(tmp_dir, info.filename))
+                        if target.startswith(os.path.realpath(tmp_dir)):
+                            safe_members.append(info)
+                    zf.extractall(tmp_dir, members=safe_members)
                 files, summary = scan_directory(Path(tmp_dir))
                 logger.info(summary)
                 return _dry_run_results(files)

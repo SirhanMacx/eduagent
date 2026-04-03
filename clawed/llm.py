@@ -548,7 +548,10 @@ class LLMClient:
                 )
                 resp.raise_for_status()
                 data = resp.json()
-                return data["choices"][0]["message"]["content"]
+                choices = data.get("choices", [])
+                if not choices:
+                    raise RuntimeError("OpenAI returned an empty response (content may have been filtered)")
+                return choices[0].get("message", {}).get("content", "")
         except httpx.ConnectError:
             raise ConnectionError(
                 "Could not connect to the OpenAI API.\n"
@@ -600,7 +603,14 @@ class LLMClient:
                 )
                 resp.raise_for_status()
                 data = resp.json()
-                return data["choices"][0]["message"]["content"]
+                choices = data.get("choices", [])
+                if not choices:
+                    raise RuntimeError("OpenRouter returned an empty response (no choices)")
+                return choices[0].get("message", {}).get("content", "")
+        except httpx.ConnectError:
+            raise ConnectionError(
+                "Could not connect to OpenRouter. Check your internet connection."
+            )
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 401:
                 raise EnvironmentError(
@@ -656,7 +666,10 @@ class LLMClient:
                         )
                     resp.raise_for_status()
                     data = resp.json()
-                    return data["choices"][0]["message"]["content"]
+                    choices = data.get("choices", [])
+                    if not choices:
+                        raise RuntimeError("Ollama Cloud returned an empty response")
+                    return choices[0].get("message", {}).get("content", "")
             else:
                 # Local Ollama
                 full_prompt = f"{system}\n\n{prompt}" if system else prompt
@@ -688,7 +701,7 @@ class LLMClient:
                         )
                     resp.raise_for_status()
                     data = resp.json()
-                    return data["response"]
+                    return data.get("response", "")
         except httpx.ConnectError:
             raise ConnectionError(
                 "Could not connect to Ollama.\n"
@@ -742,7 +755,14 @@ class LLMClient:
                 )
                 resp.raise_for_status()
                 data = resp.json()
-                return data["candidates"][0]["content"]["parts"][0]["text"]
+                candidates = data.get("candidates", [])
+                if not candidates:
+                    raise RuntimeError("Gemini returned an empty response (content may have been filtered)")
+                parts = candidates[0].get("content", {}).get("parts", [])
+                if not parts:
+                    reason = candidates[0].get("finishReason", "unknown")
+                    raise RuntimeError(f"Gemini blocked this request (reason: {reason})")
+                return parts[0].get("text", "")
         except httpx.ConnectError:
             raise ConnectionError(
                 "Could not connect to the Google Gemini API.\n"

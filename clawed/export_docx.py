@@ -480,7 +480,9 @@ def export_student_handout(
 
     doc = Document()
 
-    # Sanitize AND strip answers from all student-facing text
+    # Sanitize AND strip answers — work on a copy so we don't mutate the caller's object
+    import copy as _copy
+    lesson = _copy.deepcopy(lesson)
     lesson.title = sanitize_text(lesson.title)
     lesson.objective = sanitize_text(lesson.objective)
     lesson.do_now = sanitize_text(lesson.do_now) if lesson.do_now else ""

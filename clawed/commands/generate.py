@@ -712,7 +712,7 @@ def lesson(
                 )
                 game_path = _run_async(
                     compile_game(
-                        master=daily if hasattr(daily, "vocabulary") else None,
+                        master=daily,
                         persona=persona,
                         output_dir=_output_dir(),
                     )
