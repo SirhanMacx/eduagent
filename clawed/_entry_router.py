@@ -348,7 +348,15 @@ def main() -> None:
     # so the teacher picks a provider and enters an API key.
     config_path = Path.home() / ".eduagent" / "config.json"
     if not config_path.exists() and not args:
-        # First run — show the setup wizard
+        # First run — show branded intro then setup wizard
+        import time as _time
+
+        from clawed import __version__
+        print()
+        print("  \033[32m🍎 C L A W - E D\033[0m")
+        print(f"  \033[1mYour AI co-teacher\033[0m  v{__version__}")
+        print()
+        _time.sleep(1)
         try:
             from clawed.onboarding import quick_model_setup
             result = quick_model_setup()
