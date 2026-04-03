@@ -2053,16 +2053,21 @@ img { max-width: 100%; height: auto; }
 
   // Teaching-focused terminal animation — shows real first-run experience
   var scenes = [
-    // Scene 1: Teacher installs and runs
-    [{text: '$ pip install clawed', color: white, delay: 0, typing: true}],
-    [{text: '  Successfully installed clawed-4.3.2026', color: dim, delay: 400}],
-    [{text: '', color: white, delay: 300}],
+    // Scene 1: Teacher runs clawed
     [{text: '$ clawed', color: white, delay: 0, typing: true}],
     [{text: '', color: white, delay: 500}],
-    // Scene 2: Branded intro
-    [{text: '  \uD83C\uDF4E C L A W - E D', color: green, delay: 300, bold: true}],
-    [{text: '  Your AI co-teacher  v4.3.2026', color: dim, delay: 600}],
-    [{text: '', color: white, delay: 400}],
+    // Scene 2: Animated intro — the real CLI launch screen
+    [{text: '                \uD83C\uDF4E', color: white, delay: 400}],
+    [{text: '', color: white, delay: 200}],
+    [{text: ' \u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2557      \u2588\u2588\u2588\u2588\u2588\u2557 \u2588\u2588\u2557    \u2588\u2588\u2557       \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2557 ', color: gold, delay: 80}],
+    [{text: '\u2588\u2588\u2554\u2550\u2550\u2550\u2550\u255D\u2588\u2588\u2551     \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557\u2588\u2588\u2551    \u2588\u2588\u2551       \u2588\u2588\u2554\u2550\u2550\u2550\u2550\u255D\u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2557', color: gold, delay: 80}],
+    [{text: '\u2588\u2588\u2551     \u2588\u2588\u2551     \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2551\u2588\u2588\u2551 \u2588\u2557 \u2588\u2588\u2551 \u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2557  \u2588\u2588\u2551  \u2588\u2588\u2551', color: gold, delay: 80}],
+    [{text: '\u2588\u2588\u2551     \u2588\u2588\u2551     \u2588\u2588\u2554\u2550\u2550\u2588\u2588\u2551\u2588\u2588\u2551\u2588\u2588\u2588\u2557\u2588\u2588\u2551 \u255A\u2550\u2550\u2550\u2550\u255D\u2588\u2588\u2554\u2550\u2550\u255D  \u2588\u2588\u2551  \u2588\u2588\u2551', color: gold, delay: 80}],
+    [{text: '\u255A\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2551  \u2588\u2588\u2551\u255A\u2588\u2588\u2588\u2554\u2588\u2588\u2588\u2554\u255D       \u2588\u2588\u2588\u2588\u2588\u2588\u2588\u2557\u2588\u2588\u2588\u2588\u2588\u2588\u2554\u255D', color: gold, delay: 80}],
+    [{text: ' \u255A\u2550\u2550\u2550\u2550\u2550\u255D\u255A\u2550\u2550\u2550\u2550\u2550\u2550\u255D\u255A\u2550\u255D  \u255A\u2550\u255D \u255A\u2550\u2550\u255D\u255A\u2550\u2550\u255D        \u255A\u2550\u2550\u2550\u2550\u2550\u2550\u255D\u255A\u2550\u2550\u2550\u2550\u2550\u255D ', color: gold, delay: 80}],
+    [{text: '', color: white, delay: 100}],
+    [{text: '           Your AI co-teacher', color: dim, delay: 400}],
+    [{text: '', color: white, delay: 600}],
     // Scene 3: Onboarding wizard
     [{text: '  \u250C\u2500\u2500\u2500 Claw-ED Setup \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510', color: green, delay: 100}],
     [{text: '  \u2502 Hey there, fellow educator! \uD83C\uDF93    \u2502', color: white, delay: 100}],
