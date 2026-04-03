@@ -293,25 +293,31 @@ def _ingest_materials(path_str: str, config: AppConfig) -> None:
 
     source = Path(path_str)
 
-    # Count files first for progress bar
-    supported_exts = {".pdf", ".docx", ".pptx", ".txt", ".md"}
-    all_files = [
-        f for f in source.rglob("*")
-        if f.is_file() and f.suffix.lower() in supported_exts
-    ]
+    # Use scan_directory to count files (single walk) then ingest with progress
+    from clawed.ingestor import scan_directory
 
-    if not all_files:
-        console.print("  [yellow]No supported files found. You can ingest later with:[/yellow]")
-        console.print("    [bold]clawed ingest <path>[/bold]")
-        return
+    if source.is_dir():
+        files, summary = scan_directory(source)
+        if not files:
+            console.print("  [yellow]No supported files found. You can ingest later with:[/yellow]")
+            console.print("    [bold]clawed ingest <path>[/bold]")
+            return
+        console.print(f"  [dim]{summary}[/dim]")
+        file_count = len(files)
+    else:
+        file_count = 1
 
     with _safe_progress(console=console) as progress:
         task = progress.add_task(
-            f"Reading files from {source.name}...",
-            total=len(all_files),
+            f"Reading {file_count} files from {source.name}...",
+            total=file_count,
         )
-        docs = ingest_path(source)
-        progress.update(task, completed=len(all_files), description="Files processed")
+
+        def _on_progress(current: int, total: int) -> None:
+            progress.update(task, completed=current, total=total)
+
+        docs = ingest_path(source, progress_callback=_on_progress)
+        progress.update(task, completed=file_count, description="Files processed")
 
     console.print(f"  [green]\u2713 Processed {len(docs)} files.[/green]")
 

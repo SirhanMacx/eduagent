@@ -132,7 +132,7 @@ def ingest(
         Panel(f"Ingesting materials from [bold]{source}[/bold]", title="Claw-ED")
     )
 
-    # Show format summary for directories
+    # Scan once — reuse the file list for both summary and ingestion
     if source.is_dir():
         files, summary = scan_directory(source)
         console.print(f"\n[cyan]{summary}[/cyan]\n")
@@ -140,26 +140,20 @@ def ingest(
     else:
         file_count = 1
 
-    # Use progress bar for large directories (>20 files), spinner otherwise
-    if file_count > 20:
-        with _safe_progress(console=console) as progress:
-            task = progress.add_task("Ingesting files...", total=file_count)
+    with _safe_progress(console=console) as progress:
+        task = progress.add_task(
+            f"Ingesting {file_count} files...", total=file_count if file_count > 1 else None,
+        )
 
-            def _update_progress(current: int, total: int) -> None:
-                progress.update(task, completed=current)
+        def _update_progress(current: int, total: int) -> None:
+            progress.update(task, completed=current, total=total)
 
-            documents = ingest_path(source, progress_callback=_update_progress)
-            progress.update(
-                task,
-                description=f"Done — {len(documents)} documents extracted",
-            )
-    else:
-        with _safe_progress(console=console) as progress:
-            task = progress.add_task("Scanning files...", total=None)
-            documents = ingest_path(source)
-            progress.update(
-                task, description=f"Found {len(documents)} documents"
-            )
+        documents = ingest_path(source, progress_callback=_update_progress)
+        progress.update(
+            task,
+            description=f"Done — {len(documents)} documents extracted",
+            completed=file_count,
+        )
 
     if not documents:
         console.print("[red]No supported documents found.[/red]")
