@@ -107,6 +107,7 @@ def get_api_key(provider: str) -> Optional[str]:
         "anthropic": "ANTHROPIC_API_KEY",
         "openai": "OPENAI_API_KEY",
         "ollama": "OLLAMA_API_KEY",
+        "openrouter": "OPENROUTER_API_KEY",
         "telegram": "TELEGRAM_BOT_TOKEN",
         "tavily": "TAVILY_API_KEY",
         "unsplash": "UNSPLASH_ACCESS_KEY",

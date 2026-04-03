@@ -264,22 +264,18 @@ Teacher (Terminal or Phone)
 
 ---
 
-## Recommended Cloud Models
+## AI Providers
 
-For teachers who want the best lesson quality, here are our cloud model recommendations:
+Recommended: **Ollama Cloud** with Minimax M2.7 ($20/month unlimited). Claw-ED also accepts API keys from other providers:
 
-| Provider | Model | Best For | Cost | Setup |
-|----------|-------|----------|------|-------|
-| **Anthropic** | Claude Opus 4 | Maximum quality — rich pedagogy, nuanced voice matching, deep differentiation | ~$0.10/lesson | `clawed` → select Anthropic → OAuth or API key |
-| **Anthropic** | Claude Sonnet 4 | Great quality at lower cost — fast generation, strong standards alignment | ~$0.03/lesson | Same as above |
-| **Google** | Gemini 2.5 Flash | Free tier available — solid quality, fast, good for getting started | Free / pay-as-you-go | `clawed` → select Google → API key from ai.google.dev |
-| **OpenAI** | GPT-4o | Strong general quality — good at structured output, reliable formatting | ~$0.05/lesson | `clawed` → select OpenAI → API key from platform.openai.com |
-| **Ollama** | Minimax M2.7 Cloud | $20/month unlimited — no per-token costs, great for heavy users | $20/mo flat | `clawed` → select Ollama → cloud key |
-| **Ollama** | Llama 3.3 (local) | Completely free and private — runs on your machine, no data leaves | Free | Install Ollama → `clawed` → select Ollama → local |
+- **Ollama Cloud** — Minimax M2.7, Kimi K2.5, and other cloud models. $20/month unlimited.
+- **Ollama Local** — Run any model locally for free (Llama 3.3, Qwen, etc.)
+- **OpenRouter** — Access any model (Claude, GPT, Gemini, open-source) via openrouter.ai
+- **Google Gemini** — Free tier available via ai.google.dev
+- **OpenAI** — GPT-4o and newer via platform.openai.com
+- **Anthropic** — Claude Sonnet/Opus via console.anthropic.com
 
-**Our pick:** Claude Opus 4 for quality, Gemini 2.5 Flash for budget. Teachers generating 5+ lessons/day should consider Ollama Cloud ($20/month unlimited).
-
-> Claw-ED always routes to the best model within your chosen provider. You pick the provider — we pick the smartest model available.
+Run `clawed setup` to pick your provider and enter your API key.
 
 ---
 

@@ -55,6 +55,8 @@ class LLMClient:
             raw = await self._ollama(prompt, system, temperature, max_tokens)
         elif self.config.provider == LLMProvider.GOOGLE:
             raw = await self._google(prompt, system, temperature, max_tokens)
+        elif self.config.provider == LLMProvider.OPENROUTER:
+            raw = await self._openrouter(prompt, system, temperature, max_tokens)
         else:
             raise ValueError(f"Unknown provider: {self.config.provider}")
         return sanitize_text(raw)
@@ -556,6 +558,53 @@ class LLMClient:
             if e.response.status_code == 401:
                 raise EnvironmentError(
                     "Invalid OPENAI_API_KEY. Check your key at https://platform.openai.com"
+                )
+            raise
+
+    # ── OpenRouter ───────────────────────────────────────────────────────
+
+    async def _openrouter(
+        self, prompt: str, system: str, temperature: float, max_tokens: int
+    ) -> str:
+        """OpenRouter — OpenAI-compatible API at openrouter.ai/api/v1."""
+        from clawed.config import get_api_key
+
+        api_key = get_api_key("openrouter")
+        if not api_key:
+            raise EnvironmentError(
+                "OpenRouter API key not found. Get one at https://openrouter.ai/keys"
+            )
+        messages: list[dict[str, str]] = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+
+        base_url = getattr(self.config, "openrouter_base_url", "https://openrouter.ai/api/v1")
+
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                resp = await client.post(
+                    f"{base_url.rstrip('/')}/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-type": "application/json",
+                        "HTTP-Referer": "https://github.com/SirhanMacx/Claw-ED",
+                        "X-Title": "Claw-ED",
+                    },
+                    json={
+                        "model": self.config.openrouter_model,
+                        "messages": messages,
+                        "temperature": temperature,
+                        "max_tokens": max_tokens,
+                    },
+                )
+                resp.raise_for_status()
+                data = resp.json()
+                return data["choices"][0]["message"]["content"]
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
+                raise EnvironmentError(
+                    "Invalid OpenRouter API key. Check at https://openrouter.ai/keys"
                 )
             raise
 

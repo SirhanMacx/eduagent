@@ -183,6 +183,7 @@ def _inject_config_env() -> None:
             "openai": "OPENAI_API_KEY",
             "google": "GOOGLE_API_KEY",
             "ollama": "OLLAMA_API_KEY",
+            "openrouter": "OPENROUTER_API_KEY",
         }
         env_var = env_var_map.get(provider)
         if env_var:
@@ -217,6 +218,7 @@ def _get_configured_model() -> str | None:
         "openai": "openai_model",
         "google": "google_model",
         "ollama": "ollama_model",
+        "openrouter": "openrouter_model",
     }
     field = model_fields.get(provider)
     if field:

@@ -10,7 +10,7 @@ export type APIProvider = 'firstParty' | 'bedrock' | 'vertex' | 'foundry'
  * Claw-ED multi-provider types. These providers route through the Python
  * bridge instead of the Anthropic SDK.
  */
-export type ClawedProvider = 'ollama' | 'openai' | 'google'
+export type ClawedProvider = 'ollama' | 'openai' | 'google' | 'openrouter'
 
 /** All providers (Anthropic SDK + Python-bridged). */
 export type AnyProvider = APIProvider | ClawedProvider
@@ -20,6 +20,7 @@ export const CLAWED_PROVIDER_INFO: Record<ClawedProvider, { name: string; descri
   ollama: { name: 'Ollama', description: 'Local or cloud Ollama (free / $20/mo)' },
   openai: { name: 'OpenAI', description: 'GPT-4o and newer models' },
   google: { name: 'Google Gemini', description: 'Gemini 2.5 Flash and Pro' },
+  openrouter: { name: 'OpenRouter', description: 'Access any model via OpenRouter' },
 }
 
 /** Default models per non-Anthropic provider. */
@@ -27,6 +28,7 @@ export const CLAWED_PROVIDER_DEFAULT_MODELS: Record<ClawedProvider, string> = {
   ollama: 'minimax-m2.7:cloud',
   openai: 'gpt-4o',
   google: 'gemini-2.5-flash',
+  openrouter: 'anthropic/claude-sonnet-4',
 }
 
 let _cachedClawedProvider: AnyProvider | null = null
@@ -50,7 +52,7 @@ export function getClawedConfigProvider(): ClawedProvider | null {
     const raw = readFileSync(configPath, 'utf-8')
     const config = JSON.parse(raw) as { provider?: string }
     const p = config.provider
-    if (p === 'ollama' || p === 'openai' || p === 'google') {
+    if (p === 'ollama' || p === 'openai' || p === 'google' || p === 'openrouter') {
       _cachedClawedProvider = p
       return p
     }

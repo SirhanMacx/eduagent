@@ -212,12 +212,16 @@ async def _anthropic_with_tools(
 async def _openai_with_tools(
     messages: list[dict[str, Any]], system: str, config: AppConfig
 ) -> dict[str, Any]:
-    """Call OpenAI API with function calling."""
+    """Call OpenAI-compatible API with function calling (OpenAI, OpenRouter)."""
     import httpx
 
     from clawed.config import get_api_key
 
-    api_key = get_api_key("openai")
+    # Route to the right provider's API key
+    if config.provider == LLMProvider.OPENROUTER:
+        api_key = get_api_key("openrouter")
+    else:
+        api_key = get_api_key("openai")
     if not api_key:
         raise ValueError("No OpenAI API key configured")
 
@@ -245,15 +249,26 @@ async def _openai_with_tools(
         elif m.get("content"):
             oai_messages.append({"role": m["role"], "content": m["content"]})
 
+    # Determine URL and model based on provider
+    if config.provider == LLMProvider.OPENROUTER:
+        url = f"{getattr(config, 'openrouter_base_url', 'https://openrouter.ai/api/v1').rstrip('/')}/chat/completions"
+        model = config.openrouter_model
+        extra_headers = {"HTTP-Referer": "https://github.com/SirhanMacx/Claw-ED", "X-Title": "Claw-ED"}
+    else:
+        url = "https://api.openai.com/v1/chat/completions"
+        model = config.openai_model
+        extra_headers = {}
+
     async with httpx.AsyncClient(timeout=120.0) as client:
         resp = await client.post(
-            "https://api.openai.com/v1/chat/completions",
+            url,
             headers={
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
+                **extra_headers,
             },
             json={
-                "model": config.openai_model,
+                "model": model,
                 "messages": oai_messages,
                 "tools": TOOL_DEFINITIONS,
                 "temperature": 0.7,
