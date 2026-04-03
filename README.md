@@ -183,7 +183,7 @@ clawed mcp-server
 
 ## Community
 
-Built by a teacher for teachers. 20,000+ installs.
+Built by a teacher for teachers. 21,000+ installs.
 
 - [GitHub Discussions](https://github.com/SirhanMacx/Claw-ED/discussions)
 - [Report issues](https://github.com/SirhanMacx/Claw-ED/issues)
