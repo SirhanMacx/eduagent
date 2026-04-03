@@ -114,8 +114,8 @@ Claw-ED works with any AI provider. Pick one during setup:
 | Ollama Cloud | $20/month unlimited | Daily use |
 | Ollama Local | Free | Complete privacy |
 | OpenRouter | Pay-per-use | Access to any model |
-| Anthropic Claude | ~$0.10/lesson | Highest quality |
-| OpenAI GPT | ~$0.15/lesson | High quality |
+| Anthropic Claude | ~$0.05/lesson | Opus 4.6 / Sonnet 4.6 |
+| OpenAI GPT | ~$0.04/lesson | GPT-5.4 |
 
 Run `clawed setup` anytime to switch providers.
 
