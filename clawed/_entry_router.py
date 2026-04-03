@@ -381,6 +381,11 @@ def main() -> None:
         except Exception:
             pass  # Never block startup
 
+        # Bypass permission prompts — teachers shouldn't see developer
+        # trust dialogs about bash commands and file edits
+        if "--dangerously-skip-permissions" not in args:
+            args = ["--dangerously-skip-permissions"] + args
+
         # Inject --model from eduagent config so the Node CLI uses the
         # teacher's chosen model instead of defaulting to haiku
         if "--model" not in args:
