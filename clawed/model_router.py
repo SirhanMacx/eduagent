@@ -82,9 +82,14 @@ def resolve_tier(task_type: str) -> ModelTier:
 
 
 def resolve_model(tier: ModelTier, config: AppConfig) -> str:
-    """Get the model for a tier, respecting teacher overrides."""
+    """Get the model for a tier, respecting teacher overrides and provider."""
     teacher_tiers = config.tier_models or {}
-    return teacher_tiers.get(tier.value) or DEFAULT_TIER_MODELS[tier.value]
+    if teacher_tiers.get(tier.value):
+        return teacher_tiers[tier.value]
+    # Use provider-specific defaults if available
+    provider_key = config.provider.value if hasattr(config.provider, "value") else str(config.provider)
+    provider_defaults = PROVIDER_TIER_MODELS.get(provider_key, DEFAULT_TIER_MODELS)
+    return provider_defaults.get(tier.value, DEFAULT_TIER_MODELS[tier.value])
 
 
 def route(task_type: str, config: AppConfig) -> AppConfig:
@@ -103,5 +108,16 @@ def route(task_type: str, config: AppConfig) -> AppConfig:
         model = resolve_model(tier, config)
 
     routed = config.model_copy()
-    routed.ollama_model = model
+
+    # Write to the correct provider-specific model field
+    from clawed.models import LLMProvider
+    _provider_model_fields = {
+        LLMProvider.ANTHROPIC: "anthropic_model",
+        LLMProvider.OPENAI: "openai_model",
+        LLMProvider.OLLAMA: "ollama_model",
+        LLMProvider.GOOGLE: "google_model",
+        LLMProvider.OPENROUTER: "openrouter_model",
+    }
+    field = _provider_model_fields.get(routed.provider, "ollama_model")
+    setattr(routed, field, model)
     return routed

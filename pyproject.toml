@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "clawed"
-version = "4.3.2026.14"
+version = "4.3.2026.15"
 description = "Your AI co-teacher. Generate lessons, games, slides, and assessments from your terminal. Learns your teaching voice, aligns to your state standards, and works with any LLM provider."
 readme = "README.md"
 license = "MIT"
@@ -70,6 +70,7 @@ all = [
     "onnxruntime>=1.16.0",
     "qrcode[pil]>=7.0",
 ]
+formats = ["xlrd>=2.0.0", "striprtf>=0.0.26"]
 pdf = ["weasyprint>=60.0"]
 qr = ["qrcode[pil]>=7.0"]
 keyring = ["keyring>=24.0.0"]

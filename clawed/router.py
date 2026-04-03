@@ -273,10 +273,11 @@ EXPORT_SLIDES_PATTERNS = [
 ]
 
 EXPORT_HANDOUT_PATTERNS = [
-    r"export handout",
-    r"make a handout",
-    r"student handout",
-    r"student worksheet",
+    r"export\s+(?:the\s+)?handout",
+    r"download\s+(?:the\s+)?handout",
+    r"print\s+(?:the\s+)?handout",
+    r"export\s+(?:the\s+)?worksheet",
+    r"save\s+(?:the\s+)?handout",
 ]
 
 EXPORT_DOC_PATTERNS = [

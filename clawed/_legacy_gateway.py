@@ -90,6 +90,8 @@ class Gateway:
         self._demo = DemoHandler()
         self._persona = PersonaHandler()
         self._settings = SettingsHandler()
+        self._progress = ProgressHandler()
+        self._model_switch = ModelSwitchHandler()
 
     @property
     def event_bus(self) -> asyncio.Queue[ActivityEvent]:
@@ -101,8 +103,6 @@ class Gateway:
                 asyncio.set_event_loop(asyncio.new_event_loop())
                 self._event_bus = asyncio.Queue(maxsize=500)
         return self._event_bus
-        self._progress = ProgressHandler()
-        self._model_switch = ModelSwitchHandler()
 
     async def handle(self, message: str, teacher_id: str,
                      files: list[Path] | None = None,

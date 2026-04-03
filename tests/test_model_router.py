@@ -50,15 +50,21 @@ class TestResolveTier:
 
 
 class TestResolveModel:
-    def test_default_fast_model(self):
-        config = AppConfig()
+    def test_default_fast_model_ollama(self):
+        config = AppConfig(provider=LLMProvider.OLLAMA)
         model = resolve_model(ModelTier.FAST, config)
         assert model == DEFAULT_TIER_MODELS["fast"]
 
-    def test_default_deep_model(self):
-        config = AppConfig()
+    def test_default_deep_model_ollama(self):
+        config = AppConfig(provider=LLMProvider.OLLAMA)
         model = resolve_model(ModelTier.DEEP, config)
         assert model == DEFAULT_TIER_MODELS["deep"]
+
+    def test_default_model_uses_provider_defaults(self):
+        from clawed.model_router import PROVIDER_TIER_MODELS
+        config = AppConfig(provider=LLMProvider.ANTHROPIC)
+        model = resolve_model(ModelTier.DEEP, config)
+        assert model == PROVIDER_TIER_MODELS["anthropic"]["deep"]
 
     def test_teacher_tier_override(self):
         config = AppConfig(tier_models={"fast": "my-fast-model"})
@@ -66,7 +72,7 @@ class TestResolveModel:
         assert model == "my-fast-model"
 
     def test_teacher_tier_override_only_affects_specified(self):
-        config = AppConfig(tier_models={"fast": "my-fast-model"})
+        config = AppConfig(provider=LLMProvider.OLLAMA, tier_models={"fast": "my-fast-model"})
         model = resolve_model(ModelTier.DEEP, config)
         assert model == DEFAULT_TIER_MODELS["deep"]
 
@@ -163,7 +169,9 @@ class TestRouteFunction:
         assert routed.ollama_model == "task-specific-model"
 
     def test_route_with_anthropic_provider(self):
+        from clawed.model_router import PROVIDER_TIER_MODELS
         config = AppConfig(provider=LLMProvider.ANTHROPIC)
         routed = route("quick_answer", config)
-        assert routed.ollama_model == DEFAULT_TIER_MODELS["fast"]
+        # Model should be written to anthropic_model, not ollama_model
+        assert routed.anthropic_model == PROVIDER_TIER_MODELS["anthropic"]["fast"]
         assert routed.provider == LLMProvider.ANTHROPIC
