@@ -106,16 +106,13 @@ The wiki is stored as plain markdown files in `~/.eduagent/wiki/` — viewable i
 
 ## AI Providers
 
-Claw-ED works with any AI provider. Pick one during setup:
+Bring your own API key. Claw-ED connects to any major provider:
 
-| Provider | Cost | Best for |
-|----------|------|----------|
-| Google Gemini | Free tier available | Getting started |
-| Ollama Cloud | $20/month unlimited | Daily use |
-| Ollama Local | Free | Complete privacy |
-| OpenRouter | Pay-per-use | Access to any model |
-| Anthropic Claude | ~$0.05/lesson | Opus 4.6 / Sonnet 4.6 |
-| OpenAI GPT | ~$0.04/lesson | GPT-5.4 |
+- **Anthropic** — Claude Opus 4.6, Sonnet 4.6
+- **OpenAI** — GPT-5.4, o3
+- **Google** — Gemini 2.5 Flash, Pro
+- **Ollama** — Cloud or local (Gemma 4, Llama 4, Qwen 3 — fully offline, free)
+- **OpenRouter** — Access any model through a single key
 
 Run `clawed setup` anytime to switch providers.
 
