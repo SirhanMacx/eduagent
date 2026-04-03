@@ -334,3 +334,163 @@ def kb_browse() -> None:
     console.print(
         f"\n[dim]{len(subjects)} subjects, {total_files} files total.[/dim]"
     )
+
+
+# ── Wiki compilation commands ────────────────────────────────────────
+
+
+@kb_app.command("compile")
+def kb_compile(
+    force: bool = typer.Option(
+        False, "--force", "-f",
+        help="Recompile all articles, even unchanged ones.",
+    ),
+) -> None:
+    """Compile your curriculum into a searchable wiki.
+
+    Synthesizes ingested documents into organized markdown articles.
+    Incremental by default -- only recompiles changed documents.
+    """
+    from clawed.commands._helpers import _safe_progress, check_api_key_or_exit, run_async
+    from clawed.wiki import compile_wiki
+
+    check_api_key_or_exit()
+
+    with _safe_progress(console=console) as progress:
+        task = progress.add_task("Compiling wiki...", total=None)
+
+        def _on_progress(doc_title: str, current: int, total: int) -> None:
+            progress.update(
+                task,
+                total=total,
+                completed=current,
+                description=f"[dim]{doc_title[:40]}...[/dim]" if len(doc_title) > 40 else f"[dim]{doc_title}[/dim]",
+            )
+
+        result = run_async(compile_wiki(force=force, on_progress=_on_progress))
+
+    # Display results
+    if result.total == 0:
+        console.print(
+            Panel(
+                "No ingested documents found.\n\n"
+                "Ingest your curriculum first:\n"
+                "  [bold]clawed ingest ~/path/to/materials[/bold]",
+                title="[yellow]Wiki[/yellow]",
+                border_style="yellow",
+            )
+        )
+        return
+
+    summary = (
+        f"[green]{result.compiled}[/green] compiled, "
+        f"[dim]{result.skipped} unchanged[/dim], "
+        f"{result.total} total articles"
+    )
+    if result.errors:
+        summary += f"\n[yellow]{len(result.errors)} errors:[/yellow]"
+        for err in result.errors[:5]:
+            summary += f"\n  [dim]{err}[/dim]"
+
+    console.print(
+        Panel(
+            summary,
+            title=(
+                "[bold green]Wiki Compiled[/bold green]"
+                if not result.errors
+                else "[bold yellow]Wiki Compiled (with errors)[/bold yellow]"
+            ),
+            border_style="green" if not result.errors else "yellow",
+        )
+    )
+
+
+@kb_app.command("query")
+def kb_query(
+    question: str = typer.Argument(..., help="Question to ask your curriculum wiki."),
+) -> None:
+    """Ask a question and get an answer from your compiled wiki."""
+    from rich.markdown import Markdown
+
+    from clawed.commands._helpers import check_api_key_or_exit, run_async
+    from clawed.wiki import INDEX_PATH, query_wiki
+
+    if not INDEX_PATH.exists():
+        console.print(
+            "[yellow]No wiki found.[/yellow] Compile your curriculum first:\n"
+            "  [bold]clawed kb compile[/bold]"
+        )
+        raise typer.Exit(1)
+
+    check_api_key_or_exit()
+    console.print(f"[dim]Searching wiki for: {question}[/dim]\n")
+
+    try:
+        result = run_async(query_wiki(question))
+    except FileNotFoundError as e:
+        console.print(f"[yellow]{e}[/yellow]")
+        raise typer.Exit(1)
+
+    # Display answer
+    console.print(Markdown(result.answer))
+    if result.sources:
+        console.print(
+            f"\n[dim]Sources: {', '.join(result.sources)} "
+            f"({result.articles_read} articles read)[/dim]"
+        )
+
+
+@kb_app.command("lint")
+def kb_lint() -> None:
+    """Check your wiki for stale, missing, or orphaned articles."""
+    from clawed.wiki import ARTICLES_DIR, lint_wiki
+
+    if not ARTICLES_DIR.exists():
+        console.print(
+            "[yellow]No wiki found.[/yellow] Compile your curriculum first:\n"
+            "  [bold]clawed kb compile[/bold]"
+        )
+        raise typer.Exit(1)
+
+    result = lint_wiki()
+
+    if result.healthy:
+        console.print(
+            Panel(
+                "[green]All articles are up to date.[/green]\n"
+                "No stale, uncovered, or orphaned articles found.",
+                title="[bold green]Wiki Health: Clean[/bold green]",
+                border_style="green",
+            )
+        )
+        return
+
+    # Stale articles
+    if result.stale:
+        table = Table(title="Stale Articles (source changed since compilation)")
+        table.add_column("Document", style="yellow")
+        table.add_column("Compiled At", style="dim")
+        for item in result.stale:
+            table.add_row(item["doc_title"], item.get("compiled_at", ""))
+        console.print(table)
+        console.print("[dim]Fix: clawed kb compile[/dim]\n")
+
+    # Uncovered documents
+    if result.uncovered:
+        table = Table(title="Uncovered Documents (ingested but no wiki article)")
+        table.add_column("Document", style="cyan")
+        table.add_column("Chunks", justify="right")
+        for item in result.uncovered:
+            table.add_row(item["doc_title"], str(item.get("chunk_count", 0)))
+        console.print(table)
+        console.print("[dim]Fix: clawed kb compile[/dim]\n")
+
+    # Orphaned articles
+    if result.orphaned:
+        table = Table(title="Orphaned Articles (source deleted)")
+        table.add_column("Article", style="red")
+        table.add_column("Original Document", style="dim")
+        for item in result.orphaned:
+            table.add_row(item.get("article_file", ""), item["doc_title"])
+        console.print(table)
+        console.print("[dim]These articles reference deleted source files.[/dim]\n")

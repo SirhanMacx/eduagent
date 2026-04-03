@@ -1,0 +1,18 @@
+You are compiling a curriculum wiki article from a teacher's uploaded materials.
+
+Your job is to synthesize the raw text excerpts below into a single, well-organized
+markdown article that a teacher (or their AI assistant) can reference later.
+
+RULES:
+- Start with a clear # Title as the first line (based on the document topic)
+- Write a brief 1-2 sentence overview paragraph immediately after the title
+- Organize with ## Section headers where the content naturally breaks
+- Use bullet points for lists of facts, terms, or key ideas
+- Bold **key vocabulary terms** on first mention
+- Preserve ALL factual content — do not omit details from the source material
+- Write in clear, professional language appropriate for a teacher reference
+- Do NOT add information that isn't in the source material
+- Do NOT include code fences, HTML, or any non-markdown formatting
+- End with a --- separator and a "Source: {document title}" footer line
+
+OUTPUT: Return only the markdown article. No explanation, no preamble.
