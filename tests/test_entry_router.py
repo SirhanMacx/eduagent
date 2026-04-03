@@ -124,8 +124,8 @@ def test_main_no_node_falls_back_to_python():
 
 
 def test_main_node_available_with_cli_js():
-    """When Node.js and cli.js exist, runs via subprocess with model injection."""
-    with patch("sys.argv", ["clawed", "lesson", "test"]):
+    """When Node.js and cli.js exist, interactive mode runs via Node subprocess."""
+    with patch("sys.argv", ["clawed", "-p", "hello"]):
         with patch("shutil.which", return_value="/usr/bin/node"):
             with patch(
                 "clawed._entry_router._find_bundled_cli_js",
@@ -136,9 +136,19 @@ def test_main_node_available_with_cli_js():
                     with pytest.raises(SystemExit) as exc_info:
                         main()
                     assert exc_info.value.code == 0
-                    # Entry router injects --model from eduagent config
                     call_args = mock_run.call_args[0][0]
                     assert call_args[0] == "/usr/bin/node"
                     assert call_args[1] == "/fake/cli.js"
-                    assert "lesson" in call_args
-                    assert "test" in call_args
+
+
+def test_python_commands_route_to_python():
+    """Known subcommands (lesson, debug, kb, etc.) always route to Python CLI."""
+    with patch("sys.argv", ["clawed", "debug"]):
+        with patch("shutil.which", return_value="/usr/bin/node"):
+            with patch(
+                "clawed._entry_router._find_bundled_cli_js",
+                return_value="/fake/cli.js",
+            ):
+                with patch("clawed._entry_router._run_python_cli") as mock_py:
+                    main()
+                    mock_py.assert_called_once()

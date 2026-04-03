@@ -281,6 +281,27 @@ def main() -> None:
         args.remove("--python")
         sys.argv = [sys.argv[0]] + args
 
+    # Python CLI subcommands — these are typer commands that should NEVER
+    # go through the Node CLI (which would interpret them as chat prompts)
+    python_commands = {
+        "setup", "debug", "config", "ingest", "lesson", "unit", "full",
+        "course", "materials", "assess", "rubric", "score", "improve",
+        "evaluate", "differentiate", "sub-packet", "parent-note",
+        "gap-analyze", "export", "share", "import", "demo", "train",
+        "tui", "chat", "student-chat", "mcp-server", "serve", "bot",
+        "student-bot", "sub", "parent-comm", "stats", "status",
+        "persona", "standards", "templates", "skills", "school",
+        "class", "queue", "workspace", "kb", "schedule", "game",
+        "simulate", "generate-landing", "landing", "transcribe",
+        "pacing", "year-map",
+    }
+
+    # Route known subcommands to Python CLI directly
+    if args and args[0] in python_commands:
+        sys.argv = [sys.argv[0]] + args
+        _run_python_cli()
+        return
+
     # Use the Ink TUI for interactive mode — the full Claw-ED TUI
     node = shutil.which("node")
     cli_js = _find_bundled_cli_js()
