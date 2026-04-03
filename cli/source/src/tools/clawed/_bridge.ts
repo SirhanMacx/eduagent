@@ -101,22 +101,24 @@ export function findPythonSync(): PythonCmd | null {
   return null
 }
 
+// No timeouts — teachers have large curriculum folders and complex lessons.
+// A 100 GB ingest or multi-agent lesson can take hours. Never kill their work.
 export const TIMEOUT_BY_COMMAND: Record<string, number> = {
-  lesson: 120_000,
-  unit: 180_000,
-  game: 120_000,
-  simulate: 120_000,
-  ingest: 300_000,
-  train: 600_000,
-  export: 60_000,
-  standards: 5_000,
-  persona: 5_000,
-  review: 30_000,
-  materials: 120_000,
-  assess: 120_000,
-  differentiate: 60_000,
-  search: 10_000,
-  students: 5_000,
+  lesson: 7_200_000,
+  unit: 7_200_000,
+  game: 7_200_000,
+  simulate: 7_200_000,
+  ingest: 0,          // No timeout — ingest everything
+  train: 7_200_000,
+  export: 7_200_000,
+  standards: 30_000,
+  persona: 7_200_000,
+  review: 7_200_000,
+  materials: 7_200_000,
+  assess: 7_200_000,
+  differentiate: 7_200_000,
+  search: 30_000,
+  students: 30_000,
 }
 
 export function spawnPython(
@@ -147,10 +149,10 @@ export function spawnPython(
       ...args.slice(2),
     ]
     const proc = spawn(python.exe, fullArgs, { stdio: ['ignore', 'pipe', 'pipe'] })
-    const timer = setTimeout(() => {
+    const timer = timeout > 0 ? setTimeout(() => {
       killed = true
       proc.kill('SIGTERM')
-    }, timeout)
+    }, timeout) : null
 
     proc.stdout.on('data', (d: Buffer) => {
       stdout += d.toString()
@@ -159,7 +161,7 @@ export function spawnPython(
       stderr += d.toString()
     })
     proc.on('close', code => {
-      clearTimeout(timer)
+      if (timer) clearTimeout(timer)
       if (killed) {
         resolve({
           ...EMPTY_ERROR,
@@ -190,7 +192,7 @@ export function spawnPython(
       }
     })
     proc.on('error', err => {
-      clearTimeout(timer)
+      if (timer) clearTimeout(timer)
       resolve({ ...EMPTY_ERROR, errors: [err.message] })
     })
   })
