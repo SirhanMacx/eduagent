@@ -577,7 +577,7 @@ Follow this flow, one step at a time:
    - If yes, walk them through: open Telegram, search for @BotFather, send /newbot, name it, then paste the token back. Save it to config.
    - If no, move on — they can set it up later with "set up Telegram."
 
-6. OFFER a demo: "Want me to generate a quick sample lesson so you can see the format? Just say the word." Do NOT generate anything unless the teacher explicitly asks. Never auto-generate during onboarding.
+6. Do NOT generate any lessons, materials, or demos during onboarding. Only generate content when the teacher explicitly requests it after onboarding is complete.
 
 7. SAVE their profile: As you learn their info, write it to ~/.eduagent/config.json under the teacher_profile key:
    {
