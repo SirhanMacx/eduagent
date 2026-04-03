@@ -342,6 +342,26 @@ def main() -> None:
             print(f"Error: {e}", file=sys.stderr)
             sys.exit(1)
 
+    # ── First-run check ────────────────────────────────────────────────
+    # If no config exists, the teacher has never set up Claw-ED.
+    # Run the Python onboarding wizard BEFORE launching the Node TUI,
+    # so the teacher picks a provider and enters an API key.
+    config_path = Path.home() / ".eduagent" / "config.json"
+    if not config_path.exists() and not args:
+        # First run — show the setup wizard
+        try:
+            from clawed.onboarding import quick_model_setup
+            result = quick_model_setup()
+            if result == "telegram":
+                # Teacher chose Telegram — start the bot
+                sys.argv = [sys.argv[0], "bot"]
+                _run_python_cli()
+                return
+            # Terminal mode — fall through to launch the TUI
+        except Exception as e:
+            print(f"Setup error: {e}", file=sys.stderr)
+            # Fall through to TUI anyway
+
     # Use the Ink TUI for interactive mode — the full Claw-ED TUI
     node = shutil.which("node")
     cli_js = _find_bundled_cli_js()
