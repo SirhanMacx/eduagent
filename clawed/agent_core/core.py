@@ -481,9 +481,9 @@ class Gateway:
             from clawed.models import AppConfig
             config = AppConfig.load()
             tp = config.teacher_profile
-            if tp and tp.name:
+            if tp and (tp.name or tp.subjects or tp.grade_levels):
                 return {
-                    "name": tp.name,
+                    "name": tp.name or "Teacher",
                     "subjects": tp.subjects or [],
                     "grade_levels": tp.grade_levels or [],
                     "state": tp.state or "",

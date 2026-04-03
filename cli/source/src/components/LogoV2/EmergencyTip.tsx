@@ -6,7 +6,7 @@ import { getGlobalConfig, saveGlobalConfig } from 'src/utils/config.js';
 const CONFIG_NAME = 'tengu-top-of-feed-tip';
 export function EmergencyTip(): React.ReactNode {
   // Suppress Claude Code tips in Claw-ED mode — teachers don't need developer tips
-  if (process.env.CLAWED_MODE) return null;
+  if (process.env.CLAWED_MODE || process.env.CLAWED_PROVIDER) return null;
 
   const tip = useMemo(getTipOfFeed, []);
   // Memoize to prevent re-reads after we save - we want the value at mount time

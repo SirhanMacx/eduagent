@@ -570,6 +570,7 @@ def quick_model_setup() -> str:
     if choice == "7":
         config = AppConfig()
         config.save()
+        _write_onboarding_marker()
         console.print(
             "\n  [yellow]No AI configured. "
             "Run 'clawed setup' when you're ready.[/yellow]\n"
@@ -580,6 +581,7 @@ def quick_model_setup() -> str:
         # Demo mode — no API key needed
         config = AppConfig()
         config.save()
+        _write_onboarding_marker()
         console.print(
             "\n  [green]\u2713 Demo mode active![/green] "
             "Try: [bold]clawed demo[/bold] to see sample output.\n"
@@ -605,6 +607,7 @@ def quick_model_setup() -> str:
             )
             config = AppConfig()
             config.save()
+            _write_onboarding_marker()
             return "skip"
         key = key.strip()
         config = AppConfig(provider=LLMProvider.GOOGLE)
@@ -633,6 +636,7 @@ def quick_model_setup() -> str:
             )
             config = AppConfig()
             config.save()
+            _write_onboarding_marker()
             return "skip"
         key = key.strip()
         config = AppConfig(provider=LLMProvider.ANTHROPIC)
@@ -657,6 +661,7 @@ def quick_model_setup() -> str:
             )
             config = AppConfig()
             config.save()
+            _write_onboarding_marker()
             return "skip"
         key = key.strip()
         config = AppConfig(provider=LLMProvider.OLLAMA)
@@ -731,6 +736,7 @@ def quick_model_setup() -> str:
             )
             config = AppConfig()
             config.save()
+            _write_onboarding_marker()
             return "skip"
         key = key.strip()
         config = AppConfig(provider=LLMProvider.OPENAI)
@@ -776,6 +782,7 @@ def quick_model_setup() -> str:
             return "telegram"
         else:
             console.print("  [dim]No token entered. Falling back to terminal chat.[/dim]\n")
+            _write_onboarding_marker()
             return "terminal"
 
     # Mark onboarding as complete
