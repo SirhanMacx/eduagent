@@ -45,7 +45,7 @@ clawed lesson "The Missouri Compromise" -g 8 -s "US History"
 - Interactive HTML games and simulations
 - Homework, rubrics, sub plans, parent communications
 - A compiled curriculum wiki you can query
-- Morning prep that runs before you wake up
+- Scheduled tasks (morning prep, weekly planning) via `clawed schedule`
 
 ---
 
