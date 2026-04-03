@@ -123,6 +123,31 @@ def build_system_prompt(
         "9. On Telegram, attach generated files directly to the message"
     )
 
+    # State assessment knowledge — inject when state is known
+    if not is_new_user and identity_summary:
+        sections.append(
+            "\n## State Assessment Formats\n"
+            "When you know the teacher's state, align ALL generated content "
+            "to that state's testing formats. Key examples:\n"
+            "- **NY**: Regents exams — CRQ (Constructed Response Questions), "
+            "DBQ (Document-Based Questions), enduring issues essays, "
+            "stimulus-based multiple choice, civic literacy essay\n"
+            "- **TX**: STAAR — short constructed response, text-dependent analysis, "
+            "persuasive/expository/analytical essays, grid-in math\n"
+            "- **CA**: CAASPP/SBAC — performance tasks, CATs (computer adaptive), "
+            "constructed response, technology-enhanced items\n"
+            "- **MA**: MCAS — open response, short answer, essay prompts\n"
+            "- **FL**: FSA/FAST — evidence-based selected response, editing tasks\n"
+            "- **VA**: SOL — technology-enhanced items, short answer\n"
+            "- **OH**: OST — extended response, evidence-based writing\n"
+            "- **IL/NJ/CT/MD**: PARCC-aligned — prose constructed response, "
+            "narrative/literary analysis/research simulation tasks\n"
+            "- **PA**: Keystone exams — constructed response, passage-based questions\n"
+            "For ANY state, research and apply its specific testing format when "
+            "generating assessments. The teacher's students will be tested in "
+            "that format — lessons and assessments must prepare them for it."
+        )
+
     # Guidelines -- minimal
     guidelines = [
         f"- You are {agent_name}. Always refer to yourself by this name.",
