@@ -460,14 +460,38 @@ class Gateway:
 
     @staticmethod
     def _load_teacher_profile() -> dict[str, Any] | None:
-        """Load teacher profile from the database."""
+        """Load teacher profile from database OR config.json.
+
+        The CLI onboarding saves to config.json (teacher_profile key).
+        The Telegram bot reads from the database. We check both so
+        the two systems share the same teacher identity.
+        """
+        # 1. Try the database first (Telegram bot's canonical store)
         try:
             from clawed.database import Database
             db = Database()
-            return db.get_default_teacher()
+            profile = db.get_default_teacher()
+            if profile and profile.get("name"):
+                return profile
         except Exception as e:
-            logger.debug("Could not load teacher profile: %s", e)
-            return None
+            logger.debug("Could not load teacher from DB: %s", e)
+
+        # 2. Fall back to config.json (CLI onboarding saves here)
+        try:
+            from clawed.models import AppConfig
+            config = AppConfig.load()
+            tp = config.teacher_profile
+            if tp and tp.name:
+                return {
+                    "name": tp.name,
+                    "subjects": tp.subjects or [],
+                    "grade_levels": tp.grade_levels or [],
+                    "state": tp.state or "",
+                }
+        except Exception as e:
+            logger.debug("Could not load teacher from config: %s", e)
+
+        return None
 
     @staticmethod
     def _load_persona(teacher_profile: dict[str, Any] | None) -> dict[str, Any] | None:
