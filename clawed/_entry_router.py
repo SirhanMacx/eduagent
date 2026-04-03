@@ -102,6 +102,7 @@ def _resolve_key_for_provider(provider: str, config: dict) -> str | None:
         "openai": "OPENAI_API_KEY",
         "google": "GOOGLE_API_KEY",
         "ollama": "OLLAMA_API_KEY",
+        "openrouter": "OPENROUTER_API_KEY",
     }
     env_var = env_map.get(provider)
     if env_var and os.environ.get(env_var):
