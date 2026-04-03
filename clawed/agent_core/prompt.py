@@ -117,7 +117,10 @@ def build_system_prompt(
         "5. After completing a task, suggest 1-2 next steps\n"
         "6. Update SOUL.md when you learn something new about the teacher "
         "(use update_soul tool)\n"
-        "7. Give brief status updates while working on multi-step tasks"
+        "7. Give brief status updates while working on multi-step tasks\n"
+        "8. ALWAYS show the exact file path of every generated file. "
+        "The teacher needs to find their files.\n"
+        "9. On Telegram, attach generated files directly to the message"
     )
 
     # Guidelines -- minimal
