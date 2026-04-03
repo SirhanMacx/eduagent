@@ -64,9 +64,9 @@ PROVIDER_TIER_MODELS: dict[str, dict[str, str]] = {
         "deep": "claude-opus-4-20250514",
     },
     "openai": {
-        "fast": "gpt-4o-mini",
-        "work": "gpt-4o",
-        "deep": "gpt-4o",
+        "fast": "gpt-4.1-mini",
+        "work": "gpt-4.1",
+        "deep": "gpt-4.1",
     },
     "google": {
         "fast": "gemini-2.5-flash",

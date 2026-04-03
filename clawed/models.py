@@ -1052,7 +1052,7 @@ class AppConfig(BaseModel):
 
     provider: LLMProvider = LLMProvider.ANTHROPIC
     anthropic_model: str = "claude-sonnet-4-6"
-    openai_model: str = "gpt-4o"
+    openai_model: str = "gpt-4.1"
     ollama_model: str = "minimax-m2.7:cloud"
     google_model: str = "gemini-2.5-flash"
     openrouter_model: str = "anthropic/claude-sonnet-4"

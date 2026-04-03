@@ -166,7 +166,7 @@ class TestAppConfigDefaults:
         config = AppConfig()
         assert config.provider == LLMProvider.ANTHROPIC
         assert config.anthropic_model == "claude-sonnet-4-6"
-        assert config.openai_model == "gpt-4o"
+        assert config.openai_model == "gpt-4.1"
         assert config.ollama_model == "minimax-m2.7:cloud"
         assert config.ollama_base_url == "http://localhost:11434"
         assert config.output_dir == "~/clawed_output"
@@ -334,7 +334,7 @@ class TestVersion:
     def test_version_string(self):
         from clawed import __version__
 
-        assert __version__ == "4.3.2026.15"
+        assert __version__ == "4.3.2026.16"
 
 
 # ── Standards module ───────────────────────────────────────────────

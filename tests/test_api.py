@@ -624,7 +624,7 @@ class TestSettingsRoutes:
             "ollama_model": "llama3.2",
             "ollama_base_url": "http://localhost:11434",
             "anthropic_model": "claude-sonnet-4-6",
-            "openai_model": "gpt-4o",
+            "openai_model": "gpt-4.1",
             "include_homework": False,
             "export_format": "pdf",
         })
