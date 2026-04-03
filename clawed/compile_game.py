@@ -346,7 +346,10 @@ async def compile_game(
         Path to the generated .html game file.
     """
     if output_dir is None:
-        output_dir = Path("./clawed_output")
+        from clawed.io import output_dir as get_output_dir
+        output_dir = get_output_dir()
+    else:
+        output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     config = config or AppConfig.load()

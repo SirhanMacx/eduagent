@@ -21,37 +21,57 @@ logger = logging.getLogger(__name__)
 _CONCURRENT_LIMIT = 5
 
 
-def _collect_image_specs(master: "MasterContent") -> set[str]:
-    """Collect all unique non-empty image_spec strings from a MasterContent."""
-    specs: set[str] = set()
+def _collect_image_specs(master: "MasterContent") -> dict[str, str]:
+    """Collect image_spec strings with their content context.
+
+    Returns {spec: context_text} — the context helps the image search
+    find content-relevant images instead of generic skill-based ones.
+    """
+    specs: dict[str, str] = {}
 
     for entry in master.vocabulary:
         if entry.image_spec:
-            specs.add(entry.image_spec)
+            specs[entry.image_spec] = f"{entry.term}: {entry.definition}"
 
     for ps in master.primary_sources:
         if ps.image_spec:
-            specs.add(ps.image_spec)
+            specs[ps.image_spec] = getattr(ps, "title", "") or ps.image_spec
 
     for section in master.direct_instruction:
         if section.image_spec:
-            specs.add(section.image_spec)
+            content = getattr(section, "content", "") or getattr(section, "title", "")
+            specs[section.image_spec] = content[:200] if content else section.image_spec
 
     for sq in master.exit_ticket:
         if sq.stimulus_image_spec:
-            specs.add(sq.stimulus_image_spec)
+            specs[sq.stimulus_image_spec] = getattr(sq, "question", "") or sq.stimulus_image_spec
 
     return specs
 
 
-async def _fetch_one(spec: str, subject: str = "", timeout: int = 15) -> tuple[str, Path | None]:
+async def _fetch_one(
+    spec: str, subject: str = "", context: str = "", timeout: int = 15,
+) -> tuple[str, Path | None]:
     """Fetch a single image by spec. Returns (spec, path) or (spec, None).
 
-    Uses :func:`clawed.slide_images.fetch_slide_image` which already handles
-    caching, multi-source fallback, and subject-aware query building.
+    When context is provided, uses it to build a more content-specific
+    search query instead of the generic topic-based one.
     """
     try:
-        from clawed.slide_images import fetch_slide_image
+        from clawed.slide_images import fetch_content_image, fetch_slide_image
+
+        # Prefer content-aware search when context is available
+        if context:
+            try:
+                path = await asyncio.wait_for(
+                    fetch_content_image(context, subject=subject, fallback_topic=spec),
+                    timeout=timeout,
+                )
+                if path and path.exists():
+                    logger.info("Fetched content image for: %s", spec[:80])
+                    return spec, path
+            except Exception:
+                pass  # Fall through to topic-based search
 
         path = await asyncio.wait_for(
             fetch_slide_image(spec, subject=subject),
@@ -82,8 +102,8 @@ async def fetch_all_images(
         A dict mapping image_spec strings to local file Paths.
         Only specs that were successfully fetched are included.
     """
-    specs = _collect_image_specs(master)
-    if not specs:
+    spec_map = _collect_image_specs(master)
+    if not spec_map:
         return {}
 
     timeout = 15
@@ -94,16 +114,16 @@ async def fetch_all_images(
 
     logger.info(
         "Fetching %d images (timeout=%ds, subject=%s, concurrency=%d)",
-        len(specs), timeout, subject, _CONCURRENT_LIMIT,
+        len(spec_map), timeout, subject, _CONCURRENT_LIMIT,
     )
 
     semaphore = asyncio.Semaphore(_CONCURRENT_LIMIT)
 
-    async def _limited_fetch(spec: str) -> tuple[str, Path | None]:
+    async def _limited_fetch(spec: str, context: str) -> tuple[str, Path | None]:
         async with semaphore:
-            return await _fetch_one(spec, subject=subject, timeout=timeout)
+            return await _fetch_one(spec, subject=subject, context=context, timeout=timeout)
 
-    tasks = [_limited_fetch(spec) for spec in specs]
+    tasks = [_limited_fetch(spec, ctx) for spec, ctx in spec_map.items()]
     results = await asyncio.gather(*tasks, return_exceptions=True)
 
     images: dict[str, Path] = {}
@@ -115,5 +135,5 @@ async def fetch_all_images(
         if path is not None:
             images[spec] = path
 
-    logger.info("Successfully fetched %d of %d images", len(images), len(specs))
+    logger.info("Successfully fetched %d of %d images", len(images), len(spec_map))
     return images

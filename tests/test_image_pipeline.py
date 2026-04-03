@@ -56,7 +56,7 @@ def test_collect_image_specs_empty():
     mc = _make_mock_master()
     specs = _collect_image_specs(mc)
     assert len(specs) == 0
-    assert isinstance(specs, set)
+    assert isinstance(specs, dict)
 
 
 def test_collect_image_specs_gathers_all_sources():
@@ -68,7 +68,7 @@ def test_collect_image_specs_gathers_all_sources():
         et_specs=["ticket_img_1"],
     )
     specs = _collect_image_specs(mc)
-    assert specs == {
+    assert set(specs.keys()) == {
         "vocab_img_1", "vocab_img_2",
         "source_img_1",
         "instruction_img_1",
@@ -94,7 +94,7 @@ def test_collect_image_specs_skips_empty_strings():
         ps_specs=[""],
     )
     specs = _collect_image_specs(mc)
-    assert specs == {"real_spec"}
+    assert set(specs.keys()) == {"real_spec"}
 
 
 # ── fetch_all_images ─────────────────────────────────────────────────
@@ -140,7 +140,7 @@ def test_fetch_all_images_handles_failures():
     good_path = MagicMock()
     good_path.exists.return_value = True
 
-    async def fake_fetch_one(spec, subject="", timeout=15):
+    async def fake_fetch_one(spec, subject="", context="", timeout=15):
         if spec == "good_img":
             return (spec, good_path)
         return (spec, None)
@@ -156,7 +156,7 @@ def test_fetch_all_images_handles_exceptions_in_gather():
     mc = _make_mock_master(vocab_specs=["crash_img"])
     mc.subject = "Science"
 
-    async def fake_fetch_one(spec, subject="", timeout=15):
+    async def fake_fetch_one(spec, subject="", context="", timeout=15):
         raise ConnectionError("Network down")
 
     with patch("clawed.image_pipeline._fetch_one", side_effect=fake_fetch_one):

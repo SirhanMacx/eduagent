@@ -16,7 +16,21 @@ def _base_dir() -> Path:
 
 
 def output_dir() -> Path:
-    d = _base_dir() / "output"
+    """Return the configured output directory.
+
+    Priority: AppConfig.output_dir > ~/clawed_output (default).
+    Falls back to ~/.eduagent/output/ if config can't be loaded.
+    """
+    try:
+        from clawed.models import AppConfig
+        cfg = AppConfig.load()
+        if cfg.output_dir:
+            d = Path(cfg.output_dir).expanduser().resolve()
+            d.mkdir(parents=True, exist_ok=True)
+            return d
+    except Exception:
+        pass
+    d = Path.home() / "clawed_output"
     d.mkdir(parents=True, exist_ok=True)
     return d
 

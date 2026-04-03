@@ -165,6 +165,11 @@ export async function playLaunchScreen(): Promise<void> {
   const rows = process.stdout.rows || 24;
   if (cols < 60 || rows < 20) return;
 
+  // Windows: ensure UTF-8 output for Unicode sparkles
+  if (process.platform === 'win32') {
+    try { process.stdout.write('\x1b[65001m'); } catch {}
+  }
+
   const out = process.stdout;
   const write = (s: string) => out.write(s);
 
@@ -369,6 +374,32 @@ export async function playLaunchScreen(): Promise<void> {
   } finally {
     write(CLEAR + SHOW_CURSOR + RESET);
   }
+}
+
+/**
+ * Simple launch screen for Windows — no cursor positioning, no particles.
+ * Just clean text output that works on any terminal.
+ */
+async function playSimpleLaunchScreen(): Promise<void> {
+  const out = process.stdout;
+  const write = (s: string) => out.write(s);
+  const gold = rgb(...GOLD);
+  const green = rgb(...GREEN);
+  const dim = rgb(...CREAM);
+
+  write('\n\n');
+  write(`${green}    🍎${RESET}\n\n`);
+  await sleep(400);
+
+  for (const line of TITLE) {
+    write(`${gold}${line}${RESET}\n`);
+    await sleep(60);
+  }
+
+  write('\n');
+  write(`${dim}    ${SUBTITLE}  v${MACRO.VERSION}${RESET}\n`);
+  await sleep(1200);
+  write(`${ESC}2J${ESC}H`); // Clear screen
 }
 
 declare const MACRO: { VERSION: string };

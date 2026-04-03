@@ -1857,7 +1857,20 @@ async function run(): Promise<CommanderCommand> {
       writeToStderr(`Error: --no-session-persistence can only be used with --print mode.`);
       process.exit(1);
     }
-    const effectivePrompt = prompt || '';
+    let effectivePrompt = prompt || '';
+
+    // Claw-ED: agent always leads the conversation — never a blank cursor
+    if (!effectivePrompt && process.env.CLAWED_MODE) {
+      try {
+        const { isFirstRunTeacher } = await import('./constants/prompts.js');
+        if (isFirstRunTeacher()) {
+          effectivePrompt = 'Hello! I just set up Claw-ED.';
+        } else {
+          effectivePrompt = 'Hey Ed, what are we working on today?';
+        }
+      } catch {}
+    }
+
     let inputPrompt = await getInputPrompt(effectivePrompt, (inputFormat ?? 'text') as 'text' | 'stream-json');
     profileCheckpoint('action_after_input_prompt');
 
