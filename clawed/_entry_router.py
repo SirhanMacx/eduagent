@@ -365,7 +365,9 @@ def main() -> None:
                 sys.argv = [sys.argv[0], "bot"]
                 _run_python_cli()
                 return
-            # Terminal mode — fall through to launch the TUI
+            # Terminal mode — seed the first message so the AI greets the teacher
+            if result == "terminal":
+                args = ["Hello! I just finished setup."]
         except Exception as e:
             print(f"Setup error: {e}", file=sys.stderr)
             # Fall through to TUI anyway
