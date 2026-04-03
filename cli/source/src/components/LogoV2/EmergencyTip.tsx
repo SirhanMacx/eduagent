@@ -5,6 +5,9 @@ import { getDynamicConfig_CACHED_MAY_BE_STALE } from 'src/services/analytics/gro
 import { getGlobalConfig, saveGlobalConfig } from 'src/utils/config.js';
 const CONFIG_NAME = 'tengu-top-of-feed-tip';
 export function EmergencyTip(): React.ReactNode {
+  // Suppress Claude Code tips in Claw-ED mode — teachers don't need developer tips
+  if (process.env.CLAWED_MODE) return null;
+
   const tip = useMemo(getTipOfFeed, []);
   // Memoize to prevent re-reads after we save - we want the value at mount time
   const lastShownTip = useMemo(() => getGlobalConfig().lastShownEmergencyTip, []);

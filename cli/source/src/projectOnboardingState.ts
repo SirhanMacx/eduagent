@@ -67,7 +67,8 @@ export const shouldShowProjectOnboarding = memoize((): boolean => {
   if (
     projectConfig.hasCompletedProjectOnboarding ||
     projectConfig.projectOnboardingSeenCount >= 4 ||
-    process.env.IS_DEMO
+    process.env.IS_DEMO ||
+    process.env.CLAWED_MODE
   ) {
     return false
   }
