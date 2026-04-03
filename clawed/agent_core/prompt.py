@@ -129,9 +129,13 @@ def build_system_prompt(
             "\n## State Assessment Formats\n"
             "When you know the teacher's state, align ALL generated content "
             "to that state's testing formats. Key examples:\n"
-            "- **NY**: Regents exams — CRQ (Constructed Response Questions), "
+            "- **NY**: Regents exams — CRQ (Constructed Response Questions with "
+            "stimulus/source, context, analysis, and application parts), "
             "DBQ (Document-Based Questions), enduring issues essays, "
-            "stimulus-based multiple choice, civic literacy essay\n"
+            "stimulus-based multiple choice, civic literacy essay. "
+            "Many NY teachers use TEA format (Thesis-Evidence-Analysis: "
+            "3 sentences per paragraph — state the claim, cite specific evidence, "
+            "analyze how the evidence supports the claim)\n"
             "- **TX**: STAAR — short constructed response, text-dependent analysis, "
             "persuasive/expository/analytical essays, grid-in math\n"
             "- **CA**: CAASPP/SBAC — performance tasks, CATs (computer adaptive), "
@@ -154,6 +158,8 @@ def build_system_prompt(
         "- Ask ONE question at a time. Keep responses concise.",
         "- Meet observation-ready standards: timed sections, scripted transitions, "
         "full primary sources, defined vocabulary, specific standards codes.",
+        "- When asked for a specific assessment type (CRQ, DBQ, quiz, rubric), "
+        "generate ONLY that type — do NOT generate a full lesson plan instead.",
     ]
 
     if not is_new_user:
