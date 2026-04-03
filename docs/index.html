@@ -2104,80 +2104,47 @@ img { max-width: 100%; height: auto; }
   var white = '#E8E0D0';
   var cyan = '#5FAFAF';
 
-  // Colors for the Apple Lobster
-  var red = '#E8443A';
-  var lgreen = '#50B450';
-
-  // Braille art Apple Lobster — colored segments
-  var logo = [
-    {t: '                   \u2878\u2877\u2836\u2836\u287E\u2803', c: lgreen},
-    {t: '                   \u2878\u2847', c: lgreen},
-    {t: ' \u2880\u28E4\u28E4\u28E4\u2840          \u2880\u2840\u28E4\u28EC\u28E5\u28E4\u2840\u2845          \u28C0\u28E4\u28E4\u28E6\u2845', c: 'mixed', parts: [
-      {t: ' \u2880\u28E4\u28E4\u28E4\u2840', c: gold},
-      {t: '          \u2880\u2840\u28E4\u28EC\u28E5\u28E4\u2840\u2845', c: red},
-      {t: '          \u28C0\u28E4\u28E4\u28E6\u2845', c: gold}
-    ]},
-    {t: '\u28BC\u281F\u28E1\u28E4\u2840\u2849\u283B\u2844     \u2880\u28B4\u28BE\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28B7\u28E6\u2845     \u28A0\u285F\u2849\u2880\u28E4\u28CC\u283B\u28E7', c: 'mixed', parts: [
-      {t: '\u28BC\u281F', c: gold}, {t: '\u28E1\u28E4\u2840', c: cyan}, {t: '\u2849\u283B\u2844', c: gold},
-      {t: '     \u2880\u28B4', c: red}, {t: '\u28BE', c: white}, {t: '\u28FF', c: '#E64646'}, {t: '\u28FF\u28FF', c: white}, {t: '\u28FF', c: red}, {t: '\u28FF', c: white}, {t: '\u28FF\u28FF\u28FF\u28B7\u28E6\u2845', c: red},
-      {t: '     \u28A0\u285F\u2849', c: gold}, {t: '\u2880\u28E4\u28CC', c: cyan}, {t: '\u283B\u28E7', c: gold}
-    ]},
-    {t: '\u2801 \u283B\u283F\u2803 \u28C4\u28C0    \u28B0\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28C6    \u28C0\u28E0 \u2818\u283F\u281F', c: 'mixed', parts: [
-      {t: '\u2801 ', c: gold}, {t: '\u283B\u283F\u2803', c: cyan}, {t: ' \u28C4\u28C0', c: gold},
-      {t: '    \u28B0\u28FF', c: red}, {t: '\u28FF\u28FF', c: white}, {t: '\u28FF', c: '#E64646'}, {t: '\u28FF', c: white}, {t: '\u28FF', c: '#E64646'}, {t: '\u28FF\u28FF', c: white}, {t: '\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28C6', c: red},
-      {t: '    \u28C0\u28E0', c: gold}, {t: ' \u2818\u283F\u281F', c: cyan}
-    ]},
-    {t: '      \u2849\u2819\u281B\u283B\u2836\u28B6\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28B6\u2836\u281F\u281B\u280B\u2849', c: 'mixed', parts: [
-      {t: '      \u2849\u2819\u281B\u283B\u2836\u28B6', c: gold},
-      {t: '\u28FF\u28FF', c: red}, {t: '\u28FF', c: white}, {t: '\u28FF', c: '#E64646'}, {t: '\u28FF\u28FF', c: white}, {t: '\u28FF', c: '#E64646'}, {t: '\u28FF', c: white}, {t: '\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF', c: red},
-      {t: '\u28B6\u2836\u281F\u281B\u280B\u2849', c: gold}
-    ]},
-    {t: '\u283B\u28E6\u2845  \u28C0\u28BC\u2803   \u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF   \u2818\u28E7\u28C0  \u2880\u28B4\u285F', c: 'mixed', parts: [
-      {t: '\u283B\u28E6\u2845  \u28C0\u28BC\u2803', c: gold},
-      {t: '   \u28FF\u28FF', c: red}, {t: '\u28FF\u28FF', c: white}, {t: '\u28FF', c: '#E64646'}, {t: '\u28FF', c: white}, {t: '\u28FF', c: '#E64646'}, {t: '\u28FF\u28FF', c: white}, {t: '\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF', c: red},
-      {t: '   \u2818\u28E7\u28C0  \u2880\u28B4\u285F', c: gold}
-    ]},
-    {t: '              \u2819\u283B\u283F\u28FF\u28FF\u28FF\u28FF\u28FF\u28FF\u287F\u281F\u280B', c: red},
-    {t: '               \u28A0\u285F \u2849\u2849\u2849\u2849 \u2818\u28E7', c: 'mixed', parts: [
-      {t: '               \u28A0\u285F', c: gold}, {t: ' \u2849\u2849\u2849\u2849 ', c: red}, {t: '\u2818\u28E7', c: gold}
-    ]},
-  ];
-
-  // Teaching-focused terminal animation
+  // Teaching-focused terminal animation — shows real first-run experience
   var scenes = [
-    // Scene 1: User types clawed
-    [{text: '$ clawed', color: white, delay: 0, typing: true}],
-    // Scene 2: Logo draws line by line (colored)
-    ...logo.map(function(line) {
-      if (line.c === 'mixed') {
-        return [{text: '', color: '', delay: 100, parts: line.parts}];
-      }
-      return [{text: line.t, color: line.c, delay: 100}];
-    }),
-    // Scene 3: Brand text
-    [{text: '', color: white, delay: 200}],
-    [{text: '      C L A W - E D', color: gold, delay: 200, bold: true}],
-    [{text: '     Your AI co-teacher', color: dim, delay: 400}],
-    [{text: '', color: white, delay: 600}],
-    // Scene 4: Teacher asks a natural language question
-    [{text: '> I need a lesson on photosynthesis for my 7th graders', color: cyan, delay: 0, typing: true}],
-    [{text: '', color: white, delay: 400}],
-    // Scene 5: AI teaching response
-    [{text: '  Building lesson: Photosynthesis - How Plants Make Food', color: dim, delay: 100}],
-    [{text: '  Using your voice: Ms. Chen (Lincoln Middle School)', color: dim, delay: 100}],
-    [{text: '  Standards: NGSS MS-LS1-6, NY 7.LS.1', color: dim, delay: 100}],
-    [{text: '  Provider: Claude Opus 4', color: dim, delay: 100}],
-    [{text: '', color: white, delay: 400}],
-    [{text: '  Lesson generated! (Score: 9.4/10)', color: green, delay: 200, bold: true}],
-    [{text: '  Files:', color: white, delay: 100}],
-    [{text: '    photosynthesis_lesson.docx', color: cyan, delay: 80}],
-    [{text: '    photosynthesis_slides.pptx', color: cyan, delay: 80}],
-    [{text: '    photosynthesis_handout.docx', color: cyan, delay: 80}],
-    [{text: '    photosynthesis_game.html', color: gold, delay: 80}],
-    [{text: '', color: white, delay: 600}],
-    [{text: '> That looks great. Can you also make an exit ticket?', color: cyan, delay: 0, typing: true}],
+    // Scene 1: Teacher installs and runs
+    [{text: '$ pip install clawed', color: white, delay: 0, typing: true}],
+    [{text: '  Successfully installed clawed-4.3.2026', color: dim, delay: 400}],
     [{text: '', color: white, delay: 300}],
-    [{text: '  Done! Exit ticket added to your handout.', color: green, delay: 200, bold: true}],
+    [{text: '$ clawed', color: white, delay: 0, typing: true}],
+    [{text: '', color: white, delay: 500}],
+    // Scene 2: Branded intro
+    [{text: '  \uD83C\uDF4E C L A W - E D', color: green, delay: 300, bold: true}],
+    [{text: '  Your AI co-teacher  v4.3.2026', color: dim, delay: 600}],
+    [{text: '', color: white, delay: 400}],
+    // Scene 3: Onboarding wizard
+    [{text: '  \u250C\u2500\u2500\u2500 Claw-ED Setup \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510', color: green, delay: 100}],
+    [{text: '  \u2502 Hey there, fellow educator! \uD83C\uDF93    \u2502', color: white, delay: 100}],
+    [{text: '  \u2502                                   \u2502', color: white, delay: 50}],
+    [{text: '  \u2502 I\'m Claw-ED \u2014 think of me as a    \u2502', color: white, delay: 100}],
+    [{text: '  \u2502 colleague who turns your ideas     \u2502', color: white, delay: 100}],
+    [{text: '  \u2502 into polished lesson plans.        \u2502', color: white, delay: 100}],
+    [{text: '  \u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518', color: green, delay: 200}],
+    [{text: '', color: white, delay: 300}],
+    [{text: '  Which AI service?', color: white, delay: 200, bold: true}],
+    [{text: '  [1] \u2605 Google Gemini \u2014 free tier', color: cyan, delay: 80}],
+    [{text: '  [2] Ollama Cloud \u2014 $20/mo unlimited', color: cyan, delay: 80}],
+    [{text: '  [3] Claude (Anthropic)', color: cyan, delay: 80}],
+    [{text: '  [4] Local Ollama \u2014 free, private', color: cyan, delay: 80}],
+    [{text: '', color: white, delay: 400}],
+    [{text: '  Choice: 1', color: gold, delay: 0, typing: true}],
+    [{text: '  \u2713 Key saved (AIzaSy...)', color: green, delay: 300}],
+    [{text: '  \u2713 All set!', color: green, delay: 200, bold: true}],
+    [{text: '', color: white, delay: 500}],
+    // Scene 4: Teacher uses it naturally
+    [{text: '> Make me a lesson on the Civil War for 8th grade', color: cyan, delay: 0, typing: true}],
+    [{text: '', color: white, delay: 400}],
+    [{text: '  Building lesson in your voice...', color: dim, delay: 200}],
+    [{text: '  Standards: D2.His.1.6-8, D2.His.3.6-8', color: dim, delay: 100}],
+    [{text: '', color: white, delay: 300}],
+    [{text: '  \u2713 Lesson ready! (Voice match: 4.2/5)', color: green, delay: 200, bold: true}],
+    [{text: '    civil_war_lesson.docx', color: cyan, delay: 80}],
+    [{text: '    civil_war_slides.pptx', color: cyan, delay: 80}],
+    [{text: '    civil_war_game.html', color: gold, delay: 80}],
   ];
 
   var sceneIndex = 0;
