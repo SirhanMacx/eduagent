@@ -74,7 +74,7 @@
       "name": "Is Claw-ED really free?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Yes. Claw-ED is MIT licensed and free forever. The software itself costs nothing. You bring your own AI provider. We recommend Claude Opus 4 for best quality (~$0.10/lesson) or Gemini 2.5 Flash for budget (free tier available). Ollama gives you full privacy with local models."
+        "text": "Yes. Claw-ED is MIT licensed and free forever. The software costs nothing. You bring your own AI provider. Start with Google Gemini (free tier) or Ollama Cloud ($5/month unlimited). Claude Sonnet 4.6 gives the highest quality at ~$0.05/lesson. Local Ollama runs fully offline for free."
       }
     },
     {
@@ -82,7 +82,7 @@
       "name": "What AI providers does Claw-ED work with?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Claw-ED works with any major AI provider: Anthropic (Claude), OpenAI (GPT-4o), Google (Gemini), and Ollama (local or cloud). The agentic onboarding helps you pick and configure the best option for your budget and needs."
+        "text": "Claw-ED works with any major AI provider: Google Gemini (free tier), Ollama Cloud ($5/mo unlimited with Minimax and Kimi models), Anthropic Claude Sonnet 4.6, OpenAI GPT-4.1, OpenRouter (access any model), and Ollama Local (free, fully offline). The setup wizard helps you pick and configure the best option."
       }
     },
     {
@@ -90,7 +90,7 @@
       "name": "Does Claw-ED need internet access?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Only to talk to your AI provider (like any chatbot). Your curriculum files are processed and stored entirely on your machine. If you use a local model like Ollama with Llama 3.3, everything runs offline with complete privacy."
+        "text": "Only to talk to your AI provider (like any chatbot). Your curriculum files are processed and stored entirely on your machine. If you use a local model like Ollama with Llama 4, everything runs offline with complete privacy."
       }
     },
     {
@@ -1601,7 +1601,7 @@ img { max-width: 100%; height: auto; }
       <div class="feature-card">
         <div class="feature-card-icon" aria-hidden="true">&#x1F310;</div>
         <h3>Multi-Provider: Your Choice</h3>
-        <p>Anthropic Claude, OpenAI GPT-4o, Google Gemini, Ollama local &mdash; pick the AI that fits your budget and needs. Switch anytime. No lock-in.</p>
+        <p>Google Gemini, Ollama Cloud, Claude, GPT, OpenRouter, or local Ollama &mdash; pick the AI that fits your budget. Switch anytime. No lock-in.</p>
       </div>
       <div class="feature-card">
         <div class="feature-card-icon" aria-hidden="true">&#x1F916;</div>
@@ -1652,32 +1652,6 @@ img { max-width: 100%; height: auto; }
     </div>
     <div class="models-grid">
       <div class="model-card recommended">
-        <h3>Claude Opus 4</h3>
-        <div class="model-provider">Anthropic</div>
-        <div class="model-price">~$0.10</div>
-        <div class="model-price-note">per lesson</div>
-        <div class="model-quality">
-          Quality:
-          <div class="quality-bar">
-            <span class="filled"></span><span class="filled"></span><span class="filled"></span><span class="filled"></span><span class="filled"></span>
-          </div>
-        </div>
-        <div class="model-quality" style="margin-top:0.25rem;font-size:0.82rem;color:var(--text-muted);">Maximum quality. Best voice matching.</div>
-      </div>
-      <div class="model-card">
-        <h3>Claude Sonnet 4</h3>
-        <div class="model-provider">Anthropic</div>
-        <div class="model-price">~$0.03</div>
-        <div class="model-price-note">per lesson</div>
-        <div class="model-quality">
-          Quality:
-          <div class="quality-bar">
-            <span class="filled"></span><span class="filled"></span><span class="filled"></span><span class="filled"></span><span></span>
-          </div>
-        </div>
-        <div class="model-quality" style="margin-top:0.25rem;font-size:0.82rem;color:var(--text-muted);">Great quality at lower cost.</div>
-      </div>
-      <div class="model-card recommended">
         <h3>Gemini 2.5 Flash</h3>
         <div class="model-provider">Google</div>
         <div class="model-price">Free</div>
@@ -1685,15 +1659,41 @@ img { max-width: 100%; height: auto; }
         <div class="model-quality">
           Quality:
           <div class="quality-bar">
-            <span class="filled"></span><span class="filled"></span><span class="filled"></span><span></span><span></span>
+            <span class="filled"></span><span class="filled"></span><span class="filled"></span><span class="filled"></span><span></span>
           </div>
         </div>
-        <div class="model-quality" style="margin-top:0.25rem;font-size:0.82rem;color:var(--text-muted);">Best budget option. Good results.</div>
+        <div class="model-quality" style="margin-top:0.25rem;font-size:0.82rem;color:var(--text-muted);">Best way to start. Fast, free tier, good results.</div>
+      </div>
+      <div class="model-card recommended">
+        <h3>Ollama Cloud</h3>
+        <div class="model-provider">Ollama</div>
+        <div class="model-price">$5/mo</div>
+        <div class="model-price-note">unlimited lessons</div>
+        <div class="model-quality">
+          Quality:
+          <div class="quality-bar">
+            <span class="filled"></span><span class="filled"></span><span class="filled"></span><span class="filled"></span><span></span>
+          </div>
+        </div>
+        <div class="model-quality" style="margin-top:0.25rem;font-size:0.82rem;color:var(--text-muted);">Flat rate. Minimax, Kimi, Qwen models. No per-lesson cost.</div>
       </div>
       <div class="model-card">
-        <h3>GPT-4o</h3>
-        <div class="model-provider">OpenAI</div>
+        <h3>Claude Sonnet 4.6</h3>
+        <div class="model-provider">Anthropic</div>
         <div class="model-price">~$0.05</div>
+        <div class="model-price-note">per lesson</div>
+        <div class="model-quality">
+          Quality:
+          <div class="quality-bar">
+            <span class="filled"></span><span class="filled"></span><span class="filled"></span><span class="filled"></span><span class="filled"></span>
+          </div>
+        </div>
+        <div class="model-quality" style="margin-top:0.25rem;font-size:0.82rem;color:var(--text-muted);">Highest quality. Best voice matching and pedagogy.</div>
+      </div>
+      <div class="model-card">
+        <h3>GPT-4.1</h3>
+        <div class="model-provider">OpenAI</div>
+        <div class="model-price">~$0.04</div>
         <div class="model-price-note">per lesson</div>
         <div class="model-quality">
           Quality:
@@ -1701,37 +1701,37 @@ img { max-width: 100%; height: auto; }
             <span class="filled"></span><span class="filled"></span><span class="filled"></span><span class="filled"></span><span></span>
           </div>
         </div>
-        <div class="model-quality" style="margin-top:0.25rem;font-size:0.82rem;color:var(--text-muted);">Strong general quality.</div>
+        <div class="model-quality" style="margin-top:0.25rem;font-size:0.82rem;color:var(--text-muted);">Strong quality. Reliable output.</div>
       </div>
       <div class="model-card">
-        <h3>Ollama Cloud (Minimax)</h3>
-        <div class="model-provider">Ollama</div>
-        <div class="model-price">$20/mo</div>
-        <div class="model-price-note">unlimited lessons</div>
+        <h3>OpenRouter</h3>
+        <div class="model-provider">Any Model</div>
+        <div class="model-price">Varies</div>
+        <div class="model-price-note">pay per token</div>
         <div class="model-quality">
           Quality:
           <div class="quality-bar">
-            <span class="filled"></span><span class="filled"></span><span class="filled"></span><span></span><span></span>
+            <span class="filled"></span><span class="filled"></span><span class="filled"></span><span class="filled"></span><span></span>
           </div>
         </div>
-        <div class="model-quality" style="margin-top:0.25rem;font-size:0.82rem;color:var(--text-muted);">Flat rate. No per-lesson cost.</div>
+        <div class="model-quality" style="margin-top:0.25rem;font-size:0.82rem;color:var(--text-muted);">Access Claude, GPT, Gemini, open-source &mdash; all from one key.</div>
       </div>
       <div class="model-card">
-        <h3>Ollama Local (Llama 3.3)</h3>
+        <h3>Ollama Local</h3>
         <div class="model-provider">Your Machine</div>
         <div class="model-price">Free</div>
         <div class="model-price-note">runs on your computer</div>
         <div class="model-quality">
           Quality:
           <div class="quality-bar">
-            <span class="filled"></span><span class="filled"></span><span></span><span></span><span></span>
+            <span class="filled"></span><span class="filled"></span><span class="filled"></span><span></span><span></span>
           </div>
         </div>
-        <div class="model-quality" style="margin-top:0.25rem;font-size:0.82rem;color:var(--text-muted);">Complete privacy. No internet needed.</div>
+        <div class="model-quality" style="margin-top:0.25rem;font-size:0.82rem;color:var(--text-muted);">Complete privacy. Llama 4, Qwen 3, Gemma 3. No internet.</div>
       </div>
     </div>
     <div class="model-recommendation">
-      <p><strong>Our recommendation:</strong> Claude Opus 4 for quality. Gemini 2.5 Flash for budget. The agentic onboarding helps you choose.</p>
+      <p><strong>Our recommendation:</strong> Start with Gemini 2.5 Flash (free). Upgrade to Ollama Cloud ($5/mo unlimited) or Claude Sonnet 4.6 for best quality.</p>
     </div>
   </div>
 </section>
@@ -1968,7 +1968,7 @@ img { max-width: 100%; height: auto; }
         </button>
         <div class="faq-answer" role="region">
           <div class="faq-answer-inner">
-            Claw-ED works with Anthropic (Claude Opus 4, Claude Sonnet 4), OpenAI (GPT-4o), Google (Gemini 2.5 Flash), and Ollama (cloud or local with Llama 3.3). The agentic onboarding helps you pick and configure the best option. You can switch providers anytime.
+            Claw-ED works with Google Gemini (free tier), Ollama Cloud ($5/mo unlimited), Anthropic Claude Sonnet 4.6, OpenAI GPT-4.1, OpenRouter, and Ollama Local (free, offline). The setup wizard helps you pick the best option. Switch anytime.
           </div>
         </div>
       </div>
@@ -1979,7 +1979,7 @@ img { max-width: 100%; height: auto; }
         </button>
         <div class="faq-answer" role="region">
           <div class="faq-answer-inner">
-            Only to talk to your AI provider (like any chatbot). Your curriculum files are processed and stored entirely on your machine. If you use a local model through Ollama with Llama 3.3, everything runs fully offline with complete privacy.
+            Only to talk to your AI provider (like any chatbot). Your curriculum files are processed and stored entirely on your machine. If you use a local model through Ollama with Llama 4, everything runs fully offline with complete privacy.
           </div>
         </div>
       </div>
