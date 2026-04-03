@@ -64,13 +64,12 @@ def _refresh_token(refresh_token: str | None) -> str | None:
     try:
         resp = httpx.post(
             TOKEN_URL,
-            json={
+            data={
                 "grant_type": "refresh_token",
                 "refresh_token": refresh_token,
                 "client_id": CLIENT_ID,
-                "scope": OAUTH_SCOPES,
             },
-            headers={"Content-Type": "application/json"},
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
             timeout=15,
         )
 
@@ -83,13 +82,13 @@ def _refresh_token(refresh_token: str | None) -> str | None:
         new_refresh = data.get("refresh_token", refresh_token)
         expires_in = data.get("expires_in", 3600)
 
-        # Save new credentials
+        # Save new credentials — preserve existing fields (scopes, clientId, etc.)
         creds = json.loads(CREDENTIALS_PATH.read_text())
-        creds["claudeAiOauth"] = {
-            "accessToken": new_token,
-            "refreshToken": new_refresh,
-            "expiresAt": int(time.time() * 1000) + expires_in * 1000,
-        }
+        existing_oauth = creds.get("claudeAiOauth", {})
+        existing_oauth["accessToken"] = new_token
+        existing_oauth["refreshToken"] = new_refresh
+        existing_oauth["expiresAt"] = int(time.time() * 1000) + expires_in * 1000
+        creds["claudeAiOauth"] = existing_oauth
         CREDENTIALS_PATH.write_text(json.dumps(creds, indent=2))
 
         # Also update secrets.json if it has the old token
