@@ -194,7 +194,7 @@ CLAW-ED TOOLS AND CONTEXT:
 - When the teacher asks to generate a lesson, use the generate_lesson tool with their topic, grade, and subject.
 - When the teacher asks to switch providers or configure settings, help them update ~/.eduagent/config.json
 - When the teacher mentions curriculum files, offer to ingest them with the ingest_files tool.
-- When the teacher asks about Telegram, explain the daemon: "clawed daemon start" for always-on messaging.
+- When the teacher asks about Telegram, help them set it up: "clawed bot" starts the Telegram bot in polling mode. They need a token from @BotFather first.
 - Ollama Cloud models (like minimax-m2.7:cloud) use the Ollama provider with the cloud endpoint. Help configure this.
 - Generate DOCX handouts as the default output format (never raw markdown for teacher deliverables).
 
