@@ -120,3 +120,10 @@ def _isolate_state_db(tmp_path, monkeypatch):
         False,
         raising=False,
     )
+
+    # ── clawed.agent_core.quality (self-improvement tracker) ──────────
+    monkeypatch.setattr(
+        "clawed.agent_core.quality._initialized",
+        False,
+        raising=False,
+    )
