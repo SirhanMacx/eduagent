@@ -165,7 +165,16 @@ class TelegramAPI:
     def __init__(self, token: str, timeout: float = 60.0):
         self.token = token
         self._base = f"{_API_BASE}/bot{token}"
-        self._client = httpx.Client(timeout=httpx.Timeout(timeout, connect=15.0))
+        self._client = httpx.Client(
+            timeout=httpx.Timeout(timeout, connect=15.0),
+            # Disable HTTP/2 and limit connection pool to prevent
+            # WinError 10054 (connection reset) on Windows.
+            http2=False,
+            limits=httpx.Limits(
+                max_keepalive_connections=2,
+                keepalive_expiry=30,
+            ),
+        )
 
     def close(self) -> None:
         self._client.close()
@@ -187,13 +196,31 @@ class TelegramAPI:
                     raise RuntimeError(
                         f"Telegram API error: {result.get('description', 'Unknown error')}"
                     )
-            except (httpx.ConnectError, httpx.ReadTimeout, httpx.WriteTimeout) as e:
+            except (
+                httpx.ConnectError, httpx.ReadTimeout,
+                httpx.WriteTimeout, httpx.RemoteProtocolError,
+                ConnectionResetError, OSError,
+            ) as e:
                 last_err = e
                 wait = 2 ** attempt
                 logger.warning(
                     "Network error on attempt %d: %s. Retrying in %ds...",
                     attempt + 1, e, wait,
                 )
+                # Recreate client on connection reset (Windows WinError 10054)
+                if "10054" in str(e) or "reset" in str(e).lower():
+                    try:
+                        self._client.close()
+                    except Exception:
+                        pass
+                    self._client = httpx.Client(
+                        timeout=httpx.Timeout(60, connect=15.0),
+                        http2=False,
+                        limits=httpx.Limits(
+                            max_keepalive_connections=2,
+                            keepalive_expiry=30,
+                        ),
+                    )
                 time.sleep(wait)
             except Exception as e:
                 logger.error("Unexpected error calling %s: %s", method, e)
