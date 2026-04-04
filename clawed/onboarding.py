@@ -931,6 +931,11 @@ def run_setup_wizard(reset: bool = False) -> AppConfig:
             profile.drive_urls = [drive_url]
         config.teacher_profile = profile
         config.save()
+        try:
+            from clawed.agent_core.identity import reset_cache
+            reset_cache()
+        except Exception:
+            pass
         if local_path:
             _ingest_materials(local_path, config)
         if drive_url:
@@ -1049,6 +1054,11 @@ def _run_onboarding_legacy() -> AppConfig:
             profile.drive_urls = [drive_url]
         config.teacher_profile = profile
         config.save()
+        try:
+            from clawed.agent_core.identity import reset_cache
+            reset_cache()
+        except Exception:
+            pass
         if local_path:
             _ingest_materials(local_path, config)
         if drive_url:

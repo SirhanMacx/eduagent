@@ -138,6 +138,13 @@ class OnboardHandler:
         config.teacher_profile = profile
         config.save()
 
+        # Reset identity cache so get_teacher_id() picks up the new name
+        try:
+            from clawed.agent_core.identity import reset_cache
+            reset_cache()
+        except Exception:
+            pass
+
         try:
             from clawed.workspace import init_workspace
             persona = TeacherPersona(name=state["name"], subject_area=state["subject"])

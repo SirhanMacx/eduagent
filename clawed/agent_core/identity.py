@@ -23,7 +23,10 @@ def get_teacher_id() -> str:
       2. Hash of teacher_profile.name from config.json
       3. "default" (fallback for unconfigured installs)
 
-    The ID is cached for the lifetime of the process.
+    Only caches when a real profile-derived ID is found. The "default"
+    fallback is NEVER cached so that when the teacher completes
+    onboarding in a different process (e.g., CLI), the Telegram bot
+    picks up the new profile on the next message.
     """
     global _cached_id
     if _cached_id is not None:
@@ -48,9 +51,9 @@ def get_teacher_id() -> str:
     except Exception as e:
         logger.debug("Could not derive teacher_id from config: %s", e)
 
-    # 3. Fallback
-    _cached_id = "default"
-    return _cached_id
+    # 3. Fallback — NOT cached so we re-check config.json next time
+    # (teacher may complete onboarding in another process)
+    return "default"
 
 
 def get_teacher_name() -> str:
