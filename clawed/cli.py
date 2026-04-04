@@ -19,7 +19,6 @@ from clawed.commands._helpers import console
 
 # UTF-8 encoding is enforced in clawed/__init__.py for all entry points
 from clawed.commands.bot import bot_app
-from clawed.commands.drive import drive_app
 from clawed.commands.config import (
     class_app,
     config_app,
@@ -31,6 +30,7 @@ from clawed.commands.config import (
     standards_app,
     templates_app,
 )
+from clawed.commands.drive import drive_app
 from clawed.commands.export import (
     _DEMO_HTML,
     _lesson_to_html,

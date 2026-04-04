@@ -58,7 +58,7 @@ class ResearchTopicTool:
         focus = params.get("focus", "general")
 
         try:
-            from clawed.agent_core.tools.browser import _search_web, _fetch_page_text
+            from clawed.agent_core.tools.browser import _fetch_page_text, _search_web
 
             # Build targeted search queries
             queries = _build_research_queries(topic, subject, focus)

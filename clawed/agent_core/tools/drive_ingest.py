@@ -84,7 +84,10 @@ class DriveIngestTool:
 
             if not ingestable:
                 return ToolResult(
-                    text=f"Found {len(files)} files but none are supported formats (PDF, DOCX, PPTX, TXT, MD, Google Docs)."
+                    text=(
+                        f"Found {len(files)} files but none are supported "
+                        "formats (PDF, DOCX, PPTX, TXT, MD, Google Docs)."
+                    )
                 )
 
             total_chunks = 0

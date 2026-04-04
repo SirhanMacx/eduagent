@@ -329,7 +329,7 @@ class Gateway:
         persona_dict = self._load_persona(teacher_profile)
 
         # Load cross-transport session history from unified store
-        from clawed.agent_core.memory.sessions import load_recent_for_llm, format_for_prompt
+        from clawed.agent_core.memory.sessions import format_for_prompt, load_recent_for_llm
         session_history = load_recent_for_llm(teacher_id, limit=10)
         recent_conversation = format_for_prompt(teacher_id, limit=10)
 

@@ -37,7 +37,10 @@ class DifferentiateLessonTool:
                         },
                         "specific_needs": {
                             "type": "string",
-                            "description": "Specific student needs (e.g., 'extended time, visual supports, reduced questions')",
+                            "description": (
+                                "Specific student needs (e.g., 'extended time, "
+                                "visual supports, reduced questions')"
+                            ),
                         },
                     },
                     "required": ["lesson_content", "modification_type"],
@@ -72,7 +75,8 @@ class DifferentiateLessonTool:
             }
 
             prompt = (
-                f"You are a special education expert modifying a lesson for {mod_labels.get(mod_type, mod_type)} students.\n\n"
+                "You are a special education expert modifying a lesson for "
+                f"{mod_labels.get(mod_type, mod_type)} students.\n\n"
                 f"## Original Lesson\n{content}\n\n"
                 f"## Modification Type: {mod_labels.get(mod_type, mod_type)}\n"
             )

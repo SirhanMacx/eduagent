@@ -7,7 +7,6 @@ clawed drive ingest — ingest curriculum from a Drive folder
 
 from __future__ import annotations
 
-import asyncio
 import logging
 import os
 from pathlib import Path
@@ -165,7 +164,7 @@ def ingest(
             content_data = client.read_file(f["id"])
             content = content_data.get("content", "")
             if not content or len(content.strip()) < 50:
-                console.print(f"    [dim]Skipped (too short or empty)[/dim]")
+                console.print("    [dim]Skipped (too short or empty)[/dim]")
                 continue
 
             # Index into KB

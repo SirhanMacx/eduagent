@@ -78,7 +78,10 @@ class GenerateGameTool:
             master = {
                 "topic": topic,
                 "subject": subject or (context.persona or {}).get("subject_area", ""),
-                "grade_level": grade or ((context.persona or {}).get("grade_levels", [""])[0] if context.persona else ""),
+                "grade_level": grade or (
+                    (context.persona or {}).get("grade_levels", [""])[0]
+                    if context.persona else ""
+                ),
                 "game_type": game_type,
             }
 
@@ -94,7 +97,7 @@ class GenerateGameTool:
                     text=f"Created {game_type} game on '{topic}': {result_path}",
                     files=[result_path],
                 )
-            return ToolResult(text=f"Game generation completed but no file was produced.")
+            return ToolResult(text="Game generation completed but no file was produced.")
 
         except Exception as e:
             logger.error("Game generation failed: %s", e)

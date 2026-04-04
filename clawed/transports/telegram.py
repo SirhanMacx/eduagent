@@ -544,7 +544,12 @@ class EduAgentTelegramBot:
 
                 try:
                     response = self._loop.run_until_complete(
-                        self.gateway.handle(text, teacher_id, files=files or None, progress_callback=_progress_cb, transport="telegram")
+                        self.gateway.handle(
+                            text, teacher_id,
+                            files=files or None,
+                            progress_callback=_progress_cb,
+                            transport="telegram",
+                        )
                     )
                 finally:
                     typing_stop.set()

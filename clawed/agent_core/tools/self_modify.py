@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import logging
 import os
 from pathlib import Path
@@ -33,7 +32,10 @@ class SelfModifyConfigTool:
                     "properties": {
                         "key": {
                             "type": "string",
-                            "description": "Config key to change (e.g., 'max_agent_iterations', 'output_dir', 'export_format')",
+                            "description": (
+                                "Config key to change (e.g., "
+                                "'max_agent_iterations', 'output_dir')"
+                            ),
                         },
                         "value": {
                             "type": "string",
@@ -113,7 +115,10 @@ class WriteFileTool:
                     "properties": {
                         "path": {
                             "type": "string",
-                            "description": "File path relative to workspace (~/.eduagent/) or output dir. Use 'workspace/soul.md', 'workspace/notes/research.md', etc.",
+                            "description": (
+                                "File path relative to workspace or output. "
+                                "E.g. 'workspace/soul.md', 'workspace/notes/x.md'"
+                            ),
                         },
                         "content": {
                             "type": "string",

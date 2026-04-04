@@ -101,6 +101,7 @@ class TestCreateCustomToolTool:
 class TestToolDiscovery:
     def test_self_equip_tools_discovered(self):
         from pathlib import Path
+
         from clawed.agent_core.tools.base import ToolRegistry
         reg = ToolRegistry()
         reg.discover(Path(__file__).parent.parent / "clawed" / "agent_core" / "tools")

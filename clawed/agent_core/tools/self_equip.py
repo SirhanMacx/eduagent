@@ -112,7 +112,10 @@ class CreateCustomToolTool:
                         },
                         "prompt_template": {
                             "type": "string",
-                            "description": "The LLM prompt template for the tool. Use {topic}, {grade}, {subject} as placeholders.",
+                            "description": (
+                                "The LLM prompt template for the tool. "
+                                "Use {topic}, {grade}, {subject} as placeholders."
+                            ),
                         },
                     },
                     "required": ["tool_name", "description", "prompt_template"],

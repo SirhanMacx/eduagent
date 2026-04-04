@@ -7,7 +7,6 @@ import pytest
 from clawed.agent_core.tools.browser import (
     BrowserNavigateTool,
     BrowserSearchTool,
-    _fetch_with_httpx,
 )
 from clawed.agent_core.tools.research import (
     ResearchTopicTool,
@@ -125,6 +124,7 @@ class TestToolDiscovery:
     def test_browser_tools_auto_discovered(self):
         """All 3 new tools should be discoverable by ToolRegistry."""
         from pathlib import Path
+
         from clawed.agent_core.tools.base import ToolRegistry
         reg = ToolRegistry()
         reg.discover(Path(__file__).parent.parent / "clawed" / "agent_core" / "tools")
