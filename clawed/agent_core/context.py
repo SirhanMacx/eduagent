@@ -22,6 +22,7 @@ class AgentContext:
     session_history: list[dict[str, Any]]
     improvement_context: str
     agent_name: str = "Claw-ED"
+    transport: str = "cli"
     progress_callback: Optional[Callable[[str], None]] = None
 
     def notify_progress(self, message: str) -> None:

@@ -1,0 +1,239 @@
+"""Self-modification tool — Ed can change his own config and workspace files."""
+
+from __future__ import annotations
+
+import json
+import logging
+import os
+from pathlib import Path
+from typing import Any
+
+from clawed.agent_core.context import AgentContext, ToolResult
+
+logger = logging.getLogger(__name__)
+
+
+class SelfModifyConfigTool:
+    """Ed can modify his own configuration settings."""
+
+    def schema(self) -> dict[str, Any]:
+        return {
+            "type": "function",
+            "function": {
+                "name": "modify_config",
+                "description": (
+                    "Modify Ed's own configuration. Can change: max_agent_iterations "
+                    "(how many tool steps per task), output_dir, export_format, "
+                    "image_fetch_timeout, agent_name, and any other config field. "
+                    "Use when you need more iterations for complex tasks, want to "
+                    "change output settings, or need to adjust your own behavior."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "key": {
+                            "type": "string",
+                            "description": "Config key to change (e.g., 'max_agent_iterations', 'output_dir', 'export_format')",
+                        },
+                        "value": {
+                            "type": "string",
+                            "description": "New value (will be auto-converted to correct type)",
+                        },
+                    },
+                    "required": ["key", "value"],
+                },
+            },
+        }
+
+    async def execute(
+        self, params: dict[str, Any], context: AgentContext
+    ) -> ToolResult:
+        key = params.get("key", "").strip()
+        value = params.get("value", "").strip()
+
+        if not key or not value:
+            return ToolResult(text="ERROR: key and value are required")
+
+        # Safety: block dangerous fields
+        blocked = {"provider", "anthropic_model", "openai_model", "google_model",
+                    "ollama_model", "openrouter_model", "telegram_bot_token",
+                    "ollama_api_key", "dashboard_password"}
+        if key in blocked:
+            return ToolResult(text=f"Cannot modify '{key}' — use switch_model or configure_profile for auth settings.")
+
+        try:
+            from clawed.models import AppConfig
+            config = AppConfig.load()
+
+            if not hasattr(config, key):
+                return ToolResult(text=f"Unknown config key: '{key}'. Check available fields.")
+
+            # Auto-convert type
+            current = getattr(config, key)
+            if isinstance(current, bool):
+                new_val = value.lower() in ("true", "1", "yes")
+            elif isinstance(current, int):
+                new_val = int(value)
+            elif isinstance(current, float):
+                new_val = float(value)
+            else:
+                new_val = value
+
+            old_val = current
+            setattr(config, key, new_val)
+            config.save()
+
+            # Also update the running context if applicable
+            if key == "max_agent_iterations" and hasattr(context.config, key):
+                setattr(context.config, key, new_val)
+
+            logger.info("Self-modify: %s changed from %s to %s", key, old_val, new_val)
+            return ToolResult(text=f"Updated {key}: {old_val} → {new_val}")
+
+        except Exception as e:
+            return ToolResult(text=f"Config modification failed: {e}")
+
+
+class WriteFileTool:
+    """Ed can create and modify files in his workspace and output directory."""
+
+    def schema(self) -> dict[str, Any]:
+        return {
+            "type": "function",
+            "function": {
+                "name": "write_file",
+                "description": (
+                    "Write content to a file in Ed's workspace or output directory. "
+                    "Can create new files or overwrite existing ones. "
+                    "Use for: updating soul.md, writing notes, creating templates, "
+                    "saving research, generating custom documents."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "path": {
+                            "type": "string",
+                            "description": "File path relative to workspace (~/.eduagent/) or output dir. Use 'workspace/soul.md', 'workspace/notes/research.md', etc.",
+                        },
+                        "content": {
+                            "type": "string",
+                            "description": "Content to write to the file",
+                        },
+                        "append": {
+                            "type": "boolean",
+                            "description": "If true, append to existing file instead of overwriting. Default: false.",
+                        },
+                    },
+                    "required": ["path", "content"],
+                },
+            },
+        }
+
+    async def execute(
+        self, params: dict[str, Any], context: AgentContext
+    ) -> ToolResult:
+        rel_path = params.get("path", "").strip()
+        content = params.get("content", "")
+        append = params.get("append", False)
+
+        if not rel_path:
+            return ToolResult(text="ERROR: path is required")
+
+        # Resolve to absolute path within allowed directories
+        data_dir = Path(os.environ.get(
+            "EDUAGENT_DATA_DIR", str(Path.home() / ".eduagent")
+        ))
+        output_dir = Path(getattr(context.config, "output_dir", "~/clawed_output")).expanduser()
+
+        # Security: only allow writes to workspace or output
+        if rel_path.startswith("workspace/") or rel_path == "workspace":
+            full_path = data_dir / rel_path
+        elif rel_path.startswith("output/"):
+            full_path = output_dir / rel_path[7:]
+        else:
+            # Default to workspace
+            full_path = data_dir / rel_path
+
+        # Block path traversal
+        try:
+            full_path = full_path.resolve()
+            if not (str(full_path).startswith(str(data_dir.resolve())) or
+                    str(full_path).startswith(str(output_dir.resolve()))):
+                return ToolResult(text="ERROR: path must be within workspace or output directory")
+        except Exception:
+            return ToolResult(text="ERROR: invalid path")
+
+        try:
+            full_path.parent.mkdir(parents=True, exist_ok=True)
+            mode = "a" if append else "w"
+            with open(full_path, mode, encoding="utf-8") as f:
+                if append and content and not content.startswith("\n"):
+                    f.write("\n")
+                f.write(content)
+
+            action = "Appended to" if append else "Wrote"
+            logger.info("Self-modify: %s %s (%d chars)", action, full_path, len(content))
+            return ToolResult(text=f"{action} {full_path} ({len(content)} chars)")
+
+        except Exception as e:
+            return ToolResult(text=f"File write failed: {e}")
+
+
+class ReadFileTool:
+    """Ed can read any file in his workspace or output directory."""
+
+    def schema(self) -> dict[str, Any]:
+        return {
+            "type": "function",
+            "function": {
+                "name": "read_file",
+                "description": (
+                    "Read the contents of a file from Ed's workspace or output directory. "
+                    "Use for: reading soul.md, checking notes, reviewing generated content, "
+                    "reading teacher's curriculum files."
+                ),
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "path": {
+                            "type": "string",
+                            "description": "File path relative to workspace or output dir",
+                        },
+                    },
+                    "required": ["path"],
+                },
+            },
+        }
+
+    async def execute(
+        self, params: dict[str, Any], context: AgentContext
+    ) -> ToolResult:
+        rel_path = params.get("path", "").strip()
+        if not rel_path:
+            return ToolResult(text="ERROR: path is required")
+
+        data_dir = Path(os.environ.get(
+            "EDUAGENT_DATA_DIR", str(Path.home() / ".eduagent")
+        ))
+        output_dir = Path(getattr(context.config, "output_dir", "~/clawed_output")).expanduser()
+
+        # Try workspace first, then output
+        candidates = [
+            data_dir / rel_path,
+            output_dir / rel_path,
+            data_dir / "workspace" / rel_path,
+        ]
+
+        for full_path in candidates:
+            try:
+                full_path = full_path.resolve()
+                if full_path.exists() and full_path.is_file():
+                    content = full_path.read_text(encoding="utf-8")
+                    return ToolResult(
+                        text=f"Contents of {full_path}:\n\n{content[:8000]}",
+                        data={"path": str(full_path), "size": len(content)},
+                    )
+            except Exception:
+                continue
+
+        return ToolResult(text=f"File not found: {rel_path}")

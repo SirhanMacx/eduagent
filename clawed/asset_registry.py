@@ -536,3 +536,70 @@ class AssetRegistry:
                 "alt_text": row["alt_text"] or "",
             })
         return results
+
+    def search_images_for_topic(
+        self,
+        teacher_id: str,
+        topic: str,
+        limit: int = 5,
+    ) -> list[dict[str, Any]]:
+        """Find teacher's own images relevant to a topic.
+
+        Searches context_text, alt_text, title, and topic_tags.
+        Prioritizes: topic_tag match > title match > context match.
+        Returns images sorted by relevance with valid local paths.
+        """
+        if not topic or len(topic.strip()) < 2:
+            return []
+
+        keywords = [w.lower() for w in topic.split() if len(w) > 2]
+        if not keywords:
+            return []
+
+        with sqlite3.connect(self._db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            # Get all images for this teacher
+            rows = conn.execute(
+                "SELECT ai.*, a.filename, a.title, a.source_path, a.topic_tags "
+                "FROM asset_images ai "
+                "JOIN assets a ON ai.asset_id = a.id "
+                "WHERE a.teacher_id = ? OR a.teacher_id = 'default'",
+                (teacher_id,),
+            ).fetchall()
+
+        scored: list[tuple[float, dict]] = []
+        for row in rows:
+            path = row["image_path"]
+            if not path or not Path(path).exists():
+                continue
+
+            score = 0.0
+            context = (row["context_text"] or "").lower()
+            alt = (row["alt_text"] or "").lower()
+            title = (row["title"] or "").lower()
+            tags_str = (row["topic_tags"] or "[]").lower()
+
+            for kw in keywords:
+                if kw in tags_str:
+                    score += 3.0  # Topic tag match (highest)
+                if kw in title:
+                    score += 2.0  # Title match
+                if kw in alt:
+                    score += 1.5  # Alt text match
+                if kw in context:
+                    score += 1.0  # Context match
+
+            if score > 0:
+                fmt = row["image_format"] or "png"
+                scored.append((score, {
+                    "path": path,
+                    "source": row["filename"],
+                    "context": row["context_text"] or "",
+                    "score": score,
+                    "image_format": fmt,
+                    "width": row["width_px"],
+                    "height": row["height_px"],
+                }))
+
+        scored.sort(key=lambda x: x[0], reverse=True)
+        return [item[1] for item in scored[:limit]]
