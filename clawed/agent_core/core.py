@@ -396,7 +396,30 @@ class Gateway:
             soul_context=soul_context,
         )
 
-        # 2c. Cross-transport conversation context
+        # 2c. Detect uninsgested materials — tell Ed to ingest them
+        try:
+            from clawed.agent_core.memory.curriculum_kb import CurriculumKB
+            kb = CurriculumKB()
+            kb_stats = kb.stats(teacher_id)
+            materials_paths = getattr(
+                self.config.teacher_profile, "materials_paths", []
+            )
+            if kb_stats["doc_count"] == 0 and materials_paths:
+                paths_str = ", ".join(materials_paths)
+                system += (
+                    "\n\n=== URGENT: Materials Not Yet Ingested ===\n"
+                    f"The teacher has configured materials at: {paths_str}\n"
+                    "But the knowledge base is EMPTY (0 documents). "
+                    "You MUST call ingest_materials with one of these paths "
+                    "IMMEDIATELY before doing anything else. The teacher's "
+                    "files need to be ingested so you can learn their style "
+                    "and reference their content.\n"
+                    "=== End Urgent ===\n"
+                )
+        except Exception:
+            pass
+
+        # 2d. Cross-transport conversation context
         if recent_conversation:
             system += (
                 "\n\n=== Recent Conversation (across all devices) ===\n"
