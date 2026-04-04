@@ -214,19 +214,21 @@ def ingest(
     # Index documents into curriculum knowledge base for KB search
     kb_msg = ""
     try:
+        from clawed.agent_core.identity import get_teacher_id
         from clawed.agent_core.memory.curriculum_kb import CurriculumKB
         kb = CurriculumKB()
+        tid = get_teacher_id()
         total_chunks = 0
         for doc in documents:
             doc_type_val = doc.doc_type.value if hasattr(doc.doc_type, "value") else str(doc.doc_type)
             total_chunks += kb.index(
-                teacher_id="default",
+                teacher_id=tid,
                 doc_title=doc.title,
                 source_path=doc.source_path or "",
                 full_text=doc.content,
                 metadata={"doc_type": doc_type_val},
             )
-        stats = kb.stats("default")
+        stats = kb.stats(tid)
         kb_msg = (
             f"[bold]Knowledge base:[/bold] {stats['doc_count']} documents, "
             f"{stats['chunk_count']} searchable sections"
@@ -248,7 +250,7 @@ def ingest(
             if doc.source_path:
                 extraction = extract_rich(Path(doc.source_path))
             asset_id = registry.register_asset(
-                teacher_id="default",
+                teacher_id=tid,
                 source_path=doc.source_path or "",
                 title=doc.title,
                 doc_type=doc_type_val,

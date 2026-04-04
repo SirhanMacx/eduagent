@@ -113,3 +113,10 @@ def _isolate_state_db(tmp_path, monkeypatch):
         tmp_path / "errors.log",
         raising=False,
     )
+
+    # ── clawed.agent_core.memory.sessions (cross-transport session store) ──
+    monkeypatch.setattr(
+        "clawed.agent_core.memory.sessions._initialized",
+        False,
+        raising=False,
+    )

@@ -129,11 +129,13 @@ class Gateway:
         teacher_id: str,
         files: list[Path] | None = None,
         progress_callback: Any = None,
+        transport: str = "cli",
     ) -> GatewayResponse:
         """Process any message from any transport."""
         # Normalize teacher_id so CLI, Telegram, and MCP all share one brain
         from clawed.agent_core.identity import get_teacher_id
         teacher_id = get_teacher_id()
+        self._last_transport = transport
 
         self._stats.messages_today += 1
         self.active_sessions[teacher_id] = {
@@ -314,10 +316,16 @@ class Gateway:
 
     async def _agent_loop(self, message: str, teacher_id: str, progress_callback: Any = None) -> GatewayResponse:
         """Load context, build prompt, and run the agent tool-use loop."""
+        transport = getattr(self, "_last_transport", "cli")
+
         # 1. Load teacher context from canonical sources
         teacher_profile = self._load_teacher_profile()
         persona_dict = self._load_persona(teacher_profile)
-        session_history = self._load_session_history(teacher_id)
+
+        # Load cross-transport session history from unified store
+        from clawed.agent_core.memory.sessions import load_recent_for_llm, format_for_prompt
+        session_history = load_recent_for_llm(teacher_id, limit=10)
+        recent_conversation = format_for_prompt(teacher_id, limit=10)
 
         # 1b. Load 3-layer memory context
         from clawed.agent_core.memory.loader import load_memory_context
@@ -382,16 +390,26 @@ class Gateway:
             soul_context=soul_context,
         )
 
-        # 2c. Cross-session context threading — greet with continuity
-        last_session = memory_ctx.get("last_session_summary", "")
-        if last_session and not session_history:
+        # 2c. Cross-transport conversation context
+        if recent_conversation:
             system += (
-                "\n\n=== Last Session Context ===\n"
-                f"The teacher's last interaction was about: {last_session}\n"
-                "If this is a new conversation, greet them with continuity — e.g. "
-                '"Last time we worked on [topic]. Want to continue or start something new?"\n'
-                "=== End Last Session Context ===\n"
+                "\n\n=== Recent Conversation (across all devices) ===\n"
+                f"{recent_conversation}\n"
+                "=== End Recent Conversation ===\n"
+                "You can reference what was said on other devices naturally — "
+                "e.g. 'Earlier you mentioned...' without specifying the device.\n"
             )
+        else:
+            # Fallback: cross-session continuity from episodic memory
+            last_session = memory_ctx.get("last_session_summary", "")
+            if last_session:
+                system += (
+                    "\n\n=== Last Session Context ===\n"
+                    f"The teacher's last interaction was about: {last_session}\n"
+                    "If this is a new conversation, greet them with continuity — e.g. "
+                    '"Last time we worked on [topic]. Want to continue or start something new?"\n'
+                    "=== End Last Session Context ===\n"
+                )
 
         # 2d. Enhance prompt for multi-step planning requests
         from clawed.agent_core.planner import build_planning_prompt, is_planning_request
@@ -430,7 +448,11 @@ class Gateway:
             conversation_history=session_history,
         )
 
-        # 6. Save conversation context
+        # 6. Save conversation context to cross-transport session store
+        from clawed.agent_core.memory.sessions import save_turn
+        save_turn(teacher_id, "user", message, transport=transport)
+        save_turn(teacher_id, "assistant", result.text, transport=transport)
+        # Also save to legacy TeacherSession for backward compat
         self._save_session_context(teacher_id, message, result.text)
 
         # 7. Store exchange as episodic memory (with rich metadata)

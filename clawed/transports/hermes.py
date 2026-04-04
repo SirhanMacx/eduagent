@@ -48,7 +48,7 @@ async def handle_message(
     since Hermes' skill interface is text-only).
     """
     gateway = _get_gateway()
-    response = await gateway.handle(message, teacher_id, files=files)
+    response = await gateway.handle(message, teacher_id, files=files, transport="mcp")
 
     # Hermes skills return text. Log files/buttons for debugging.
     if response.files:
