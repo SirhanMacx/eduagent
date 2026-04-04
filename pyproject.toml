@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "clawed"
-version = "4.4.2026.1"
+version = "4.4.2026.2"
 description = "Your AI co-teacher. Generate lessons, games, slides, and assessments from your terminal. Learns your teaching voice, aligns to your state standards, and works with any LLM provider."
 readme = "README.md"
 license = "MIT"
@@ -59,6 +59,7 @@ dependencies = [
 
 [project.optional-dependencies]
 google = ["google-api-python-client>=2.0.0", "google-auth-oauthlib>=1.0.0"]
+browser = ["playwright>=1.40.0"]
 voice = ["faster-whisper>=0.10.0"]
 tui = ["textual>=0.56.0"]
 memory = ["onnxruntime>=1.16.0"]
