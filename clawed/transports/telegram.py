@@ -555,11 +555,30 @@ class EduAgentTelegramBot:
                     typing_stop.set()
                     typing_thread.join(timeout=1)
 
-                self._send_response(self.api, chat_id, response)
+                try:
+                    self._send_response(self.api, chat_id, response)
+                except Exception as send_err:
+                    logger.error("Failed to send response: %s", send_err)
+                    _log_error(send_err)
+                    # Last resort: send text even if file delivery fails
+                    if hasattr(response, "text") and response.text:
+                        try:
+                            self.api.send_message(chat_id, response.text)
+                        except Exception:
+                            pass
 
         except Exception as e:
             logger.error("Error processing update: %s", e)
             _log_error(e)
+            # Send error message so teacher isn't left hanging
+            try:
+                self.api.send_message(
+                    chat_id,
+                    "Something went wrong processing that. "
+                    "Try again or rephrase your request.",
+                )
+            except Exception:
+                pass
 
     def _download_files(self, msg: dict) -> list[Path]:
         """Download any attached documents from a Telegram message."""

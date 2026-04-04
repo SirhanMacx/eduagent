@@ -332,21 +332,26 @@ class GenerateLessonBundleTool:
 
         if len(generated_files) == 3 and not errors:
             lines.append(f"Complete teaching package for: {master.title}")
-            lines.append("All three files ready to print:")
-            for se in side_effects:
-                lines.append(f"  - {se}")
+            lines.append("All three files ready:")
+            for f in generated_files:
+                lines.append(f"  - {f.name} ({f.suffix.upper().lstrip('.')})")
         elif generated_files:
-            lines.append(f"Generated {len(generated_files)} of 3 files for: {master.title}")
-            for se in side_effects:
-                lines.append(f"  - {se}")
+            lines.append(
+                f"Generated {len(generated_files)} of 3 files for: "
+                f"{master.title}"
+            )
+            lines.append("Files created:")
+            for f in generated_files:
+                lines.append(f"  - {f.name} ({f.suffix.upper().lstrip('.')})")
             if errors:
-                lines.append("")
+                lines.append("\nFailed:")
                 for err in errors:
-                    clean_err = str(err).split("\n")[0][:200]
-                    lines.append(f"  Could not generate: {clean_err}")
-                lines.append("Want me to try the failed item(s) again?")
+                    clean = str(err).split("\n")[0][:150]
+                    lines.append(f"  - {clean}")
         else:
-            lines.append(f"Failed to generate teaching package for: {master.title}")
+            lines.append(
+                f"Failed to generate package for: {master.title}"
+            )
             for err in errors:
                 lines.append(f"  - {err}")
 

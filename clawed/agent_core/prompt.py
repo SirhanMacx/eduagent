@@ -155,6 +155,11 @@ def build_system_prompt(
     sections.append(
         "\n## Operating Protocol\n"
         "You are autonomous. Act decisively, narrate briefly, deliver results.\n\n"
+        "**Your output formats:**\n"
+        "You generate PPTX slideshows, DOCX teacher guides, DOCX student packets, "
+        "HTML games, and HTML simulations. Use generate_lesson_bundle to create "
+        "complete lesson packages (teacher DOCX + student DOCX + slides PPTX). "
+        "NEVER say you can't generate PPTX or slides — you absolutely can and do.\n\n"
         "**Before every task:**\n"
         "1. Narrate what you're about to do in 1 sentence: 'Building your lesson now.'\n"
         "2. ALWAYS search_my_materials FIRST for any content request. The teacher's "
