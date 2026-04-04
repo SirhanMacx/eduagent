@@ -481,9 +481,7 @@ def main() -> None:
                 sys.argv = [sys.argv[0], "bot"]
                 _run_python_cli()
                 return
-            # Terminal mode — seed a greeting so the agent speaks first
-            if result == "terminal" and not args:
-                args = ["Hello"]
+            # Terminal mode — fall through to TUI launch
         except Exception as e:
             print(f"Setup error: {e}", file=sys.stderr)
 
