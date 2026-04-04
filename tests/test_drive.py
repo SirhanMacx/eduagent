@@ -197,6 +197,44 @@ class TestDriveTools:
         )
 
 
+class TestDriveIngestTool:
+    def test_schema_valid(self):
+        from clawed.agent_core.tools.drive_ingest import DriveIngestTool
+        tool = DriveIngestTool()
+        schema = tool.schema()
+        assert schema["function"]["name"] == "drive_ingest"
+        assert "folder_id" in schema["function"]["parameters"]["properties"]
+
+    @pytest.mark.asyncio
+    async def test_not_authenticated_returns_message(self, tmp_path):
+        from clawed.agent_core.context import AgentContext
+        from clawed.agent_core.tools.drive_ingest import DriveIngestTool
+        from clawed.models import AppConfig
+        tool = DriveIngestTool()
+        ctx = AgentContext(
+            teacher_id="t1", config=AppConfig(),
+            teacher_profile={}, persona=None,
+            session_history=[], improvement_context="",
+        )
+        result = await tool.execute({"folder_id": "abc123"}, ctx)
+        text = result.text.lower()
+        assert "not set up" in text or "auth" in text or "drive" in text
+
+
+class TestExtractFolderIdCommand:
+    def test_plain_id(self):
+        from clawed.commands.drive import _extract_folder_id
+        assert _extract_folder_id("1abc2def3ghi") == "1abc2def3ghi"
+
+    def test_standard_url(self):
+        from clawed.commands.drive import _extract_folder_id
+        assert _extract_folder_id("https://drive.google.com/drive/folders/1abc2def") == "1abc2def"
+
+    def test_url_with_user(self):
+        from clawed.commands.drive import _extract_folder_id
+        assert _extract_folder_id("https://drive.google.com/drive/u/0/folders/1abc2def") == "1abc2def"
+
+
 class TestDriveExtendedTools:
     def test_drive_create_slides_schema(self):
         from clawed.agent_core.tools.drive_create_slides import DriveCreateSlidesTool

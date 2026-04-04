@@ -19,6 +19,7 @@ from clawed.commands._helpers import console
 
 # UTF-8 encoding is enforced in clawed/__init__.py for all entry points
 from clawed.commands.bot import bot_app
+from clawed.commands.drive import drive_app
 from clawed.commands.config import (
     class_app,
     config_app,
@@ -261,6 +262,7 @@ app.add_typer(schedule_app, name="schedule")
 app.add_typer(train_app, name="train")
 app.add_typer(game_app, name="game")
 app.add_typer(simulation_app, name="simulate")
+app.add_typer(drive_app, name="drive")
 
 # ── Register top-level commands from sub-modules ────────────────────────
 # Commands from generate_app, export_app, and bot_app are registered as
