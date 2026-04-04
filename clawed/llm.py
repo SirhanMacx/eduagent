@@ -191,8 +191,15 @@ class LLMClient:
     ) -> dict[str, Any]:
         """Generate and parse a JSON response from the LLM."""
         raw = await self.generate(prompt, system, temperature, max_tokens, demo_hint=demo_hint)
-        # Extract JSON from markdown code fences if present
+        if not raw or not raw.strip():
+            raise ValueError(
+                "LLM returned empty output. This model may not support "
+                "structured JSON generation. Try a larger model or different provider."
+            )
+        # Strip <think>...</think> blocks (common in reasoning models like Qwen)
         cleaned = raw.strip()
+        import re
+        cleaned = re.sub(r"<think>.*?</think>", "", cleaned, flags=re.DOTALL).strip()
         if cleaned.startswith("```"):
             lines = cleaned.split("\n")
             # Drop first line (```json or ```) and last line (```)
