@@ -78,6 +78,44 @@ def _find_daemon_entry() -> str | None:
     return None
 
 
+def _ed_greeting() -> None:
+    """Print Ed's proactive greeting before the TUI launches.
+
+    Reads the teacher's name and recent context from config.json to
+    personalize the greeting. Instant — no LLM call, pure Python.
+    The teacher sees Ed's voice before the cursor appears.
+    """
+    import json
+    import random
+
+    _cfg_dir = _data_dir()
+    config_path = Path(_cfg_dir) / "config.json"
+    name = "there"
+    try:
+        if config_path.exists():
+            data = json.loads(config_path.read_text())
+            tp = data.get("teacher_profile", {})
+            raw = tp.get("name", "")
+            if raw:
+                # Use just the last name with title, or first name
+                parts = raw.strip().split()
+                if len(parts) >= 2 and parts[0] in ("Mr.", "Ms.", "Mrs.", "Dr.", "Mr", "Ms", "Mrs", "Dr"):
+                    name = " ".join(parts[:2])
+                else:
+                    name = parts[0]
+    except Exception:
+        pass
+
+    greetings = [
+        f"Hey {name}! What are we working on today?",
+        f"Good to see you, {name}. What do you need?",
+        f"Hey {name}! Ready when you are.",
+        f"Welcome back, {name}. What's on the agenda?",
+    ]
+
+    print(f"\n  \033[32m🍎 {random.choice(greetings)}\033[0m\n")
+
+
 def _show_node_notice() -> None:
     """Show clean branded startup banner when running in Python-only mode.
 
@@ -517,6 +555,12 @@ def main() -> None:
                     args = ["--model", model] + args
             except Exception:
                 pass
+
+        # Ed speaks first — proactive greeting before the TUI cursor appears.
+        # This runs from Python (instant, no LLM call) so the teacher sees
+        # Ed's voice before they need to type anything.
+        if not args:
+            _ed_greeting()
 
         result = subprocess.run([node, cli_js] + args)
         sys.exit(result.returncode)
