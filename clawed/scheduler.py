@@ -334,7 +334,7 @@ async def _task_curriculum_watch() -> str:
         from clawed.agent_core.identity import get_teacher_id
         from clawed.models import AppConfig
 
-        teacher_id = get_teacher_id()
+        _tid = get_teacher_id()  # noqa: F841 — reserved for future per-teacher watch
         config = AppConfig.load()
         materials_paths = getattr(config.teacher_profile, "materials_paths", [])
 

@@ -396,7 +396,7 @@ class Gateway:
             soul_context=soul_context,
         )
 
-        # 2c. Detect uninsgested materials — tell Ed to ingest them
+        # 2c. Detect un-ingested materials — kick off background ingest
         try:
             from clawed.agent_core.memory.curriculum_kb import CurriculumKB
             kb = CurriculumKB()
@@ -405,16 +405,23 @@ class Gateway:
                 self.config.teacher_profile, "materials_paths", []
             )
             if kb_stats["doc_count"] == 0 and materials_paths:
+                # Start background ingest (non-blocking)
+                self._maybe_background_ingest(materials_paths, teacher_id)
                 paths_str = ", ".join(materials_paths)
                 system += (
-                    "\n\n=== URGENT: Materials Not Yet Ingested ===\n"
-                    f"The teacher has configured materials at: {paths_str}\n"
-                    "But the knowledge base is EMPTY (0 documents). "
-                    "You MUST call ingest_materials with one of these paths "
-                    "IMMEDIATELY before doing anything else. The teacher's "
-                    "files need to be ingested so you can learn their style "
-                    "and reference their content.\n"
-                    "=== End Urgent ===\n"
+                    "\n\n=== Materials Status ===\n"
+                    f"The teacher's materials at {paths_str} are being "
+                    "ingested in the background. This may take several "
+                    "minutes for large collections. You can help the "
+                    "teacher now — the KB will populate as files are "
+                    "processed. If they ask about their materials, let "
+                    "them know ingestion is in progress.\n"
+                    "=== End Materials Status ===\n"
+                )
+            elif kb_stats["doc_count"] > 0:
+                system += (
+                    f"\n\nKnowledge base: {kb_stats['doc_count']} documents, "
+                    f"{kb_stats['chunk_count']} searchable sections.\n"
                 )
         except Exception:
             pass
@@ -508,6 +515,64 @@ class Gateway:
             pass
 
         return result
+
+    # ------------------------------------------------------------------
+    # Background ingest
+    # ------------------------------------------------------------------
+
+    _ingest_started: bool = False
+
+    def _maybe_background_ingest(
+        self, materials_paths: list[str], teacher_id: str
+    ) -> None:
+        """Start a background thread to ingest materials. Runs once per process."""
+        if Gateway._ingest_started:
+            return
+        Gateway._ingest_started = True
+
+        import threading
+
+        def _do_ingest() -> None:
+            import asyncio
+            for path_str in materials_paths:
+                try:
+                    from pathlib import Path
+                    p = Path(path_str).expanduser()
+                    if not p.exists():
+                        continue
+                    logger.info("Background ingest starting: %s", p)
+                    from clawed.ingestor import ingest_path
+                    docs = asyncio.run(ingest_path(p))
+                    if docs:
+                        from clawed.agent_core.memory.curriculum_kb import (
+                            CurriculumKB,
+                        )
+                        kb = CurriculumKB()
+                        for doc in docs:
+                            try:
+                                doc_type = (
+                                    doc.doc_type.value
+                                    if hasattr(doc.doc_type, "value")
+                                    else str(doc.doc_type)
+                                )
+                                kb.index(
+                                    teacher_id=teacher_id,
+                                    doc_title=doc.title,
+                                    source_path=doc.source_path or "",
+                                    full_text=doc.content,
+                                    metadata={"doc_type": doc_type},
+                                )
+                            except Exception as e:
+                                logger.debug("Chunk index failed: %s", e)
+                        logger.info(
+                            "Background ingest done: %d docs from %s",
+                            len(docs), p,
+                        )
+                except Exception as e:
+                    logger.warning("Background ingest failed for %s: %s", path_str, e)
+
+        thread = threading.Thread(target=_do_ingest, daemon=True)
+        thread.start()
 
     # ------------------------------------------------------------------
     # Context loading helpers
