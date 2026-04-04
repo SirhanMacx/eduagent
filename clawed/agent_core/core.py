@@ -22,7 +22,7 @@ from clawed.agent_core.context import AgentContext
 from clawed.agent_core.loop import LLMInterface, run_agent_loop
 from clawed.agent_core.prompt import build_system_prompt
 from clawed.agent_core.tools.base import ToolRegistry
-from clawed.config import has_config
+from clawed.config import has_config, has_teacher_profile
 from clawed.gateway_response import GatewayResponse
 from clawed.models import AppConfig
 
@@ -157,15 +157,21 @@ class Gateway:
             if self._onboard.is_onboarding(teacher_id):
                 return await self._onboard.step(teacher_id, message)
 
-            # 3. First-run detection
+            # 3. First-run detection — no config at all
             if not has_config():
                 if message.strip().lower() in ("/setup", "/start", "setup", "start"):
                     return await self._onboard.step(teacher_id, message)
-                return (
-                    "Welcome to Claw-ED! I'm your personal teaching assistant. "
+                return GatewayResponse(
+                    text="Welcome to Claw-ED! I'm your personal teaching assistant. "
                     "Send /setup to configure your profile and API key, "
                     "or send /demo to see what I can do."
                 )
+
+            # 3b. Config exists but teacher hasn't completed profile setup
+            # (quick_model_setup set the API key but conversational onboarding
+            # hasn't collected name, subjects, grades, state yet)
+            if not has_teacher_profile():
+                return await self._onboard.step(teacher_id, message)
 
             # 4. Natural-language → agent loop
             return await self._agent_loop(message, teacher_id, progress_callback=progress_callback)

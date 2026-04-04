@@ -72,6 +72,7 @@ class TestFlagOnAgent:
         with (
             patch.object(gw._onboard, "is_onboarding", return_value=False),
             patch("clawed.agent_core.core.has_config", return_value=True),
+            patch("clawed.agent_core.core.has_teacher_profile", return_value=True),
         ):
             result = await gw.handle("hello", "t1")
         assert result.text == "Agent response!"
@@ -104,6 +105,7 @@ class TestFlagOnAgent:
         with (
             patch.object(gw._onboard, "is_onboarding", return_value=False),
             patch("clawed.agent_core.core.has_config", return_value=True),
+            patch("clawed.agent_core.core.has_teacher_profile", return_value=True),
         ):
             result = await gw.handle("hello", "t1")
         # Should get some response (error fallback), not crash

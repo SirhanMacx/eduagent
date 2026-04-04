@@ -165,7 +165,8 @@ class TestAgentGateway:
 
         llm = FakeLLM([{"type": "text", "content": "Hello teacher!"}])
         gw = AgentGateway(config=AppConfig(agent_gateway=True), llm=llm)
-        with patch("clawed.agent_core.core.has_config", return_value=True):
+        with patch("clawed.agent_core.core.has_config", return_value=True), \
+             patch("clawed.agent_core.core.has_teacher_profile", return_value=True):
             result = await gw.handle("hi", "t1")
         assert result.text == "Hello teacher!"
 

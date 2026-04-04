@@ -82,8 +82,12 @@ class TestClosedLoop:
         from clawed.agent_core.core import Gateway as AgentGateway
         from clawed.agent_core.fake_llm import FakeLLM
 
-        # Create a config file so has_config() returns True (skips onboarding)
-        config = AppConfig(agent_gateway=True)
+        # Create a config file with teacher profile so onboarding is skipped
+        from clawed.models import TeacherProfile
+        config = AppConfig(
+            agent_gateway=True,
+            teacher_profile=TeacherProfile(name="Test Teacher", subjects=["Math"]),
+        )
         config_path = tmp_path / "config.json"
         config_path.write_text(config.model_dump_json(), encoding="utf-8")
 

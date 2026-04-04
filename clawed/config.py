@@ -217,6 +217,23 @@ def has_config() -> bool:
     return AppConfig.config_path().exists()
 
 
+def has_teacher_profile() -> bool:
+    """Check if the teacher has completed profile setup (name/subjects/grades).
+
+    This is stricter than has_config() — config.json may exist with just
+    the API provider set (from quick_model_setup), but the teacher hasn't
+    gone through conversational onboarding yet.
+    """
+    if not AppConfig.config_path().exists():
+        return False
+    try:
+        config = AppConfig.load()
+        tp = config.teacher_profile
+        return bool(tp and (tp.name or tp.subjects or tp.grade_levels))
+    except Exception:
+        return False
+
+
 async def test_llm_connection(config: Optional[AppConfig] = None) -> dict:
     """Test the LLM connection and return status info."""
     cfg = config or AppConfig.load()
