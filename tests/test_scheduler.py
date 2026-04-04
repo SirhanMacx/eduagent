@@ -46,7 +46,7 @@ def tmp_workspace_for_scheduler(tmp_path, monkeypatch):
 
 class TestDefaultTasks:
     def test_has_all_expected_tasks(self):
-        expected = {"morning-prep", "weekly-plan", "feedback-digest", "memory-compress", "student-digest"}
+        expected = {"morning-prep", "weekly-plan", "feedback-digest", "memory-compress", "student-digest", "gap-detection", "curriculum-watch"}
         assert set(DEFAULT_TASKS.keys()) == expected
 
     def test_each_task_has_required_fields(self):

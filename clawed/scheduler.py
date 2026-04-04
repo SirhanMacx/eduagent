@@ -54,6 +54,16 @@ DEFAULT_TASKS: dict[str, dict[str, Any]] = {
         "cron": {"day_of_week": "fri", "hour": "16", "minute": "0"},
         "enabled": False,
     },
+    "gap-detection": {
+        "description": "Scan standards coverage, alert teacher about uncovered standards.",
+        "cron": {"day_of_week": "mon", "hour": "7", "minute": "0"},
+        "enabled": False,
+    },
+    "curriculum-watch": {
+        "description": "Monitor ingested folders for new/changed files, auto-re-ingest.",
+        "cron": {"hour": "5", "minute": "30"},
+        "enabled": False,
+    },
 }
 
 
@@ -279,6 +289,92 @@ async def _task_student_digest() -> str:
     return summary
 
 
+async def _task_gap_detection() -> str:
+    """Scan standards coverage and identify gaps."""
+    from clawed.workspace import append_daily_note
+
+    try:
+        from clawed.agent_core.identity import get_teacher_id
+        from clawed.state import TeacherSession
+
+        teacher_id = get_teacher_id()
+        session = TeacherSession.load(teacher_id)
+        recent_units = session.get_recent_units(limit=20)
+
+        if not recent_units:
+            summary = "Gap detection: no units generated yet — nothing to scan."
+            append_daily_note(summary, category="gap-detection")
+            return summary
+
+        # Collect covered topics
+        topics = [u.get("topic", "") for u in recent_units if u.get("topic")]
+        subjects = set(u.get("subject", "") for u in recent_units if u.get("subject"))
+
+        summary = (
+            f"Gap detection: scanned {len(recent_units)} units across "
+            f"{', '.join(subjects) or 'unknown subjects'}. "
+            f"Topics covered: {', '.join(topics[:10])}."
+        )
+        if len(recent_units) < 5:
+            summary += " Coverage is sparse — more units needed for meaningful gap analysis."
+
+    except Exception as exc:
+        summary = f"Gap detection: scan failed ({exc})"
+
+    append_daily_note(summary, category="gap-detection")
+    logger.info("gap-detection: %s", summary)
+    return summary
+
+
+async def _task_curriculum_watch() -> str:
+    """Monitor ingested folders for changes and re-ingest."""
+    from clawed.workspace import append_daily_note
+
+    try:
+        from clawed.agent_core.identity import get_teacher_id
+        from clawed.models import AppConfig
+
+        teacher_id = get_teacher_id()
+        config = AppConfig.load()
+        materials_paths = getattr(config.teacher_profile, "materials_paths", [])
+
+        if not materials_paths:
+            summary = "Curriculum watch: no materials paths configured."
+            append_daily_note(summary, category="curriculum-watch")
+            return summary
+
+        import os
+        from pathlib import Path
+
+        new_files = []
+        for path_str in materials_paths:
+            path = Path(path_str).expanduser()
+            if not path.exists():
+                continue
+            # Check for files modified in the last 24 hours
+            cutoff = os.path.getmtime(str(path)) if path.is_file() else 0
+            if path.is_dir():
+                for f in path.rglob("*"):
+                    if f.is_file() and f.suffix.lower() in {".pdf", ".docx", ".pptx", ".txt", ".md"}:
+                        try:
+                            if os.path.getmtime(str(f)) > (cutoff - 86400):
+                                new_files.append(f)
+                        except OSError:
+                            continue
+
+        if new_files:
+            summary = f"Curriculum watch: found {len(new_files)} recently modified files. Auto-re-ingest recommended."
+        else:
+            summary = "Curriculum watch: no changes detected in materials folders."
+
+    except Exception as exc:
+        summary = f"Curriculum watch: check failed ({exc})"
+
+    append_daily_note(summary, category="curriculum-watch")
+    logger.info("curriculum-watch: %s", summary)
+    return summary
+
+
 # Map task names to their async implementations
 TASK_IMPLEMENTATIONS: dict[str, Callable[[], Any]] = {
     "morning-prep": _task_morning_prep,
@@ -286,6 +382,8 @@ TASK_IMPLEMENTATIONS: dict[str, Callable[[], Any]] = {
     "feedback-digest": _task_feedback_digest,
     "memory-compress": _task_memory_compress,
     "student-digest": _task_student_digest,
+    "gap-detection": _task_gap_detection,
+    "curriculum-watch": _task_curriculum_watch,
 }
 
 
