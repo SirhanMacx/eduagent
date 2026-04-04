@@ -182,6 +182,49 @@ TOOL_DEFINITIONS = [
             },
         },
     },
+    # ── Google Drive tools ──────────────────────────────────────────
+    {
+        "type": "function",
+        "function": {
+            "name": "drive_list",
+            "description": "List files and folders in the teacher's Google Drive",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "folder_id": {"type": "string", "description": "Drive folder ID (empty for root)"},
+                    "query": {"type": "string", "description": "Search query to filter files"},
+                },
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "drive_read",
+            "description": "Read the content of a file from Google Drive",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "file_id": {"type": "string", "description": "Drive file ID to read"},
+                },
+                "required": ["file_id"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "drive_ingest",
+            "description": "Ingest all curriculum files from a Google Drive folder into the knowledge base",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "folder_url": {"type": "string", "description": "Google Drive folder URL or ID"},
+                },
+                "required": ["folder_url"],
+            },
+        },
+    },
 ]
 
 

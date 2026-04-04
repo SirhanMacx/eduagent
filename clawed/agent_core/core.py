@@ -131,6 +131,10 @@ class Gateway:
         progress_callback: Any = None,
     ) -> GatewayResponse:
         """Process any message from any transport."""
+        # Normalize teacher_id so CLI, Telegram, and MCP all share one brain
+        from clawed.agent_core.identity import get_teacher_id
+        teacher_id = get_teacher_id()
+
         self._stats.messages_today += 1
         self.active_sessions[teacher_id] = {
             "last_activity": datetime.now().isoformat(),
