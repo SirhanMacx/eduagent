@@ -154,6 +154,21 @@ class OnboardHandler:
 
         del self._state[teacher_id]
 
+        # Save onboarding summary to sessions under the NEW teacher_id
+        # so Ed remembers what was discussed even though the ID changed
+        try:
+            from clawed.agent_core.identity import get_teacher_id
+            from clawed.agent_core.memory.sessions import save_turn
+            new_tid = get_teacher_id()
+            save_turn(
+                new_tid, "assistant",
+                f"Onboarding complete for {state['name']}. "
+                f"Teaches {state['subject']}, grade {state['grade']}.",
+                transport="system",
+            )
+        except Exception:
+            pass
+
         return GatewayResponse(
             text=(
                 f"You're all set, {state['name']}!\n\n"

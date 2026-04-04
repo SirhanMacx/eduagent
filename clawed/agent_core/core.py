@@ -87,6 +87,18 @@ class Gateway:
         self._ingest = IngestHandler()
         self._onboard = OnboardHandler()
 
+        # Eagerly initialize databases so they're never left as 0-byte files
+        try:
+            from clawed.state import init_db as init_state_db
+            init_state_db()
+        except Exception:
+            pass
+        try:
+            from clawed.agent_core.memory.sessions import _ensure_db as init_sessions_db
+            init_sessions_db()
+        except Exception:
+            pass
+
         # Agent subsystems
         self._approval_manager = ApprovalManager()
         self._registry = ToolRegistry()
@@ -155,12 +167,27 @@ class Gateway:
 
             # 2. Onboarding state machine (deterministic, no LLM)
             if self._onboard.is_onboarding(teacher_id):
-                return await self._onboard.step(teacher_id, message)
+                result = await self._onboard.step(teacher_id, message)
+                # Save onboarding turns so Ed remembers the conversation
+                try:
+                    from clawed.agent_core.memory.sessions import save_turn
+                    save_turn(teacher_id, "user", message, transport=transport)
+                    save_turn(teacher_id, "assistant", result.text, transport=transport)
+                except Exception:
+                    pass
+                return result
 
             # 3. First-run detection — no config at all
             if not has_config():
                 if message.strip().lower() in ("/setup", "/start", "setup", "start"):
-                    return await self._onboard.step(teacher_id, message)
+                    result = await self._onboard.step(teacher_id, message)
+                    try:
+                        from clawed.agent_core.memory.sessions import save_turn
+                        save_turn(teacher_id, "user", message, transport=transport)
+                        save_turn(teacher_id, "assistant", result.text, transport=transport)
+                    except Exception:
+                        pass
+                    return result
                 return GatewayResponse(
                     text="Welcome to Claw-ED! I'm your personal teaching assistant. "
                     "Send /setup to configure your profile and API key, "
