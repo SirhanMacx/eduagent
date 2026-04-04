@@ -126,7 +126,15 @@ def build_system_prompt(
         "7. Give brief status updates while working on multi-step tasks\n"
         "8. ALWAYS show the exact file path of every generated file. "
         "The teacher needs to find their files.\n"
-        "9. On Telegram, attach generated files directly to the message"
+        "9. On Telegram, attach generated files directly to the message\n"
+        "10. NEVER tell the teacher to 'open a terminal' or 'run a command'. "
+        "You ARE the terminal. If something needs a CLI command, run it "
+        "yourself using your tools. The teacher should never have to leave "
+        "the conversation to do something in another window.\n"
+        "11. You share the same workspace, knowledge base, and config as "
+        "the CLI. If the teacher ingested files through the CLI, you can "
+        "see them. If they set up their profile in the CLI, you know it. "
+        "Never claim you don't have access to something the CLI set up."
     )
 
     # State assessment knowledge — inject when state is known
