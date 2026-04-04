@@ -569,7 +569,12 @@ class Gateway:
                         continue
                     logger.info("Background ingest starting: %s", p)
                     from clawed.ingestor import ingest_path
-                    docs = asyncio.run(ingest_path(p))
+                    result = ingest_path(p)
+                    # ingest_path may return a list or coroutine
+                    if asyncio.iscoroutine(result):
+                        docs = asyncio.run(result)
+                    else:
+                        docs = result
                     if docs:
                         from clawed.agent_core.memory.curriculum_kb import (
                             CurriculumKB,
