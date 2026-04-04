@@ -116,7 +116,11 @@ class SearchMyMaterialsTool:
                 results = kb.search_all_teachers(query, top_k=top_k)
 
             if not results and not lines:
+                # Check stats for both the transport-specific ID and "default"
+                # (CLI ingest stores chunks under "default")
                 stats = kb.stats(teacher_id)
+                if stats["doc_count"] == 0 and teacher_id != "default":
+                    stats = kb.stats("default")
                 if stats["doc_count"] == 0:
                     return ToolResult(
                         text="No curriculum files uploaded yet. Ask the teacher "
