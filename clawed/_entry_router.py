@@ -496,6 +496,10 @@ def main() -> None:
 
     if node and cli_js:
         os.environ['CLAWED_MODE'] = '1'
+        # Increase Node.js heap for large curriculum ingestion (default 4GB is too small)
+        existing = os.environ.get('NODE_OPTIONS', '')
+        if '--max-old-space-size' not in existing:
+            os.environ['NODE_OPTIONS'] = f'{existing} --max-old-space-size=8192'.strip()
         try:
             _inject_config_env()
         except Exception:
