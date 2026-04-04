@@ -8,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from clawed.agent_core.memory.curriculum_kb import _blob_to_embed, _embed_to_blob
 from clawed.agent_core.memory.embeddings import get_embedder
 
 logger = logging.getLogger(__name__)
@@ -46,8 +47,9 @@ class EpisodicMemory:
         text: str,
         metadata: dict[str, Any] | None = None,
     ) -> None:
-        """Store an episode with its embedding."""
+        """Store an episode with its embedding as compact binary."""
         embedding = self._embedder.embed(text)
+        blob = _embed_to_blob(embedding)
         with sqlite3.connect(self._db_path) as conn:
             conn.execute(
                 "INSERT INTO episodes (teacher_id, text, embedding, metadata, created_at) "
@@ -55,7 +57,7 @@ class EpisodicMemory:
                 (
                     teacher_id,
                     text,
-                    json.dumps(embedding),
+                    blob,
                     json.dumps(metadata or {}),
                     datetime.now().isoformat(),
                 ),
@@ -85,7 +87,11 @@ class EpisodicMemory:
 
         scored = []
         for row in rows:
-            stored_embedding = json.loads(row["embedding"])
+            raw = row["embedding"]
+            stored_embedding = (
+                _blob_to_embed(raw) if isinstance(raw, bytes)
+                else json.loads(raw)
+            )
             sim = self._embedder.cosine_similarity(query_embedding, stored_embedding)
             scored.append({
                 "text": row["text"],
