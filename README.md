@@ -50,8 +50,7 @@ It also runs as a Telegram bot. Same brain, same files, same memory. Ask it to m
 - Web search (DuckDuckGo + Playwright), Google Drive integration
 - 50-state standards alignment (NY Regents, TX STAAR, CA CAASPP, etc.)
 - Telegram bot with file delivery, shared session memory
-- Works with Anthropic, OpenAI, Google, Ollama (local or cloud), OpenRouter
-- Claude Code OAuth — picks up your existing Claude credentials automatically
+- Works with Ollama, Anthropic, OpenAI, Google, OpenRouter
 - Scheduled tasks (morning prep, gap detection, wiki maintenance)
 - Self-equipping — can install packages and create its own tools
 - DOCX, PPTX, PDF, HTML export
@@ -103,7 +102,9 @@ pip install clawed
 clawed
 ```
 
-It walks you through picking a provider and an API key. Supports Google Gemini (free), Ollama Cloud, Anthropic, OpenAI, OpenRouter, or fully offline local Ollama.
+It walks you through picking a provider and an API key.
+
+**Recommended:** [Ollama Pro](https://ollama.com/pro) ($20/mo) — unlimited access to good models, easiest setup. For best output quality, use an Anthropic or OpenAI API key (pay per use). OpenRouter lets you pick from any model. Google Gemini has a free tier. Local Ollama runs fully offline for free.
 
 ---
 
