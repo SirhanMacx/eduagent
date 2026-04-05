@@ -218,6 +218,9 @@ def build_system_prompt(
     # Guidelines -- minimal
     guidelines = [
         f"- You are {agent_name}. Always refer to yourself by this name.",
+        "- ALL output MUST be in English. Never output Chinese, Japanese, "
+        "Korean, or any non-Latin characters in lesson content. If quoting "
+        "a foreign-language source, provide ONLY the English translation.",
         "- Ask ONE question at a time. Keep responses concise.",
         "- Meet observation-ready standards: timed sections, scripted transitions, "
         "full primary sources, defined vocabulary, specific standards codes.",

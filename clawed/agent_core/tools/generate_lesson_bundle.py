@@ -10,6 +10,54 @@ from clawed.failure_codes import FailureCode
 
 logger = logging.getLogger(__name__)
 
+_CJK_RANGES = [
+    (0x4E00, 0x9FFF),    # CJK Unified Ideographs
+    (0x3400, 0x4DBF),    # CJK Extension A
+    (0x3000, 0x303F),    # CJK Symbols
+    (0xFF00, 0xFFEF),    # Fullwidth Forms
+    (0xAC00, 0xD7AF),    # Korean Hangul
+]
+
+
+def _has_cjk(text: str) -> bool:
+    """Check if text contains CJK characters."""
+    return any(
+        any(lo <= ord(c) <= hi for lo, hi in _CJK_RANGES)
+        for c in text
+    )
+
+
+def _strip_cjk(text: str) -> str:
+    """Remove CJK characters from text, preserving everything else."""
+    import re
+    # Remove CJK blocks and clean up resulting whitespace
+    cleaned = re.sub(
+        r"[\u3000-\u303F\u3400-\u4DBF\u4E00-\u9FFF"
+        r"\uAC00-\uD7AF\uFF00-\uFFEF]+",
+        " ", text,
+    )
+    return re.sub(r"  +", " ", cleaned).strip()
+
+
+def _sanitize_master_content(master: Any) -> None:
+    """Strip CJK characters from all text fields in MasterContent.
+
+    The minimax model sometimes outputs Chinese when generating
+    historical quotes. This sanitizer catches it post-generation.
+    """
+    for field_name in dir(master):
+        if field_name.startswith("_"):
+            continue
+        val = getattr(master, field_name, None)
+        if isinstance(val, str) and _has_cjk(val):
+            setattr(master, field_name, _strip_cjk(val))
+        elif isinstance(val, list):
+            for item in val:
+                if hasattr(item, "__dict__"):
+                    for k, v in vars(item).items():
+                        if isinstance(v, str) and _has_cjk(v):
+                            setattr(item, k, _strip_cjk(v))
+
 
 class GenerateLessonBundleTool:
     """Generate a COMPLETE teaching package: lesson plan + student handout + slideshow."""
@@ -247,6 +295,9 @@ class GenerateLessonBundleTool:
             except Exception as e:
                 logger.warning("Image fetch failed: %s", e)
                 report.warnings.append(f"Image fetch failed: {e}")
+
+        # ── Sanitize: strip non-Latin characters (minimax bilingual leak)
+        _sanitize_master_content(master)
 
         # ── Compile three views ───────────────────────────────────────
         output_dir = Path("~/clawed_output").expanduser().resolve()
