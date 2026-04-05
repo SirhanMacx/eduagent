@@ -1,5 +1,23 @@
 # Changelog
 
+## v4.5.2026.29 (2026-04-05)
+
+### Hygiene
+- Version drift eliminated: CHANGELOG, ROADMAP, pyproject.toml, PyPI all aligned
+- Security tests run without localhost bypass — real 401/429 assertions
+- Self-equipping gated: install_package requires teacher confirmation, README documents trust model
+- README self-equipping claim scoped and explained
+- Docker CI fixed (empty CLI bundle stub for hatchling)
+
+## v4.5.2026.28 (2026-04-05)
+
+### Global state + security tests
+- Centralized path provider (clawed/paths.py)
+- 18 security regression tests (auth, rate limit, SSRF)
+- Exception handling narrowed in 4 startup blocks
+- Architecture doc keyring name corrected
+- Docker CI smoke test added
+
 ## v4.5.2026.27 (2026-04-05)
 
 ### Security hardening (audit remediation)

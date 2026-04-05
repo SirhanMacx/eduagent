@@ -116,8 +116,24 @@ class TestInvalidToken:
         assert resp.status_code == 401
 
 
+class TestBypassDisabledByDefault:
+    """Verify bypass is NOT active in unauthed_client tests."""
+
+    def test_bypass_env_not_set(self, unauthed_client):
+        import os
+        assert os.environ.get("EDUAGENT_LOCAL_AUTH_BYPASS") != "1", (
+            "Bypass should be disabled for unauthed tests"
+        )
+
+    def test_testclient_still_rejected_without_bypass(self, unauthed_client):
+        """Even though TestClient sends from 'testclient' host,
+        auth is enforced when bypass env var is not set."""
+        resp = unauthed_client.get("/api/settings")
+        assert resp.status_code == 401
+
+
 class TestLocalhostBypass:
-    """Localhost bypass allows access without token."""
+    """Localhost bypass allows access without token ONLY when enabled."""
 
     def test_bypass_allows_settings(self, bypass_client):
         resp = bypass_client.get("/api/settings")
@@ -126,6 +142,11 @@ class TestLocalhostBypass:
     def test_bypass_allows_health_diagnostics(self, bypass_client):
         resp = bypass_client.get("/api/health/diagnostics")
         assert resp.status_code != 401
+
+    def test_bypass_requires_env_var(self, unauthed_client):
+        """Without EDUAGENT_LOCAL_AUTH_BYPASS=1, bypass does not work."""
+        resp = unauthed_client.get("/api/settings")
+        assert resp.status_code == 401
 
 
 class TestRateLimiting:

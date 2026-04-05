@@ -52,10 +52,14 @@ It also runs as a Telegram bot. Same brain, same files, same memory. Ask it to m
 - Telegram bot with file delivery, shared session memory
 - Works with Ollama, Anthropic, OpenAI, Google, OpenRouter
 - Scheduled tasks (morning prep, gap detection, wiki maintenance)
-- Self-equipping — can install packages and create its own tools
+- Self-equipping — can install Python packages (--user scope) and create YAML tool templates when it needs a capability it doesn't have
 - DOCX, PPTX, PDF, HTML export
 - MCP server for Claude Code / VS Code integration
 - MIT licensed, no telemetry, no accounts
+
+### Trust model
+
+Claw-ED is a **local-first tool** designed for a teacher's own machine. It reads your files, calls LLM APIs you configure, and writes to `~/.eduagent/`. The web API (if you run `clawed serve`) requires a bearer token and binds to localhost by default. Self-equipping installs packages in `--user` scope only. The Telegram bot runs as a background process on your machine. Nothing is sent anywhere except the LLM provider you choose.
 
 ---
 

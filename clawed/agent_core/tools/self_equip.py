@@ -63,7 +63,13 @@ class InstallPackageTool:
         except ImportError:
             pass
 
-        # Install
+        # Log what we're about to install
+        logger.info(
+            "Self-equip: installing '%s' (reason: %s)",
+            package, reason or "not specified",
+        )
+
+        # Install (--user scope only, never system-wide)
         try:
             result = subprocess.run(
                 [sys.executable, "-m", "pip", "install", "--user", package],
