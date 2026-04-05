@@ -226,8 +226,28 @@ class TelegramAPI:
         return self._call("getMe")
 
     def get_updates(self, offset: int = 0, timeout: int = 30) -> list[dict]:
-        result = self._call("getUpdates", offset=offset, timeout=timeout)
-        return result if isinstance(result, list) else []
+        """Long-poll for updates using a raw httpx.post (not _call).
+
+        Windows kills TLS connections on reuse (WinError 10054).
+        Using httpx.post() directly (no persistent client) is the
+        most reliable approach on Windows.
+        """
+        url = f"{self._base}/getUpdates"
+        for attempt in range(3):
+            try:
+                resp = httpx.post(
+                    url,
+                    json={"offset": offset, "timeout": timeout},
+                    timeout=httpx.Timeout(timeout + 10, connect=15.0),
+                )
+                result = resp.json()
+                if result.get("ok"):
+                    data = result.get("result", [])
+                    return data if isinstance(data, list) else []
+            except Exception as e:
+                logger.debug("getUpdates attempt %d: %s", attempt + 1, e)
+                time.sleep(1)
+        return []
 
     @staticmethod
     def _split_at_boundary(text: str, max_len: int) -> list[str]:
