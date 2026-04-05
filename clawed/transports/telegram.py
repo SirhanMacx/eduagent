@@ -165,19 +165,21 @@ class TelegramAPI:
     def __init__(self, token: str, timeout: float = 60.0):
         self.token = token
         self._base = f"{_API_BASE}/bot{token}"
-        self._client = httpx.Client(
-            timeout=httpx.Timeout(timeout, connect=15.0),
-            # Disable HTTP/2 and limit connection pool to prevent
-            # WinError 10054 (connection reset) on Windows.
+        self._timeout = timeout
+
+    def _new_client(self, timeout: float | None = None) -> httpx.Client:
+        """Create a fresh httpx client per request.
+
+        Windows kills long-lived TLS connections (WinError 10054).
+        Using a fresh client per call avoids stale socket issues.
+        """
+        return httpx.Client(
+            timeout=httpx.Timeout(timeout or self._timeout, connect=15.0),
             http2=False,
-            limits=httpx.Limits(
-                max_keepalive_connections=2,
-                keepalive_expiry=30,
-            ),
         )
 
     def close(self) -> None:
-        self._client.close()
+        pass  # No persistent client to close
 
     def _call(self, method: str, **params: Any) -> dict:
         """Call a Telegram Bot API method with retry on network errors."""
@@ -188,13 +190,15 @@ class TelegramAPI:
         last_err: Exception | None = None
         for attempt in range(3):
             try:
-                resp = self._client.post(url, json=data)
-                result = resp.json()
+                with self._new_client() as client:
+                    resp = client.post(url, json=data)
+                    result = resp.json()
                 if result.get("ok"):
                     return result.get("result", {})
                 else:
                     raise RuntimeError(
-                        f"Telegram API error: {result.get('description', 'Unknown error')}"
+                        f"Telegram API error: "
+                        f"{result.get('description', 'Unknown error')}"
                     )
             except (
                 httpx.ConnectError, httpx.ReadTimeout,
@@ -207,20 +211,6 @@ class TelegramAPI:
                     "Network error on attempt %d: %s. Retrying in %ds...",
                     attempt + 1, e, wait,
                 )
-                # Recreate client on connection reset (Windows WinError 10054)
-                if "10054" in str(e) or "reset" in str(e).lower():
-                    try:
-                        self._client.close()
-                    except Exception:
-                        pass
-                    self._client = httpx.Client(
-                        timeout=httpx.Timeout(60, connect=15.0),
-                        http2=False,
-                        limits=httpx.Limits(
-                            max_keepalive_connections=2,
-                            keepalive_expiry=30,
-                        ),
-                    )
                 time.sleep(wait)
             except Exception as e:
                 logger.error("Unexpected error calling %s: %s", method, e)
@@ -329,7 +319,8 @@ class TelegramAPI:
                     data: dict[str, Any] = {"chat_id": chat_id}
                     if caption:
                         data["caption"] = caption
-                    resp = self._client.post(url, data=data, files=files)
+                    with self._new_client(timeout=120) as client:
+                        resp = client.post(url, data=data, files=files)
                     result = resp.json()
                     if result.get("ok"):
                         return result.get("result", {})
