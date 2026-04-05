@@ -94,8 +94,15 @@ class Gateway:
         except Exception:
             pass
         try:
-            from clawed.agent_core.memory.sessions import _ensure_db as init_sessions_db
+            from clawed.agent_core.memory.sessions import (
+                _ensure_db as init_sessions_db,
+            )
             init_sessions_db()
+        except Exception:
+            pass
+        try:
+            from clawed.agent_core.memory.curriculum_kb import CurriculumKB
+            CurriculumKB()  # Creates DB + tables on init
         except Exception:
             pass
 

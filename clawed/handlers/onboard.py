@@ -87,17 +87,40 @@ class OnboardHandler:
         current = state["step"]
 
         if current == OnboardState.ASK_SUBJECT:
-            grade, subject = _parse_grade_and_subject(text)
-            state["subject"] = (subject if subject else text.strip().title())[:100]
-            if grade:
-                state["grade"] = grade
+            # Handle "8th grade SS and 10th grade Global History"
+            # Split on "and" to get multiple subjects
+            parts = re.split(r"\band\b", text, flags=re.IGNORECASE)
+            subjects = []
+            grades = []
+            for part in parts:
+                grade, subject = _parse_grade_and_subject(part.strip())
+                if subject:
+                    subjects.append(subject)
+                if grade and grade not in grades:
+                    grades.append(grade)
+
+            state["subject"] = (
+                ", ".join(subjects) if subjects
+                else text.strip().title()
+            )[:200]
+            state["all_subjects"] = subjects
+            state["all_grades"] = grades
+
+            if grades:
+                state["grade"] = grades[0]
                 state["step"] = OnboardState.ASK_NAME
+                grade_str = ", ".join(grades)
                 return GatewayResponse(
-                    text=f"Got it — {state['subject']}, grade {grade}.\n\nWhat's your name?"
+                    text=(
+                        f"Got it — {state['subject']}, "
+                        f"grade{'s' if len(grades) > 1 else ''} "
+                        f"{grade_str}.\n\nWhat's your name?"
+                    )
                 )
             state["step"] = OnboardState.ASK_GRADE
             return GatewayResponse(
-                text=f"Great — {state['subject']}!\n\nWhat grade level do you teach?"
+                text=f"Great — {state['subject']}!\n\n"
+                "What grade level(s) do you teach?"
             )
 
         if current == OnboardState.ASK_GRADE:
@@ -164,10 +187,12 @@ class OnboardHandler:
         state = self._state[teacher_id]
 
         us_state = state.get("us_state", "")
+        subjects = state.get("all_subjects", [state["subject"]])
+        grades = state.get("all_grades", [state["grade"]])
         profile = TeacherProfile(
             name=state["name"],
-            subjects=[state["subject"]],
-            grade_levels=[state["grade"]],
+            subjects=subjects,
+            grade_levels=grades,
             state=us_state,
         )
         config = AppConfig.load()
@@ -190,16 +215,30 @@ class OnboardHandler:
 
         del self._state[teacher_id]
 
-        # Save onboarding summary to sessions under the NEW teacher_id
-        # so Ed remembers what was discussed even though the ID changed
+        # Save onboarding summary under the NEW teacher_id AND
+        # copy any onboarding turns from "default" to the new ID
         try:
             from clawed.agent_core.identity import get_teacher_id
-            from clawed.agent_core.memory.sessions import save_turn
+            from clawed.agent_core.memory.sessions import (
+                load_recent,
+                save_turn,
+            )
             new_tid = get_teacher_id()
+
+            # Copy turns from "default" (where onboarding steps were saved)
+            old_turns = load_recent("default", limit=20)
+            for turn in old_turns:
+                save_turn(
+                    new_tid, turn["role"], turn["content"],
+                    transport=turn.get("transport", "system"),
+                )
+
+            # Add completion summary
             save_turn(
                 new_tid, "assistant",
                 f"Onboarding complete for {state['name']}. "
-                f"Teaches {state['subject']}, grade {state['grade']}.",
+                f"Teaches {state['subject']}, grade {state['grade']}"
+                f"{', ' + us_state if us_state else ''}.",
                 transport="system",
             )
         except Exception:

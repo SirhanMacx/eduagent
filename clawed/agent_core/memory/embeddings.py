@@ -68,14 +68,28 @@ class ONNXMiniLMEmbedder:
         ]:
             if not path.exists() or path.stat().st_size < 1000:
                 logger.info("Downloading %s → %s", url.split("/")[-1], path)
-                try:
-                    import httpx
-                    with httpx.Client(timeout=120, follow_redirects=True) as c:
-                        resp = c.get(url)
-                        resp.raise_for_status()
-                        path.write_bytes(resp.content)
-                except Exception as e:
-                    logger.warning("Model download failed: %s", e)
+                downloaded = False
+                for attempt in range(3):
+                    try:
+                        import httpx
+                        with httpx.Client(
+                            timeout=120,
+                            follow_redirects=True,
+                            http2=False,
+                        ) as c:
+                            resp = c.get(url)
+                            resp.raise_for_status()
+                            path.write_bytes(resp.content)
+                            downloaded = True
+                            break
+                    except Exception as e:
+                        logger.warning(
+                            "Download attempt %d failed: %s",
+                            attempt + 1, e,
+                        )
+                        import time as _time
+                        _time.sleep(2 ** attempt)
+                if not downloaded:
                     return False
 
         # Load ONNX session
