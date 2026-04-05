@@ -85,11 +85,11 @@ def load_memory_context(teacher_id: str, current_message: str) -> dict[str, Any]
         kb = CurriculumKB()
         # Search teacher-specific chunks first, then fall back to "default"
         # (older CLI ingests stored under "default" before unified identity)
-        kb_results = kb.search(teacher_id, current_message, top_k=3)
+        kb_results = kb.search(teacher_id, current_message, top_k=8)
         if not kb_results:
             # Always try "default" as fallback — legacy CLI ingests used it
             if teacher_id != "default":
-                kb_results = kb.search("default", current_message, top_k=3)
+                kb_results = kb.search("default", current_message, top_k=8)
         if kb_results:
             parts = []
             for r in kb_results:

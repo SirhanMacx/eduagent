@@ -78,6 +78,14 @@ class CurriculumKB:
                 "CREATE UNIQUE INDEX IF NOT EXISTS idx_chunks_dedup "
                 "ON chunks(teacher_id, chunk_hash)"
             )
+            # FTS5 full-text index for fast keyword pre-filtering
+            conn.execute("""
+                CREATE VIRTUAL TABLE IF NOT EXISTS chunks_fts USING fts5(
+                    chunk_text, doc_title,
+                    content='chunks', content_rowid='id'
+                )
+            """
+            )
 
     @staticmethod
     def _chunk_text(text: str) -> list[str]:
@@ -126,7 +134,7 @@ class CurriculumKB:
                 embedding = self._embedder.embed(chunk)
                 blob = _embed_to_blob(embedding)
 
-                conn.execute(
+                cursor = conn.execute(
                     "INSERT INTO chunks "
                     "(teacher_id, doc_title, source_path, chunk_text, "
                     "chunk_hash, embedding, metadata, created_at) "
@@ -136,6 +144,15 @@ class CurriculumKB:
                         chunk, chunk_hash, blob, meta_json, now,
                     ),
                 )
+                # Populate FTS index
+                try:
+                    conn.execute(
+                        "INSERT INTO chunks_fts(rowid, chunk_text, doc_title) "
+                        "VALUES (?, ?, ?)",
+                        (cursor.lastrowid, chunk, doc_title),
+                    )
+                except Exception:
+                    pass  # FTS table may not exist on old DBs
                 added += 1
 
         logger.debug(
@@ -171,18 +188,46 @@ class CurriculumKB:
         where: str,
         params: tuple,
     ) -> list[dict[str, Any]]:
-        """Core search with vectorized cosine similarity."""
+        """Two-stage search: FTS5 keyword filter → embedding re-rank.
+
+        Stage 1: FTS5 full-text search finds candidate chunks by keywords.
+        Stage 2: Cosine similarity re-ranks candidates by semantic meaning.
+        Falls back to brute-force scan if FTS table doesn't exist.
+        """
         query_embedding = self._embedder.embed(query)
 
         with sqlite3.connect(self._db_path) as conn:
             conn.row_factory = sqlite3.Row
-            rows = conn.execute(
-                "SELECT doc_title, source_path, chunk_text, "
-                "embedding, metadata, created_at "
-                f"FROM chunks WHERE {where} "
-                "LIMIT 10000",
-                params,
-            ).fetchall()
+
+            # Stage 1: Try FTS5 keyword pre-filter (fast, searches ALL chunks)
+            rows = None
+            try:
+                # FTS5 match query — extract keywords
+                fts_query = " OR ".join(
+                    w for w in query.split() if len(w) > 2
+                )
+                if fts_query:
+                    rows = conn.execute(
+                        "SELECT c.doc_title, c.source_path, c.chunk_text, "
+                        "c.embedding, c.metadata, c.created_at "
+                        "FROM chunks c "
+                        "JOIN chunks_fts f ON c.id = f.rowid "
+                        f"WHERE {where} AND chunks_fts MATCH ? "
+                        "LIMIT 500",
+                        (*params, fts_query),
+                    ).fetchall()
+            except Exception:
+                pass  # FTS table may not exist
+
+            # Stage 2: Fall back to brute-force if FTS found nothing
+            if not rows:
+                rows = conn.execute(
+                    "SELECT doc_title, source_path, chunk_text, "
+                    "embedding, metadata, created_at "
+                    f"FROM chunks WHERE {where} "
+                    "ORDER BY RANDOM() LIMIT 5000",
+                    params,
+                ).fetchall()
 
         if not rows:
             return []
