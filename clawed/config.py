@@ -79,7 +79,7 @@ def _resolve_claude_code_token() -> Optional[str]:
         token = get_oauth_token()
         if token:
             return token
-    except Exception:
+    except (ImportError, AttributeError, ValueError):
         pass
 
     # Fallback: read raw token without refresh
@@ -230,7 +230,7 @@ def has_teacher_profile() -> bool:
         config = AppConfig.load()
         tp = config.teacher_profile
         return bool(tp and (tp.name or tp.subjects or tp.grade_levels))
-    except Exception:
+    except (KeyError, TypeError, ValueError, OSError):
         return False
 
 

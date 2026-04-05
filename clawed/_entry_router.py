@@ -490,7 +490,7 @@ def main() -> None:
                         response = asyncio.run(client.generate(prompt))
                         print(response)
                         sys.exit(0)
-        except Exception as e:
+        except (ImportError, AttributeError, ValueError, OSError) as e:
             print(f"Error: {e}", file=sys.stderr)
             sys.exit(1)
 
@@ -520,7 +520,7 @@ def main() -> None:
                 _run_python_cli()
                 return
             # Terminal mode — fall through to TUI launch
-        except Exception as e:
+        except (ImportError, AttributeError, OSError, KeyError) as e:
             print(f"Setup error: {e}", file=sys.stderr)
 
     # Auto-start Telegram bot in background if configured

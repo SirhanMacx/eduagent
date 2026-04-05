@@ -168,7 +168,7 @@ The 5-step API key resolution chain (implemented in `_entry_router.py._resolve_k
 
 1. **Environment variable** -- `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, etc. If set, the teacher knows what they are doing; use it directly.
 2. **Claude Code OAuth** -- For Anthropic provider only, checks `~/.claude/.credentials.json` for an OAuth access token. This lets teachers who already use Claude Code skip API key setup entirely.
-3. **OS keyring** -- macOS Keychain, Linux Secret Service, or Windows Credential Manager via the `keyring` library. Stored under service name `clawed`.
+3. **OS keyring** -- macOS Keychain, Linux Secret Service, or Windows Credential Manager via the `keyring` library. Stored under service name `"eduagent"` (matching `~/.eduagent/` data directory for backwards compatibility).
 4. **secrets.json** -- `~/.eduagent/secrets.json`, a JSON file with `0600` permissions. Fallback when keyring is unavailable.
 5. **Config inline** -- Fields like `ollama_api_key` in `config.json`. Skips sentinel values like `"ollama-local"`.
 
