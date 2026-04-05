@@ -473,9 +473,9 @@ class EduAgentTelegramBot:
         signal.signal(signal.SIGINT, _signal_handler)
         signal.signal(signal.SIGTERM, _signal_handler)
 
-        # Clear stale webhooks and pending updates
+        # Clear stale webhooks but keep pending updates
         try:
-            self.api._call("deleteWebhook", drop_pending_updates=True)
+            self.api._call("deleteWebhook")
         except Exception:
             pass
 
@@ -493,11 +493,17 @@ class EduAgentTelegramBot:
         self._running = True
         offset = 0
 
-        # Drain any pending updates from previous session
+        # Start from latest update (don't re-process old messages)
         try:
             old = self.api._call("getUpdates", offset=-1, timeout=0)
             if old and isinstance(old, list) and len(old) > 0:
-                offset = old[-1]["update_id"] + 1
+                # Process the most recent pending message
+                for update in old:
+                    offset = update["update_id"] + 1
+                    try:
+                        self._process_update(update)
+                    except Exception as e:
+                        logger.warning("Error processing pending: %s", e)
         except Exception:
             pass
         while self._running:
