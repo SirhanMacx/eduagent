@@ -121,6 +121,23 @@ def create_app() -> FastAPI:
                 return True
         return False
 
+    @app.middleware("http")
+    async def _set_auth_cookie_middleware(request: Request, call_next):
+        """Set auth cookie when ?token= is valid.
+        Teacher only needs ?token= on the first page load — cookie
+        persists for 24h after that.
+        """
+        response = await call_next(request)
+        token_param = request.query_params.get("token")
+        if token_param and response.status_code == 200:
+            from clawed.api.deps import get_api_token
+            if token_param == get_api_token():
+                response.set_cookie(
+                    "clawed_token", token_param,
+                    httponly=True, samesite="strict", max_age=86400,
+                )
+        return response
+
     _auth_denied = HTMLResponse(
         "<h1>401 — Auth required</h1><p>Add ?token=YOUR_TOKEN to the URL</p>",
         status_code=401,
