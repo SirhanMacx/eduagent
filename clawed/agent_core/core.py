@@ -105,6 +105,11 @@ class Gateway:
             CurriculumKB()  # Creates DB + tables on init
         except Exception:
             pass
+        try:
+            from clawed.agent_core.quality import _ensure_db as init_quality_db
+            init_quality_db()
+        except Exception:
+            pass
 
         # Agent subsystems
         self._approval_manager = ApprovalManager()
