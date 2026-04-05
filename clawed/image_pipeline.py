@@ -67,7 +67,7 @@ async def _fetch_one(
                     fetch_content_image(context, subject=subject, fallback_topic=spec),
                     timeout=timeout,
                 )
-                if path and path.exists():
+                if path and path.exists() and path.stat().st_size > 5000:
                     logger.info("Fetched content image for: %s", spec[:80])
                     return spec, path
             except Exception:
@@ -77,7 +77,7 @@ async def _fetch_one(
             fetch_slide_image(spec, subject=subject),
             timeout=timeout,
         )
-        if path and path.exists():
+        if path and path.exists() and path.stat().st_size > 5000:
             logger.info("Fetched image for: %s", spec[:80])
             return spec, path
     except asyncio.TimeoutError:
