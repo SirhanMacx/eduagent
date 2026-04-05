@@ -6,17 +6,20 @@ import json
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 
-from clawed.api.deps import get_db, limiter
+from clawed.api.deps import get_db, limiter, require_auth
 from clawed.models import DailyLesson, TeacherPersona, UnitPlan
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(tags=["generate"])
+router = APIRouter(
+    tags=["generate"],
+    dependencies=[Depends(require_auth)],
+)
 
 
 def _sse(event: str, **kwargs) -> dict:

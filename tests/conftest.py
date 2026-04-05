@@ -18,6 +18,7 @@ def _isolate_state_db(tmp_path, monkeypatch):
     """
     # ── Environment variable (catches runtime os.environ.get calls) ────
     monkeypatch.setenv("EDUAGENT_DATA_DIR", str(tmp_path))
+    monkeypatch.setenv("EDUAGENT_LOCAL_AUTH_BYPASS", "1")
 
     # ── clawed.state ───────────────────────────────────────────────────
     monkeypatch.setattr("clawed.state.DEFAULT_DATA_DIR", tmp_path, raising=False)

@@ -1,29 +1,25 @@
 FROM python:3.12-slim AS base
 
-# Prevent Python from writing .pyc files and enable unbuffered output
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Install system dependencies for document processing (PyMuPDF, python-docx, etc.)
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         gcc \
         libffi-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy both packages (clawed/ is the main package, eduagent/ is the compat shim)
 COPY pyproject.toml README.md ./
 COPY clawed/ clawed/
 COPY eduagent/ eduagent/
-RUN pip install --no-cache-dir -e '.[hosted]'
+RUN pip install --no-cache-dir -e '.[all]'
 
-# Teacher data volume
 VOLUME /data
 ENV EDUAGENT_DATA_DIR=/data
 
 EXPOSE 8000
 
-# Default: run the web server
-CMD ["clawed", "serve", "--host", "0.0.0.0", "--port", "8000"]
+# Default: localhost only. Override with --host 0.0.0.0 behind a reverse proxy.
+CMD ["clawed", "serve", "--host", "127.0.0.1", "--port", "8000"]

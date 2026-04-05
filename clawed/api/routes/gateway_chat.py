@@ -1,25 +1,23 @@
-"""Gateway chat route — teacher chat endpoint that routes through the Gateway.
+"""Gateway chat route — teacher chat through the Gateway.
 
-This is the HTTP interface that transports (TUI, future mobile, etc.) use to
-talk to the running Claw-ED gateway. Unlike /api/chat (student chatbot),
-this accepts freeform teacher messages and returns full gateway responses.
+HTTP interface for TUI and web clients. Uses the unified teacher_id
+from identity.py — callers cannot impersonate other teachers.
 """
 
 from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from clawed.api.deps import limiter
+from clawed.api.deps import limiter, require_auth
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["gateway"])
 
-# Module-level gateway instance — initialized on first request
 _gateway = None
 
 
@@ -33,21 +31,26 @@ def _get_gateway():
 
 class GatewayChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=10000)
-    teacher_id: str = Field(default="local-teacher", max_length=200)
 
 
-@router.post("/gateway/chat")
+@router.post("/gateway/chat", dependencies=[Depends(require_auth)])
 @limiter.limit("30/minute")
 async def gateway_chat(request: Request, req: GatewayChatRequest):
-    """Send a message through the Claw-ED gateway and get a response.
+    """Send a message through the Gateway.
 
-    This is the primary endpoint for transport clients (TUI, etc.)
-    that connect to a running `clawed serve` instance.
+    teacher_id is resolved server-side from the config — callers
+    cannot specify or impersonate a different teacher.
     """
     gateway = _get_gateway()
 
+    # Use canonical teacher_id — not caller-supplied
+    from clawed.agent_core.identity import get_teacher_id
+    teacher_id = get_teacher_id()
+
     try:
-        result = await gateway.handle(req.message, req.teacher_id)
+        result = await gateway.handle(
+            req.message, teacher_id, transport="web",
+        )
     except Exception:
         logger.error("Gateway chat failed", exc_info=True)
         return JSONResponse(
@@ -55,12 +58,15 @@ async def gateway_chat(request: Request, req: GatewayChatRequest):
             status_code=500,
         )
 
-    # Serialize GatewayResponse to JSON
     buttons = []
     if result.button_rows or result.buttons:
         rows = result.button_rows or [result.buttons]
         buttons = [
-            {"label": b.label, "callback_data": b.callback_data, "url": b.url}
+            {
+                "label": b.label,
+                "callback_data": b.callback_data,
+                "url": b.url,
+            }
             for row in rows
             for b in row
         ]

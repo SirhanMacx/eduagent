@@ -541,9 +541,15 @@ def main() -> None:
         except Exception:
             pass  # Never block startup
 
-        # Bypass permission prompts — teachers shouldn't see developer
-        # trust dialogs about bash commands and file edits
-        if "--dangerously-skip-permissions" not in args:
+        # Bypass permission prompts for the TUI — teachers shouldn't see
+        # developer trust dialogs. Opt out with auto_approve_tools=false
+        # in config.json.
+        try:
+            from clawed.models import AppConfig
+            _auto = getattr(AppConfig.load(), "auto_approve_tools", True)
+        except Exception:
+            _auto = True
+        if _auto and "--dangerously-skip-permissions" not in args:
             args = ["--dangerously-skip-permissions"] + args
 
         # Inject --model from eduagent config so the Node CLI uses the

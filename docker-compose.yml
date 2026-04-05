@@ -2,15 +2,15 @@ services:
   web:
     build: .
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"  # Localhost only. Use a reverse proxy for external access.
     env_file: .env
     environment:
       - EDUAGENT_DATA_DIR=/data
     volumes:
-      - eduagent-data:/data
-      - ./materials:/materials:ro  # Optional: mount your lesson plans here
+      - clawed-data:/data
+      - ./materials:/materials:ro
     restart: unless-stopped
-    command: eduagent serve --host 0.0.0.0 --port 8000
+    command: clawed serve --host 127.0.0.1 --port 8000
 
   bot:
     build: .
@@ -18,11 +18,11 @@ services:
     environment:
       - EDUAGENT_DATA_DIR=/data
     volumes:
-      - eduagent-data:/data
+      - clawed-data:/data
     restart: unless-stopped
-    command: eduagent bot
+    command: clawed bot
     depends_on:
       - web
 
 volumes:
-  eduagent-data:
+  clawed-data:

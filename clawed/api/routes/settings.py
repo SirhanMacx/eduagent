@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import json
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from clawed import __version__
-from clawed.api.deps import get_db
+from clawed.api.deps import get_db, require_auth
 from clawed.config import (
     get_api_key,
     mask_api_key,
@@ -69,7 +69,7 @@ async def health_check():
     }
 
 
-@router.get("/settings")
+@router.get("/settings", dependencies=[Depends(require_auth)])
 async def get_settings():
     """Get current settings (API keys masked)."""
     cfg = AppConfig.load()
@@ -91,7 +91,7 @@ async def get_settings():
     }
 
 
-@router.post("/settings")
+@router.post("/settings", dependencies=[Depends(require_auth)])
 async def save_settings(req: SaveSettingsRequest):
     """Save settings and optionally update API key."""
     cfg = AppConfig.load()
@@ -113,7 +113,7 @@ async def save_settings(req: SaveSettingsRequest):
     return {"status": "saved"}
 
 
-@router.get("/settings/test-connection")
+@router.get("/settings/test-connection", dependencies=[Depends(require_auth)])
 async def test_connection():
     """Test the current LLM connection."""
     cfg = AppConfig.load()
@@ -121,7 +121,7 @@ async def test_connection():
     return result
 
 
-@router.post("/settings/clear-content")
+@router.post("/settings/clear-content", dependencies=[Depends(require_auth)])
 async def clear_content():
     """Clear all generated content (danger zone)."""
     db = get_db()
@@ -129,7 +129,7 @@ async def clear_content():
     return {"status": "cleared"}
 
 
-@router.post("/settings/reset")
+@router.post("/settings/reset", dependencies=[Depends(require_auth)])
 async def reset_all():
     """Full reset — clear everything and restart onboarding."""
     db = get_db()

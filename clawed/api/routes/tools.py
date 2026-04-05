@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from clawed.api.deps import limiter
+from clawed.api.deps import limiter, require_auth
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(tags=["tools"])
+router = APIRouter(tags=["tools"], dependencies=[Depends(require_auth)])
 
 
 # ── Sub Packet ────────────────────────────────────────────────────────

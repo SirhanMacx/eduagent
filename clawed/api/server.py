@@ -49,15 +49,21 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # CORS middleware — restrict origins in production via EDUAGENT_CORS_ORIGINS env var
+    # CORS — default to localhost only. Override with EDUAGENT_CORS_ORIGINS.
     cors_origins_raw = os.environ.get("EDUAGENT_CORS_ORIGINS", "")
-    cors_origins = [o.strip() for o in cors_origins_raw.split(",") if o.strip()] if cors_origins_raw else ["*"]
+    if cors_origins_raw:
+        cors_origins = [o.strip() for o in cors_origins_raw.split(",") if o.strip()]
+    else:
+        cors_origins = [
+            "http://localhost:8000",
+            "http://127.0.0.1:8000",
+        ]
     app.add_middleware(
         CORSMiddleware,
         allow_origins=cors_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_credentials=False,
+        allow_methods=["GET", "POST"],
+        allow_headers=["Authorization", "Content-Type"],
     )
 
     # Static files
@@ -494,6 +500,21 @@ select {{ padding: 6px 10px; border-radius: 4px;
             "is_shared": True,
         })
 
+    def _generate_qr_img(data: str) -> str:
+        """Generate QR code locally. Falls back to plain link."""
+        try:
+            import base64
+            import io
+
+            import qrcode
+            qr = qrcode.make(data)
+            buf = io.BytesIO()
+            qr.save(buf, format="PNG")
+            b64 = base64.b64encode(buf.getvalue()).decode()
+            return f'<img src="data:image/png;base64,{b64}" alt="QR Code" width="200">'
+        except ImportError:
+            return f'<a href="{data}">{data}</a>'
+
     @app.get("/student/{class_code}", response_class=HTMLResponse)
     async def student_class_page(request: Request, class_code: str):
         """Minimal student-facing page for a class code."""
@@ -575,7 +596,7 @@ h1 {{ color: #1a73e8; margin-bottom: 8px; }}
 {''.join(f'<span class="topic">{t}</span>' for t in esc_lesson_topics)}
 {f'<p><strong>Current Topic:</strong> {esc_class_topic}</p>' if class_topic else ''}
 <p style="margin-top:24px"><strong>Scan to chat on Telegram:</strong></p>
-<div class="qr"><img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={bot_link}" alt="QR Code"></div>
+<div class="qr">{_generate_qr_img(bot_link)}</div>
 <a href="{bot_link}" class="join-btn">Open in Telegram</a>
 <p class="privacy">No student data is displayed on this page.</p>
 </div></body></html>"""

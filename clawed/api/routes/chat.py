@@ -5,17 +5,17 @@ from __future__ import annotations
 import json
 import logging
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from clawed.api.deps import get_db, limiter
+from clawed.api.deps import get_db, limiter, require_auth
 from clawed.chat import student_chat
 from clawed.models import TeacherPersona
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(tags=["chat"])
+router = APIRouter(tags=["chat"], dependencies=[Depends(require_auth)])
 
 
 class ChatRequest(BaseModel):

@@ -306,7 +306,19 @@ def serve(
       clawed serve --tui                 # TUI only (no Telegram, demos)
       clawed serve                       # Web server only
     """
-    # serve always starts the web server — browser wizard handles first-run onboarding
+    # Warn about non-localhost exposure
+    if host not in ("127.0.0.1", "localhost", "::1"):
+        console.print(
+            f"[bold yellow]WARNING:[/bold yellow] Binding to [bold]{host}[/bold]. "
+            "The web API has basic auth but is designed for localhost use. "
+            "Use a reverse proxy (nginx, caddy) for production exposure."
+        )
+
+    # Print auth token for API access
+    from clawed.api.deps import get_api_token
+    api_token = get_api_token()
+    console.print(f"API token: [bold]{api_token}[/bold]")
+
     cfg = AppConfig.load()
 
     # Warn if no AI provider is configured
