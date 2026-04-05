@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 from pathlib import Path
 from typing import Any, Callable
 
@@ -21,7 +22,9 @@ logger = logging.getLogger(__name__)
 
 # ── Config paths ───────────────────────────────────────────────────────
 
-SCHEDULE_CONFIG_PATH = Path.home() / ".eduagent" / "schedule.json"
+SCHEDULE_CONFIG_PATH = Path(
+    os.environ.get("EDUAGENT_DATA_DIR", str(Path.home() / ".eduagent"))
+) / "schedule.json"
 
 
 # ── Built-in task definitions ──────────────────────────────────────────

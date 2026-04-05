@@ -29,7 +29,9 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-_CACHE_DIR = Path.home() / ".eduagent" / "cache" / "images"
+_CACHE_DIR = Path(
+    os.environ.get("EDUAGENT_DATA_DIR", str(Path.home() / ".eduagent"))
+) / "cache" / "images"
 
 # Per-image network timeout (seconds)
 _FETCH_TIMEOUT = 15.0
