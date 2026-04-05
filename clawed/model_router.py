@@ -97,20 +97,13 @@ def route(task_type: str, config: AppConfig) -> AppConfig:
 
     Resolution order:
       1. config.task_models[task]    -- per-task override (legacy compat)
-      2. config.tier_models[tier]    -- teacher's tier preference
-      3. DEFAULT_TIER_MODELS[tier]   -- built-in defaults
+      2. config.tier_providers[tier] -- route this tier to a different provider
+      3. config.tier_models[tier]    -- teacher's tier preference
+      4. PROVIDER_TIER_MODELS        -- provider-specific defaults
+      5. DEFAULT_TIER_MODELS[tier]   -- built-in defaults
     """
-    user_task_overrides = config.task_models or {}
-    if task_type in user_task_overrides:
-        model = user_task_overrides[task_type]
-    else:
-        tier = resolve_tier(task_type)
-        model = resolve_model(tier, config)
-
-    routed = config.model_copy()
-
-    # Write to the correct provider-specific model field
     from clawed.models import LLMProvider
+
     _provider_model_fields = {
         LLMProvider.ANTHROPIC: "anthropic_model",
         LLMProvider.OPENAI: "openai_model",
@@ -118,6 +111,29 @@ def route(task_type: str, config: AppConfig) -> AppConfig:
         LLMProvider.GOOGLE: "google_model",
         LLMProvider.OPENROUTER: "openrouter_model",
     }
+
+    routed = config.model_copy()
+    tier = resolve_tier(task_type)
+
+    # 1. Per-task override (highest priority)
+    user_task_overrides = config.task_models or {}
+    if task_type in user_task_overrides:
+        model = user_task_overrides[task_type]
+        field = _provider_model_fields.get(routed.provider, "ollama_model")
+        setattr(routed, field, model)
+        return routed
+
+    # 2. Tier → provider routing (use a different provider for this tier)
+    tier_providers = config.tier_providers or {}
+    if tier.value in tier_providers:
+        provider_name = tier_providers[tier.value]
+        try:
+            routed.provider = LLMProvider(provider_name)
+        except ValueError:
+            pass  # Invalid provider name, fall through
+
+    # 3. Resolve model for the (possibly switched) provider
+    model = resolve_model(tier, routed)
     field = _provider_model_fields.get(routed.provider, "ollama_model")
     setattr(routed, field, model)
     return routed

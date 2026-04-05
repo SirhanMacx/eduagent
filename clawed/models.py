@@ -1077,8 +1077,12 @@ class AppConfig(BaseModel):
     # Per-task model overrides (e.g. {"bellringer": "qwen3.5:cloud"})
     task_models: Optional[dict[str, str]] = None
 
-    # Tier model overrides (e.g. {"fast": "qwen3.5:cloud", "work": "claude-sonnet-4-6", "deep": "claude-opus-4-6"})
+    # Tier model overrides (e.g. {"fast": "qwen3.5:cloud", "deep": "claude-opus-4-6"})
     tier_models: Optional[dict[str, str]] = None
+
+    # Tier → provider routing (e.g. {"fast": "ollama", "deep": "anthropic"})
+    # Allows different tiers to use different providers simultaneously
+    tier_providers: Optional[dict[str, str]] = None
 
     # Max agent loop iterations (increase for complex curriculum planning)
     max_agent_iterations: int = 20
