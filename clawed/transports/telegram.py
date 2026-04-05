@@ -1,6 +1,6 @@
 """Thin Telegram transport — delegates all logic to the Gateway.
 
-Uses httpx (sync) for reliable cross-platform compatibility.
+Uses requests (urllib3) for reliable cross-platform compatibility.
 The bot is a ~200-line polling loop that:
   1. Receives updates from Telegram
   2. Delegates to Gateway.handle() / Gateway.handle_callback()
@@ -24,7 +24,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-import httpx
+import requests as _requests
 
 logger = logging.getLogger(__name__)
 
@@ -154,56 +154,45 @@ def _release_bot_lock() -> None:
 
 
 class TelegramAPI:
-    """Thin sync wrapper around the Telegram Bot API using httpx.
+    """Thin sync wrapper around the Telegram Bot API using requests.
 
-    Retry sleeps in this class use time.sleep() intentionally — the
-    httpx.Client is synchronous by design and these methods execute
-    blocking I/O.  The polling loop in EduAgentTelegramBot.run() uses
-    asyncio.sleep() via the event loop for non-blocking error recovery.
+    Uses requests (urllib3) instead of httpx for Windows TLS
+    compatibility. httpx fails with WinError 10054 on every TLS
+    handshake to api.telegram.org on certain Windows machines.
     """
 
     def __init__(self, token: str, timeout: float = 60.0):
         self.token = token
         self._base = f"{_API_BASE}/bot{token}"
         self._timeout = timeout
-
-    def _new_client(self, timeout: float | None = None) -> httpx.Client:
-        """Create a fresh httpx client per request.
-
-        Windows kills long-lived TLS connections (WinError 10054).
-        Using a fresh client per call avoids stale socket issues.
-        """
-        return httpx.Client(
-            timeout=httpx.Timeout(timeout or self._timeout, connect=15.0),
-            http2=False,
-        )
+        self._session = _requests.Session()
 
     def close(self) -> None:
-        pass  # No persistent client to close
+        self._session.close()
 
     def _call(self, method: str, **params: Any) -> dict:
         """Call a Telegram Bot API method with retry on network errors."""
         url = f"{self._base}/{method}"
-        # Remove None values
         data = {k: v for k, v in params.items() if v is not None}
 
         last_err: Exception | None = None
         for attempt in range(3):
             try:
-                with self._new_client() as client:
-                    resp = client.post(url, json=data)
-                    result = resp.json()
+                resp = self._session.post(
+                    url, json=data, timeout=self._timeout,
+                )
+                result = resp.json()
                 if result.get("ok"):
                     return result.get("result", {})
-                else:
-                    raise RuntimeError(
-                        f"Telegram API error: "
-                        f"{result.get('description', 'Unknown error')}"
-                    )
+                raise RuntimeError(
+                    f"Telegram API error: "
+                    f"{result.get('description', 'Unknown error')}"
+                )
             except (
-                httpx.ConnectError, httpx.ReadTimeout,
-                httpx.WriteTimeout, httpx.RemoteProtocolError,
-                ConnectionResetError, OSError,
+                _requests.ConnectionError,
+                _requests.Timeout,
+                ConnectionResetError,
+                OSError,
             ) as e:
                 last_err = e
                 wait = 2 ** attempt
@@ -226,28 +215,11 @@ class TelegramAPI:
         return self._call("getMe")
 
     def get_updates(self, offset: int = 0, timeout: int = 30) -> list[dict]:
-        """Long-poll for updates using a raw httpx.post (not _call).
-
-        Windows kills TLS connections on reuse (WinError 10054).
-        Using httpx.post() directly (no persistent client) is the
-        most reliable approach on Windows.
-        """
-        url = f"{self._base}/getUpdates"
-        for attempt in range(3):
-            try:
-                resp = httpx.post(
-                    url,
-                    json={"offset": offset, "timeout": timeout},
-                    timeout=httpx.Timeout(timeout + 10, connect=15.0),
-                )
-                result = resp.json()
-                if result.get("ok"):
-                    data = result.get("result", [])
-                    return data if isinstance(data, list) else []
-            except Exception as e:
-                logger.debug("getUpdates attempt %d: %s", attempt + 1, e)
-                time.sleep(1)
-        return []
+        """Long-poll for updates."""
+        result = self._call(
+            "getUpdates", offset=offset, timeout=timeout,
+        )
+        return result if isinstance(result, list) else []
 
     @staticmethod
     def _split_at_boundary(text: str, max_len: int) -> list[str]:
@@ -336,21 +308,28 @@ class TelegramAPI:
             try:
                 with open(file_path, "rb") as f:
                     files = {"document": (file_path.name, f)}
-                    data: dict[str, Any] = {"chat_id": chat_id}
+                    data: dict[str, Any] = {"chat_id": str(chat_id)}
                     if caption:
                         data["caption"] = caption
-                    with self._new_client(timeout=120) as client:
-                        resp = client.post(url, data=data, files=files)
+                    resp = self._session.post(
+                        url, data=data, files=files, timeout=120,
+                    )
                     result = resp.json()
                     if result.get("ok"):
                         return result.get("result", {})
-                    logger.warning("Telegram API error: %s", result.get("description", ""))
+                    logger.warning(
+                        "Telegram API error: %s",
+                        result.get("description", ""),
+                    )
                     return {}
-            except (httpx.ConnectError, httpx.ReadTimeout, httpx.WriteTimeout) as e:
+            except (
+                _requests.ConnectionError,
+                _requests.Timeout,
+            ) as e:
                 last_err = e
                 wait = 2 ** attempt
                 logger.warning(
-                    "Network error sending document (attempt %d): %s. Retrying in %ds...",
+                    "File send attempt %d: %s. Retrying in %ds...",
                     attempt + 1, e, wait,
                 )
                 time.sleep(wait)
@@ -359,7 +338,7 @@ class TelegramAPI:
                 _log_error(e)
                 return {}
         if last_err:
-            logger.error("Failed to send document after 3 retries: %s", last_err)
+            logger.error("Failed after 3 retries: %s", last_err)
             _log_error(last_err)
         return {}
 
@@ -398,12 +377,12 @@ class TelegramAPI:
         url = f"{_API_BASE}/file/bot{self.token}/{file_path}"
         for attempt in range(3):
             try:
-                resp = self._client.get(url)
+                resp = self._session.get(url, timeout=30)
                 resp.raise_for_status()
                 local_path.parent.mkdir(parents=True, exist_ok=True)
                 local_path.write_bytes(resp.content)
                 return True
-            except (httpx.ConnectError, httpx.ReadTimeout, httpx.WriteTimeout) as e:
+            except (_requests.ConnectionError, _requests.Timeout) as e:
                 wait = 2 ** attempt
                 logger.warning(
                     "Network error downloading file (attempt %d): %s. Retrying in %ds...",
@@ -574,15 +553,13 @@ class EduAgentTelegramBot:
                 typing_thread.start()
 
                 # Progress callback — lets tools send mid-operation updates.
-                # Uses a fresh httpx.Client per call for thread safety
-                # (the main polling loop uses self.api concurrently).
                 def _progress_cb(msg: str, _cid: int = chat_id, _tok: str = self.token) -> None:
                     try:
-                        with httpx.Client(timeout=10) as client:
-                            client.post(
-                                f"https://api.telegram.org/bot{_tok}/sendMessage",
-                                json={"chat_id": _cid, "text": msg, "parse_mode": "Markdown"},
-                            )
+                        _requests.post(
+                            f"https://api.telegram.org/bot{_tok}/sendMessage",
+                            json={"chat_id": _cid, "text": msg},
+                            timeout=10,
+                        )
                     except Exception:
                         pass
 
