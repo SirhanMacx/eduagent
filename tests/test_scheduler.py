@@ -49,7 +49,7 @@ class TestDefaultTasks:
         expected = {
             "morning-prep", "weekly-plan", "feedback-digest",
             "memory-compress", "student-digest",
-            "gap-detection", "curriculum-watch",
+            "gap-detection", "curriculum-watch", "self-distill",
         }
         assert set(DEFAULT_TASKS.keys()) == expected
 

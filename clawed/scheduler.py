@@ -64,6 +64,11 @@ DEFAULT_TASKS: dict[str, dict[str, Any]] = {
         "cron": {"hour": "5", "minute": "30"},
         "enabled": False,
     },
+    "self-distill": {
+        "description": "Analyze best/worst outputs, distill improvement rules into soul.md.",
+        "cron": {"day_of_week": "sun", "hour": "20", "minute": "0"},
+        "enabled": False,
+    },
 }
 
 
@@ -385,6 +390,36 @@ TASK_IMPLEMENTATIONS: dict[str, Callable[[], Any]] = {
     "gap-detection": _task_gap_detection,
     "curriculum-watch": _task_curriculum_watch,
 }
+
+
+async def _task_self_distill() -> str:
+    """Self-distillation: analyze outputs, improve soul.md."""
+    from clawed.workspace import append_daily_note
+
+    try:
+        from clawed.agent_core.identity import get_teacher_id
+        from clawed.agent_core.quality import self_distill
+
+        teacher_id = get_teacher_id()
+        result = self_distill(teacher_id)
+
+        if result:
+            summary = (
+                f"Self-distillation: analyzed outputs, "
+                f"distilled {result.count(chr(10))} insights into soul.md"
+            )
+        else:
+            summary = "Self-distillation: not enough data yet"
+
+    except Exception as exc:
+        summary = f"Self-distillation failed: {exc}"
+
+    append_daily_note(summary, category="self-distill")
+    logger.info("self-distill: %s", summary)
+    return summary
+
+
+TASK_IMPLEMENTATIONS["self-distill"] = _task_self_distill
 
 
 # ── Manual run ─────────────────────────────────────────────────────────

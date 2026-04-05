@@ -253,6 +253,143 @@ def get_stats(teacher_id: str) -> dict[str, Any]:
     }
 
 
+def self_distill(teacher_id: str, llm_generate=None) -> str:
+    """Self-distillation: analyze best outputs to improve future generations.
+
+    Implements the core insight from "Embarrassingly Simple Self-Distillation
+    Improves Code Generation" (Zhang et al., 2025) — adapted for teaching:
+
+    1. Find highest-rated generations (teacher 4-5 stars)
+    2. Find lowest-rated or most-edited generations
+    3. Ask LLM to identify what made the good ones good
+    4. Produce actionable rules for soul.md
+
+    Returns the distilled insights as text for soul.md injection.
+    """
+    _ensure_db()
+
+    with _get_conn() as conn:
+        conn.row_factory = sqlite3.Row
+
+        # Best generations (rated 4-5 by teacher)
+        best = conn.execute(
+            "SELECT generation_type, topic, subject, grade, "
+            "score_json, teacher_feedback "
+            "FROM generations "
+            "WHERE teacher_id = ? AND teacher_rating >= 4 "
+            "ORDER BY teacher_rating DESC, timestamp DESC LIMIT 10",
+            (teacher_id,),
+        ).fetchall()
+
+        # Worst generations (rated 1-2 OR heavily edited)
+        worst = conn.execute(
+            "SELECT generation_type, topic, subject, grade, "
+            "score_json, teacher_feedback, edit_summary "
+            "FROM generations "
+            "WHERE teacher_id = ? AND "
+            "(teacher_rating <= 2 OR was_edited = 1) "
+            "ORDER BY timestamp DESC LIMIT 10",
+            (teacher_id,),
+        ).fetchall()
+
+        # Confirmed patterns (3+ occurrences)
+        patterns = conn.execute(
+            "SELECT pattern_type, description, occurrences "
+            "FROM patterns "
+            "WHERE teacher_id = ? AND occurrences >= 3 "
+            "ORDER BY occurrences DESC LIMIT 10",
+            (teacher_id,),
+        ).fetchall()
+
+    if not best and not worst and not patterns:
+        return ""
+
+    # Build distillation summary without LLM (deterministic)
+    insights = []
+
+    if best:
+        insights.append("## What Works (from highest-rated lessons)")
+        for row in best:
+            topic = row["topic"] or "unknown"
+            feedback = row["teacher_feedback"] or ""
+            scores = json.loads(row["score_json"]) if row["score_json"] else {}
+            line = f"- {topic}"
+            if feedback:
+                line += f": \"{feedback}\""
+            if scores:
+                top_score = max(scores.items(), key=lambda x: x[1])
+                line += f" (best: {top_score[0]}={top_score[1]:.1f})"
+            insights.append(line)
+
+    if worst:
+        insights.append("\n## What to Avoid (from edited/low-rated lessons)")
+        for row in worst:
+            topic = row["topic"] or "unknown"
+            edit = row["edit_summary"] or ""
+            feedback = row["teacher_feedback"] or ""
+            detail = edit or feedback or "teacher edited heavily"
+            insights.append(f"- {topic}: {detail}")
+
+    if patterns:
+        insights.append("\n## Confirmed Patterns (recurring teacher behaviors)")
+        for row in patterns:
+            insights.append(
+                f"- [{row['pattern_type']}] {row['description']} "
+                f"(seen {row['occurrences']}x)"
+            )
+
+    # If LLM is available, generate actionable rules
+    if llm_generate and (best or worst):
+        try:
+            prompt = (
+                "You are Ed, a self-improving teaching agent. Based on "
+                "teacher feedback patterns, generate 3-5 specific, "
+                "actionable rules for improving future lesson generation. "
+                "Be concrete — reference specific formats, structures, "
+                "or approaches.\n\n"
+                + "\n".join(insights)
+                + "\n\nRules (one per line, start each with 'RULE:'):"
+            )
+            rules_text = llm_generate(prompt)
+            if rules_text:
+                insights.append("\n## Self-Distilled Rules")
+                for line in rules_text.split("\n"):
+                    line = line.strip()
+                    if line.startswith("RULE:"):
+                        insights.append(f"- {line[5:].strip()}")
+        except Exception as e:
+            logger.debug("LLM distillation failed: %s", e)
+
+    distilled = "\n".join(insights)
+
+    # Auto-update soul.md with distilled insights
+    if distilled:
+        try:
+            data_dir = os.environ.get(
+                "EDUAGENT_DATA_DIR", str(Path.home() / ".eduagent")
+            )
+            soul_path = Path(data_dir) / "workspace" / "soul.md"
+            if soul_path.exists():
+                current = soul_path.read_text(encoding="utf-8")
+                # Replace or append distillation section
+                marker = "## Self-Distilled Insights"
+                if marker in current:
+                    # Replace existing section
+                    before = current.split(marker)[0].rstrip()
+                    updated = f"{before}\n\n{marker}\n{distilled}\n"
+                else:
+                    updated = f"{current}\n\n{marker}\n{distilled}\n"
+                soul_path.write_text(updated, encoding="utf-8")
+                logger.info(
+                    "Soul.md updated with %d distilled insights",
+                    len(insights),
+                )
+        except Exception as e:
+            logger.warning("Failed to update soul.md: %s", e)
+
+    return distilled
+
+
 def reset_db() -> None:
     """Reset initialized flag. For testing."""
     global _initialized
