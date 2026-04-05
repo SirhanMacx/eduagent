@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 _CACHE_DIR = Path.home() / ".eduagent" / "cache" / "images"
 
 # Per-image network timeout (seconds)
-_FETCH_TIMEOUT = 5.0
+_FETCH_TIMEOUT = 15.0
 
 # ── Cache eviction settings ──────────────────────────────────────────
 MAX_CACHE_AGE_DAYS = 30

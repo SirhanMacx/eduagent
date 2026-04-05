@@ -55,6 +55,8 @@ class CurriculumKB:
 
     def _init_db(self) -> None:
         with sqlite3.connect(self._db_path) as conn:
+            # WAL mode allows concurrent reads during writes (ingest + search)
+            conn.execute("PRAGMA journal_mode=WAL")
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS chunks (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,

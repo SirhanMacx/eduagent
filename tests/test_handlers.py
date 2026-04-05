@@ -57,6 +57,7 @@ class TestOnboardHandler:
         await self.handler.step("t1", "math")
         await self.handler.step("t1", "6")
         await self.handler.step("t1", "Mr. Smith")
+        await self.handler.step("t1", "NY")
         assert not self.handler.is_onboarding("t1")
 
     def test_onboard_state_enum(self):

@@ -19,6 +19,7 @@ class OnboardState(Enum):
     ASK_SUBJECT = "ask_subject"
     ASK_GRADE = "ask_grade"
     ASK_NAME = "ask_name"
+    ASK_STATE = "ask_state"
     DONE = "done"
 
 
@@ -119,20 +120,55 @@ class OnboardHandler:
             name = text.strip()[:100]
             name = re.sub(r'[^\w\s\'-]', '', name).strip()
             if not name:
-                return GatewayResponse(text="I need a name to personalize your lessons. What should I call you?")
+                return GatewayResponse(
+                    text="I need a name to personalize your lessons. "
+                    "What should I call you?"
+                )
             state["name"] = name
+            state["step"] = OnboardState.ASK_STATE
+            return GatewayResponse(
+                text=f"Nice to meet you, {name}!\n\n"
+                "What state are you in? (So I can align to your "
+                "state's testing formats — e.g., NY Regents, TX STAAR)"
+            )
+
+        if current == OnboardState.ASK_STATE:
+            # Parse state abbreviation
+            state_text = text.strip().upper()
+            # Common state abbreviations and names
+            state_map = {
+                "NEW YORK": "NY", "TEXAS": "TX", "CALIFORNIA": "CA",
+                "FLORIDA": "FL", "MASSACHUSETTS": "MA", "VIRGINIA": "VA",
+                "OHIO": "OH", "ILLINOIS": "IL", "NEW JERSEY": "NJ",
+                "CONNECTICUT": "CT", "MARYLAND": "MD", "PENNSYLVANIA": "PA",
+                "GEORGIA": "GA", "NORTH CAROLINA": "NC",
+            }
+            us_state = state_map.get(state_text, "")
+            if not us_state and len(state_text) == 2:
+                us_state = state_text
+            if not us_state:
+                # Try partial match
+                for full, abbr in state_map.items():
+                    if state_text in full or full in state_text:
+                        us_state = abbr
+                        break
+            state["us_state"] = us_state or state_text[:2]
             return self._complete_onboarding(teacher_id)
 
-        return GatewayResponse(text="Something went wrong with setup. Try /start again.")
+        return GatewayResponse(
+            text="Something went wrong with setup. Try /start again."
+        )
 
     def _complete_onboarding(self, teacher_id: str) -> GatewayResponse:
         """Finalize onboarding: create TeacherProfile + AppConfig, save, clean up."""
         state = self._state[teacher_id]
 
+        us_state = state.get("us_state", "")
         profile = TeacherProfile(
             name=state["name"],
             subjects=[state["subject"]],
             grade_levels=[state["grade"]],
+            state=us_state,
         )
         config = AppConfig.load()
         config.teacher_profile = profile
