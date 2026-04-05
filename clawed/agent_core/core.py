@@ -453,9 +453,20 @@ class Gateway:
                     "=== End Materials Status ===\n"
                 )
             elif kb_stats["doc_count"] > 0:
+                paths_str = ", ".join(materials_paths) if materials_paths else "unknown"
                 system += (
-                    f"\n\nKnowledge base: {kb_stats['doc_count']} documents, "
-                    f"{kb_stats['chunk_count']} searchable sections.\n"
+                    f"\n\n=== Your Knowledge Base ===\n"
+                    f"You have {kb_stats['doc_count']} documents and "
+                    f"{kb_stats['chunk_count']} searchable sections "
+                    f"ingested from the teacher's materials.\n"
+                    f"Materials folder: {paths_str}\n"
+                    f"This is YOUR knowledge — you indexed it. "
+                    f"You can search it with search_my_materials. "
+                    f"You can ingest more files with ingest_materials. "
+                    f"The CLI and Telegram share the same KB, same "
+                    f"memory, same brain. Anything ingested via CLI "
+                    f"is available here.\n"
+                    f"=== End KB ===\n"
                 )
         except Exception:
             pass
