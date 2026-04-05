@@ -48,7 +48,16 @@ class OnboardingStepRequest(BaseModel):
 
 @router.get("/health")
 async def health_check():
-    """Health check endpoint with system status."""
+    """Lightweight liveness check — no DB or LLM calls."""
+    return {
+        "status": "ok",
+        "version": __version__,
+    }
+
+
+@router.get("/health/diagnostics", dependencies=[Depends(require_auth)])
+async def health_diagnostics():
+    """Full diagnostics endpoint with DB stats and LLM connection test."""
     cfg = AppConfig.load()
     db = get_db()
     teacher = db.get_default_teacher()

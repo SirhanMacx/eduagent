@@ -1,71 +1,66 @@
 # Changelog
 
-## v4.3.2026.13 -- Maturity Push (2026-04-02)
+## v4.5.2026.27 (2026-04-05)
 
-### Documentation & Code Quality
+### Security hardening (audit remediation)
+- Auth on ALL API routes (ingest, export, feedback, lessons, school)
+- Auth on ALL HTML pages (dashboard, settings, analytics, profile, etc.)
+- Health endpoint split: `/api/health` (liveness) + `/api/health/diagnostics` (auth-protected)
+- Import URL lockdown: SSRF protection, localhost-only by default
+- Public share pages (`/share/{token}`, `/student/{code}`) remain intentionally open
 
-**Architecture docs rewritten**
-- `docs/ARCHITECTURE.md` fully rewritten for v4.3: accurate system diagram, entry router responsibilities, agent core flow, master content track, compilation pipeline, data storage layout, multi-provider auth chain, and curriculum wiki architecture
-- Removed all references to v0.6 architecture and non-existent modules
+### v4.5.2026.26 (2026-04-05)
+- Real rate limiting (in-memory, per-IP per-route)
+- Bearer token auth for web API
+- CORS restricted to localhost
+- Docker defaults to 127.0.0.1
+- Docker extra fixed (`.[hosted]` -> `.[all]`)
+- Local QR generation (removed third-party api.qrserver.com)
+- Skip-permissions now configurable via `auto_approve_tools`
+- Non-localhost warning on `clawed serve`
 
-**Model guide updated**
-- `docs/CHOOSING_A_MODEL.md` updated with current model names (Claude Opus/Sonnet 4.6, GPT-5.4, Gemini 2.5 Flash/Pro)
-- Added Google Gemini as a standalone option
-- Replaced Qwen 3.5 with Gemma 4 as the recommended local model
-- Removed all pricing information
-- Ed referred to by name throughout
+### v4.5.2026.25 (2026-04-05)
+- Multi-provider tier routing: `tier_providers: {"fast": "ollama", "deep": "anthropic"}`
+- Enhanced switch_model tool: switch_provider, set_tier, list_providers
 
-**Bot setup guide updated**
-- `docs/BOT_SETUP.md` updated to document background auto-start behavior
-- Added "How Background Auto-Start Works" section explaining the daemon lifecycle
-- Removed "leave terminal open" advice (no longer needed with daemon mode)
-- Ed referred to by name throughout
+### v4.5.2026.20 (2026-04-05)
+- Telegram transport switched from httpx to requests (Windows TLS fix)
+- Ed never asks teacher to run commands (agentic prompt)
+- Landing page rewrite (611 lines, open source tone)
+- README rewrite (features list, no marketing)
 
-**Entry router docstrings**
-- Added clear 2-3 line docstrings to all functions in `clawed/_entry_router.py`
+### v4.5.2026 (2026-04-04)
+- Agentic identity rewrite: autonomous master educator
+- Teacher image integration in image pipeline
+- New tools: generate_game, generate_simulation, differentiate_lesson
+- Self-modification tools: modify_config, write_file, read_file
+- CJK sanitizer for minimax model
 
-**Contributing guide updated**
-- `CONTRIBUTING.md` updated with command module split pattern
-- Documents `clawed/commands/` directory structure and the rule that new commands go in focused modules, not in `generate.py`
+### v4.4.2026 — v4.4.2026.6 (2026-04-04)
+- v5 Magnum Opus: 7 phases shipped
+  - Phase 1: Cross-transport sessions (CLI + Telegram share memory)
+  - Phase 2: Google Drive OAuth + CLI commands + ingest tool
+  - Phase 3: Browser tools (web search, navigate, research)
+  - Phase 4: Quality tracker + pattern detection
+  - Phase 5: Proactive Ed (gap detection, curriculum watch)
+  - Phase 6: Self-equipping (pip install, custom YAML tools)
+  - Phase 7: File management + workspace status
+- ONNX MiniLM embedder (384-dim, binary BLOB storage)
+- FTS5 two-stage search
+- Karpathy wiki (compile, query, lint)
+- Self-distillation (learns from ratings and edits)
 
-## v4.2.2026.9 -- Magnum Opus (2026-04-02)
+### v4.3.2026.21 (2026-04-04)
+- Unified teacher identity across transports
+- Drive tool definitions registered
+- Ed personality rewrite in prompt.py
+- Think block stripping for reasoning models
 
-### The Full Teaching Assistant Transformation
+### v4.3.2026.13 (2026-04-02)
+- Architecture docs rewritten
+- Model guide updated
+- Bot setup guide updated
+- Contributing guide updated
 
-**Startup & Identity**
-- Educational startup animation with gold/green/cream palette and apple logo
-- "Claw-ED — Your AI co-teacher" identity throughout
-- Zero "Claude Code" branding in any user-facing output
-
-**AI Behavior**
-- System prompt completely rewritten for teaching (pedagogy, standards, differentiation, Bloom's taxonomy)
-- 14 teaching tools prioritized in tool array with searchHint metadata
-- First-run agentic onboarding guides teachers through setup conversationally
-
-**Multi-Provider Support**
-- Python bridge routes non-Anthropic API calls (OpenAI, Google Gemini, Ollama)
-- TypeScript bridge client with timeout, abort, and error handling
-- Auth system bypasses OAuth for non-Anthropic providers, reads from ~/.eduagent/config.json
-
-**Curriculum Ingestion**
-- ODT/ODP: proper XML parsing with ElementTree (replaces naive tag stripping)
-- XLS: 3-strategy extraction (xlrd → textutil → openpyxl)
-- Corpus contribution wired into every ingest
-- Topic tag extraction from filename + headings + content analysis
-- DuckDuckGo VQD: retry logic with exponential backoff, 4th regex pattern
-
-**Quality**
-- 1673 tests passing, 0 failures
-- Ruff clean across all modified files
-- Lazy asyncio.Queue init for Python 3.9 compatibility
-- Google model default aligned (gemini-2.5-flash) across TS and Python
-
-## v4.2.2026.8 (2026-04-01)
-
-- Re-enabled Ink TUI as primary UX
-- Python CLI as fallback
-
-## v4.2.2026.7 (2026-03-31)
-
-- Python CLI as primary UX
-- Hermes fleet overhaul
+### Earlier versions
+See git history for v1.x through v4.3.x releases.

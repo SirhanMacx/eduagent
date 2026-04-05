@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from clawed.api.deps import get_db
+from clawed.api.deps import get_db, require_auth
 
-router = APIRouter(tags=["school"])
+router = APIRouter(tags=["school"], dependencies=[Depends(require_auth)])
 
 
 # ── Request models ────────────────────────────────────────────────────

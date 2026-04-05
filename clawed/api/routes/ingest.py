@@ -9,16 +9,16 @@ import re
 import tempfile
 from pathlib import Path
 
-from fastapi import APIRouter, File, UploadFile
+from fastapi import APIRouter, Depends, File, UploadFile
 from fastapi.responses import JSONResponse
 
-from clawed.api.deps import get_db
+from clawed.api.deps import get_db, require_auth
 from clawed.ingestor import ingest_path
 from clawed.persona import extract_persona
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(tags=["ingest"])
+router = APIRouter(tags=["ingest"], dependencies=[Depends(require_auth)])
 
 
 @router.post("/ingest")

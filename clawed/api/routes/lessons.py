@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 
-from clawed.api.deps import get_db
+from clawed.api.deps import get_db, require_auth
 
-router = APIRouter(tags=["lessons"])
+router = APIRouter(tags=["lessons"], dependencies=[Depends(require_auth)])
 
 
 @router.post("/lessons/{lesson_id}/share")

@@ -3,21 +3,23 @@
 from __future__ import annotations
 
 import json
+import os
 import tempfile
 from pathlib import Path
 from typing import Optional
 from urllib.parse import urlparse
 
 import httpx
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
-from clawed.api.deps import get_db
+from clawed.api.deps import get_db, require_auth
 from clawed.database import Database
 from clawed.models import DailyLesson
 
-router = APIRouter(tags=["export"])
+router = APIRouter(tags=["export"], dependencies=[Depends(require_auth)])
+public_router = APIRouter(tags=["public"])
 
 
 class ImportRequest(BaseModel):
@@ -100,7 +102,7 @@ async def export_classroom(lesson_id: str):
     return {"lesson_id": lesson_id, "coursework": coursework}
 
 
-@router.get("/share/{token}")
+@public_router.get("/share/{token}")
 async def share_lesson_api(token: str):
     """Get a lesson by its share token (JSON API)."""
     db = get_db()
@@ -132,6 +134,17 @@ async def import_lesson(req: ImportRequest):
     if not token:
         return JSONResponse(
             {"error": "Provide a url or token."}, status_code=400
+        )
+
+    # Security: restrict fetch to localhost unless explicitly allowed
+    _allowed_prefixes = ["http://localhost", "http://127.0.0.1"]
+    _extra = os.environ.get("EDUAGENT_IMPORT_ALLOW_URLS", "")
+    if _extra:
+        _allowed_prefixes.extend(u.strip() for u in _extra.split(",") if u.strip())
+    if not any(fetch_server.startswith(prefix) for prefix in _allowed_prefixes):
+        return JSONResponse(
+            {"error": "Import URL not allowed. Only localhost or configured URLs are permitted."},
+            status_code=403,
         )
 
     fetch_url = f"{fetch_server}/share/{token}"

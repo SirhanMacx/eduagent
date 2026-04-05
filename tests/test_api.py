@@ -596,15 +596,12 @@ class TestHealthCheck:
     """Test the health check endpoint."""
 
     def test_health_endpoint(self, client):
+        """Health is now a lightweight liveness check."""
         resp = client.get("/api/health")
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "ok"
-        assert "llm_provider" in data
         assert "version" in data
-        assert "units_generated" in data
-        assert "lessons_generated" in data
-        assert "db_size_mb" in data
 
 
 class TestSettingsRoutes:

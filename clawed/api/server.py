@@ -75,6 +75,7 @@ def create_app() -> FastAPI:
     # ── Import and include API routers ───────────────────────────────
 
     from clawed.api.routes.chat import router as chat_router
+    from clawed.api.routes.export import public_router as export_public_router
     from clawed.api.routes.export import router as export_router
     from clawed.api.routes.feedback import router as feedback_router
     from clawed.api.routes.gateway_chat import router as gateway_chat_router
@@ -90,16 +91,47 @@ def create_app() -> FastAPI:
     app.include_router(chat_router, prefix="/api")
     app.include_router(feedback_router, prefix="/api")
     app.include_router(export_router, prefix="/api")
+    app.include_router(export_public_router, prefix="/api")
     app.include_router(settings_router, prefix="/api")
     app.include_router(school_router, prefix="/api")
     app.include_router(lessons_router, prefix="/api")
     app.include_router(tools_router, prefix="/api")
     app.include_router(gateway_chat_router, prefix="/api")
 
+    # ── Page auth helper ─────────────────────────────────────────────
+
+    def _check_page_auth(request: Request) -> bool:
+        """Check auth for HTML pages via token query param or cookie."""
+        from clawed.api.deps import get_api_token
+        token = get_api_token()
+        # Check query param
+        if request.query_params.get("token") == token:
+            return True
+        # Check cookie
+        if request.cookies.get("clawed_token") == token:
+            return True
+        # Check Bearer header (for API-like access)
+        auth = request.headers.get("authorization", "")
+        if auth.startswith("Bearer ") and auth[7:] == token:
+            return True
+        # Check localhost bypass
+        if os.environ.get("EDUAGENT_LOCAL_AUTH_BYPASS") == "1":
+            client_ip = request.client.host if request.client else ""
+            if client_ip in ("127.0.0.1", "::1", "localhost", "testclient"):
+                return True
+        return False
+
+    _auth_denied = HTMLResponse(
+        "<h1>401 — Auth required</h1><p>Add ?token=YOUR_TOKEN to the URL</p>",
+        status_code=401,
+    )
+
     # ── Page routes (server-side rendered) ───────────────────────────
 
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request):
+        if not _check_page_auth(request):
+            return _auth_denied
         db = get_db()
         teacher = db.get_default_teacher()
         has_persona = teacher is not None and teacher.get("persona_json") is not None
@@ -129,6 +161,8 @@ def create_app() -> FastAPI:
 
     @app.get("/dashboard", response_class=HTMLResponse)
     async def dashboard(request: Request):
+        if not _check_page_auth(request):
+            return _auth_denied
         db = get_db()
         stats = db.get_stats()
         units = db.list_units()
@@ -199,6 +233,8 @@ def create_app() -> FastAPI:
     @app.get("/lessons", response_class=HTMLResponse)
     async def lessons_list_page(request: Request):
         """Lesson list page: all generated lessons, filterable, newest first."""
+        if not _check_page_auth(request):
+            return _auth_denied
         db = get_db()
         subject_filter = request.query_params.get("subject", "")
         grade_filter = request.query_params.get("grade", "")
@@ -332,6 +368,8 @@ select {{ padding: 6px 10px; border-radius: 4px;
 
     @app.get("/generate", response_class=HTMLResponse)
     async def generate_page(request: Request):
+        if not _check_page_auth(request):
+            return _auth_denied
         from clawed.standards import STANDARDS
         db = get_db()
         teacher = db.get_default_teacher()
@@ -345,6 +383,8 @@ select {{ padding: 6px 10px; border-radius: 4px;
 
     @app.get("/settings", response_class=HTMLResponse)
     async def settings_page(request: Request):
+        if not _check_page_auth(request):
+            return _auth_denied
         from clawed.config import get_api_key, mask_api_key
         from clawed.models import AppConfig
         from clawed.state_standards import (
@@ -412,6 +452,8 @@ select {{ padding: 6px 10px; border-radius: 4px;
 
     @app.get("/stats", response_class=HTMLResponse)
     async def stats_page(request: Request):
+        if not _check_page_auth(request):
+            return _auth_denied
         db = get_db()
         teacher = db.get_default_teacher()
         teacher_id = teacher["id"] if teacher else "local-teacher"
@@ -426,6 +468,8 @@ select {{ padding: 6px 10px; border-radius: 4px;
 
     @app.get("/lesson/{lesson_id}", response_class=HTMLResponse)
     async def lesson_page(request: Request, lesson_id: str):
+        if not _check_page_auth(request):
+            return _auth_denied
         db = get_db()
         lesson_row = db.get_lesson(lesson_id)
         if not lesson_row:
@@ -605,6 +649,8 @@ h1 {{ color: #1a73e8; margin-bottom: 8px; }}
 
     @app.get("/analytics", response_class=HTMLResponse)
     async def analytics_page(request: Request):
+        if not _check_page_auth(request):
+            return _auth_denied
         from clawed.analytics import get_teacher_stats
 
         db = get_db()
@@ -709,6 +755,8 @@ h1 {{ color: #1a73e8; margin-bottom: 8px; }}
     @app.get("/library", response_class=HTMLResponse)
     async def library_page(request: Request):
         """Library view — all units and lessons, aliased from dashboard."""
+        if not _check_page_auth(request):
+            return _auth_denied
         db = get_db()
         stats = db.get_stats()
         units = db.list_units()
@@ -774,6 +822,8 @@ h1 {{ color: #1a73e8; margin-bottom: 8px; }}
     @app.get("/students", response_class=HTMLResponse)
     async def students_page(request: Request):
         """Students page — chat activity and student engagement."""
+        if not _check_page_auth(request):
+            return _auth_denied
         db = get_db()
         stats = db.get_stats()
 
@@ -801,6 +851,8 @@ h1 {{ color: #1a73e8; margin-bottom: 8px; }}
 
     @app.get("/profile", response_class=HTMLResponse)
     async def profile_page(request: Request):
+        if not _check_page_auth(request):
+            return _auth_denied
         from clawed.config import get_api_key, mask_api_key
         from clawed.models import AppConfig
         from clawed.state_standards import (

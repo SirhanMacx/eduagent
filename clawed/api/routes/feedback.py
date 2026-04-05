@@ -4,16 +4,16 @@ from __future__ import annotations
 
 import json
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
-from clawed.api.deps import get_db
+from clawed.api.deps import get_db, require_auth
 from clawed.corpus import contribute_example
 from clawed.feedback import analyze_feedback, collect_feedback
 from clawed.improver import improve_prompts
 
-router = APIRouter(tags=["feedback"])
+router = APIRouter(tags=["feedback"], dependencies=[Depends(require_auth)])
 
 
 class FeedbackRequest(BaseModel):
