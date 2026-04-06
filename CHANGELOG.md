@@ -1,5 +1,22 @@
 # Changelog
 
+## v4.5.2026.36 (2026-04-06)
+
+### Model system
+- Default model: gemma4:31b-cloud (100% tool-call success, proven in 3-lesson test)
+- Interactive /models command on Telegram (inline keyboard: provider → model)
+- Model discovery module: dynamic Ollama Cloud + OpenRouter API listing
+- Full Ollama Cloud catalog: 24 models with tool-use tags
+- OpenRouter free model catalog: 6 curated free models
+- OpenRouter tool-use routing fixed (was going to Ollama path, now native)
+- OpenRouter timeout increased to 300s for free tier models
+- Codex OAuth evaluated and removed (doesn't work for API calls)
+
+### Security + hygiene
+- Page auth cookie: ?token= now sets httponly cookie for 24h session
+- Onboarding recommends Ollama Pro, mentions /models command
+- lru-cache pinned to 10.4.3 (fixes CI TypeScript build)
+
 ## v4.5.2026.29 (2026-04-05)
 
 ### Hygiene
