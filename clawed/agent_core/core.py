@@ -212,7 +212,11 @@ class Gateway:
             if not has_teacher_profile():
                 return await self._onboard.step(teacher_id, message)
 
-            # 4. Natural-language → agent loop
+            # 4. /models command — interactive model selector
+            if message.strip().lower() in ("/models", "/model", "models"):
+                return self._handle_models_command()
+
+            # 5. Natural-language → agent loop
             return await self._agent_loop(message, teacher_id, progress_callback=progress_callback)
 
         except Exception as e:
@@ -242,8 +246,12 @@ class Gateway:
             )
 
     async def handle_callback(self, callback_data: str, teacher_id: str) -> GatewayResponse:
-        """Handle button press callbacks (approval, rate, export, etc.)."""
+        """Handle button press callbacks (approval, rate, export, model, etc.)."""
         parts = callback_data.split(":")
+
+        # Model selection callbacks
+        if parts[0] in ("models", "setmodel"):
+            return await self.handle_model_callback(callback_data, teacher_id)
 
         # Approval callbacks
         if parts[0] == "approve" and len(parts) >= 2:
@@ -577,6 +585,112 @@ class Gateway:
             pass
 
         return result
+
+    # ------------------------------------------------------------------
+    # /models command
+    # ------------------------------------------------------------------
+
+    def _handle_models_command(self) -> GatewayResponse:
+        """Interactive model selector — returns provider list with buttons."""
+        from clawed.gateway_response import Button
+
+        current = self.config.provider.value
+        model_map = {
+            "ollama": self.config.ollama_model,
+            "anthropic": self.config.anthropic_model,
+            "openai": self.config.openai_model,
+            "google": self.config.google_model,
+            "openrouter": self.config.openrouter_model,
+        }
+        current_model = model_map.get(current, "unknown")
+
+        text = (
+            f"Current: **{current_model}** ({current})\n\n"
+            "Choose a provider to see available models:"
+        )
+        buttons = [
+            Button(label="Ollama Cloud", callback_data="models:ollama"),
+            Button(label="OpenRouter", callback_data="models:openrouter"),
+            Button(label="Anthropic", callback_data="models:anthropic"),
+            Button(label="OpenAI", callback_data="models:openai"),
+            Button(label="Google", callback_data="models:google"),
+        ]
+        return GatewayResponse(
+            text=text,
+            button_rows=[buttons[:3], buttons[3:]],
+        )
+
+    async def handle_model_callback(
+        self, callback_data: str, teacher_id: str,
+    ) -> GatewayResponse:
+        """Handle model selection callbacks from Telegram buttons."""
+        from clawed.gateway_response import Button
+
+        parts = callback_data.split(":")
+        if len(parts) < 2:
+            return GatewayResponse(text="Invalid selection.")
+
+        action = parts[0]  # "models" or "setmodel"
+        provider = parts[1] if len(parts) > 1 else ""
+        model_name = parts[2] if len(parts) > 2 else ""
+
+        if action == "models" and provider and not model_name:
+            # Show models for this provider
+            from clawed.model_discovery import list_all_models
+            all_models = list_all_models(self.config)
+            models = all_models.get(provider, [])
+
+            if not models:
+                return GatewayResponse(
+                    text=f"No models found for {provider}.",
+                )
+
+            current = getattr(
+                self.config, f"{provider}_model", "",
+            )
+            buttons = []
+            for m in models[:12]:  # Cap at 12 buttons
+                name = m.get("name") or m.get("id", "?")
+                label = name
+                if name == current:
+                    label = f"{name} ✓"
+                buttons.append(Button(
+                    label=label[:30],
+                    callback_data=f"setmodel:{provider}:{name}",
+                ))
+
+            # Arrange in rows of 2
+            rows = []
+            for i in range(0, len(buttons), 2):
+                rows.append(buttons[i:i + 2])
+
+            return GatewayResponse(
+                text=f"**{provider.title()}** models:",
+                button_rows=rows,
+            )
+
+        if action == "setmodel" and provider and model_name:
+            # Switch to selected model
+            from clawed.models import AppConfig, LLMProvider
+            cfg = AppConfig.load()
+
+            try:
+                cfg.provider = LLMProvider(provider)
+            except ValueError:
+                return GatewayResponse(
+                    text=f"Unknown provider: {provider}",
+                )
+
+            field = f"{provider}_model"
+            if hasattr(cfg, field):
+                setattr(cfg, field, model_name)
+            cfg.save()
+
+            return GatewayResponse(
+                text=f"Switched to **{model_name}** ({provider}).",
+            )
+
+        return GatewayResponse(text="Unknown model action.")
 
     # ------------------------------------------------------------------
     # Background ingest

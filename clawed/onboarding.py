@@ -165,7 +165,7 @@ def _detect_available_models() -> tuple[LLMProvider | None, str]:
             data = resp.json()
             models = [m.get("name", "") for m in data.get("models", [])]
             # Prefer these models in order
-            preferred = ["minimax-m2.7", "qwen3.5", "llama4", "mistral"]
+            preferred = ["gemma4", "minimax-m2.7", "qwen3.5", "llama4", "mistral"]
             for pref in preferred:
                 for model in models:
                     if pref in model:
@@ -407,7 +407,7 @@ def _ask_provider_wizard() -> tuple[LLMProvider, str | None, str | None, str | N
             LLMProvider.OLLAMA,
             key.strip(),
             "https://ollama.com",
-            "minimax-m2.7:cloud",
+            "gemma4:31b-cloud",
         )
 
     # Show alternatives with plain-English descriptions
@@ -666,7 +666,7 @@ def quick_model_setup() -> str:
         key = key.strip()
         config = AppConfig(provider=LLMProvider.OLLAMA)
         config.ollama_base_url = "https://ollama.com"
-        config.ollama_model = "minimax-m2.7:cloud"
+        config.ollama_model = "gemma4:31b-cloud"
         set_api_key("ollama", key)
         config.ollama_api_key = ""  # Don't leak to config.json
         console.print(
@@ -685,7 +685,7 @@ def quick_model_setup() -> str:
                     console.print(f"  [green]\u2713 Found models: {', '.join(models[:5])}[/green]")
                     # Pick most capable model — cloud models first, then by preference
                     cloud_models = [m for m in models if ":cloud" in m]
-                    preferred = ["minimax-m2.7", "deepseek", "qwen3.5", "llama4", "mistral"]
+                    preferred = ["gemma4", "minimax-m2.7", "deepseek", "qwen3.5", "llama4"]
                     picked = None
                     # Try cloud models first (most capable)
                     for pref in preferred:
@@ -869,7 +869,7 @@ def run_setup_wizard(reset: bool = False) -> AppConfig:
         # If Ollama Cloud detected via env, set cloud URL/model
         if detected_provider == LLMProvider.OLLAMA and "Cloud" in detect_msg:
             ollama_base_url = "https://ollama.com"
-            ollama_model = "minimax-m2.7:cloud"
+            ollama_model = "gemma4:31b-cloud"
     else:
         # No auto-detection — run the wizard
         provider, api_key, ollama_base_url, ollama_model = _ask_provider_wizard()

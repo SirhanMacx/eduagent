@@ -106,45 +106,35 @@ class SwitchModelTool:
         )
 
     def _list_models(self, config) -> ToolResult:
-        models = []
-        if config.provider.value == "ollama":
-            try:
-                import requests
-                base = config.ollama_base_url.rstrip("/")
-                headers = {}
-                if config.ollama_api_key:
-                    headers["Authorization"] = (
-                        f"Bearer {config.ollama_api_key}"
-                    )
-                from clawed.config import is_ollama_cloud
-                if is_ollama_cloud(base):
-                    resp = requests.get(
-                        f"{base}/api/tags",
-                        headers=headers, timeout=10,
-                    )
-                else:
-                    resp = requests.get(
-                        f"{base}/api/tags", timeout=5,
-                    )
-                if resp.status_code == 200:
-                    models = [
-                        m["name"]
-                        for m in resp.json().get("models", [])
-                    ]
-            except Exception as e:
-                return ToolResult(text=f"Could not list models: {e}")
+        """List models from all configured providers."""
+        from clawed.model_discovery import list_all_models
 
-        if models:
-            current = config.ollama_model
-            lines = ["Available models:"]
-            for m in sorted(models):
-                marker = " (active)" if m == current else ""
-                lines.append(f"  {m}{marker}")
-            return ToolResult(
-                text="\n".join(lines), data={"models": models},
-            )
+        all_models = list_all_models(config)
+        if not all_models:
+            return ToolResult(text="No models found.")
+
+        current_provider = config.provider.value
+        model_map = {
+            "ollama": config.ollama_model,
+            "anthropic": config.anthropic_model,
+            "openai": config.openai_model,
+            "google": config.google_model,
+            "openrouter": config.openrouter_model,
+        }
+        current_model = model_map.get(current_provider, "")
+
+        lines = []
+        for provider, models in all_models.items():
+            active = " (active)" if provider == current_provider else ""
+            lines.append(f"\n**{provider.title()}{active}:**")
+            for m in models[:10]:
+                name = m.get("name") or m.get("id", "?")
+                marker = " ✓" if name == current_model else ""
+                lines.append(f"  {name}{marker}")
+
         return ToolResult(
-            text="No models found or provider doesn't support listing.",
+            text="\n".join(lines),
+            data={"providers": list(all_models.keys())},
         )
 
     def _switch_model(self, params, config) -> ToolResult:

@@ -443,14 +443,14 @@ class TestModelRouter:
 
         assert "year_map" in TASK_TIERS
         assert TASK_TIERS["year_map"] == ModelTier.DEEP
-        assert "minimax" in DEFAULT_TIER_MODELS["work"]
+        assert DEFAULT_TIER_MODELS["work"]  # work tier has a model set
 
     def test_pacing_guide_routes_to_strong_model(self):
         from clawed.model_router import DEFAULT_TIER_MODELS, TASK_TIERS, ModelTier
 
         assert "pacing_guide" in TASK_TIERS
         assert TASK_TIERS["pacing_guide"] == ModelTier.DEEP
-        assert "minimax" in DEFAULT_TIER_MODELS["work"]
+        assert DEFAULT_TIER_MODELS["work"]  # work tier has a model set
 
     def test_curriculum_gaps_routes_to_strong_model(self):
         from clawed.model_router import TASK_TIERS, ModelTier

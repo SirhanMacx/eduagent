@@ -51,8 +51,8 @@ TASK_TIERS: dict[str, ModelTier] = {
 
 DEFAULT_TIER_MODELS: dict[str, str] = {
     "fast": "qwen3.5:cloud",
-    "work": "minimax-m2.7:cloud",
-    "deep": "minimax-m2.7:cloud",
+    "work": "gemma4:31b-cloud",
+    "deep": "gemma4:31b-cloud",
 }
 
 # Per-provider tier defaults (used when the teacher selects a provider).

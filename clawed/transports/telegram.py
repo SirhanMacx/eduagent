@@ -411,7 +411,7 @@ class EduAgentTelegramBot:
         {"command": "unit", "description": "Plan a unit"},
         {"command": "materials", "description": "Generate worksheets and assessments"},
         {"command": "export", "description": "Export last lesson (DOCX/PPTX/PDF)"},
-        {"command": "model", "description": "Show or switch AI model"},
+        {"command": "models", "description": "Browse and switch AI models"},
         {"command": "config", "description": "Show current configuration"},
         {"command": "schedule", "description": "Manage reminders"},
         {"command": "gaps", "description": "Curriculum gap analysis"},

@@ -249,6 +249,9 @@ class OnboardHandler:
                 f"You're all set, {state['name']}!\n\n"
                 f"Subject: {state['subject']}\n"
                 f"Grade: {state['grade']}\n\n"
-                "Try: 'plan a unit on [topic]' or 'make a lesson on [topic]'"
+                "Try: 'plan a unit on [topic]' or 'make a lesson on [topic]'\n\n"
+                "Tip: Use /models to browse and switch AI models. "
+                "I recommend Ollama Pro (~$20/mo) for the best "
+                "balance of cost and quality."
             ),
         )

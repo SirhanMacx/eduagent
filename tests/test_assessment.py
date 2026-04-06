@@ -406,14 +406,14 @@ class TestModelRouterAssessment:
 
         assert "assessment" in TASK_TIERS
         assert TASK_TIERS["assessment"] == ModelTier.DEEP
-        assert DEFAULT_TIER_MODELS["work"] == "minimax-m2.7:cloud"
+        assert DEFAULT_TIER_MODELS["work"] == "gemma4:31b-cloud"
 
     def test_route_assessment_task(self):
         from clawed.model_router import route
 
         config = AppConfig(provider=LLMProvider.OLLAMA, ollama_model="llama3.2")
         routed = route("assessment", config)
-        assert routed.ollama_model == "minimax-m2.7:cloud"
+        assert routed.ollama_model == "gemma4:31b-cloud"
 
 
 # ── save_assessment helper ───────────────────────────────────────────
