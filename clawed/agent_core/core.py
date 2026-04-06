@@ -60,7 +60,9 @@ class _LLMClientAdapter:
             original_defs = _agent_mod.TOOL_DEFINITIONS
             _agent_mod.TOOL_DEFINITIONS = tools or []
         try:
-            if self._config.provider in (LLMProvider.ANTHROPIC, LLMProvider.OPENAI):
+            if self._config.provider in (
+                LLMProvider.ANTHROPIC, LLMProvider.OPENAI, LLMProvider.OPENROUTER,
+            ):
                 return await _call_with_native_tools(messages, system, self._config)
             else:
                 return await _call_with_ollama_tools(messages, system, self._config)

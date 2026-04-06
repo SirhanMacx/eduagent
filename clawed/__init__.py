@@ -17,7 +17,7 @@ if hasattr(sys.stderr, "reconfigure"):
     except Exception:
         pass
 
-__version__ = "4.5.2026.33"
+__version__ = "4.5.2026.34"
 __author__ = "Jon Maccarello & Claw-ED contributors"
 __description__ = "Your AI co-teacher. Generate lessons, games, slides, and assessments from your terminal."
 
