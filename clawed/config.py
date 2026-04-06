@@ -100,6 +100,29 @@ def _resolve_claude_code_token() -> Optional[str]:
     return None
 
 
+def _resolve_codex_token() -> Optional[str]:
+    """Get OpenAI access token from Codex CLI (~/.codex/auth.json).
+
+    Codex stores OAuth tokens at ~/.codex/auth.json with structure:
+    {"tokens": {"access_token": "...", "refresh_token": "..."}}
+
+    The token may expire — if the API returns 401, the teacher needs
+    to run `codex` to re-authenticate.
+    """
+    import json as _json
+    auth_path = Path.home() / ".codex" / "auth.json"
+    if not auth_path.exists():
+        return None
+    try:
+        data = _json.loads(auth_path.read_text(encoding="utf-8"))
+        token = data.get("tokens", {}).get("access_token", "")
+        if token:
+            return token
+    except (ValueError, KeyError, OSError):
+        pass
+    return None
+
+
 def get_api_key(provider: str) -> Optional[str]:
     """Retrieve an API key for the given provider.
 
@@ -124,11 +147,17 @@ def get_api_key(provider: str) -> Optional[str]:
         if val and val not in ("ollama-local", "ollama", "local"):
             return val
 
-    # Claude Code credential store — auto-refreshing OAuth tokens
+    # Claude Code credential store (Anthropic OAuth)
     if provider == "anthropic":
         cc_token = _resolve_claude_code_token()
         if cc_token:
             return cc_token
+
+    # OpenAI Codex credential store (~/.codex/auth.json)
+    if provider == "openai":
+        codex_token = _resolve_codex_token()
+        if codex_token:
+            return codex_token
 
     key_name = f"{provider}_api_key"
     val = _try_keyring_get(key_name)
