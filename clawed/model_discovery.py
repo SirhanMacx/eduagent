@@ -153,14 +153,44 @@ def list_all_models(config: Any = None) -> dict[str, list[dict]]:
     if get_api_key("google"):
         result["google"] = GOOGLE_MODELS
 
-    # Always show Ollama cloud models even without key
-    # (free tier may be available)
-    if "ollama" not in result:
-        result["ollama"] = [
-            {"name": "gemma4:31b-cloud", "tier": "deep"},
-            {"name": "qwen3.5:cloud", "tier": "fast"},
-            {"name": "llama4-scout:cloud", "tier": "work"},
-            {"name": "minimax-m2.7:cloud", "tier": "work"},
-        ]
+    # Always show Ollama Cloud catalog — merge with API results
+    ollama_catalog = result.get("ollama", [])
+    catalog_names = {m.get("name", "") for m in ollama_catalog}
+    for m in OLLAMA_CLOUD_MODELS:
+        if m["name"] not in catalog_names:
+            ollama_catalog.append(m)
+    result["ollama"] = ollama_catalog
 
     return result
+
+
+# Full Ollama Cloud catalog (updated April 2026)
+# Source: https://ollama.com/search?c=cloud
+OLLAMA_CLOUD_MODELS = [
+    # ── Recommended (tool use, proven quality) ──
+    {"name": "gemma4:31b-cloud", "tools": True, "tier": "deep"},
+    {"name": "gemma4:26b-cloud", "tools": True, "tier": "work"},
+    {"name": "deepseek-v3.2:cloud", "tools": True, "tier": "deep"},
+    {"name": "qwen3.5:cloud", "tools": True, "tier": "fast"},
+    {"name": "qwen3-coder-next:cloud", "tools": True, "tier": "work"},
+    {"name": "minimax-m2.7:cloud", "tools": True, "tier": "work"},
+    {"name": "minimax-m2.5:cloud", "tools": True, "tier": "work"},
+    {"name": "minimax-m2:cloud", "tools": True, "tier": "fast"},
+    # ── Large / specialized ──
+    {"name": "nemotron-3-super:120b-cloud", "tools": True, "tier": "deep"},
+    {"name": "nemotron-3-nano:30b-cloud", "tools": True, "tier": "work"},
+    {"name": "nemotron-3-nano:4b-cloud", "tools": True, "tier": "fast"},
+    {"name": "devstral-2:123b-cloud", "tools": True, "tier": "deep"},
+    {"name": "devstral-small-2:24b-cloud", "tools": True, "tier": "work"},
+    {"name": "glm-5:cloud", "tools": True, "tier": "deep"},
+    {"name": "glm-4.7:cloud", "tools": True, "tier": "work"},
+    {"name": "kimi-k2.5:cloud", "tools": True, "tier": "deep"},
+    {"name": "qwen3-next:80b-cloud", "tools": True, "tier": "deep"},
+    {"name": "qwen3-vl:cloud", "tools": True, "tier": "work"},
+    {"name": "ministral-3:14b-cloud", "tools": True, "tier": "work"},
+    {"name": "ministral-3:8b-cloud", "tools": True, "tier": "fast"},
+    {"name": "ministral-3:3b-cloud", "tools": True, "tier": "fast"},
+    {"name": "rnj-1:8b-cloud", "tools": True, "tier": "fast"},
+    {"name": "gemini-3-flash-preview:cloud", "tools": True, "tier": "fast"},
+    {"name": "cogito-2.1:671b-cloud", "tools": False, "tier": "deep"},
+]
