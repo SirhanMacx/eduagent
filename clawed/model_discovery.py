@@ -121,6 +121,16 @@ GOOGLE_MODELS = [
     {"name": "gemini-2.5-pro", "tier": "deep"},
 ]
 
+# OpenRouter free models (no API key cost — good for trying out)
+OPENROUTER_FREE_MODELS = [
+    {"id": "qwen/qwen3.6-plus:free", "name": "Qwen 3.6 Plus", "free": True},
+    {"id": "nvidia/nemotron-3-super-120b-a12b:free", "name": "Nemotron 3 Super 120B", "free": True},
+    {"id": "google/gemma-3-27b-it:free", "name": "Gemma 3 27B", "free": True},
+    {"id": "deepseek/deepseek-chat-v3-0324:free", "name": "DeepSeek V3", "free": True},
+    {"id": "meta-llama/llama-4-scout:free", "name": "Llama 4 Scout", "free": True},
+    {"id": "mistralai/mistral-small-3.2-24b-instruct:free", "name": "Mistral Small 3.2", "free": True},
+]
+
 
 def list_all_models(config: Any = None) -> dict[str, list[dict]]:
     """List models from all configured providers.
@@ -139,11 +149,17 @@ def list_all_models(config: Any = None) -> dict[str, list[dict]]:
         if models:
             result["ollama"] = models
 
-    # OpenRouter (dynamic discovery)
+    # OpenRouter (dynamic discovery + free fallback)
     or_key = get_api_key("openrouter")
     or_models = list_openrouter_models(or_key, free_only=(not or_key))
     if or_models:
-        result["openrouter"] = or_models[:30]  # Cap at 30
+        result["openrouter"] = or_models[:30]
+    elif or_key:
+        # API failed but key exists — show known free models
+        result["openrouter"] = OPENROUTER_FREE_MODELS
+    else:
+        # No key — still show free models (they work without a key)
+        result["openrouter"] = OPENROUTER_FREE_MODELS
 
     # Static lists for API-key providers
     if get_api_key("anthropic"):
