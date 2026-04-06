@@ -153,11 +153,10 @@ def get_api_key(provider: str) -> Optional[str]:
         if cc_token:
             return cc_token
 
-    # OpenAI Codex credential store (~/.codex/auth.json)
-    if provider == "openai":
-        codex_token = _resolve_codex_token()
-        if codex_token:
-            return codex_token
+    # Note: OpenAI Codex CLI tokens (~/.codex/auth.json) are OAuth
+    # tokens for the Codex CLI only — they do NOT work with the
+    # OpenAI chat completions API. A real API key from
+    # platform.openai.com/api-keys is required for the openai provider.
 
     key_name = f"{provider}_api_key"
     val = _try_keyring_get(key_name)
